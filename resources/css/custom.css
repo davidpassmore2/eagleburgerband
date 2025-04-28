@@ -1,0 +1,77 @@
+/* Hero Header with Banner Image */
+.hero-header {
+    background: url('../media/banner.jpg') no-repeat center center;
+    background-size: cover;
+    height: 300px;
+    position: relative;
+  }
+  
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Darken the image for better text contrast */
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+  }
+
+  /* Footer styling */
+  footer {
+    background-color: #343a40; /* Dark solid color */
+    color: white;
+    padding: 40px 0;
+  }
+
+  footer a {
+    color: #adb5bd; /* Light gray for links */
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    color: white;
+    text-decoration: underline;
+  }
+
+  /* Zoom effect on image hover */
+  .card-img-top {
+    transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out;
+    filter: grayscale(0);
+  }
+
+  .card:hover .card-img-top {
+    transform: scale(1.1); /* Zoom in the image slightly */
+    filter: grayscale(50%); /* Remove greyscale on hover */
+  }
+
+  .card-img-hold {
+    overflow: hidden;
+  }
+
+  .card, .card-img-top {
+    border-radius: 0; /* Remove border-radius */
+  }
+
+  /* Fonts */
+  h5.card-title, body, .card-text {
+    font-family: 'Fira Sans', sans-serif; /* Apply Fira Sans for all text */
+  }
+
+  h5.card-title {
+    font-weight: 600; /* Bolder weight for headers */
+  }
+
+  body, .card-text {
+    font-weight: 400; /* Regular weight for body text */
+  }
+
+  /* Utils */
+
+  .no-underline {
+    text-decoration: none;
+  }
