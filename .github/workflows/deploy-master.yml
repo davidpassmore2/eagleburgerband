@@ -18,14 +18,14 @@ jobs:
 
       - uses: actions/configure-pages@v3
 
-      - name: Install and Build
-        run: |
-          npm install
-          npm run build
-          echo "eagleburgerband.com" > ./build/CNAME
+    #   - name: Install and Build
+    #     run: |
+    #       npm install
+    #       npm run build
+    #       echo "eagleburgerband.com" > ./build/CNAME
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./build
+          path: /
 
       - uses: actions/deploy-pages@v4
