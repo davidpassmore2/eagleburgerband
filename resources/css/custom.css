@@ -57,6 +57,26 @@
     border-radius: 0; /* Remove border-radius */
   }
 
+  ul.list-group.gig-list {
+    max-width: 720px;
+    margin: auto;
+  }
+
+  ul.list-group .gig-title {
+    font-size: 1.50rem;
+    font-weight: 600;
+  }
+
+  ul.list-group .gig-date {
+    font-size: 0.95rem;
+    color: #6c757d;
+  }
+
+  section.text-block-720 {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
   /* Fonts */
   h5.card-title, body, .card-text {
     font-family: 'Fira Sans', sans-serif; /* Apply Fira Sans for all text */
