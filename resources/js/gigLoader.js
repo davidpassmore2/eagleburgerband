@@ -80,4 +80,6 @@ export function loadGigs(jsonPath, listElementId) {
     .catch(error => {
       console.error("Failed to load gigs:", error);
       const list = document.getElementById(listElementId);
-      list.innerHTML = "<li class='lis
+      list.innerHTML = "<li class='list-group-item text-danger'>Unable to load gigs.</li>";
+    });
+}
