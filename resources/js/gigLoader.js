@@ -4,10 +4,11 @@ export function loadGigs(jsonPath, listElementId) {
     const list = document.getElementById(listElementId);
     list.innerHTML = "";
 
-    const upcomingGigs = gigArray.filter(gig => new Date(gig.date) >= today);
+    const upcomingGigs = gigArray.filter((gig) => new Date(gig.date) >= today);
 
     if (upcomingGigs.length === 0) {
-      list.innerHTML = "<li class='list-group-item'>No upcoming gigs at this time.</li>";
+      list.innerHTML =
+        "<li class='list-group-item'>No upcoming gigs at this time.</li>";
       return;
     }
 
@@ -15,17 +16,17 @@ export function loadGigs(jsonPath, listElementId) {
 
     for (const gig of upcomingGigs) {
       const gigDate = new Date(gig.date);
-      const formattedDate = gigDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
+      const formattedDate = gigDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
       });
 
       let dateLine = `<span class="gig-date">${formattedDate}</span>`;
       if (gig.time) {
         const formattedTime = formatTime(gig.time);
-        dateLine += ` <span class="text-muted">• ${formattedTime}</span>`;
+        dateLine += ` <span class="gig-date">@ ${formattedTime}</span>`;
       }
 
       let locationHTML = "";
@@ -37,18 +38,11 @@ export function loadGigs(jsonPath, listElementId) {
         }
       }
 
-      let titleHTML = "";
-      if (gig.eventUrl) {
-        titleHTML = `<a href="${gig.eventUrl}" target="_blank" class="gig-title fw-bold fs-5 text-decoration-none">${gig.title}</a>`;
-      } else {
-        titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
-      }
-
       const item = document.createElement("li");
       item.className = "list-group-item py-4 mb-3 border rounded";
       item.innerHTML = `
         <div class="mb-2">
-          ${titleHTML}
+          <div class="gig-title fw-bold fs-5">${gig.title}</div>
           <div class="text-muted">${dateLine}</div>
           ${locationHTML}
         </div>
@@ -65,21 +59,22 @@ export function loadGigs(jsonPath, listElementId) {
     if (isNaN(hours) || isNaN(minutes)) return rawTime;
     const date = new Date();
     date.setHours(hours, minutes);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit'
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
     });
   }
 
   fetch(jsonPath)
-    .then(response => {
+    .then((response) => {
       if (!response.ok) throw new Error("Network response was not ok");
       return response.json();
     })
-    .then(data => renderUpcomingGigs(data))
-    .catch(error => {
+    .then((data) => renderUpcomingGigs(data))
+    .catch((error) => {
       console.error("Failed to load gigs:", error);
       const list = document.getElementById(listElementId);
-      list.innerHTML = "<li class='list-group-item text-danger'>Unable to load gigs.</li>";
+      list.innerHTML =
+        "<li class='list-group-item text-danger'>Unable to load gigs.</li>";
     });
 }
