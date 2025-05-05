@@ -136,7 +136,7 @@
             formData.append('g-recaptcha-response', token);
             formData.append('action', 'gig_form');
 
-            fetch('submit.php', {
+            fetch('https://davidpassmore.net/forms/eb/submit.php', {
               method: 'POST',
               body: formData
             })
