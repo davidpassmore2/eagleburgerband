@@ -55,72 +55,22 @@
 
     <div class="container py-5">
       <div class="row">
-          <h2 class="mb-4 text-center">About Eagleburger Band</h2>
+          <h2 class="mb-4 text-center">There we have it...</h2>
           <section class="text-block-720">
     
-          <form 
-            action="https://formsubmit.co/52e937718d2e1dd38802f33b49820519" 
-            method="POST" 
-            class="needs-validation" 
-            novalidate>
-    
-            <!-- Hidden Formsubmit settings -->
-            <input type="hidden" name="_captcha" value="true">
-            <input type="hidden" name="_next" value="/contact/thank-you.html">
-            <input type="hidden" name="_template" value="box">
-    
-            <div class="mb-3">
-              <label for="name" class="form-label">Name</label>
-              <input type="text" class="form-control" name="name" id="name" required>
-              <div class="invalid-feedback">Please enter your name.</div>
-            </div>
-    
-            <div class="mb-3">
-              <label for="email" class="form-label">Email address</label>
-              <input type="email" class="form-control" name="email" id="email" required>
-              <div class="invalid-feedback">Please enter a valid email.</div>
-            </div>
-    
-            <div class="mb-3">
-              <label for="phone" class="form-label">Phone</label>
-              <input type="tel" class="form-control" name="phone" id="phone" required>
-              <div class="invalid-feedback">Please enter your phone number.</div>
-            </div>
-    
-            <div class="mb-3">
-              <label for="date" class="form-label">Event Date</label>
-              <input type="date" class="form-control" name="date" id="date" required>
-              <div class="invalid-feedback">Please choose a date.</div>
-            </div>
-    
-            <div class="mb-3">
-              <label for="message" class="form-label">Message</label>
-              <textarea class="form-control" name="message" id="message" rows="4" required></textarea>
-              <div class="invalid-feedback">Please enter a message.</div>
-            </div>
-    
-            <button type="submit" class="btn btn-primary">Send Inquiry</button>
-          </form>
+            <div class="card shadow-sm border-0 p-4">
+                <div class="card-body">
+                  <h1 class="display-5 mb-3 text-success">Thank You!</h1>
+                  <p class="lead mb-4">Your inquiry has been received. We'll get back to you as soon as possible.</p>
+                  <a href="index.html" class="btn btn-primary">Return to Form</a>
+                </div>
+              </div>
           </section>
     
         </div>
       </div>
     
-    <!-- Bootstrap JS + Validation Script -->
-    <script>
-      (() => {
-        const forms = document.querySelectorAll('.needs-validation');
-        Array.from(forms).forEach(form =>
-          form.addEventListener('submit', event => {
-            if (!form.checkValidity()) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-          }, false)
-        );
-      })();
-    </script>
+    
 
   </main>
 
