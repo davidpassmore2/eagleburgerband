@@ -32,7 +32,7 @@ export function loadGigs(jsonPath, listElementId) {
       let locationHTML = "";
       if (gig.location) {
         if (gig.locationUrl) {
-          locationHTML = `<div class="gig-location"><a href="${gig.locationURL}" target="_blank" class="text-muted fst-italic">${gig.location}</a></div>`;
+          locationHTML = `<div class="gig-location"><a href="${gig.locationUrl}" target="_blank" class="text-muted fst-italic">${gig.location}</a></div>`;
         } else {
           locationHTML = `<div class="gig-location text-muted fst-italic">${gig.location}</div>`;
         }
