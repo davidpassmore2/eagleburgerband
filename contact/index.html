@@ -130,7 +130,7 @@
           })
           .then(res => {
             if (!res.ok) throw new Error("Submission failed.");
-            return res.json();
+            return res.text();
           })
           .then(() => {
             responseBox.innerHTML = `<div class="alert alert-success">Thank you! Your inquiry has been sent.</div>`;
@@ -138,8 +138,8 @@
             form.classList.remove('was-validated');
           })
           .catch(err => {
-            responseBox.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             console.log("error:", err)
+            responseBox.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
           })
           .finally(() => {
             submitBtn.disabled = false;
