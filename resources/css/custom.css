@@ -1,123 +1,132 @@
 /* Hero Header with Banner Image */
 .hero-header {
-    background: url('../media/banner.jpg') no-repeat center center;
-    background-size: cover;
-    height: 300px;
-    position: relative;
-  }
-  
-  .hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Darken the image for better text contrast */
-  }
+  background: url('../media/banner.jpg') no-repeat center center;
+  background-size: cover;
+  height: 300px;
+  position: relative;
+}
 
-  .hero-content {
-    position: relative;
-    z-index: 2;
-    color: white;
-  }
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Darken the image for better text contrast */
+}
 
-  /* Footer styling */
-  .footer-link {
+.hero-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+}
+
+/* Footer styling */
+.footer-link {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   transition: color 0.3s ease;
-  }
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
-  footer ul li a.footer-link {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  
-  .footer-link:hover {
-    color: rgba(255, 255, 255, 1);
-    transform: translateX(5px);
-  }
-  
-  .social-icon {
-    color: rgba(255, 255, 255, 0.8);
-    margin-right: 15px;
-    font-size: 1.5rem;
-    transition: color 0.3s ease, transform 0.3s ease;
-  }
-  
-  .social-icon:hover {
-    color: rgba(255, 255, 255, 1);
-    transform: scale(1.2);
-  }
+.footer-link:hover {
+  color: rgba(255, 255, 255, 1);
+  transform: translateX(5px);
+}
 
-  /* Zoom effect on image hover */
-  .card-img-top {
-    transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out;
-    filter: grayscale(0);
-  }
+.social-icon {
+  color: rgba(255, 255, 255, 0.8);
+  margin-right: 15px;
+  font-size: 1.5rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
 
-  .card:hover .card-img-top {
-    transform: scale(1.1); /* Zoom in the image slightly */
-    filter: grayscale(50%); /* Remove greyscale on hover */
-  }
+.social-icon:hover {
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.2);
+}
 
-  .card-img-hold {
-    overflow: hidden;
-  }
+/* Zoom effect on image hover */
+.card-img-top {
+  transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out;
+  filter: grayscale(0);
+}
 
-  .card, .card-img-top {
-    border-radius: 0; /* Remove border-radius */
-  }
+.card:hover .card-img-top {
+  transform: scale(1.1);
+  /* Zoom in the image slightly */
+  filter: grayscale(50%);
+  /* Remove greyscale on hover */
+}
 
-  ul.list-group.gig-list {
-    max-width: 720px;
-    margin: auto;
-  }
+.card-img-hold {
+  overflow: hidden;
+}
 
-  ul.list-group .gig-title {
-    font-size: 1.50rem;
-    font-weight: 600;
-  }
+.card,
+.card-img-top {
+  border-radius: 0;
+  /* Remove border-radius */
+}
 
-  ul.list-group .gig-date {
-    font-size: 0.95rem;
-    color: #6c757d;
-  }
+ul.list-group.gig-list {
+  max-width: 720px;
+  margin: auto;
+}
 
-  section.text-block-720 {
-    max-width: 720px;
-    margin: 0 auto;
-  }
+ul.list-group .gig-title {
+  font-size: 1.50rem;
+  font-weight: 600;
+}
 
-  /* Fonts */
-  h5.card-title, body, .card-text {
-    font-family: 'Fira Sans', sans-serif; /* Apply Fira Sans for all text */
-  }
+ul.list-group .gig-date {
+  font-size: 0.95rem;
+  color: #6c757d;
+}
 
-  h5.card-title {
-    font-weight: 600; /* Bolder weight for headers */
-  }
+section.text-block-720 {
+  max-width: 720px;
+  margin: 0 auto;
+}
 
-  body, .card-text {
-    font-weight: 400; /* Regular weight for body text */
-  }
+/* Fonts */
+h5.card-title,
+body,
+.card-text {
+  font-family: 'Fira Sans', sans-serif;
+  /* Apply Fira Sans for all text */
+}
 
-  .nav-item a.nav-link {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
+h5.card-title {
+  font-weight: 600;
+  /* Bolder weight for headers */
+}
 
-  /* Utils */
+body,
+.card-text {
+  font-weight: 400;
+  /* Regular weight for body text */
+}
 
-  .no-underline {
-    text-decoration: none;
-  }
+.nav-item a.nav-link {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
-  .was-validated .form-control:invalid {
-    border-color: #dc3545;
-  }
-  .was-validated .form-control:valid {
-    border-color: #28a745;
-  }
+/* Utils */
+
+.no-underline {
+  text-decoration: none;
+}
+
+.was-validated .form-control:invalid {
+  border-color: #dc3545;
+}
+
+.was-validated .form-control:valid {
+  border-color: #28a745;
+}
