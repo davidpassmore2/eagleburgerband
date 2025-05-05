@@ -28,7 +28,7 @@
   transition: color 0.3s ease;
   }
 
-  .footer-link a {
+  footer ul li a.footer-link {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 1px;
