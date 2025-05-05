@@ -97,6 +97,12 @@
     font-weight: 400; /* Regular weight for body text */
   }
 
+  .nav-item a.nav-link {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
   /* Utils */
 
   .no-underline {
