@@ -139,6 +139,7 @@
           })
           .catch(err => {
             responseBox.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            console.log("error:", err)
           })
           .finally(() => {
             submitBtn.disabled = false;
