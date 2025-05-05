@@ -49,7 +49,7 @@ export function loadGigs(jsonPath, listElementId) {
       item.className = "list-group-item py-4 mb-3 border rounded";
       item.innerHTML = `
         <div class="mb-2">
-          <div class="gig-title fw-bold fs-5">${gig.title}</div>
+          <div class="gig-title fw-bold fs-5">${titleHTML}</div>
           <div class="text-muted">${dateLine}</div>
           ${locationHTML}
         </div>
