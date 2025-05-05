@@ -38,6 +38,13 @@ export function loadGigs(jsonPath, listElementId) {
         }
       }
 
+      let titleHTML = "";
+      if (gig.eventUrl) {
+        titleHTML = `<a href="${gig.eventUrl}" target="_blank" class="gig-title fw-bold fs-5 text-decoration-none">${gig.title}</a>`;
+      } else {
+        titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
+      }
+
       const item = document.createElement("li");
       item.className = "list-group-item py-4 mb-3 border rounded";
       item.innerHTML = `
