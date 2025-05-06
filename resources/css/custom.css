@@ -147,7 +147,7 @@ body,
 
 /* bubbles */
 
-.bubble {
+/* .bubble {
   position: absolute;
   bottom: -100px;
   border-radius: 50%;
@@ -160,4 +160,4 @@ body,
     transform: translateY(-110vh);
     opacity: 0;
   }
-}
+} */
