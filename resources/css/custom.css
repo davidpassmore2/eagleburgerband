@@ -84,7 +84,7 @@ nav.navbar, footer{
 
 .card,
 .card-img-top {
-  border-radius: 6px;
+  border-radius: 0;
   /* Remove border-radius */
 }
 
