@@ -46,7 +46,7 @@ export function loadGigs(jsonPath, listElementId) {
       }
 
       const item = document.createElement("li");
-      item.className = "list-group-item py-4 mb-3 border";
+      item.className = "list-group-item py-4 mb-3 border shadow-sm";
       item.innerHTML = `
         <div class="mb-2">
           <div class="gig-title fw-bold fs-5">${titleHTML}</div>
