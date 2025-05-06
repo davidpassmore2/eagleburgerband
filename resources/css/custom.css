@@ -1,4 +1,6 @@
-/* Hero Header with Banner Image */
+body {
+  background-color: #f7f5f1;
+}
 
 nav.navbar, footer{
   background-image: url('../media/bg1.png');
