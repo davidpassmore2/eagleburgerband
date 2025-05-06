@@ -1,4 +1,9 @@
 /* Hero Header with Banner Image */
+
+nav.navbar{
+  background-image: url('../media/bg1.png');
+}
+
 .hero-header {
   background: url('../media/banner.jpg') no-repeat center center;
   background-size: cover;
