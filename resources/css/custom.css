@@ -169,3 +169,34 @@ body,
 .was-validated .form-control:valid {
   border-color: #28a745;
 }
+
+/* button styles */
+
+.btn-custom {
+  background-color: #02cad0;
+  color: #fff;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-custom:hover {
+  background-color: #01b5ba;
+  color: #fff;
+}
+
+.btn-custom:focus, .btn-custom.focus {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(2, 202, 208, 0.5);
+}
+
+.btn-custom:active, .btn-custom.active {
+  background-color: #019fa4;
+  border-color: #018d91;
+  color: #fff;
+}
+
+.btn-custom.disabled, .btn-custom:disabled {
+  background-color: #02cad0;
+  opacity: 0.65;
+  pointer-events: none;
+}
