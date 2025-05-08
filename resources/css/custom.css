@@ -96,12 +96,12 @@ ul.list-group.gig-list {
 }
 
 ul.list-group .gig-title {
-  font-size: 1.50rem;
+  font-size: 1.70rem;
   font-weight: 700;
   font-family: 'Bree Serif', serif;
   letter-spacing: 1px;
-  text-shadow: black 1px 1px 1px;
-  color: #02cad0;
+  text-shadow: #6c757d 1px 1px 1px;
+  /* color: #02cad0; */
 }
 
 ul.list-group .gig-date {
