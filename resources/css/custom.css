@@ -117,8 +117,9 @@ body,
 }
 
 h5.card-title {
-  font-weight: 600;
-  /* Bolder weight for headers */
+  font-weight: 700;
+  color: #fa4d02;
+  text-shadow: black 1px 2px;
 }
 
 h1,
