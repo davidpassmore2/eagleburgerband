@@ -177,6 +177,7 @@ body,
   color: #fff;
   border: 1px solid transparent;
   transition: all 0.2s ease-in-out;
+  text-shadow: black 1px 1px 1px;
 }
 
 .btn-custom:hover {
