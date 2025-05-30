@@ -79,7 +79,7 @@
 
           document.addEventListener("DOMContentLoaded", () => {
             loadGigs('/resources/js/gigs.json', 'gigList');
-            const links = document.querySelectorAll('.gig-list a[href]');
+            const links = document.querySelectorAll('#gigList a[href]');
             const currentHost = window.location.hostname;
 
             links.forEach(link => {
