@@ -79,20 +79,6 @@
 
           document.addEventListener("DOMContentLoaded", () => {
             loadGigs('/resources/js/gigs.json', 'gigList');
-            const links = document.querySelectorAll('a[href]');
-            const currentHost = window.location.hostname;
-
-            links.forEach(link => {
-              const url = new URL(link.href, window.location.origin);
-              if (url.hostname !== currentHost) {
-                const icon = document.createElement('i');
-                icon.className = 'fas fa-external-link-alt ms-1'; // Font Awesome icon + margin-start
-                icon.setAttribute('aria-hidden', 'true');
-                link.appendChild(icon);
-                link.setAttribute('rel', 'noopener noreferrer'); // best practice
-                link.setAttribute('target', '_blank'); // optional: open external links in new tab
-              }
-            });
           });
         </script>
 
