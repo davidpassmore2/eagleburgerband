@@ -1,5 +1,39 @@
 [
-    {
+  {
+      "title": "Northside Music Festival 2025",
+      "date": "July 18, 2025",
+      "time": "8:00pm",
+      "description": "The Northside Music Festival consists of a curated lineup with a wide variety of musical genres. In addition to music, the festival has numerous art vendors, food, and free, family-friendly activities.",
+      "eventUrl": "https://www.northsidemusicfestival.com/",
+      "location": "Deutschtown, Central Northside, PGH",
+      "locationUrl": "https://maps.app.goo.gl/my6ip1tA7p5hZndG6"
+    },
+  {
+      "title": "BOOM on the Bridge 2025",
+      "date": "June 28, 2025",
+      "description": "Beaver County BOOM's fireworks display, launched at the convergence of the Ohio and Beaver Rivers, is one of the largest fireworks show in Western PA",
+      "eventUrl": "https://www.boomonthebridge.com/",
+      "location": "Bridgewater, Beaver County PA",
+      "locationUrl": "https://maps.app.goo.gl/Ayv4H5ykRNvULC8eA"
+    }, 
+  {
+      "title": "11th Allentown Night Market",
+      "date": "June 14, 2025",
+      "time": "8:30pm",
+      "description": "The Allentown Night Market is a most curious bi-annual artist and performance faire in Pittsburgh's Allentown neighborhood. The Night Market hosts over 100 unusual and offbeat artisans and crafters, live performances, food and beverage vendors all within 4 indoor/outdoor markets that sprawl the 800 block of Warrington Ave and Manton Way.​",
+      "eventUrl": "https://www.allentownnightmarket.com/",
+      "location": "Allentown - Pittsburgh's Hilltop",
+      "locationUrl": "https://www.allentownnightmarket.com/location"
+    }, 
+  {
+      "title": "Beers of the Burgh 2025",
+      "date": "June 7, 2025",
+      "description": "The 11th Annual Beers of the Burgh Festival at the historic Carrie Blast Furnaces!  Eagleburger Band is PGH beer-positive",
+      "eventUrl": "https://www.beersoftheburgh.com/",
+      "location": "Carrie Blast Furnaces",
+      "locationUrl": "https://maps.app.goo.gl/MEBXHXRujq2F3wLJ9"
+    },  
+  {
       "title": "Pittonkatonk 2025",
       "date": "May 10, 2025",
       "description": "Pittonkatonk is Pittsburgh's best outdoor music festival, and it's totally free. We hope to see you there, it's a guaranteed awesome time.",
