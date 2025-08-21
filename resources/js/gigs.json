@@ -1,5 +1,23 @@
 [
   {
+      "title": "Rocktoberfest 2025",
+      "date": "October 5, 2025",
+      "time": "tbd",
+      "description": "Local beers, food trucks, live music...including Eagleburger Band.",
+      "eventUrl": "https://www.beersoftheburgh.com/",
+      "location": "South Side Works",
+      "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
+    },
+  {
+      "title": "BaconBurgh",
+      "date": "September 27, 2025",
+      "time": "tbd",
+      "description": "Join us in the South Side Works for a deliciously indulgent day packed with bacon-inspired eats, live music including Eagleburger Band, beer, bourbon, cocktails and more!",
+      "eventUrl": "https://www.showclix.com/tickets/baconburgh2025",
+      "location": "South Side Works",
+      "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
+    },
+  {
       "title": "WQED Be My Neighbor Day in Etna",
       "date": "September 20, 2025",
       "time": "1pm-5pm",
