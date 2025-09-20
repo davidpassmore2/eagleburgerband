@@ -1,6 +1,7 @@
 export function loadGigs(jsonPath, listElementId) {
   function renderUpcomingGigs(gigArray) {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const list = document.getElementById(listElementId);
     list.innerHTML = "";
 
