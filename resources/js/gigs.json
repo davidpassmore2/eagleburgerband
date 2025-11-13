@@ -1,127 +1,145 @@
 [
   {
-      "title": "Bloomfield Halloween Parade 2025",
-      "date": "October 23, 2025",
-      "time": "7:30pm",
-      "description": "This parade is excellent every year.  Come catch some candy and some brassy vibes from us​",
-      "eventUrl": "http://www.bloomfieldlive.com/bcc.html",
-      "location": "Liberty Avenue, Bloomfield, Pittsburgh",
-      "locationUrl": "https://maps.app.goo.gl/QqZCAt6ruff6gxNE7"
-    }, 
+    "title": "Oakland Business Improvement District Holiday Lighting",
+    "date": "December 5, 2025",
+    "time": "5:00pm",
+    "description": "Oakland Business District Holiday Lighting",
+    "eventUrl": "",
+    "location": "Oakland, Pittsburgh, PA",
+    "locationUrl": ""
+  },
   {
-      "title": "12th Allentown Night Market",
-      "date": "October 11, 2025",
-      "time": "8:30pm",
-      "description": "The Allentown Night Market is a most curious bi-annual artist and performance faire in Pittsburgh's Allentown neighborhood. The Night Market hosts over 100 unusual and offbeat artisans and crafters, live performances, food and beverage vendors all within 4 indoor/outdoor markets that sprawl the 800 block of Warrington Ave and Manton Way.​",
-      "eventUrl": "https://www.allentownnightmarket.com/",
-      "location": "Allentown - Pittsburgh's Hilltop",
-      "locationUrl": "https://www.allentownnightmarket.com/location"
-    }, 
+    "title": "Etna Light The Night! Parade",
+    "date": "November 25, 2025",
+    "time": "6:30pm",
+    "description": "Etna's annual Light the Night festivities! The long-standing tradition, dating back to the early 1980s continues",
+    "eventUrl": "http://www.etnaborough.org/index.php/component/eventbooking/public-events/light-the-night",
+    "location": "Butler St, Etna, PA",
+    "locationUrl": "https://maps.app.goo.gl/kyjW1TbvLX6KqrzX7"
+  },
   {
-      "title": "Rocktoberfest 2025",
-      "date": "October 5, 2025",
-      "time": "tbd",
-      "description": "Local beers, food trucks, live music...including Eagleburger Band.",
-      "eventUrl": "https://www.beersoftheburgh.com/",
-      "location": "South Side Works",
-      "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
-    },
+    "title": "Bloomfield Halloween Parade 2025",
+    "date": "October 23, 2025",
+    "time": "7:30pm",
+    "description": "This parade is excellent every year.  Come catch some candy and some brassy vibes from us​",
+    "eventUrl": "http://www.bloomfieldlive.com/bcc.html",
+    "location": "Liberty Avenue, Bloomfield, Pittsburgh",
+    "locationUrl": "https://maps.app.goo.gl/QqZCAt6ruff6gxNE7"
+  },
   {
-      "title": "BaconBurgh",
-      "date": "September 27, 2025",
-      "time": "tbd",
-      "description": "Join us in the South Side Works for a deliciously indulgent day packed with bacon-inspired eats, live music including Eagleburger Band, beer, bourbon, cocktails and more!",
-      "eventUrl": "https://www.showclix.com/tickets/baconburgh2025",
-      "location": "South Side Works",
-      "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
-    },
+    "title": "12th Allentown Night Market",
+    "date": "October 11, 2025",
+    "time": "8:30pm",
+    "description": "The Allentown Night Market is a most curious bi-annual artist and performance faire in Pittsburgh's Allentown neighborhood. The Night Market hosts over 100 unusual and offbeat artisans and crafters, live performances, food and beverage vendors all within 4 indoor/outdoor markets that sprawl the 800 block of Warrington Ave and Manton Way.​",
+    "eventUrl": "https://www.allentownnightmarket.com/",
+    "location": "Allentown - Pittsburgh's Hilltop",
+    "locationUrl": "https://www.allentownnightmarket.com/location"
+  },
   {
-      "title": "WQED Be My Neighbor Day in Etna",
-      "date": "September 20, 2025",
-      "time": "1pm-5pm",
-      "description": "WQED and Fred Rogers Productions are bringing Be My Neighbor Day to Etna! There will be bouncy houses, a baseball field, tons of activities and also Eagleburger band!",
-      "eventUrl": "https://www.instagram.com/eco15223/p/DNELwg_O5vd/",
-      "location": "Etna PA",
-      "locationUrl": "https://maps.app.goo.gl/4jMV5VNYSnNQ2WML7"
-    },
+    "title": "Rocktoberfest 2025",
+    "date": "October 5, 2025",
+    "time": "tbd",
+    "description": "Local beers, food trucks, live music...including Eagleburger Band.",
+    "eventUrl": "https://www.beersoftheburgh.com/",
+    "location": "South Side Works",
+    "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
+  },
   {
-      "title": "2025 Pittsburgh Recovery Walk",
-      "date": "September 13, 2025",
-      "time": "11:30am",
-      "description": "Eagleburger Band is delighted to join fellow Pittsburghers in celebrating all roads to recovery.",
-      "eventUrl": "https://pghrecoverywalk.org/",
-      "location": "Downtown Pittsburgh",
-      "locationUrl": "https://pghrecoverywalk.org/location-walk-route"
-    },
+    "title": "BaconBurgh",
+    "date": "September 27, 2025",
+    "time": "tbd",
+    "description": "Join us in the South Side Works for a deliciously indulgent day packed with bacon-inspired eats, live music including Eagleburger Band, beer, bourbon, cocktails and more!",
+    "eventUrl": "https://www.showclix.com/tickets/baconburgh2025",
+    "location": "South Side Works",
+    "locationUrl": "https://maps.app.goo.gl/QaTYLRhvKB4bygdi7"
+  },
   {
-      "title": "Northside Music Festival 2025",
-      "date": "July 18, 2025",
-      "time": "8:00pm",
-      "description": "The Northside Music Festival consists of a curated lineup with a wide variety of musical genres. In addition to music, the festival has numerous art vendors, food, and free, family-friendly activities.",
-      "eventUrl": "https://www.northsidemusicfestival.com/",
-      "location": "Deutschtown, Central Northside, PGH",
-      "locationUrl": "https://maps.app.goo.gl/my6ip1tA7p5hZndG6"
-    },
+    "title": "WQED Be My Neighbor Day in Etna",
+    "date": "September 20, 2025",
+    "time": "1pm-5pm",
+    "description": "WQED and Fred Rogers Productions are bringing Be My Neighbor Day to Etna! There will be bouncy houses, a baseball field, tons of activities and also Eagleburger band!",
+    "eventUrl": "https://www.instagram.com/eco15223/p/DNELwg_O5vd/",
+    "location": "Etna PA",
+    "locationUrl": "https://maps.app.goo.gl/4jMV5VNYSnNQ2WML7"
+  },
   {
-      "title": "BOOM on the Bridge 2025",
-      "date": "June 28, 2025",
-      "description": "Beaver County BOOM's fireworks display, launched at the convergence of the Ohio and Beaver Rivers, is one of the largest fireworks shows in Western PA",
-      "eventUrl": "https://www.boomonthebridge.com/",
-      "location": "Bridgewater, Beaver County PA",
-      "locationUrl": "https://maps.app.goo.gl/Ayv4H5ykRNvULC8eA"
-    }, 
+    "title": "2025 Pittsburgh Recovery Walk",
+    "date": "September 13, 2025",
+    "time": "11:30am",
+    "description": "Eagleburger Band is delighted to join fellow Pittsburghers in celebrating all roads to recovery.",
+    "eventUrl": "https://pghrecoverywalk.org/",
+    "location": "Downtown Pittsburgh",
+    "locationUrl": "https://pghrecoverywalk.org/location-walk-route"
+  },
   {
-      "title": "11th Allentown Night Market",
-      "date": "June 14, 2025",
-      "time": "8:30pm",
-      "description": "The Allentown Night Market is a most curious bi-annual artist and performance faire in Pittsburgh's Allentown neighborhood. The Night Market hosts over 100 unusual and offbeat artisans and crafters, live performances, food and beverage vendors all within 4 indoor/outdoor markets that sprawl the 800 block of Warrington Ave and Manton Way.​",
-      "eventUrl": "https://www.allentownnightmarket.com/",
-      "location": "Allentown - Pittsburgh's Hilltop",
-      "locationUrl": "https://www.allentownnightmarket.com/location"
-    }, 
+    "title": "Northside Music Festival 2025",
+    "date": "July 18, 2025",
+    "time": "8:00pm",
+    "description": "The Northside Music Festival consists of a curated lineup with a wide variety of musical genres. In addition to music, the festival has numerous art vendors, food, and free, family-friendly activities.",
+    "eventUrl": "https://www.northsidemusicfestival.com/",
+    "location": "Deutschtown, Central Northside, PGH",
+    "locationUrl": "https://maps.app.goo.gl/my6ip1tA7p5hZndG6"
+  },
   {
-      "title": "Beers of the Burgh 2025",
-      "date": "June 7, 2025",
-      "description": "The 11th Annual Beers of the Burgh Festival at the historic Carrie Blast Furnaces!  Eagleburger Band is PGH beer-positive",
-      "eventUrl": "https://www.beersoftheburgh.com/",
-      "location": "Carrie Blast Furnaces",
-      "locationUrl": "https://maps.app.goo.gl/MEBXHXRujq2F3wLJ9"
-    },  
+    "title": "BOOM on the Bridge 2025",
+    "date": "June 28, 2025",
+    "description": "Beaver County BOOM's fireworks display, launched at the convergence of the Ohio and Beaver Rivers, is one of the largest fireworks shows in Western PA",
+    "eventUrl": "https://www.boomonthebridge.com/",
+    "location": "Bridgewater, Beaver County PA",
+    "locationUrl": "https://maps.app.goo.gl/Ayv4H5ykRNvULC8eA"
+  },
   {
-      "title": "Pittonkatonk 2025",
-      "date": "May 10, 2025",
-      "description": "Pittonkatonk is Pittsburgh's best outdoor music festival, and it's totally free. We hope to see you there, it's a guaranteed awesome time.",
-      "eventUrl": "https://pittonkatonk.org",
-      "location": "Vietnam Veterans Pavilion in Schenley Park",
-      "locationUrl": "https://maps.app.goo.gl/NYgtRMeNFXoo9qqP9"
-    },
-    {
-      "title": "Millvale Music Fest 2025",
-      "date": "May 17, 2025",
-      "time": "6pm",
-      "description": "We'll be among 300+ musical acts in Millvale - it's a tremendous free community event.",
-      "location": "Grant Avenue Pocket Park",
-      "locationUrl": "https://maps.app.goo.gl/NYgtRMeNFXoo9qqP9"
-    },
-    {
-      "title": "Lawrenceville Memorial Day Parade",
-      "date": "May 26, 2025",
-      "time": "10am",
-      "location": "Butler Street in Historic Lawrenceville",
-      "locationUrl": "https://maps.app.goo.gl/24DBgvL2RPJ8mcHs5", 
-      "description": "One of the oldest parades in the nation, featuring over 65 groups including marching bands, veterans' organizations, classic cars and local mascots, Eagleburger Band is living proof that this parade is fun for everyone."
-    },    
-    {
-      "title": "Pittsburgh Montessori Fun Fair",
-      "date": "May 30, 2025",
-      "time": "7pm",
-      "description": "Pittsburgh Montessori Fun Fair is a community-wide carnival featuring games, bounce houses, a 50/50 raffle, delicious food, selfie stations, a cardboard city, and a lot more.",
-      "location": "Pittsburgh Montessori School grounds",
-      "locationUrl": "https://maps.app.goo.gl/D53EsDHDaWy3cgJx7"
-    },
-    {
-      "title": "Past Gig",
-      "date": "2024-12-31",
-      "description": "This gig is in the past and should not appear."
-    }
-  ]
+    "title": "11th Allentown Night Market",
+    "date": "June 14, 2025",
+    "time": "8:30pm",
+    "description": "The Allentown Night Market is a most curious bi-annual artist and performance faire in Pittsburgh's Allentown neighborhood. The Night Market hosts over 100 unusual and offbeat artisans and crafters, live performances, food and beverage vendors all within 4 indoor/outdoor markets that sprawl the 800 block of Warrington Ave and Manton Way.​",
+    "eventUrl": "https://www.allentownnightmarket.com/",
+    "location": "Allentown - Pittsburgh's Hilltop",
+    "locationUrl": "https://www.allentownnightmarket.com/location"
+  },
+  {
+    "title": "Beers of the Burgh 2025",
+    "date": "June 7, 2025",
+    "description": "The 11th Annual Beers of the Burgh Festival at the historic Carrie Blast Furnaces!  Eagleburger Band is PGH beer-positive",
+    "eventUrl": "https://www.beersoftheburgh.com/",
+    "location": "Carrie Blast Furnaces",
+    "locationUrl": "https://maps.app.goo.gl/MEBXHXRujq2F3wLJ9"
+  },
+  {
+    "title": "Pittonkatonk 2025",
+    "date": "May 10, 2025",
+    "description": "Pittonkatonk is Pittsburgh's best outdoor music festival, and it's totally free. We hope to see you there, it's a guaranteed awesome time.",
+    "eventUrl": "https://pittonkatonk.org",
+    "location": "Vietnam Veterans Pavilion in Schenley Park",
+    "locationUrl": "https://maps.app.goo.gl/NYgtRMeNFXoo9qqP9"
+  },
+  {
+    "title": "Millvale Music Fest 2025",
+    "date": "May 17, 2025",
+    "time": "6pm",
+    "description": "We'll be among 300+ musical acts in Millvale - it's a tremendous free community event.",
+    "location": "Grant Avenue Pocket Park",
+    "locationUrl": "https://maps.app.goo.gl/NYgtRMeNFXoo9qqP9"
+  },
+  {
+    "title": "Lawrenceville Memorial Day Parade",
+    "date": "May 26, 2025",
+    "time": "10am",
+    "location": "Butler Street in Historic Lawrenceville",
+    "locationUrl": "https://maps.app.goo.gl/24DBgvL2RPJ8mcHs5",
+    "description": "One of the oldest parades in the nation, featuring over 65 groups including marching bands, veterans' organizations, classic cars and local mascots, Eagleburger Band is living proof that this parade is fun for everyone."
+  },
+  {
+    "title": "Pittsburgh Montessori Fun Fair",
+    "date": "May 30, 2025",
+    "time": "7pm",
+    "description": "Pittsburgh Montessori Fun Fair is a community-wide carnival featuring games, bounce houses, a 50/50 raffle, delicious food, selfie stations, a cardboard city, and a lot more.",
+    "location": "Pittsburgh Montessori School grounds",
+    "locationUrl": "https://maps.app.goo.gl/D53EsDHDaWy3cgJx7"
+  },
+  {
+    "title": "Past Gig",
+    "date": "2024-12-31",
+    "description": "This gig is in the past and should not appear."
+  }
+]
