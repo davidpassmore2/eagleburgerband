@@ -9,7 +9,7 @@ export function loadGigs(jsonPath, listElementId) {
 
     if (upcomingGigs.length === 0) {
       list.innerHTML =
-        "<li class='list-group-item'>No upcoming gigs at this time.</li>";
+        "<li class='list-group-item'>No upcoming gigs at this time. <a href='/gigs'>Book us!</a></li>";
       return;
     }
 
