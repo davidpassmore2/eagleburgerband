@@ -31,20 +31,28 @@ async function fetchGigs() {
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
-    // The Gig-o-matic URL
     const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
-    
-    // We removed &callback=? to prevent the "Unexpected Token" error
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&ts=${Date.now()}`;
 
     try {
         const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error('Proxy server error');
         
         const data = await response.json();
-        const icsData = data.contents; 
+        let icsData = data.contents; 
         
-        if (!icsData) throw new Error('No data found in the feed');
+        if (!icsData || typeof icsData !== 'string') {
+            throw new Error('Received invalid data format from proxy');
+        }
+
+        // Clean up the string (remove leading/trailing whitespace)
+        icsData = icsData.trim();
+
+        // Basic check: Does it actually look like an iCal file?
+        if (!icsData.startsWith('BEGIN:VCALENDAR')) {
+            console.error("Raw data received:", icsData);
+            throw new Error('The feed returned a webpage or error message instead of a calendar.');
+        }
 
         const jcalData = ICAL.parse(icsData);
         const comp = new ICAL.Component(jcalData);
@@ -53,48 +61,36 @@ async function fetchGigs() {
         status.innerText = `Upcoming Gigs:`;
         list.innerHTML = ""; 
 
-        // Map and sort events
         const events = vevents.map(ve => new ICAL.Event(ve))
                               .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
 
-        const now = new Date();
         let foundGig = false;
+        const now = new Date();
 
         events.forEach(event => {
             const gigDate = event.startDate.toJSDate();
-            
-            // Show only future gigs or gigs happening today
-            if (gigDate.setHours(23,59,59,999) >= now.getTime()) {
+            // Check if gig is today or in the future
+            if (gigDate >= now || gigDate.toDateString() === now.toDateString()) {
                 foundGig = true;
                 const card = document.createElement('div');
-                card.className = 'gig-card';
-                card.style.marginBottom = "20px";
+                card.style.borderBottom = "1px solid #eee";
+                card.style.padding = "10px 0";
                 card.innerHTML = `
-                    <div class="date" style="color: #d9534f; font-weight: bold;">
-                        ${event.startDate.toJSDate().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </div>
-                    <div class="title" style="font-size: 1.2em; margin: 5px 0;">
-                        <strong>${event.summary}</strong>
-                    </div>
-                    <div class="location" style="color: #666; font-style: italic;">
-                        📍 ${event.location || 'Location TBA'}
-                    </div>
+                    <div style="color: #d9534f; font-weight: bold;">${gigDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                    <div style="font-size: 1.1em; margin: 3px 0;"><strong>${event.summary}</strong></div>
+                    <div style="color: #666; font-size: 0.9em;">📍 ${event.location || 'Location TBA'}</div>
                 `;
                 list.appendChild(card);
             }
         });
 
-        if (!foundGig) {
-            status.innerText = "No upcoming gigs found. Check back soon!";
-        }
+        if (!foundGig) status.innerText = "No upcoming gigs found!";
 
     } catch (error) {
-        console.error("Fetch Error:", error);
-        status.innerHTML = `<span style="color:red;">Error loading gigs: ${error.message}</span>`;
+        console.error("Detailed Error:", error);
+        status.innerHTML = `<span style="color:red;"><b>Error:</b> ${error.message}<br><small>Check the browser console for details.</small></span>`;
     }
 }
-
-window.onload = fetchGigs;
 </script>
 
 </body>
