@@ -31,33 +31,34 @@ async function fetchGigs() {
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
-    // Look for the file in the same directory as this HTML file
+    // Path to the local file you downloaded and uploaded to your server
     const targetUrl = './gigs.ics';
 
     try {
         const response = await fetch(targetUrl);
         
         if (!response.ok) {
-            throw new Error(`Could not find the gigs.ics file (Status: ${response.status})`);
+            throw new Error(`File not found. Make sure 'gigs.ics' is uploaded to the same folder.`);
         }
         
+        // CRITICAL CHANGE: Use .text() instead of .json()
         const icsData = await response.text();
 
-        // Basic validation to ensure the file isn't empty or an HTML error page
+        // Check if the file is actually an iCal file
         if (!icsData.includes('BEGIN:VCALENDAR')) {
-            throw new Error('The local file does not appear to be a valid calendar.');
+            throw new Error('The file "gigs.ics" appears to be empty or invalid.');
         }
 
-        // Parse the local data using ical.js
+        // Parse the text data
         const jcalData = ICAL.parse(icsData.trim());
         const comp = new ICAL.Component(jcalData);
         const vevents = comp.getAllSubcomponents('vevent');
 
-        // Clear loading message
+        // Reset UI
         list.innerHTML = ""; 
         status.innerText = "Upcoming Gigs:";
 
-        // Map and sort events by date
+        // Sort events by date
         const events = vevents.map(ve => new ICAL.Event(ve))
                               .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
 
@@ -67,7 +68,7 @@ async function fetchGigs() {
         events.forEach(event => {
             const gigDate = event.startDate.toJSDate();
             
-            // Show gigs that are today or in the future
+            // Filter: Only show gigs from today onwards
             if (gigDate.setHours(23, 59, 59, 999) >= now.getTime()) {
                 foundGig = true;
                 const card = document.createElement('div');
@@ -75,13 +76,13 @@ async function fetchGigs() {
                 card.style.borderBottom = "1px solid #eee";
                 
                 card.innerHTML = `
-                    <div style="color: #d9534f; font-weight: bold; font-size: 0.9em; text-transform: uppercase;">
+                    <div style="color: #d9534f; font-weight: bold; font-size: 0.85rem; text-transform: uppercase;">
                         ${event.startDate.toJSDate().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </div>
-                    <div style="font-size: 1.25em; margin: 5px 0; color: #222;">
+                    <div style="font-size: 1.2rem; margin: 4px 0; color: #333;">
                         <strong>${event.summary}</strong>
                     </div>
-                    <div style="color: #666; font-size: 0.95em;">
+                    <div style="color: #666; font-size: 0.9rem;">
                         📍 ${event.location || 'Location TBA'}
                     </div>
                 `;
@@ -90,16 +91,15 @@ async function fetchGigs() {
         });
 
         if (!foundGig) {
-            status.innerText = "No upcoming gigs scheduled. Check back soon!";
+            status.innerText = "No upcoming gigs found!";
         }
 
     } catch (error) {
-        console.error("Local Fetch Error:", error);
+        console.error("Fetch Error:", error);
         status.innerHTML = `<span style="color:red;"><b>Error:</b> ${error.message}</span>`;
     }
 }
 
-// Initialize when the page is ready
 window.onload = fetchGigs;
 </script>
 
