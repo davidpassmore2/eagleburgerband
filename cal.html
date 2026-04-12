@@ -31,7 +31,7 @@ async function fetchGigs() {
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
-    const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
+    const targetUrl = './gigs.ics';
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&ts=${Date.now()}`;
 
     try {
