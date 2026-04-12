@@ -28,49 +28,47 @@
 
 <script>
     async function fetchGigs() {
-        const status = document.getElementById('status');
-        const list = document.getElementById('gig-list');
+    const status = document.getElementById('status');
+    const list = document.getElementById('gig-list');
+    
+    // 1. The original Gig-o-matic URL
+    const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
+    
+    // 2. Wrap it in the AllOrigins proxy URL
+    // This server fetches the data for you and sends it back with the correct headers
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Network response was not ok');
         
-        // The Gig-o-matic URL
-        const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
+        const data = await response.json();
+        const icsData = data.contents; // AllOrigins wraps the result in a 'contents' property
         
-        // We use a CORS proxy because browsers block direct requests to other domains
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+        const jcalData = ICAL.parse(icsData);
+        const comp = new ICAL.Component(jcalData);
+        const vevents = comp.getAllSubcomponents('vevent');
 
-        try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            const icsData = await response.text();
-            
-            // Parse the ICS data using ical.js
-            const jcalData = ICAL.parse(icsData);
-            const comp = new ICAL.Component(jcalData);
-            const vevents = comp.getAllSubcomponents('vevent');
+        status.innerText = `Upcoming Events:`;
+        list.innerHTML = ""; // Clear loader
 
-            status.innerText = `Found ${vevents.length} upcoming events:`;
+        vevents.forEach(vevent => {
+            const event = new ICAL.Event(vevent);
+            const card = document.createElement('div');
+            card.className = 'gig-card';
+            card.innerHTML = `
+                <div class="date">${event.startDate.toJSDate().toDateString()}</div>
+                <div class="title"><strong>${event.summary}</strong></div>
+                <div class="location">${event.location || 'TBA'}</div>
+            `;
+            list.appendChild(card);
+        });
 
-            vevents.forEach(vevent => {
-                const event = new ICAL.Event(vevent);
-                
-                // Create HTML elements for each gig
-                const card = document.createElement('div');
-                card.className = 'gig-card';
-                
-                card.innerHTML = `
-                    <div class="date">${event.startDate.toJSDate().toDateString()}</div>
-                    <div class="title">${event.summary}</div>
-                    <div class="location">📍 ${event.location || 'Location TBA'}</div>
-                `;
-                
-                list.appendChild(card);
-            });
-
-        } catch (error) {
-            console.error(error);
-            status.innerHTML = '<span style="color:red;">Error loading feed. This is usually due to CORS restrictions.</span>';
-        }
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        status.innerHTML = '<span style="color:red;">Failed to load. The proxy may be down.</span>';
     }
+}
 
     // Run the function when the page loads
     window.onload = fetchGigs;
