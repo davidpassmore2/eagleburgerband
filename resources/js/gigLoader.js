@@ -119,17 +119,28 @@ function renderGigs(gigs, listElementId) {
       dateLine += ` <span class="gig-date">@ ${gig.timeStr}</span>`;
     }
 
-    let locationHTML = "";
-    if (gig.location) {
+  let locationHTML = "";
+  if (gig.location) {
+    // Check if the location string matches common Google Maps URL formats
+    const isGoogleMapsUrl = /(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(gig.location);
+
+    if (isGoogleMapsUrl) {
+      // If it's a URL, create a hyperlink with the text "map link"
+      locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">map link</a></div>`;
+    } else {
+      // If it's not a URL, display the text normally
       locationHTML = `<div class="gig-location text-muted fst-italic">${gig.location}</div>`;
     }
+  }
 
     let titleHTML = "";
     if (gig.url) {
-      titleHTML = `<a href="${gig.url}" target="_blank" class="gig-title fw-bold fs-5 text-decoration-none">${gig.title}</a>`;
-    } else {
       titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
-    }
+      //titleHTML = `<a href="${gig.url}" target="_blank" class="gig-title fw-bold fs-5 text-decoration-none">${gig.title}</a>`;
+    } 
+    // else {
+    //   titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
+    // }
 
     const item = document.createElement("li");
     item.className = "list-group-item py-4 mb-3 border shadow-sm";
