@@ -91,6 +91,7 @@ async function fetchGigs() {
         status.innerHTML = `<span style="color:red;"><b>Error:</b> ${error.message}<br><small>Check the browser console for details.</small></span>`;
     }
 }
+window.onload = fetchGigs;
 </script>
 
 </body>
