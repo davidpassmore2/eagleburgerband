@@ -27,48 +27,51 @@
 </div>
 
 <script>
-    async function fetchGigs() {
+async function fetchGigs() {
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
-    // The Gig-o-matic URL (HTTP)
+    // The Gig-o-matic URL
     const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
     
-    // Using AllOrigins with a cache-buster to ensure fresh data
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&callback=?`;
+    // We removed &callback=? to prevent the "Unexpected Token" error
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
     try {
         const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const data = await response.json();
-        // AllOrigins returns the string inside data.contents
         const icsData = data.contents; 
         
-        if (!icsData) throw new Error('No data received from proxy');
+        if (!icsData) throw new Error('No data found in the feed');
 
         const jcalData = ICAL.parse(icsData);
         const comp = new ICAL.Component(jcalData);
         const vevents = comp.getAllSubcomponents('vevent');
 
-        status.innerText = `Upcoming Gigs for the Eagleburger Band:`;
+        status.innerText = `Upcoming Gigs:`;
         list.innerHTML = ""; 
 
-        // Sort events by date
+        // Map and sort events
         const events = vevents.map(ve => new ICAL.Event(ve))
                               .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
 
+        const now = new Date();
+        let foundGig = false;
+
         events.forEach(event => {
-            const now = new Date();
             const gigDate = event.startDate.toJSDate();
             
-            // Only show future gigs
-            if (gigDate >= now) {
+            // Show only future gigs or gigs happening today
+            if (gigDate.setHours(23,59,59,999) >= now.getTime()) {
+                foundGig = true;
                 const card = document.createElement('div');
                 card.className = 'gig-card';
+                card.style.marginBottom = "20px";
                 card.innerHTML = `
                     <div class="date" style="color: #d9534f; font-weight: bold;">
-                        ${gigDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        ${event.startDate.toJSDate().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </div>
                     <div class="title" style="font-size: 1.2em; margin: 5px 0;">
                         <strong>${event.summary}</strong>
@@ -76,19 +79,18 @@
                     <div class="location" style="color: #666; font-style: italic;">
                         📍 ${event.location || 'Location TBA'}
                     </div>
-                    <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
                 `;
                 list.appendChild(card);
             }
         });
 
-        if (list.children.length === 0) {
-            status.innerText = "No upcoming gigs scheduled right now!";
+        if (!foundGig) {
+            status.innerText = "No upcoming gigs found. Check back soon!";
         }
 
     } catch (error) {
         console.error("Fetch Error:", error);
-        status.innerHTML = `<span style="color:red;">Error: ${error.message}. <br>If this persists, the feed might be unavailable.</span>`;
+        status.innerHTML = `<span style="color:red;">Error loading gigs: ${error.message}</span>`;
     }
 }
 
