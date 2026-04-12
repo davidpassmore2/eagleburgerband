@@ -1,6 +1,7 @@
 const ICAL_URL =
   "https://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db";
 const SIX_MONTHS_MS = 183 * 24 * 60 * 60 * 1000;
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 // ── iCal parser ─────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ function cleanDescription(desc) {
 
 function buildGigs(events) {
   const now = new Date();
-  const cutoff = new Date(now.getTime() + SIX_MONTHS_MS);
+  const cutoff = new Date(now.getTime() + ONE_YEAR_MS);
   const eastern = { timeZone: "America/New_York" };
 
   const gigs = [];
