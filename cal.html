@@ -31,47 +31,68 @@
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
-    // 1. The original Gig-o-matic URL
+    // The Gig-o-matic URL (HTTP)
     const targetUrl = 'http://www.gig-o-matic.com/band/calfeed/e614ea71-a66c-4687-a3fa-499689cd29db';
     
-    // 2. Wrap it in the AllOrigins proxy URL
-    // This server fetches the data for you and sends it back with the correct headers
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+    // Using AllOrigins with a cache-buster to ensure fresh data
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&callback=?`;
 
     try {
         const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const data = await response.json();
-        const icsData = data.contents; // AllOrigins wraps the result in a 'contents' property
+        // AllOrigins returns the string inside data.contents
+        const icsData = data.contents; 
         
+        if (!icsData) throw new Error('No data received from proxy');
+
         const jcalData = ICAL.parse(icsData);
         const comp = new ICAL.Component(jcalData);
         const vevents = comp.getAllSubcomponents('vevent');
 
-        status.innerText = `Upcoming Events:`;
-        list.innerHTML = ""; // Clear loader
+        status.innerText = `Upcoming Gigs for the Eagleburger Band:`;
+        list.innerHTML = ""; 
 
-        vevents.forEach(vevent => {
-            const event = new ICAL.Event(vevent);
-            const card = document.createElement('div');
-            card.className = 'gig-card';
-            card.innerHTML = `
-                <div class="date">${event.startDate.toJSDate().toDateString()}</div>
-                <div class="title"><strong>${event.summary}</strong></div>
-                <div class="location">${event.location || 'TBA'}</div>
-            `;
-            list.appendChild(card);
+        // Sort events by date
+        const events = vevents.map(ve => new ICAL.Event(ve))
+                              .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
+
+        events.forEach(event => {
+            const now = new Date();
+            const gigDate = event.startDate.toJSDate();
+            
+            // Only show future gigs
+            if (gigDate >= now) {
+                const card = document.createElement('div');
+                card.className = 'gig-card';
+                card.innerHTML = `
+                    <div class="date" style="color: #d9534f; font-weight: bold;">
+                        ${gigDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div class="title" style="font-size: 1.2em; margin: 5px 0;">
+                        <strong>${event.summary}</strong>
+                    </div>
+                    <div class="location" style="color: #666; font-style: italic;">
+                        📍 ${event.location || 'Location TBA'}
+                    </div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                `;
+                list.appendChild(card);
+            }
         });
+
+        if (list.children.length === 0) {
+            status.innerText = "No upcoming gigs scheduled right now!";
+        }
 
     } catch (error) {
         console.error("Fetch Error:", error);
-        status.innerHTML = '<span style="color:red;">Failed to load. The proxy may be down.</span>';
+        status.innerHTML = `<span style="color:red;">Error: ${error.message}. <br>If this persists, the feed might be unavailable.</span>`;
     }
 }
 
-    // Run the function when the page loads
-    window.onload = fetchGigs;
+window.onload = fetchGigs;
 </script>
 
 </body>
