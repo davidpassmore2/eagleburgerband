@@ -31,66 +31,75 @@ async function fetchGigs() {
     const status = document.getElementById('status');
     const list = document.getElementById('gig-list');
     
+    // Look for the file in the same directory as this HTML file
     const targetUrl = './gigs.ics';
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&ts=${Date.now()}`;
 
     try {
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Proxy server error');
+        const response = await fetch(targetUrl);
         
-        const data = await response.json();
-        let icsData = data.contents; 
+        if (!response.ok) {
+            throw new Error(`Could not find the gigs.ics file (Status: ${response.status})`);
+        }
         
-        if (!icsData || typeof icsData !== 'string') {
-            throw new Error('Received invalid data format from proxy');
+        const icsData = await response.text();
+
+        // Basic validation to ensure the file isn't empty or an HTML error page
+        if (!icsData.includes('BEGIN:VCALENDAR')) {
+            throw new Error('The local file does not appear to be a valid calendar.');
         }
 
-        // Clean up the string (remove leading/trailing whitespace)
-        icsData = icsData.trim();
-
-        // Basic check: Does it actually look like an iCal file?
-        if (!icsData.startsWith('BEGIN:VCALENDAR')) {
-            console.error("Raw data received:", icsData);
-            throw new Error('The feed returned a webpage or error message instead of a calendar.');
-        }
-
-        const jcalData = ICAL.parse(icsData);
+        // Parse the local data using ical.js
+        const jcalData = ICAL.parse(icsData.trim());
         const comp = new ICAL.Component(jcalData);
         const vevents = comp.getAllSubcomponents('vevent');
 
-        status.innerText = `Upcoming Gigs:`;
+        // Clear loading message
         list.innerHTML = ""; 
+        status.innerText = "Upcoming Gigs:";
 
+        // Map and sort events by date
         const events = vevents.map(ve => new ICAL.Event(ve))
                               .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
 
-        let foundGig = false;
         const now = new Date();
+        let foundGig = false;
 
         events.forEach(event => {
             const gigDate = event.startDate.toJSDate();
-            // Check if gig is today or in the future
-            if (gigDate >= now || gigDate.toDateString() === now.toDateString()) {
+            
+            // Show gigs that are today or in the future
+            if (gigDate.setHours(23, 59, 59, 999) >= now.getTime()) {
                 foundGig = true;
                 const card = document.createElement('div');
+                card.style.padding = "15px 0";
                 card.style.borderBottom = "1px solid #eee";
-                card.style.padding = "10px 0";
+                
                 card.innerHTML = `
-                    <div style="color: #d9534f; font-weight: bold;">${gigDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
-                    <div style="font-size: 1.1em; margin: 3px 0;"><strong>${event.summary}</strong></div>
-                    <div style="color: #666; font-size: 0.9em;">📍 ${event.location || 'Location TBA'}</div>
+                    <div style="color: #d9534f; font-weight: bold; font-size: 0.9em; text-transform: uppercase;">
+                        ${event.startDate.toJSDate().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div style="font-size: 1.25em; margin: 5px 0; color: #222;">
+                        <strong>${event.summary}</strong>
+                    </div>
+                    <div style="color: #666; font-size: 0.95em;">
+                        📍 ${event.location || 'Location TBA'}
+                    </div>
                 `;
                 list.appendChild(card);
             }
         });
 
-        if (!foundGig) status.innerText = "No upcoming gigs found!";
+        if (!foundGig) {
+            status.innerText = "No upcoming gigs scheduled. Check back soon!";
+        }
 
     } catch (error) {
-        console.error("Detailed Error:", error);
-        status.innerHTML = `<span style="color:red;"><b>Error:</b> ${error.message}<br><small>Check the browser console for details.</small></span>`;
+        console.error("Local Fetch Error:", error);
+        status.innerHTML = `<span style="color:red;"><b>Error:</b> ${error.message}</span>`;
     }
 }
+
+// Initialize when the page is ready
 window.onload = fetchGigs;
 </script>
 
