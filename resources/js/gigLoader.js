@@ -127,7 +127,7 @@ function renderGigs(gigs, listElementId) {
 
     if (isGoogleMapsUrl) {
       // If it's a URL, create a hyperlink with the text "map link"
-      locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">map link</a></div>`;
+      locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">location_on</span></a></div>`;
     } else {
       // If it's not a URL, display the text normally
       locationHTML = `<div class="gig-location text-muted fst-italic">${gig.location}</div>`;
