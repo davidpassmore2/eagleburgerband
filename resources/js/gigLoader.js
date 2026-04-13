@@ -115,33 +115,39 @@ function renderGigs(gigs, listElementId) {
   }
 
   for (const gig of gigs) {
+    // 1. Extract text between ^...^ from the description
+    if (gig.description) {
+      const match = gig.description.match(/\^([^^]+)\^/);
+      if (match) {
+        gig.textLocation = match[1]; // The captured text inside the carets
+        // Optional: Remove the ^text^ from the description so it doesn't print twice
+        gig.description = gig.description.replace(match[0], "").trim();
+      }
+    }
+
     let dateLine = `<span class="gig-date">${gig.dateStr}</span>`;
     if (gig.timeStr) {
       dateLine += ` <span class="gig-date">@ ${gig.timeStr}</span>`;
     }
 
-  let locationHTML = "";
-  if (gig.location) {
-    // Check if the location string matches common Google Maps URL formats
-    const isGoogleMapsUrl = /(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(gig.location);
+    let locationHTML = "";
+    if (gig.location) {
+      const isGoogleMapsUrl = /(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(gig.location);
 
-    if (isGoogleMapsUrl) {
-      // If it's a URL, create a hyperlink with the text "map link"
-      locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">location_on</span></a></div>`;
-    } else {
-      // If it's not a URL, display the text normally
-      locationHTML = `<div class="gig-location text-muted fst-italic">${gig.location}</div>`;
+      if (isGoogleMapsUrl) {
+        // Use textLocation as the label if it exists, otherwise use the icon
+        const label = gig.textLocation || '<span class="material-symbols-outlined">location_on</span>';
+        locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">${label}</a></div>`;
+      } else {
+        // Use textLocation if available, otherwise fallback to the raw gig.location string
+        locationHTML = `<div class="gig-location text-muted fst-italic">${gig.textLocation || gig.location}</div>`;
+      }
     }
-  }
 
     let titleHTML = "";
     if (gig.url) {
       titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
-      //titleHTML = `<a href="${gig.url}" target="_blank" class="gig-title fw-bold fs-5 text-decoration-none">${gig.title}</a>`;
-    } 
-    // else {
-    //   titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
-    // }
+    }
 
     const item = document.createElement("li");
     item.className = "list-group-item py-4 mb-3 border shadow-sm";
