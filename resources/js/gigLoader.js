@@ -115,6 +115,10 @@ function renderGigs(gigs, listElementId) {
   }
 
   for (const gig of gigs) {
+    // Reset extracted fields for each iteration
+    gig.textLocation = null;
+    gig.extractedUrl = null;
+
     if (gig.description) {
       // 1. Extract text between ^...^ for the location label
       const locMatch = gig.description.match(/\^([^^]+)\^/);
@@ -148,12 +152,10 @@ function renderGigs(gigs, listElementId) {
       }
     }
 
-    // 3. Update titleHTML to use extracted URL or existing gig.url
-    const finalUrl = gig.extractedUrl || gig.url;
+    // 3. Only use extractedUrl for the title hyperlink
     let titleHTML = gig.title;
-    
-    if (finalUrl) {
-      titleHTML = `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-reset">${gig.title}</a>`;
+    if (gig.extractedUrl) {
+      titleHTML = `<a href="${gig.extractedUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-reset">${gig.title}</a>`;
     }
 
     const item = document.createElement("li");
