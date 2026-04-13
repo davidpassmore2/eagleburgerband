@@ -115,13 +115,19 @@ function renderGigs(gigs, listElementId) {
   }
 
   for (const gig of gigs) {
-    // 1. Extract text between ^...^ from the description
     if (gig.description) {
-      const match = gig.description.match(/\^([^^]+)\^/);
-      if (match) {
-        gig.textLocation = match[1]; // The captured text inside the carets
-        // Optional: Remove the ^text^ from the description so it doesn't print twice
-        gig.description = gig.description.replace(match[0], "").trim();
+      // 1. Extract text between ^...^ for the location label
+      const locMatch = gig.description.match(/\^([^^]+)\^/);
+      if (locMatch) {
+        gig.textLocation = locMatch[1];
+        gig.description = gig.description.replace(locMatch[0], "").trim();
+      }
+
+      // 2. Extract text between ~...~ for the title URL
+      const urlMatch = gig.description.match(/~([^~]+)~/);
+      if (urlMatch) {
+        gig.extractedUrl = urlMatch[1];
+        gig.description = gig.description.replace(urlMatch[0], "").trim();
       }
     }
 
@@ -135,18 +141,19 @@ function renderGigs(gigs, listElementId) {
       const isGoogleMapsUrl = /(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(gig.location);
 
       if (isGoogleMapsUrl) {
-        // Use textLocation as the label if it exists, otherwise use the icon
         const label = gig.textLocation || '<span class="material-symbols-outlined">location_on</span>';
         locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">${label}</a></div>`;
       } else {
-        // Use textLocation if available, otherwise fallback to the raw gig.location string
         locationHTML = `<div class="gig-location text-muted fst-italic">${gig.textLocation || gig.location}</div>`;
       }
     }
 
-    let titleHTML = "";
-    if (gig.url) {
-      titleHTML = `<div class="gig-title fw-bold fs-5">${gig.title}</div>`;
+    // 3. Update titleHTML to use extracted URL or existing gig.url
+    const finalUrl = gig.extractedUrl || gig.url;
+    let titleHTML = gig.title;
+    
+    if (finalUrl) {
+      titleHTML = `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-reset">${gig.title}</a>`;
     }
 
     const item = document.createElement("li");
