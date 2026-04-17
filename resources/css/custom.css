@@ -208,3 +208,37 @@ body,
   opacity: 0.65;
   pointer-events: none;
 }
+
+.band-container {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+  }
+  .text-block-left {
+    flex: 2;
+  }
+  .sidebar-right {
+    flex: 1;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    font-size: 0.9rem; /* Smaller text for sidebar */
+  }
+  .sidebar-right h3 {
+    font-size: 1.1rem;
+    margin-top: 0;
+  }
+  .sidebar-link-list {
+    list-style: none;
+    padding: 0;
+  }
+  .sidebar-link-list li {
+    margin-bottom: 10px;
+  }
+  
+  /* Responsive: Stacks columns on smaller screens */
+  @media (max-width: 768px) {
+    .band-container {
+      flex-direction: column;
+    }
+  }
