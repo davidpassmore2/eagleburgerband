@@ -8,25 +8,57 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 
+// Define Home Icon using inline SVG via Leaflet divIcon
+const homeIcon = L.divIcon({
+  className: "custom-home-icon",
+  html: `
+    <div style="
+      background-color: #0078d4;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      border: 2px solid #ffffff;
+    ">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -20],
+});
+
+let initialMarker = null;
+let initialCircle = null;
 let searchMarker = null;
+let userCoordinates = null;
 
-const form = document.getElementById("search-form");
-const input = document.getElementById("address-input");
-const clearBtn = document.getElementById("clear-btn");
+// Helper: Remove the initial GPS home marker and accuracy ring
+function removeInitialLocation() {
+  if (initialMarker) {
+    map.removeLayer(initialMarker);
+    initialMarker = null;
+  }
+  if (initialCircle) {
+    map.removeLayer(initialCircle);
+    initialCircle = null;
+  }
+}
 
-// --- Dynamic Width Adjuster ---
+// Dynamic Search Bar Resizer
 const measureCanvas = document.createElement("canvas");
 const measureCtx = measureCanvas.getContext("2d");
 
 function autoResizeSearch(text) {
-  // Use the input's rendered font size and style for measurement
   measureCtx.font = "15px sans-serif";
   const textWidth = measureCtx.measureText(text || "").width;
-
-  // 160px accounts for padding, clear button, and the submit button
   const computedWidth = Math.ceil(textWidth + 160);
 
-  // Clamp width: minimum 400px, maximum 85% of screen width
   const minWidth = 400;
   const maxWidth = Math.floor(window.innerWidth * 0.85);
   const targetWidth = Math.min(Math.max(computedWidth, minWidth), maxWidth);
@@ -34,8 +66,11 @@ function autoResizeSearch(text) {
   form.style.width = `${targetWidth}px`;
 }
 
-// Helper: Place/move marker, update popup, URL, input, and size
+// Helper: Place/move marker, update popup, URL, input, and cleanup initial marker
 function setLocationMarker(lat, lon, label, panTo = true) {
+  // Remove the initial home marker whenever a new point is mapped
+  removeInitialLocation();
+
   if (searchMarker) {
     map.removeLayer(searchMarker);
   }
@@ -52,7 +87,7 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     </div>
   `;
 
-  // Copy Address handler
+  // Copy Address
   const copyAddrBtn = popupContent.querySelector(".copy-addr-btn");
   copyAddrBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(label).then(() => {
@@ -61,7 +96,7 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     });
   });
 
-  // Copy Direct Link handler
+  // Copy Link
   const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
   copyLinkBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -79,7 +114,6 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     map.panTo([lat, lon]);
   }
 
-  // Update input text, expand/contract bar, toggle clear button, and update hash
   input.value = label;
   autoResizeSearch(label);
   clearBtn.style.display = "block";
@@ -105,6 +139,10 @@ map.on("click", async (e) => {
 });
 
 // 4. Input & Clear Controls
+const form = document.getElementById("search-form");
+const input = document.getElementById("address-input");
+const clearBtn = document.getElementById("clear-btn");
+
 input.addEventListener("input", () => {
   const val = input.value;
   clearBtn.style.display = val.trim().length > 0 ? "block" : "none";
@@ -122,10 +160,24 @@ clearBtn.addEventListener("click", () => {
   }
 
   window.history.replaceState(null, "", window.location.pathname);
+
+  // Re-display home marker if initial GPS coordinates exist
+  if (userCoordinates && !initialMarker) {
+    initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
+      .addTo(map)
+      .bindPopup(
+        `Your Location (within ${Math.round(userCoordinates.accuracy)} meters)`,
+      );
+    initialCircle = L.circle(
+      userCoordinates.latlng,
+      userCoordinates.accuracy,
+    ).addTo(map);
+    map.panTo(userCoordinates.latlng);
+  }
+
   input.focus();
 });
 
-// Window resize listener to keep max-width bounds accurate
 window.addEventListener("resize", () => {
   autoResizeSearch(input.value);
 });
@@ -174,12 +226,11 @@ if (!isNaN(hashLat) && !isNaN(hashLon)) {
   map.locate({ setView: true, maxZoom: 16 });
 
   map.on("locationfound", (e) => {
-    L.marker(e.latlng)
+    userCoordinates = e;
+    initialMarker = L.marker(e.latlng, { icon: homeIcon })
       .addTo(map)
-      .bindPopup(
-        `You are within ${Math.round(e.accuracy)} meters of this point`,
-      )
+      .bindPopup(`Your Location (within ${Math.round(e.accuracy)} meters)`)
       .openPopup();
-    L.circle(e.latlng, e.accuracy).addTo(map);
+    initialCircle = L.circle(e.latlng, e.accuracy).addTo(map);
   });
 }
