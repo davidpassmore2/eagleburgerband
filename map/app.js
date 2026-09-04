@@ -69,8 +69,9 @@ const measureCanvas = document.createElement("canvas");
 const measureCtx = measureCanvas.getContext("2d");
 
 function autoResizeSearch(text) {
-  measureCtx.font = "15px sans-serif";
-  const textWidth = measureCtx.measureText(text || "").width;
+  // Use Solway for accurate width measurement
+  measureCtx.font = '15px "Solway", serif';
+  const textWidth = measureCtx.measureText(text || '').width;
   const computedWidth = Math.ceil(textWidth + 160);
 
   const minWidth = 400;
