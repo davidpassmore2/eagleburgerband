@@ -1,35 +1,58 @@
 // 1. Initialize map
-const map = L.map("map").setView([0, 0], 2);
+const map = L.map('map').setView([0, 0], 2);
 
 // 2. Add tile layer
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-// 3. User Geolocation (Initial marker)
-map.locate({ setView: true, maxZoom: 16 });
-
-map.on("locationfound", (e) => {
-  L.marker(e.latlng)
-    .addTo(map)
-    .bindPopup(`You are within ${Math.round(e.accuracy)} meters of this point`)
-    .openPopup();
-  L.circle(e.latlng, e.accuracy).addTo(map);
-});
-
-map.on("locationerror", (e) => {
-  console.warn("Geolocation skipped or denied:", e.message);
-});
-
-// 4. Address Search via Nominatim Geocoding
 let searchMarker = null;
 
-const form = document.getElementById("search-form");
-const input = document.getElementById("address-input");
+// Helper: Place marker and build the share popup
+function setLocationMarker(lat, lon, label) {
+  if (searchMarker) {
+    map.removeLayer(searchMarker);
+  }
 
-form.addEventListener("submit", async (e) => {
+  // Generate the short permalink using URL hash: e.g., https://site.com/map/#lat,lon
+  const shareUrl = `${window.location.origin}${window.location.pathname}#${lat.toFixed(5)},${lon.toFixed(5)}`;
+
+  // Popup content with label and a copy button
+  const popupContent = document.createElement('div');
+  popupContent.className = 'share-popup';
+  popupContent.innerHTML = `
+    <strong>${label}</strong>
+    <div style="margin-top: 8px;">
+      <button type="button" class="copy-link-btn">📋 Copy Direct Link</button>
+    </div>
+  `;
+
+  // Attach copy handler directly to the button
+  const copyBtn = popupContent.querySelector('.copy-link-btn');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      copyBtn.innerText = '✅ Link Copied!';
+      setTimeout(() => (copyBtn.innerText = '📋 Copy Direct Link'), 2000);
+    });
+  });
+
+  searchMarker = L.marker([lat, lon])
+    .addTo(map)
+    .bindPopup(popupContent)
+    .openPopup();
+
+  map.flyTo([lat, lon], 16, { duration: 1.5 });
+  
+  // Update browser address bar without reloading
+  window.history.replaceState(null, '', `#${lat.toFixed(5)},${lon.toFixed(5)}`);
+}
+
+// 3. Address Search via Nominatim
+const form = document.getElementById('search-form');
+const input = document.getElementById('address-input');
+
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const query = input.value.trim();
   if (!query) return;
@@ -41,28 +64,35 @@ form.addEventListener("submit", async (e) => {
     const results = await response.json();
 
     if (!results || results.length === 0) {
-      alert("Address not found. Please try a more specific search.");
+      alert('Address not found. Please try a more specific search.');
       return;
     }
 
-    const firstResult = results[0];
-    const lat = parseFloat(firstResult.lat);
-    const lon = parseFloat(firstResult.lon);
+    const first = results[0];
+    setLocationMarker(parseFloat(first.lat), parseFloat(first.lon), first.display_name);
 
-    // Remove previous search marker if one already exists
-    if (searchMarker) {
-      map.removeLayer(searchMarker);
-    }
-
-    // Place new marker and fly map to coordinates
-    searchMarker = L.marker([lat, lon])
-      .addTo(map)
-      .bindPopup(`<strong>${firstResult.display_name}</strong>`)
-      .openPopup();
-
-    map.flyTo([lat, lon], 16, { duration: 1.5 });
   } catch (error) {
-    console.error("Geocoding error:", error);
-    alert("Unable to search address. Check your network connection.");
+    console.error('Geocoding error:', error);
+    alert('Unable to search address.');
   }
 });
+
+// 4. On Page Load: Check if a shared link was opened (e.g. #40.44062,-79.99589)
+const hash = window.location.hash.replace('#', '');
+const [hashLat, hashLon] = hash.split(',').map(Number);
+
+if (!isNaN(hashLat) && !isNaN(hashLon)) {
+  // If URL has coordinates, jump straight to them
+  setLocationMarker(hashLat, hashLon, 'Shared Location');
+} else {
+  // Otherwise, default to user's current GPS location
+  map.locate({ setView: true, maxZoom: 16 });
+
+  map.on('locationfound', (e) => {
+    L.marker(e.latlng)
+      .addTo(map)
+      .bindPopup(`You are within ${Math.round(e.accuracy)} meters of this point`)
+      .openPopup();
+    L.circle(e.latlng, e.accuracy).addTo(map);
+  });
+}

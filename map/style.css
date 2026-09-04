@@ -46,3 +46,25 @@ body {
 .search-container button:hover {
     background-color: #005a9e;
 }
+
+.share-popup {
+  font-family: sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.copy-link-btn {
+  display: inline-block;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.copy-link-btn:hover {
+  background-color: #218838;
+}
