@@ -1,5 +1,5 @@
 // 1. Initialize map
-const map = L.map("map").setView([0, 0], 2);
+const map = L.map("map");
 
 // 2. Add tile layer
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -38,6 +38,20 @@ let initialCircle = null;
 let searchMarker = null;
 let userCoordinates = null;
 
+// Helper: Reveal UI once location resolution finishes
+function revealMap() {
+  const loader = document.getElementById("initial-loader");
+  const mapElement = document.getElementById("map");
+  const formElement = document.getElementById("search-form");
+
+  if (loader) loader.classList.add("hidden");
+  mapElement.classList.add("ready");
+  formElement.classList.add("ready");
+
+  // Recalculate container dimensions in case Leaflet rendered while hidden
+  map.invalidateSize();
+}
+
 // Helper: Remove the initial GPS home marker and accuracy ring
 function removeInitialLocation() {
   if (initialMarker) {
@@ -68,7 +82,6 @@ function autoResizeSearch(text) {
 
 // Helper: Place/move marker, update popup, URL, input, and cleanup initial marker
 function setLocationMarker(lat, lon, label, panTo = true) {
-  // Remove the initial home marker whenever a new point is mapped
   removeInitialLocation();
 
   if (searchMarker) {
@@ -87,7 +100,6 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     </div>
   `;
 
-  // Copy Address
   const copyAddrBtn = popupContent.querySelector(".copy-addr-btn");
   copyAddrBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(label).then(() => {
@@ -96,7 +108,6 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     });
   });
 
-  // Copy Link
   const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
   copyLinkBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -161,7 +172,6 @@ clearBtn.addEventListener("click", () => {
 
   window.history.replaceState(null, "", window.location.pathname);
 
-  // Re-display home marker if initial GPS coordinates exist
   if (userCoordinates && !initialMarker) {
     initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
       .addTo(map)
@@ -216,13 +226,34 @@ const hash = window.location.hash.replace("#", "");
 const [hashLat, hashLon] = hash.split(",").map(Number);
 
 if (!isNaN(hashLat) && !isNaN(hashLon)) {
+  // Shared URL loaded: center the map, look up address, and reveal
   map.setView([hashLat, hashLon], 16);
-  setLocationMarker(
-    hashLat,
-    hashLon,
-    `${hashLat.toFixed(5)}, ${hashLon.toFixed(5)}`,
-  );
+
+  fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${hashLat}&lon=${hashLon}`,
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      const derivedAddress =
+        data && data.display_name
+          ? data.display_name
+          : `${hashLat.toFixed(5)}, ${hashLon.toFixed(5)}`;
+      setLocationMarker(hashLat, hashLon, derivedAddress, false);
+    })
+    .catch((err) => {
+      console.warn("Reverse geocoding initial hash failed:", err);
+      setLocationMarker(
+        hashLat,
+        hashLon,
+        `${hashLat.toFixed(5)}, ${hashLon.toFixed(5)}`,
+        false,
+      );
+    })
+    .finally(() => {
+      revealMap();
+    });
 } else {
+  // GPS mode: locate user before revealing map
   map.locate({ setView: true, maxZoom: 16 });
 
   map.on("locationfound", (e) => {
@@ -232,5 +263,13 @@ if (!isNaN(hashLat) && !isNaN(hashLon)) {
       .bindPopup(`Your Location (within ${Math.round(e.accuracy)} meters)`)
       .openPopup();
     initialCircle = L.circle(e.latlng, e.accuracy).addTo(map);
+    revealMap();
+  });
+
+  map.on("locationerror", (e) => {
+    console.warn("Geolocation error:", e.message);
+    // Fallback: Default to world view if GPS is denied or unavailable
+    map.setView([20, 0], 2);
+    revealMap();
   });
 }
