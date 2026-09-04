@@ -1,5 +1,7 @@
-// 1. Initialize map
-const map = L.map("map");
+const DEFAULT_ZOOM = 16;
+
+// 1. Initialize map (disabled native zoomControl to use custom widget)
+const map = L.map("map", { zoomControl: false });
 
 // 2. Add tile layer
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -37,6 +39,7 @@ let initialMarker = null;
 let initialCircle = null;
 let searchMarker = null;
 let userCoordinates = null;
+let currentCoords = null; // Stores currently pinned lat/lon
 
 // Helper: Reveal UI once location resolution finishes
 function revealMap() {
@@ -47,12 +50,9 @@ function revealMap() {
   if (loader) loader.classList.add("hidden");
   mapElement.classList.add("ready");
   formElement.classList.add("ready");
-
-  // Recalculate container dimensions in case Leaflet rendered while hidden
   map.invalidateSize();
 }
 
-// Helper: Remove the initial GPS home marker and accuracy ring
 function removeInitialLocation() {
   if (initialMarker) {
     map.removeLayer(initialMarker);
@@ -80,7 +80,16 @@ function autoResizeSearch(text) {
   form.style.width = `${targetWidth}px`;
 }
 
-// Helper: Place/move marker, update popup, URL, input, and cleanup initial marker
+// Generate permalink using query parameters
+function buildShareUrl(lat, lon, zoom) {
+  const url = new URL(window.location.origin + window.location.pathname);
+  url.searchParams.set("lat", lat.toFixed(5));
+  url.searchParams.set("lon", lon.toFixed(5));
+  url.searchParams.set("zoom", zoom);
+  return url.toString();
+}
+
+// Helper: Place/move marker, update popup, URL query params, and input
 function setLocationMarker(lat, lon, label, panTo = true) {
   removeInitialLocation();
 
@@ -88,7 +97,9 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     map.removeLayer(searchMarker);
   }
 
-  const shareUrl = `${window.location.origin}${window.location.pathname}#${lat.toFixed(5)},${lon.toFixed(5)}`;
+  currentCoords = { lat, lon };
+  const currentZoom = map.getZoom() || DEFAULT_ZOOM;
+  const shareUrl = buildShareUrl(lat, lon, currentZoom);
 
   const popupContent = document.createElement("div");
   popupContent.className = "share-popup";
@@ -100,6 +111,7 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     </div>
   `;
 
+  // Copy Address
   const copyAddrBtn = popupContent.querySelector(".copy-addr-btn");
   copyAddrBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(label).then(() => {
@@ -108,9 +120,12 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     });
   });
 
+  // Copy Direct Link
   const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
   copyLinkBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(shareUrl).then(() => {
+    // Generate fresh link with live zoom at moment of copy
+    const liveUrl = buildShareUrl(lat, lon, map.getZoom());
+    navigator.clipboard.writeText(liveUrl).then(() => {
       copyLinkBtn.innerText = "✅ Link Copied!";
       setTimeout(() => (copyLinkBtn.innerText = "🔗 Copy Direct Link"), 2000);
     });
@@ -128,10 +143,41 @@ function setLocationMarker(lat, lon, label, panTo = true) {
   input.value = label;
   autoResizeSearch(label);
   clearBtn.style.display = "block";
-  window.history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`);
+
+  // Sync address bar URL with query params
+  window.history.replaceState(null, "", shareUrl);
 }
 
-// 3. Click-on-Map Listener (Reverse Geocoding)
+// Keep the URL zoom query parameter up to date when user zooms
+map.on("zoomend", () => {
+  if (currentCoords) {
+    const liveUrl = buildShareUrl(
+      currentCoords.lat,
+      currentCoords.lon,
+      map.getZoom(),
+    );
+    window.history.replaceState(null, "", liveUrl);
+  }
+});
+
+// 3. Zoom Controls Utility Handlers
+document
+  .getElementById("zoom-in-btn")
+  .addEventListener("click", () => map.zoomIn());
+document
+  .getElementById("zoom-out-btn")
+  .addEventListener("click", () => map.zoomOut());
+document.getElementById("zoom-reset-btn").addEventListener("click", () => {
+  if (currentCoords) {
+    map.setView([currentCoords.lat, currentCoords.lon], DEFAULT_ZOOM);
+  } else if (userCoordinates) {
+    map.setView(userCoordinates.latlng, DEFAULT_ZOOM);
+  } else {
+    map.setZoom(DEFAULT_ZOOM);
+  }
+});
+
+// 4. Click-on-Map Listener (Reverse Geocoding)
 map.on("click", async (e) => {
   const { lat, lng } = e.latlng;
   const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -149,7 +195,7 @@ map.on("click", async (e) => {
   }
 });
 
-// 4. Input & Clear Controls
+// 5. Input & Clear Controls
 const form = document.getElementById("search-form");
 const input = document.getElementById("address-input");
 const clearBtn = document.getElementById("clear-btn");
@@ -169,7 +215,9 @@ clearBtn.addEventListener("click", () => {
     map.removeLayer(searchMarker);
     searchMarker = null;
   }
+  currentCoords = null;
 
+  // Clear query parameters from URL
   window.history.replaceState(null, "", window.location.pathname);
 
   if (userCoordinates && !initialMarker) {
@@ -192,7 +240,7 @@ window.addEventListener("resize", () => {
   autoResizeSearch(input.value);
 });
 
-// 5. Search Form Submission
+// 6. Search Form Submission
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const query = input.value.trim();
@@ -213,7 +261,7 @@ form.addEventListener("submit", async (e) => {
     const lat = parseFloat(first.lat);
     const lon = parseFloat(first.lon);
 
-    map.flyTo([lat, lon], 16, { duration: 1.5 });
+    map.flyTo([lat, lon], DEFAULT_ZOOM, { duration: 1.5 });
     setLocationMarker(lat, lon, first.display_name, false);
   } catch (error) {
     console.error("Geocoding error:", error);
@@ -221,31 +269,33 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-// 6. Initial Load Handling
-const hash = window.location.hash.replace("#", "");
-const [hashLat, hashLon] = hash.split(",").map(Number);
+// 7. Initial Load Handling: Read Query Parameters
+const urlParams = new URLSearchParams(window.location.search);
+const qLat = parseFloat(urlParams.get("lat"));
+const qLon = parseFloat(urlParams.get("lon"));
+const qZoom = parseInt(urlParams.get("zoom"), 10) || DEFAULT_ZOOM;
 
-if (!isNaN(hashLat) && !isNaN(hashLon)) {
-  // Shared URL loaded: center the map, look up address, and reveal
-  map.setView([hashLat, hashLon], 16);
+if (!isNaN(qLat) && !isNaN(qLon)) {
+  // Shared Query Parameter URL loaded
+  map.setView([qLat, qLon], qZoom);
 
   fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${hashLat}&lon=${hashLon}`,
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${qLat}&lon=${qLon}`,
   )
     .then((res) => res.json())
     .then((data) => {
       const derivedAddress =
         data && data.display_name
           ? data.display_name
-          : `${hashLat.toFixed(5)}, ${hashLon.toFixed(5)}`;
-      setLocationMarker(hashLat, hashLon, derivedAddress, false);
+          : `${qLat.toFixed(5)}, ${qLon.toFixed(5)}`;
+      setLocationMarker(qLat, qLon, derivedAddress, false);
     })
     .catch((err) => {
-      console.warn("Reverse geocoding initial hash failed:", err);
+      console.warn("Reverse geocoding initial URL failed:", err);
       setLocationMarker(
-        hashLat,
-        hashLon,
-        `${hashLat.toFixed(5)}, ${hashLon.toFixed(5)}`,
+        qLat,
+        qLon,
+        `${qLat.toFixed(5)}, ${qLon.toFixed(5)}`,
         false,
       );
     })
@@ -253,8 +303,8 @@ if (!isNaN(hashLat) && !isNaN(hashLon)) {
       revealMap();
     });
 } else {
-  // GPS mode: locate user before revealing map
-  map.locate({ setView: true, maxZoom: 16 });
+  // GPS Mode: locate user and assign default zoom
+  map.locate({ setView: true, maxZoom: DEFAULT_ZOOM });
 
   map.on("locationfound", (e) => {
     userCoordinates = e;
@@ -268,7 +318,6 @@ if (!isNaN(hashLat) && !isNaN(hashLon)) {
 
   map.on("locationerror", (e) => {
     console.warn("Geolocation error:", e.message);
-    // Fallback: Default to world view if GPS is denied or unavailable
     map.setView([20, 0], 2);
     revealMap();
   });
