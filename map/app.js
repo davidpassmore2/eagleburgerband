@@ -14,7 +14,27 @@ const form = document.getElementById("search-form");
 const input = document.getElementById("address-input");
 const clearBtn = document.getElementById("clear-btn");
 
-// Helper: Place/move marker, update popup, URL, and input
+// --- Dynamic Width Adjuster ---
+const measureCanvas = document.createElement("canvas");
+const measureCtx = measureCanvas.getContext("2d");
+
+function autoResizeSearch(text) {
+  // Use the input's rendered font size and style for measurement
+  measureCtx.font = "15px sans-serif";
+  const textWidth = measureCtx.measureText(text || "").width;
+
+  // 160px accounts for padding, clear button, and the submit button
+  const computedWidth = Math.ceil(textWidth + 160);
+
+  // Clamp width: minimum 400px, maximum 85% of screen width
+  const minWidth = 400;
+  const maxWidth = Math.floor(window.innerWidth * 0.85);
+  const targetWidth = Math.min(Math.max(computedWidth, minWidth), maxWidth);
+
+  form.style.width = `${targetWidth}px`;
+}
+
+// Helper: Place/move marker, update popup, URL, input, and size
 function setLocationMarker(lat, lon, label, panTo = true) {
   if (searchMarker) {
     map.removeLayer(searchMarker);
@@ -25,17 +45,28 @@ function setLocationMarker(lat, lon, label, panTo = true) {
   const popupContent = document.createElement("div");
   popupContent.className = "share-popup";
   popupContent.innerHTML = `
-    <strong>${label}</strong>
-    <div style="margin-top: 8px;">
-      <button type="button" class="copy-link-btn">📋 Copy Direct Link</button>
+    <div class="popup-address"><strong>${label}</strong></div>
+    <div class="popup-actions">
+      <button type="button" class="btn-action copy-addr-btn">📄 Copy Address</button>
+      <button type="button" class="btn-action copy-link-btn">🔗 Copy Direct Link</button>
     </div>
   `;
 
-  const copyBtn = popupContent.querySelector(".copy-link-btn");
-  copyBtn.addEventListener("click", () => {
+  // Copy Address handler
+  const copyAddrBtn = popupContent.querySelector(".copy-addr-btn");
+  copyAddrBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(label).then(() => {
+      copyAddrBtn.innerText = "✅ Address Copied!";
+      setTimeout(() => (copyAddrBtn.innerText = "📄 Copy Address"), 2000);
+    });
+  });
+
+  // Copy Direct Link handler
+  const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
+  copyLinkBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
-      copyBtn.innerText = "✅ Link Copied!";
-      setTimeout(() => (copyBtn.innerText = "📋 Copy Direct Link"), 2000);
+      copyLinkBtn.innerText = "✅ Link Copied!";
+      setTimeout(() => (copyLinkBtn.innerText = "🔗 Copy Direct Link"), 2000);
     });
   });
 
@@ -48,8 +79,9 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     map.panTo([lat, lon]);
   }
 
-  // Sync input text, clear button, and URL hash
+  // Update input text, expand/contract bar, toggle clear button, and update hash
   input.value = label;
+  autoResizeSearch(label);
   clearBtn.style.display = "block";
   window.history.replaceState(null, "", `#${lat.toFixed(5)},${lon.toFixed(5)}`);
 }
@@ -57,12 +89,10 @@ function setLocationMarker(lat, lon, label, panTo = true) {
 // 3. Click-on-Map Listener (Reverse Geocoding)
 map.on("click", async (e) => {
   const { lat, lng } = e.latlng;
-
-  // Immediate temporary marker while reverse geocoding completes
   const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
   setLocationMarker(lat, lng, fallbackLabel, false);
 
-  // Reverse geocode via Nominatim to get readable street address
   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
   try {
     const res = await fetch(url);
@@ -76,12 +106,15 @@ map.on("click", async (e) => {
 
 // 4. Input & Clear Controls
 input.addEventListener("input", () => {
-  clearBtn.style.display = input.value.trim().length > 0 ? "block" : "none";
+  const val = input.value;
+  clearBtn.style.display = val.trim().length > 0 ? "block" : "none";
+  autoResizeSearch(val);
 });
 
 clearBtn.addEventListener("click", () => {
   input.value = "";
   clearBtn.style.display = "none";
+  autoResizeSearch("");
 
   if (searchMarker) {
     map.removeLayer(searchMarker);
@@ -92,7 +125,12 @@ clearBtn.addEventListener("click", () => {
   input.focus();
 });
 
-// 5. Search Form Submission (Forward Geocoding)
+// Window resize listener to keep max-width bounds accurate
+window.addEventListener("resize", () => {
+  autoResizeSearch(input.value);
+});
+
+// 5. Search Form Submission
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const query = input.value.trim();
