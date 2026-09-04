@@ -9,16 +9,14 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let searchMarker = null;
 
-// Helper: Place marker and build the share popup
+// Helper: Place marker and build share popup
 function setLocationMarker(lat, lon, label) {
   if (searchMarker) {
     map.removeLayer(searchMarker);
   }
 
-  // Generate the short permalink using URL hash: e.g., https://site.com/map/#lat,lon
   const shareUrl = `${window.location.origin}${window.location.pathname}#${lat.toFixed(5)},${lon.toFixed(5)}`;
 
-  // Popup content with label and a copy button
   const popupContent = document.createElement('div');
   popupContent.className = 'share-popup';
   popupContent.innerHTML = `
@@ -28,7 +26,6 @@ function setLocationMarker(lat, lon, label) {
     </div>
   `;
 
-  // Attach copy handler directly to the button
   const copyBtn = popupContent.querySelector('.copy-link-btn');
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -43,15 +40,39 @@ function setLocationMarker(lat, lon, label) {
     .openPopup();
 
   map.flyTo([lat, lon], 16, { duration: 1.5 });
-  
-  // Update browser address bar without reloading
   window.history.replaceState(null, '', `#${lat.toFixed(5)},${lon.toFixed(5)}`);
+  
+  // Show clear button when a location is mapped
+  clearBtn.style.display = 'block';
 }
 
-// 3. Address Search via Nominatim
+// 3. Search & Clear Controls
 const form = document.getElementById('search-form');
 const input = document.getElementById('address-input');
+const clearBtn = document.getElementById('clear-btn');
 
+// Toggle clear button visibility as the user types
+input.addEventListener('input', () => {
+  clearBtn.style.display = input.value.trim().length > 0 ? 'block' : 'none';
+});
+
+// Clear button logic
+clearBtn.addEventListener('click', () => {
+  input.value = '';
+  clearBtn.style.display = 'none';
+
+  // Remove marker if present
+  if (searchMarker) {
+    map.removeLayer(searchMarker);
+    searchMarker = null;
+  }
+
+  // Remove coordinates from the URL
+  window.history.replaceState(null, '', window.location.pathname);
+  input.focus();
+});
+
+// Search submission
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const query = input.value.trim();
@@ -77,15 +98,13 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// 4. On Page Load: Check if a shared link was opened (e.g. #40.44062,-79.99589)
+// 4. Initial load handling
 const hash = window.location.hash.replace('#', '');
 const [hashLat, hashLon] = hash.split(',').map(Number);
 
 if (!isNaN(hashLat) && !isNaN(hashLon)) {
-  // If URL has coordinates, jump straight to them
   setLocationMarker(hashLat, hashLon, 'Shared Location');
 } else {
-  // Otherwise, default to user's current GPS location
   map.locate({ setView: true, maxZoom: 16 });
 
   map.on('locationfound', (e) => {
