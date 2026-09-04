@@ -2,10 +2,9 @@
 const map = L.map('map').setView([0, 0], 2);
 
 // 2. Load OpenStreetMap raster tiles
-L.tileLayer('https://tiles.openfreemap.org/styles/positron/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+L.maplibreGL({
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+  }).addTo(map)
 
 // 3. Request user location
 map.locate({ setView: true, maxZoom: 16 });
