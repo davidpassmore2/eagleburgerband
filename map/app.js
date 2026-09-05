@@ -1,9 +1,9 @@
 const DEFAULT_ZOOM = 16;
 
-// 1. Initialize map (custom zoom controls enabled)
+// 1. Initialize map (disable Leaflet's default zoom control to use our custom widget)
 const map = L.map("map", { zoomControl: false });
 
-// Add tile layer
+// 2. Add OpenStreetMap tile layer
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution:
@@ -41,7 +41,7 @@ let searchMarker = null;
 let userCoordinates = null;
 let currentCoords = null; // Stores currently pinned {lat, lon}
 
-// Helper: Build hash path: {base}/#/{lat}/{lon}/{zoom}
+// Helper: Build hash path URL: {origin}{pathname}#/{lat}/{lon}/{zoom}
 function buildHashUrl(lat, lon, zoom) {
   const cleanLat = lat.toFixed(5);
   const cleanLon = lon.toFixed(5);
@@ -62,6 +62,7 @@ function revealMap() {
   map.invalidateSize();
 }
 
+// Helper: Remove the initial GPS home marker and accuracy ring
 function removeInitialLocation() {
   if (initialMarker) {
     map.removeLayer(initialMarker);
@@ -89,8 +90,102 @@ function autoResizeSearch(text) {
   form.style.width = `${targetWidth}px`;
 }
 
-// Helper: Place/move marker, update popup, hash URL, and input
-function setLocationMarker(lat, lon, label, panTo = true) {
+// Helper: Formats the Nominatim response object into the required layout
+function formatNominatimAddress(data, fallbackLabel) {
+  if (!data || !data.address) {
+    return {
+      html: `<div>${fallbackLabel}</div>`,
+      plainText: fallbackLabel,
+      singleLine: fallbackLabel,
+    };
+  }
+
+  const addr = data.address;
+
+  // 1. {title, if found}
+  let title = data.name || "";
+  if (
+    title === addr.road ||
+    title === addr.house_number ||
+    title === addr.postcode
+  ) {
+    title = "";
+  }
+
+  // 2. {street number} {street name}
+  const streetParts = [];
+  if (addr.house_number) streetParts.push(addr.house_number);
+  const road = addr.road || addr.pedestrian || addr.footway || addr.path || "";
+  if (road) streetParts.push(road);
+  const streetLine = streetParts.join(" ");
+
+  // 3. {neighborhood, if found}, {city}
+  const neighborhood = addr.neighbourhood || addr.suburb || addr.quarter || "";
+  const city =
+    addr.city ||
+    addr.town ||
+    addr.village ||
+    addr.municipality ||
+    addr.hamlet ||
+    "";
+  let neighborhoodCityLine = "";
+  if (neighborhood && city) {
+    neighborhoodCityLine = `${neighborhood}, ${city}`;
+  } else if (city) {
+    neighborhoodCityLine = city;
+  } else if (neighborhood) {
+    neighborhoodCityLine = neighborhood;
+  }
+
+  // 4. {county} {state code} {zip code}
+  const countyStateZipParts = [];
+  if (addr.county) countyStateZipParts.push(addr.county);
+
+  const stateVal =
+    (addr["ISO3166-2-lvl4"] ? addr["ISO3166-2-lvl4"].split("-")[1] : null) ||
+    addr.state_code ||
+    addr.state ||
+    "";
+  if (stateVal) countyStateZipParts.push(stateVal);
+  if (addr.postcode) countyStateZipParts.push(addr.postcode);
+  const countyStateZipLine = countyStateZipParts.join(" ");
+
+  // 5. {country code}
+  const countryCode = (addr.country_code || "").toUpperCase();
+
+  // Combine non-empty lines
+  const lines = [
+    title,
+    streetLine,
+    neighborhoodCityLine,
+    countyStateZipLine,
+    countryCode,
+  ].filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return {
+      html: `<div>${data.display_name || fallbackLabel}</div>`,
+      plainText: data.display_name || fallbackLabel,
+      singleLine: data.display_name || fallbackLabel,
+    };
+  }
+
+  return {
+    html: lines
+      .map((line, idx) => {
+        if (idx === 0 && title) {
+          return `<div class="popup-title"><strong>${line}</strong></div>`;
+        }
+        return `<div class="popup-line">${line}</div>`;
+      })
+      .join(""),
+    plainText: lines.join("\n"),
+    singleLine: lines.join(", "),
+  };
+}
+
+// Helper: Place/move marker, update popup, hash URL, and search input
+function setLocationMarker(lat, lon, formattedData, panTo = true) {
   removeInitialLocation();
 
   if (searchMarker) {
@@ -101,26 +196,37 @@ function setLocationMarker(lat, lon, label, panTo = true) {
   const currentZoom = map.getZoom() || DEFAULT_ZOOM;
   const shareUrl = buildHashUrl(lat, lon, currentZoom);
 
+  const addressHtml =
+    typeof formattedData === "object"
+      ? formattedData.html
+      : `<div>${formattedData}</div>`;
+  const copyText =
+    typeof formattedData === "object" ? formattedData.plainText : formattedData;
+  const inputBarText =
+    typeof formattedData === "object"
+      ? formattedData.singleLine
+      : formattedData;
+
   const popupContent = document.createElement("div");
   popupContent.className = "share-popup";
   popupContent.innerHTML = `
-    <div class="popup-address"><strong>${label}</strong></div>
+    <div class="popup-address">${addressHtml}</div>
     <div class="popup-actions">
       <button type="button" class="btn-action copy-addr-btn">📄 Copy Address</button>
       <button type="button" class="btn-action copy-link-btn">🔗 Copy Direct Link</button>
     </div>
   `;
 
-  // Copy Address
+  // Copy Address handler
   const copyAddrBtn = popupContent.querySelector(".copy-addr-btn");
   copyAddrBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(label).then(() => {
+    navigator.clipboard.writeText(copyText).then(() => {
       copyAddrBtn.innerText = "✅ Address Copied!";
       setTimeout(() => (copyAddrBtn.innerText = "📄 Copy Address"), 2000);
     });
   });
 
-  // Copy Direct Link
+  // Copy Direct Link handler
   const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
   copyLinkBtn.addEventListener("click", () => {
     const liveUrl = buildHashUrl(lat, lon, map.getZoom());
@@ -139,11 +245,11 @@ function setLocationMarker(lat, lon, label, panTo = true) {
     map.panTo([lat, lon]);
   }
 
-  input.value = label;
-  autoResizeSearch(label);
+  input.value = inputBarText;
+  autoResizeSearch(inputBarText);
   clearBtn.style.display = "block";
 
-  // Update hash without triggering reload or hitting the server
+  // Synchronize hash in address bar
   window.history.replaceState(null, "", shareUrl);
 }
 
@@ -181,14 +287,15 @@ map.on("click", async (e) => {
   const { lat, lng } = e.latlng;
   const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
+  // Show temporary coordinates while reverse lookup runs
   setLocationMarker(lat, lng, fallbackLabel, false);
 
-  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
   try {
     const res = await fetch(url);
     const data = await res.json();
-    const address = data.display_name || fallbackLabel;
-    setLocationMarker(lat, lng, address, false);
+    const formatted = formatNominatimAddress(data, fallbackLabel);
+    setLocationMarker(lat, lng, formatted, false);
   } catch (err) {
     console.warn("Reverse geocoding failed; keeping coordinates:", err);
   }
@@ -219,6 +326,7 @@ clearBtn.addEventListener("click", () => {
   // Clear hash from address bar
   window.history.replaceState(null, "", window.location.pathname);
 
+  // Restore home marker if initial GPS coordinates exist
   if (userCoordinates && !initialMarker) {
     initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
       .addTo(map)
@@ -239,13 +347,13 @@ window.addEventListener("resize", () => {
   autoResizeSearch(input.value);
 });
 
-// 6. Search Form Submission
+// 6. Search Form Submission (Forward Geocoding)
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const query = input.value.trim();
   if (!query) return;
 
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`;
 
   try {
     const response = await fetch(url);
@@ -261,7 +369,8 @@ form.addEventListener("submit", async (e) => {
     const lon = parseFloat(first.lon);
 
     map.flyTo([lat, lon], DEFAULT_ZOOM, { duration: 1.5 });
-    setLocationMarker(lat, lon, first.display_name, false);
+    const formatted = formatNominatimAddress(first, first.display_name);
+    setLocationMarker(lat, lon, formatted, false);
   } catch (error) {
     console.error("Geocoding error:", error);
     alert("Unable to search address.");
@@ -287,22 +396,27 @@ function parseHashParams() {
 const initialSettings = parseHashParams();
 
 if (initialSettings) {
-  // Shared URL loaded via Hash
+  // Shared URL loaded via hash: jump straight to target without querying user GPS
   map.setView([initialSettings.lat, initialSettings.lon], initialSettings.zoom);
 
+  const fallback = `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`;
+  setLocationMarker(
+    initialSettings.lat,
+    initialSettings.lon,
+    "Looking up address...",
+    false,
+  );
+
   fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${initialSettings.lat}&lon=${initialSettings.lon}`,
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${initialSettings.lat}&lon=${initialSettings.lon}&addressdetails=1`,
   )
     .then((res) => res.json())
     .then((data) => {
-      const derivedAddress =
-        data && data.display_name
-          ? data.display_name
-          : `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`;
+      const formatted = formatNominatimAddress(data, fallback);
       setLocationMarker(
         initialSettings.lat,
         initialSettings.lon,
-        derivedAddress,
+        formatted,
         false,
       );
     })
@@ -311,7 +425,7 @@ if (initialSettings) {
       setLocationMarker(
         initialSettings.lat,
         initialSettings.lon,
-        `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`,
+        fallback,
         false,
       );
     })
@@ -319,7 +433,7 @@ if (initialSettings) {
       revealMap();
     });
 } else {
-  // GPS Mode: locate user and assign default zoom
+  // Default mode: query user's current GPS location
   map.locate({ setView: true, maxZoom: DEFAULT_ZOOM });
 
   map.on("locationfound", (e) => {
