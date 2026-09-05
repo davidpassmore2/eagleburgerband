@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Eagleburger Mapper Thingy</title>
+  <title>Eagleburger Mapping Thingy</title>
 
+  <!-- Google Fonts: Solway -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -12,6 +13,7 @@
     rel="stylesheet"
   />
 
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -22,11 +24,13 @@
 </head>
 <body>
 
+  <!-- Loading Overlay -->
   <div id="initial-loader">
     <div class="spinner"></div>
     <p>Locating...</p>
   </div>
 
+  <!-- Floating Search Bar -->
   <form id="search-form" class="search-container">
     <input 
       type="text" 
@@ -39,14 +43,17 @@
     <button type="submit" id="search-btn">Search</button>
   </form>
 
+  <!-- Floating Map Utility Controls -->
   <div id="zoom-controls" class="zoom-container">
     <button type="button" id="zoom-in-btn" title="Zoom In">+</button>
     <button type="button" id="zoom-out-btn" title="Zoom Out">−</button>
     <button type="button" id="zoom-reset-btn" title="Reset to Default Zoom">⟲</button>
+    <button type="button" id="locate-btn" title="Go to Current Location">⌖</button>
   </div>
 
   <div id="map"></div>
 
+  <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
