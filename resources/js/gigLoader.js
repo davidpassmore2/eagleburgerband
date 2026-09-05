@@ -14,8 +14,16 @@ function parseIcal(text) {
   let current = {};
 
   for (const line of text.split(/\r?\n/)) {
-    if (line.trim() === "BEGIN:VEVENT") { inEvent = true; current = {}; continue; }
-    if (line.trim() === "END:VEVENT") { inEvent = false; events.push(current); continue; }
+    if (line.trim() === "BEGIN:VEVENT") {
+      inEvent = true;
+      current = {};
+      continue;
+    }
+    if (line.trim() === "END:VEVENT") {
+      inEvent = false;
+      events.push(current);
+      continue;
+    }
     if (!inEvent || !line.includes(":")) continue;
 
     const sepIdx = line.indexOf(":");
@@ -32,12 +40,16 @@ function parseDt(value) {
   if (/^\d{8}$/.test(value)) {
     // All-day: 20260802
     return new Date(
-      Date.UTC(+value.slice(0, 4), +value.slice(4, 6) - 1, +value.slice(6, 8))
+      Date.UTC(+value.slice(0, 4), +value.slice(4, 6) - 1, +value.slice(6, 8)),
     );
   }
   if (/^\d{8}T\d{6}Z?$/.test(value)) {
-    const y = +value.slice(0, 4), m = +value.slice(4, 6) - 1, d = +value.slice(6, 8);
-    const h = +value.slice(9, 11), mi = +value.slice(11, 13), s = +value.slice(13, 15);
+    const y = +value.slice(0, 4),
+      m = +value.slice(4, 6) - 1,
+      d = +value.slice(6, 8);
+    const h = +value.slice(9, 11),
+      mi = +value.slice(11, 13),
+      s = +value.slice(13, 15);
     return new Date(Date.UTC(y, m, d, h, mi, s));
   }
   return null;
@@ -78,16 +90,26 @@ function buildGigs(events) {
     if (!title) continue;
 
     const dateStr = dt.toLocaleDateString("en-US", {
-      ...eastern, weekday: "long", month: "long", day: "numeric", year: "numeric",
+      ...eastern,
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
 
     // Format time in Eastern; skip if midnight (all-day event)
-    const h = +dt.toLocaleString("en-US", { ...eastern, hour: "numeric", hour12: false });
+    const h = +dt.toLocaleString("en-US", {
+      ...eastern,
+      hour: "numeric",
+      hour12: false,
+    });
     const m = +dt.toLocaleString("en-US", { ...eastern, minute: "numeric" });
     let timeStr = "";
     if (h !== 0 || m !== 0) {
       timeStr = dt.toLocaleTimeString("en-US", {
-        ...eastern, hour: "numeric", minute: "2-digit",
+        ...eastern,
+        hour: "numeric",
+        minute: "2-digit",
       });
     }
 
@@ -142,10 +164,12 @@ function renderGigs(gigs, listElementId) {
 
     let locationHTML = "";
     if (gig.location) {
-      const isGoogleMapsUrl = /(https?:\/\/)?(www\.)?(google\.com\/maps|goo\.gl\/maps|maps\.app\.goo\.gl)/i.test(gig.location);
+      const isUrl = /^https?:\/\//i.test(gig.location);
 
-      if (isGoogleMapsUrl) {
-        const label = gig.textLocation || '<span class="material-symbols-outlined">location_on</span>';
+      if (isUrl) {
+        const label =
+          gig.textLocation ||
+          '<span class="material-symbols-outlined">location_on</span>';
         locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">${label}</a></div>`;
       } else {
         locationHTML = `<div class="gig-location text-muted fst-italic">${gig.textLocation || gig.location}</div>`;
