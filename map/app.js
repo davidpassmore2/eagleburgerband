@@ -35,7 +35,6 @@ const homeIcon = L.divIcon({
 });
 
 let initialMarker = null;
-let initialCircle = null;
 let searchMarker = null;
 let userCoordinates = null;
 let currentCoords = null; // Stores currently pinned {lat, lon}
@@ -83,10 +82,6 @@ function removeInitialLocation() {
   if (initialMarker) {
     map.removeLayer(initialMarker);
     initialMarker = null;
-  }
-  if (initialCircle) {
-    map.removeLayer(initialCircle);
-    initialCircle = null;
   }
 }
 
@@ -320,7 +315,7 @@ map.on("zoomend", () => {
 });
 
 // Helper: Go to GPS Location and Update Everything
-function navigateToCurrentLocation(lat, lon, accuracy) {
+function navigateToCurrentLocation(lat, lon) {
   showLoader("Finding your address...");
   const maxZoom = map.getMaxZoom();
   const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
@@ -334,9 +329,6 @@ function navigateToCurrentLocation(lat, lon, accuracy) {
   currentCoords = { lat, lon };
 
   initialMarker = L.marker([lat, lon], { icon: homeIcon }).addTo(map);
-  if (accuracy) {
-    initialCircle = L.circle([lat, lon], accuracy).addTo(map);
-  }
 
   map.flyTo([lat, lon], maxZoom, { duration: 1.2 });
   window.history.replaceState(null, "", buildHashUrl(lat, lon, maxZoom));
@@ -444,14 +436,13 @@ document.getElementById("locate-btn").addEventListener("click", () => {
     navigateToCurrentLocation(
       userCoordinates.latlng.lat,
       userCoordinates.latlng.lng,
-      userCoordinates.accuracy,
     );
   } else {
     showLoader("Acquiring GPS signal...");
     map.locate({ setView: false, maxZoom: map.getMaxZoom() });
     map.once("locationfound", (e) => {
       userCoordinates = e;
-      navigateToCurrentLocation(e.latlng.lat, e.latlng.lng, e.accuracy);
+      navigateToCurrentLocation(e.latlng.lat, e.latlng.lng);
     });
     map.once("locationerror", (err) => {
       hideLoader();
@@ -509,13 +500,7 @@ clearBtn.addEventListener("click", () => {
   if (userCoordinates && !initialMarker) {
     initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
       .addTo(map)
-      .bindPopup(
-        `Your Location (within ${Math.round(userCoordinates.accuracy)} meters)`,
-      );
-    initialCircle = L.circle(
-      userCoordinates.latlng,
-      userCoordinates.accuracy,
-    ).addTo(map);
+      .bindPopup(`Your Location`);
     map.panTo(userCoordinates.latlng);
   }
 
@@ -617,9 +602,8 @@ if (initialSettings) {
     userCoordinates = e;
     initialMarker = L.marker(e.latlng, { icon: homeIcon })
       .addTo(map)
-      .bindPopup(`Your Location (within ${Math.round(e.accuracy)} meters)`)
+      .bindPopup(`Your Location`)
       .openPopup();
-    initialCircle = L.circle(e.latlng, e.accuracy).addTo(map);
     revealMap();
   });
 
