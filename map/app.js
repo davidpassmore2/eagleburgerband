@@ -1,9 +1,9 @@
 const DEFAULT_ZOOM = 16;
 
-// 1. Initialize map (disabled native zoomControl to use custom widget)
+// 1. Initialize map (custom zoom controls enabled)
 const map = L.map("map", { zoomControl: false });
 
-// 2. Add tile layer
+// Add tile layer
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution:
@@ -39,7 +39,16 @@ let initialMarker = null;
 let initialCircle = null;
 let searchMarker = null;
 let userCoordinates = null;
-let currentCoords = null; // Stores currently pinned lat/lon
+let currentCoords = null; // Stores currently pinned {lat, lon}
+
+// Helper: Build hash path: {base}/#/{lat}/{lon}/{zoom}
+function buildHashUrl(lat, lon, zoom) {
+  const cleanLat = lat.toFixed(5);
+  const cleanLon = lon.toFixed(5);
+  const cleanZoom = Math.round(zoom);
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}#/${cleanLat}/${cleanLon}/${cleanZoom}`;
+}
 
 // Helper: Reveal UI once location resolution finishes
 function revealMap() {
@@ -64,14 +73,13 @@ function removeInitialLocation() {
   }
 }
 
-// Dynamic Search Bar Resizer
+// Dynamic Search Bar Resizer using Solway font metrics
 const measureCanvas = document.createElement("canvas");
 const measureCtx = measureCanvas.getContext("2d");
 
 function autoResizeSearch(text) {
-  // Use Solway for accurate width measurement
   measureCtx.font = '15px "Solway", serif';
-  const textWidth = measureCtx.measureText(text || '').width;
+  const textWidth = measureCtx.measureText(text || "").width;
   const computedWidth = Math.ceil(textWidth + 160);
 
   const minWidth = 400;
@@ -81,16 +89,7 @@ function autoResizeSearch(text) {
   form.style.width = `${targetWidth}px`;
 }
 
-// Generate permalink using query parameters
-function buildShareUrl(lat, lon, zoom) {
-  const url = new URL(window.location.origin + window.location.pathname);
-  url.searchParams.set("lat", lat.toFixed(5));
-  url.searchParams.set("lon", lon.toFixed(5));
-  url.searchParams.set("zoom", zoom);
-  return url.toString();
-}
-
-// Helper: Place/move marker, update popup, URL query params, and input
+// Helper: Place/move marker, update popup, hash URL, and input
 function setLocationMarker(lat, lon, label, panTo = true) {
   removeInitialLocation();
 
@@ -100,7 +99,7 @@ function setLocationMarker(lat, lon, label, panTo = true) {
 
   currentCoords = { lat, lon };
   const currentZoom = map.getZoom() || DEFAULT_ZOOM;
-  const shareUrl = buildShareUrl(lat, lon, currentZoom);
+  const shareUrl = buildHashUrl(lat, lon, currentZoom);
 
   const popupContent = document.createElement("div");
   popupContent.className = "share-popup";
@@ -124,8 +123,7 @@ function setLocationMarker(lat, lon, label, panTo = true) {
   // Copy Direct Link
   const copyLinkBtn = popupContent.querySelector(".copy-link-btn");
   copyLinkBtn.addEventListener("click", () => {
-    // Generate fresh link with live zoom at moment of copy
-    const liveUrl = buildShareUrl(lat, lon, map.getZoom());
+    const liveUrl = buildHashUrl(lat, lon, map.getZoom());
     navigator.clipboard.writeText(liveUrl).then(() => {
       copyLinkBtn.innerText = "✅ Link Copied!";
       setTimeout(() => (copyLinkBtn.innerText = "🔗 Copy Direct Link"), 2000);
@@ -145,14 +143,14 @@ function setLocationMarker(lat, lon, label, panTo = true) {
   autoResizeSearch(label);
   clearBtn.style.display = "block";
 
-  // Sync address bar URL with query params
+  // Update hash without triggering reload or hitting the server
   window.history.replaceState(null, "", shareUrl);
 }
 
-// Keep the URL zoom query parameter up to date when user zooms
+// Keep zoom updated in hash URL as user zooms
 map.on("zoomend", () => {
   if (currentCoords) {
-    const liveUrl = buildShareUrl(
+    const liveUrl = buildHashUrl(
       currentCoords.lat,
       currentCoords.lon,
       map.getZoom(),
@@ -178,7 +176,7 @@ document.getElementById("zoom-reset-btn").addEventListener("click", () => {
   }
 });
 
-// 4. Click-on-Map Listener (Reverse Geocoding)
+// 4. Click-on-Map Listener (Reverse Geocoding & Hash Sync)
 map.on("click", async (e) => {
   const { lat, lng } = e.latlng;
   const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -218,7 +216,7 @@ clearBtn.addEventListener("click", () => {
   }
   currentCoords = null;
 
-  // Clear query parameters from URL
+  // Clear hash from address bar
   window.history.replaceState(null, "", window.location.pathname);
 
   if (userCoordinates && !initialMarker) {
@@ -270,33 +268,50 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-// 7. Initial Load Handling: Read Query Parameters
-const urlParams = new URLSearchParams(window.location.search);
-const qLat = parseFloat(urlParams.get("lat"));
-const qLon = parseFloat(urlParams.get("lon"));
-const qZoom = parseInt(urlParams.get("zoom"), 10) || DEFAULT_ZOOM;
+// 7. Initial Load Handling: Parse Hash #/{lat}/{lon}/{zoom}
+function parseHashParams() {
+  const rawHash = window.location.hash.replace(/^#\/?/, "");
+  const parts = rawHash.split("/").filter(Boolean);
 
-if (!isNaN(qLat) && !isNaN(qLon)) {
-  // Shared Query Parameter URL loaded
-  map.setView([qLat, qLon], qZoom);
+  if (parts.length >= 3) {
+    const lat = parseFloat(parts[0]);
+    const lon = parseFloat(parts[1]);
+    const zoom = parseInt(parts[2], 10);
+    if (!isNaN(lat) && !isNaN(lon) && !isNaN(zoom)) {
+      return { lat, lon, zoom };
+    }
+  }
+  return null;
+}
+
+const initialSettings = parseHashParams();
+
+if (initialSettings) {
+  // Shared URL loaded via Hash
+  map.setView([initialSettings.lat, initialSettings.lon], initialSettings.zoom);
 
   fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${qLat}&lon=${qLon}`,
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${initialSettings.lat}&lon=${initialSettings.lon}`,
   )
     .then((res) => res.json())
     .then((data) => {
       const derivedAddress =
         data && data.display_name
           ? data.display_name
-          : `${qLat.toFixed(5)}, ${qLon.toFixed(5)}`;
-      setLocationMarker(qLat, qLon, derivedAddress, false);
+          : `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`;
+      setLocationMarker(
+        initialSettings.lat,
+        initialSettings.lon,
+        derivedAddress,
+        false,
+      );
     })
     .catch((err) => {
-      console.warn("Reverse geocoding initial URL failed:", err);
+      console.warn("Reverse geocoding initial hash failed:", err);
       setLocationMarker(
-        qLat,
-        qLon,
-        `${qLat.toFixed(5)}, ${qLon.toFixed(5)}`,
+        initialSettings.lat,
+        initialSettings.lon,
+        `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`,
         false,
       );
     })
