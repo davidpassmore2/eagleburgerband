@@ -31,7 +31,7 @@
  * 5. Embed Mode (?embed=true):
  *    - When the `?embed=true` query parameter is present, all floating UI
  *      controls (search bar, zoom slider) are suppressed.
- *    - Fixes the viewport to zoom level 16 with the address popup pre-opened.
+ *    - Fixes the viewport to zoom level 17 with the address popup pre-opened.
  *    - Includes an in-popup toggle to generate embed-ready links (zoom 17).
  *
  * 6. Asynchronous State & Loading Overlay:
@@ -341,7 +341,7 @@ function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
 
   currentCoords = { lat, lon };
   const zoomLevel = isEmbedded
-    ? DEFAULT_ZOOM
+    ? EMBED_ZOOM
     : targetZoom !== null
       ? targetZoom
       : map.getZoom() || DEFAULT_ZOOM;
@@ -403,7 +403,7 @@ map.on("zoomend", () => {
 // Helper: Go to GPS Location and Update Everything
 function navigateToCurrentLocation(lat, lon) {
   showLoader("Finding your address...");
-  const maxZoom = isEmbedded ? DEFAULT_ZOOM : map.getMaxZoom();
+  const maxZoom = isEmbedded ? EMBED_ZOOM : map.getMaxZoom();
   const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 
   if (searchMarker) {
@@ -607,7 +607,7 @@ function parseHashParams() {
     const lat = parseFloat(parts[0]);
     const lon = parseFloat(parts[1]);
     const zoom = isEmbedded
-      ? DEFAULT_ZOOM
+      ? EMBED_ZOOM
       : parseInt(parts[2], 10) || DEFAULT_ZOOM;
     if (!isNaN(lat) && !isNaN(lon)) {
       return { lat, lon, zoom };
@@ -622,7 +622,7 @@ if (initialSettings) {
   showLoader("Loading shared map...");
   map.setView(
     [initialSettings.lat, initialSettings.lon],
-    isEmbedded ? DEFAULT_ZOOM : initialSettings.zoom,
+    isEmbedded ? EMBED_ZOOM : initialSettings.zoom,
   );
 
   const fallback = `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`;
@@ -655,7 +655,10 @@ if (initialSettings) {
     });
 } else {
   showLoader("Locating...");
-  map.locate({ setView: true, maxZoom: DEFAULT_ZOOM });
+  map.locate({
+    setView: true,
+    maxZoom: isEmbedded ? EMBED_ZOOM : DEFAULT_ZOOM,
+  });
 
   map.on("locationfound", (e) => {
     userCoordinates = e;
