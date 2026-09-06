@@ -1,5 +1,15 @@
 const DEFAULT_ZOOM = 16;
 
+// Check for ?embed=true or ?embed=1 in the query string
+const urlParams = new URLSearchParams(window.location.search);
+const isEmbedded = ["true", "1"].includes(
+  (urlParams.get("embed") || "").toLowerCase(),
+);
+
+if (isEmbedded) {
+  document.body.classList.add("embedded");
+}
+
 // 1. Initialize map (disable Leaflet's default zoom control to use our custom widget)
 const map = L.map("map", { zoomControl: false });
 
@@ -64,17 +74,20 @@ function revealMap() {
 
   hideLoader();
   mapElement.classList.add("ready");
-  formElement.classList.add("ready");
+  if (!isEmbedded) {
+    formElement.classList.add("ready");
+  }
   map.invalidateSize();
   syncSliderWithMap();
 }
 
-// Helper: Build hash path URL: {origin}{pathname}#/{lat}/{lon}/{zoom}
+// Helper: Build hash path URL, preserving ?embed=true if active
 function buildHashUrl(lat, lon, zoom) {
   const cleanLat = lat.toFixed(5);
   const cleanLon = lon.toFixed(5);
   const cleanZoom = Math.round(zoom);
-  const base = `${window.location.origin}${window.location.pathname}`;
+  const searchPart = isEmbedded ? "?embed=true" : "";
+  const base = `${window.location.origin}${window.location.pathname}${searchPart}`;
   return `${base}#/${cleanLat}/${cleanLon}/${cleanZoom}`;
 }
 
@@ -96,6 +109,7 @@ const measureCanvas = document.createElement("canvas");
 const measureCtx = measureCanvas.getContext("2d");
 
 function autoResizeSearch(text) {
+  if (isEmbedded) return;
   measureCtx.font = '15px "Solway", serif';
   const textWidth = measureCtx.measureText(text || "").width;
   const computedWidth = Math.ceil(textWidth + 160);
@@ -216,8 +230,11 @@ function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
   }
 
   currentCoords = { lat, lon };
-  const zoomLevel =
-    targetZoom !== null ? targetZoom : map.getZoom() || DEFAULT_ZOOM;
+  const zoomLevel = isEmbedded
+    ? DEFAULT_ZOOM
+    : targetZoom !== null
+      ? targetZoom
+      : map.getZoom() || DEFAULT_ZOOM;
   const shareUrl = buildHashUrl(lat, lon, zoomLevel);
 
   const addressHtml =
@@ -283,20 +300,25 @@ function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
   searchMarker = L.marker([lat, lon]).addTo(map).bindPopup(popupContent);
 
   searchMarker.on("click", () => {
-    const maxZoom = map.getMaxZoom();
-    map.flyTo([lat, lon], maxZoom, { duration: 1.0 });
+    if (!isEmbedded) {
+      const maxZoom = map.getMaxZoom();
+      map.flyTo([lat, lon], maxZoom, { duration: 1.0 });
+    }
     searchMarker.openPopup();
   });
 
-  if (targetZoom !== null) {
+  if (targetZoom !== null && !isEmbedded) {
     map.flyTo([lat, lon], targetZoom, { duration: 1.0 });
   }
 
+  // Always keep popup open
   searchMarker.openPopup();
 
-  input.value = inputBarText;
-  autoResizeSearch(inputBarText);
-  clearBtn.style.display = "block";
+  if (!isEmbedded) {
+    input.value = inputBarText;
+    autoResizeSearch(inputBarText);
+    clearBtn.style.display = "block";
+  }
 
   window.history.replaceState(null, "", shareUrl);
 }
@@ -317,7 +339,7 @@ map.on("zoomend", () => {
 // Helper: Go to GPS Location and Update Everything
 function navigateToCurrentLocation(lat, lon) {
   showLoader("Finding your address...");
-  const maxZoom = map.getMaxZoom();
+  const maxZoom = isEmbedded ? DEFAULT_ZOOM : map.getMaxZoom();
   const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 
   if (searchMarker) {
@@ -332,7 +354,7 @@ function navigateToCurrentLocation(lat, lon) {
 
   map.flyTo([lat, lon], maxZoom, { duration: 1.2 });
   window.history.replaceState(null, "", buildHashUrl(lat, lon, maxZoom));
-  clearBtn.style.display = "block";
+  if (!isEmbedded) clearBtn.style.display = "block";
 
   fetch(
     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
@@ -340,8 +362,10 @@ function navigateToCurrentLocation(lat, lon) {
     .then((res) => res.json())
     .then((data) => {
       const formatted = formatNominatimAddress(data, fallback);
-      input.value = formatted.singleLine;
-      autoResizeSearch(formatted.singleLine);
+      if (!isEmbedded) {
+        input.value = formatted.singleLine;
+        autoResizeSearch(formatted.singleLine);
+      }
 
       const popupContent = document.createElement("div");
       popupContent.className = "share-popup";
@@ -398,8 +422,10 @@ function navigateToCurrentLocation(lat, lon) {
     })
     .catch((err) => {
       console.warn("Reverse geocoding current location failed:", err);
-      input.value = fallback;
-      autoResizeSearch(fallback);
+      if (!isEmbedded) {
+        input.value = fallback;
+        autoResizeSearch(fallback);
+      }
       initialMarker
         .bindPopup(`<strong>Your Location</strong><br>${fallback}`)
         .openPopup();
@@ -410,49 +436,53 @@ function navigateToCurrentLocation(lat, lon) {
 }
 
 // 3. Zoom Controls & Slider Handlers
-document
-  .getElementById("zoom-in-btn")
-  .addEventListener("click", () => map.zoomIn());
-document
-  .getElementById("zoom-out-btn")
-  .addEventListener("click", () => map.zoomOut());
+if (!isEmbedded) {
+  document
+    .getElementById("zoom-in-btn")
+    .addEventListener("click", () => map.zoomIn());
+  document
+    .getElementById("zoom-out-btn")
+    .addEventListener("click", () => map.zoomOut());
 
-zoomSlider.addEventListener("input", (e) => {
-  map.setZoom(parseInt(e.target.value, 10));
-});
+  zoomSlider.addEventListener("input", (e) => {
+    map.setZoom(parseInt(e.target.value, 10));
+  });
 
-document.getElementById("zoom-reset-btn").addEventListener("click", () => {
-  if (currentCoords) {
-    map.setView([currentCoords.lat, currentCoords.lon], DEFAULT_ZOOM);
-  } else if (userCoordinates) {
-    map.setView(userCoordinates.latlng, DEFAULT_ZOOM);
-  } else {
-    map.setZoom(DEFAULT_ZOOM);
-  }
-});
+  document.getElementById("zoom-reset-btn").addEventListener("click", () => {
+    if (currentCoords) {
+      map.setView([currentCoords.lat, currentCoords.lon], DEFAULT_ZOOM);
+    } else if (userCoordinates) {
+      map.setView(userCoordinates.latlng, DEFAULT_ZOOM);
+    } else {
+      map.setZoom(DEFAULT_ZOOM);
+    }
+  });
 
-document.getElementById("locate-btn").addEventListener("click", () => {
-  if (userCoordinates) {
-    navigateToCurrentLocation(
-      userCoordinates.latlng.lat,
-      userCoordinates.latlng.lng,
-    );
-  } else {
-    showLoader("Acquiring GPS signal...");
-    map.locate({ setView: false, maxZoom: map.getMaxZoom() });
-    map.once("locationfound", (e) => {
-      userCoordinates = e;
-      navigateToCurrentLocation(e.latlng.lat, e.latlng.lng);
-    });
-    map.once("locationerror", (err) => {
-      hideLoader();
-      alert(`Unable to retrieve your current location: ${err.message}`);
-    });
-  }
-});
+  document.getElementById("locate-btn").addEventListener("click", () => {
+    if (userCoordinates) {
+      navigateToCurrentLocation(
+        userCoordinates.latlng.lat,
+        userCoordinates.latlng.lng,
+      );
+    } else {
+      showLoader("Acquiring GPS signal...");
+      map.locate({ setView: false, maxZoom: map.getMaxZoom() });
+      map.once("locationfound", (e) => {
+        userCoordinates = e;
+        navigateToCurrentLocation(e.latlng.lat, e.latlng.lng);
+      });
+      map.once("locationerror", (err) => {
+        hideLoader();
+        alert(`Unable to retrieve your current location: ${err.message}`);
+      });
+    }
+  });
+}
 
 // 4. Click-on-Map Listener
 map.on("click", async (e) => {
+  if (isEmbedded) return; // Disable pin movement in embed mode
+
   const { lat, lng } = e.latlng;
   const maxZoom = map.getMaxZoom();
   const fallbackLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -478,82 +508,85 @@ const form = document.getElementById("search-form");
 const input = document.getElementById("address-input");
 const clearBtn = document.getElementById("clear-btn");
 
-input.addEventListener("input", () => {
-  const val = input.value;
-  clearBtn.style.display = val.trim().length > 0 ? "block" : "none";
-  autoResizeSearch(val);
-});
+if (!isEmbedded) {
+  input.addEventListener("input", () => {
+    const val = input.value;
+    clearBtn.style.display = val.trim().length > 0 ? "block" : "none";
+    autoResizeSearch(val);
+  });
 
-clearBtn.addEventListener("click", () => {
-  input.value = "";
-  clearBtn.style.display = "none";
-  autoResizeSearch("");
+  clearBtn.addEventListener("click", () => {
+    input.value = "";
+    clearBtn.style.display = "none";
+    autoResizeSearch("");
 
-  if (searchMarker) {
-    map.removeLayer(searchMarker);
-    searchMarker = null;
-  }
-  currentCoords = null;
+    if (searchMarker) {
+      map.removeLayer(searchMarker);
+      searchMarker = null;
+    }
+    currentCoords = null;
 
-  window.history.replaceState(null, "", window.location.pathname);
+    window.history.replaceState(null, "", window.location.pathname);
 
-  if (userCoordinates && !initialMarker) {
-    initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
-      .addTo(map)
-      .bindPopup(`Your Location`);
-    map.panTo(userCoordinates.latlng);
-  }
-
-  input.focus();
-});
-
-window.addEventListener("resize", () => {
-  autoResizeSearch(input.value);
-});
-
-// 6. Search Form Submission
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const query = input.value.trim();
-  if (!query) return;
-
-  showLoader("Searching address...");
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`;
-
-  try {
-    const response = await fetch(url);
-    const results = await response.json();
-
-    if (!results || results.length === 0) {
-      hideLoader();
-      alert("Address not found. Please try a more specific search.");
-      return;
+    if (userCoordinates && !initialMarker) {
+      initialMarker = L.marker(userCoordinates.latlng, { icon: homeIcon })
+        .addTo(map)
+        .bindPopup(`Your Location`);
+      map.panTo(userCoordinates.latlng);
     }
 
-    const first = results[0];
-    const lat = parseFloat(first.lat);
-    const lon = parseFloat(first.lon);
+    input.focus();
+  });
 
-    const formatted = formatNominatimAddress(first, first.display_name);
-    setLocationMarker(lat, lon, formatted, DEFAULT_ZOOM);
-  } catch (error) {
-    console.error("Geocoding error:", error);
-    alert("Unable to search address.");
-  } finally {
-    hideLoader();
-  }
-});
+  window.addEventListener("resize", () => {
+    autoResizeSearch(input.value);
+  });
 
-// 7. Initial Load Handling
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+
+    showLoader("Searching address...");
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1`;
+
+    try {
+      const response = await fetch(url);
+      const results = await response.json();
+
+      if (!results || results.length === 0) {
+        hideLoader();
+        alert("Address not found. Please try a more specific search.");
+        return;
+      }
+
+      const first = results[0];
+      const lat = parseFloat(first.lat);
+      const lon = parseFloat(first.lon);
+
+      const formatted = formatNominatimAddress(first, first.display_name);
+      setLocationMarker(lat, lon, formatted, DEFAULT_ZOOM);
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      alert("Unable to search address.");
+    } finally {
+      hideLoader();
+    }
+  });
+}
+
+// 6. Initial Load Handling
 function parseHashParams() {
   const rawHash = window.location.hash.replace(/^#\/?/, "");
   const parts = rawHash.split("/").filter(Boolean);
 
-  if (parts.length >= 3) {
+  if (parts.length >= 2) {
     const lat = parseFloat(parts[0]);
     const lon = parseFloat(parts[1]);
-    const zoom = parseInt(parts[2], 10);
-    if (!isNaN(lat) && !isNaN(lon) && !isNaN(zoom)) {
+    const zoom = isEmbedded
+      ? DEFAULT_ZOOM
+      : parseInt(parts[2], 10) || DEFAULT_ZOOM;
+    if (!isNaN(lat) && !isNaN(lon)) {
       return { lat, lon, zoom };
     }
   }
@@ -564,7 +597,10 @@ const initialSettings = parseHashParams();
 
 if (initialSettings) {
   showLoader("Loading shared map...");
-  map.setView([initialSettings.lat, initialSettings.lon], initialSettings.zoom);
+  map.setView(
+    [initialSettings.lat, initialSettings.lon],
+    isEmbedded ? DEFAULT_ZOOM : initialSettings.zoom,
+  );
 
   const fallback = `${initialSettings.lat.toFixed(5)}, ${initialSettings.lon.toFixed(5)}`;
   setLocationMarker(initialSettings.lat, initialSettings.lon, fallback, null);
