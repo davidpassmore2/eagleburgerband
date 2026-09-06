@@ -1,3 +1,7 @@
+/* ==========================================================================
+   1. Global Resets & Typography
+   ========================================================================== */
+
 html,
 body {
   height: 100%;
@@ -16,7 +20,7 @@ textarea,
   font-family: 'Solway', serif;
 }
 
-/* Material Symbols configuration */
+/* Google Material Symbols base setup */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined' !important;
   font-weight: normal;
@@ -33,7 +37,11 @@ textarea,
   vertical-align: middle;
 }
 
-/* Map starts invisible until location/target is resolved */
+/* ==========================================================================
+   2. Map Viewport
+   ========================================================================== */
+
+/* Hidden until the target location or GPS coordinates resolve */
 #map {
   height: 100%;
   width: 100vw;
@@ -45,7 +53,10 @@ textarea,
   opacity: 1;
 }
 
-/* Floating dynamic search container */
+/* ==========================================================================
+   3. Floating Search Bar
+   ========================================================================== */
+
 .search-container {
   position: absolute;
   top: 15px;
@@ -82,7 +93,6 @@ textarea,
   color: #222;
 }
 
-/* Clear Button */
 #clear-btn {
   display: none;
   background: transparent;
@@ -97,7 +107,6 @@ textarea,
   color: #111;
 }
 
-/* Search Submit Button */
 #search-btn {
   padding: 13px 18px;
   background-color: #0078d4;
@@ -115,7 +124,10 @@ textarea,
   background-color: #005a9e;
 }
 
-/* Floating Utility Panel */
+/* ==========================================================================
+   4. Floating Map Utilities & Zoom Controls
+   ========================================================================== */
+
 .zoom-container {
   position: absolute;
   bottom: 24px;
@@ -153,7 +165,7 @@ textarea,
   color: #0078d4;
 }
 
-/* Vertical Slider Track Container */
+/* Vertical Zoom Slider */
 .slider-wrapper {
   height: 100px;
   width: 40px;
@@ -164,7 +176,6 @@ textarea,
   background: #fafafa;
 }
 
-/* Vertical HTML5 Range Input */
 #zoom-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -174,7 +185,7 @@ textarea,
   border-radius: 2px;
   outline: none;
   transform: rotate(-90deg);
-  /* Rotate horizontal range to vertical */
+  /* Rotate horizontal track to vertical */
   cursor: pointer;
 }
 
@@ -199,7 +210,10 @@ textarea,
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Popup & Address Card Formatting */
+/* ==========================================================================
+   5. Leaflet Popups & Address Card
+   ========================================================================== */
+
 .share-popup {
   font-family: 'Solway', serif;
   font-size: 13px;
@@ -261,7 +275,10 @@ textarea,
   background-color: #005a9e;
 }
 
-/* Loader Screen */
+/* ==========================================================================
+   6. Loading Overlay & Spinner
+   ========================================================================== */
+
 #initial-loader {
   position: fixed;
   inset: 0;
@@ -304,4 +321,13 @@ textarea,
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ==========================================================================
+   7. Embed Mode Overrides (?embed=true)
+   ========================================================================== */
+
+body.embedded .search-container,
+body.embedded .zoom-container {
+  display: none !important;
 }
