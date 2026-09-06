@@ -124,6 +124,108 @@ function buildGigs(events) {
   return gigs;
 }
 
+// ── Modal & URL Helpers ─────────────────────────────────────────────
+
+function toEmbedUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+
+    // Google Maps: Append output=embed if it's a standard web link
+    if (
+      parsed.hostname.includes("google.com") &&
+      parsed.pathname.includes("/maps")
+    ) {
+      parsed.searchParams.set("output", "embed");
+      return parsed.toString();
+    }
+
+    // OpenStreetMap: Switch view to export/embed
+    if (
+      parsed.hostname.includes("openstreetmap.org") &&
+      !parsed.pathname.includes("embed")
+    ) {
+      parsed.pathname = "/export/embed.html";
+      return parsed.toString();
+    }
+
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+
+function ensureMapModal() {
+  let modal = document.getElementById("mapModal");
+  if (modal) return modal;
+
+  // Uses Bootstrap modal classes consistent with the existing list-group styling
+  modal = document.createElement("div");
+  modal.id = "mapModal";
+  modal.className = "modal fade";
+  modal.tabIndex = -1;
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="mapModalLabel">Event Location</h5>
+          <div class="d-flex align-items-center gap-2 ms-auto">
+            <a id="mapModalExternalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">
+              Open in New Tab
+            </a>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="modal-body p-0" style="height: 480px;">
+          <iframe id="mapModalIframe" src="" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Clear iframe src when closed to kill background processes/audio
+  modal.addEventListener("hidden.bs.modal", () => {
+    const iframe = document.getElementById("mapModalIframe");
+    if (iframe) iframe.src = "";
+  });
+
+  return modal;
+}
+
+function openMapModal(rawUrl, title) {
+  ensureMapModal();
+
+  const iframe = document.getElementById("mapModalIframe");
+  const externalLink = document.getElementById("mapModalExternalLink");
+  const modalLabel = document.getElementById("mapModalLabel");
+
+  if (modalLabel && title) {
+    modalLabel.textContent = title;
+  }
+
+  if (externalLink) {
+    externalLink.href = rawUrl;
+  }
+
+  if (iframe) {
+    iframe.src = toEmbedUrl(rawUrl);
+  }
+
+  const modalEl = document.getElementById("mapModal");
+
+  // Trigger Bootstrap modal if available; fallback to manual display if not
+  if (window.bootstrap && window.bootstrap.Modal) {
+    const bsModal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+  } else {
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+    modalEl.removeAttribute("aria-hidden");
+  }
+}
+
 // ── Render ──────────────────────────────────────────────────────────
 
 function renderGigs(gigs, listElementId) {
@@ -137,7 +239,6 @@ function renderGigs(gigs, listElementId) {
   }
 
   for (const gig of gigs) {
-    // Reset extracted fields for each iteration
     gig.textLocation = null;
     gig.extractedUrl = null;
 
@@ -170,7 +271,11 @@ function renderGigs(gigs, listElementId) {
         const label =
           gig.textLocation ||
           '<span class="material-symbols-outlined">location_on</span>';
-        locationHTML = `<div class="gig-location text-muted fst-italic"><a href="${gig.location}" target="_blank" rel="noopener noreferrer">${label}</a></div>`;
+        locationHTML = `<div class="gig-location text-muted fst-italic">
+          <button type="button" class="btn btn-link p-0 text-decoration-underline text-muted fst-italic map-modal-btn" data-url="${encodeURI(gig.location)}" data-title="${gig.title}">
+            ${label}
+          </button>
+        </div>`;
       } else {
         locationHTML = `<div class="gig-location text-muted fst-italic">${gig.textLocation || gig.location}</div>`;
       }
@@ -194,6 +299,16 @@ function renderGigs(gigs, listElementId) {
     `;
     list.appendChild(item);
   }
+
+  // Bind click listener for modal trigger buttons
+  list.querySelectorAll(".map-modal-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const rawUrl = decodeURI(btn.getAttribute("data-url"));
+      const title = btn.getAttribute("data-title");
+      openMapModal(rawUrl, title);
+    });
+  });
 }
 
 // ── Public API ──────────────────────────────────────────────────────
