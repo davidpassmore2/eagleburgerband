@@ -1,4 +1,47 @@
+/**
+ * ============================================================================
+ * Eagleburger Mapping Thingy - Application Logic (app.js)
+ * ============================================================================
+ *
+ * Description:
+ * A full-screen, responsive Leaflet.js and OpenStreetMap web map application
+ * designed for forward/reverse geocoding, precise address resolution, and
+ * seamless location sharing without requiring server-side rewrite rules.
+ *
+ * Core Features:
+ * 1. Leaflet & Tile Engine:
+ *    - Renders OpenStreetMap base tiles with customizable zoom bounds (1-19).
+ *    - Custom markers for current GPS location (Home icon) and search pins.
+ *
+ * 2. Hash-Based Path Routing & State Persistence:
+ *    - Formats URLs as `/#/{lat}/{lon}/{zoom}` (e.g., `/#/40.44062/-79.99589/16`).
+ *    - Runs entirely client-side, bypassing server 404 rewrite requirements.
+ *    - Live-syncs zoom and coordinates to the URL hash on user pan/zoom/click.
+ *
+ * 3. Geocoding Services (Nominatim / OpenStreetMap):
+ *    - Forward Geocoding: Searches text addresses or POIs from the input bar.
+ *    - Reverse Geocoding: Resolves point clicks or GPS coordinates into
+ *      structured, multi-line address cards (Title, Street, City, State/Zip, Country).
+ *
+ * 4. Dynamic Search & UI Controls:
+ *    - Auto-resizing search bar utilizing HTML5 canvas text metrics (Solway font).
+ *    - Floating map control widget featuring Zoom In/Out buttons, a vertical
+ *      HTML5 range slider, Zoom Reset, and a "Locate Me" GPS trigger.
+ *
+ * 5. Embed Mode (?embed=true):
+ *    - When the `?embed=true` query parameter is present, all floating UI
+ *      controls (search bar, zoom slider) are suppressed.
+ *    - Fixes the viewport to zoom level 16 with the address popup pre-opened.
+ *    - Includes an in-popup toggle to generate embed-ready links (zoom 17).
+ *
+ * 6. Asynchronous State & Loading Overlay:
+ *    - Displays an animated loader during cold start, GPS discovery, and all
+ *      in-flight geocoding operations to prevent layout shift or visual flashes.
+ * ============================================================================
+ */
+
 const DEFAULT_ZOOM = 16;
+const EMBED_ZOOM = 17;
 
 // Check for ?embed=true or ?embed=1 in the query string
 const urlParams = new URLSearchParams(window.location.search);
@@ -81,12 +124,12 @@ function revealMap() {
   syncSliderWithMap();
 }
 
-// Helper: Build hash path URL, preserving ?embed=true if active
-function buildHashUrl(lat, lon, zoom) {
+// Helper: Build hash path URL with optional embed toggle and explicit zoom
+function buildHashUrl(lat, lon, zoom, forceEmbed = false) {
   const cleanLat = lat.toFixed(5);
   const cleanLon = lon.toFixed(5);
   const cleanZoom = Math.round(zoom);
-  const searchPart = isEmbedded ? "?embed=true" : "";
+  const searchPart = forceEmbed ? "?embed=true" : "";
   const base = `${window.location.origin}${window.location.pathname}${searchPart}`;
   return `${base}#/${cleanLat}/${cleanLon}/${cleanZoom}`;
 }
@@ -221,6 +264,73 @@ function formatNominatimAddress(data, fallbackLabel) {
   };
 }
 
+// Helper: Factory to create standard popup DOM with embed toggle
+function createPopupContent(addressHtml, copyText, lat, lon) {
+  const container = document.createElement("div");
+  container.className = "share-popup";
+  container.innerHTML = `
+    <div class="popup-address">${addressHtml}</div>
+    <div class="popup-actions">
+      <button type="button" class="btn-action copy-addr-btn">
+        <span class="material-symbols-outlined">content_copy</span>
+        <span>Copy Address</span>
+      </button>
+      <div class="popup-share-row">
+        <button type="button" class="btn-action copy-link-btn">
+          <span class="material-symbols-outlined">link</span>
+          <span>Copy Direct Link</span>
+        </button>
+        <label class="embed-toggle-label" title="Generate embed link with zoom 17 and hidden controls">
+          <input type="checkbox" class="embed-checkbox" ${isEmbedded ? "checked" : ""} />
+          <span>Embed</span>
+        </label>
+      </div>
+    </div>
+  `;
+
+  // Copy Address
+  const copyAddrBtn = container.querySelector(".copy-addr-btn");
+  copyAddrBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(copyText).then(() => {
+      copyAddrBtn.innerHTML = `
+        <span class="material-symbols-outlined">check</span>
+        <span>Address Copied!</span>
+      `;
+      setTimeout(() => {
+        copyAddrBtn.innerHTML = `
+          <span class="material-symbols-outlined">content_copy</span>
+          <span>Copy Address</span>
+        `;
+      }, 2000);
+    });
+  });
+
+  // Copy Direct Link (reads the embed checkbox state)
+  const copyLinkBtn = container.querySelector(".copy-link-btn");
+  const embedCheckbox = container.querySelector(".embed-checkbox");
+
+  copyLinkBtn.addEventListener("click", () => {
+    const shouldEmbed = embedCheckbox.checked;
+    const targetZoom = shouldEmbed ? EMBED_ZOOM : map.getZoom();
+    const liveUrl = buildHashUrl(lat, lon, targetZoom, shouldEmbed);
+
+    navigator.clipboard.writeText(liveUrl).then(() => {
+      copyLinkBtn.innerHTML = `
+        <span class="material-symbols-outlined">check</span>
+        <span>${shouldEmbed ? "Embed Link Copied!" : "Link Copied!"}</span>
+      `;
+      setTimeout(() => {
+        copyLinkBtn.innerHTML = `
+          <span class="material-symbols-outlined">link</span>
+          <span>Copy Direct Link</span>
+        `;
+      }, 2000);
+    });
+  });
+
+  return container;
+}
+
 // Helper: Place/move marker, update popup, hash URL, and search input
 function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
   removeInitialLocation();
@@ -235,7 +345,7 @@ function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
     : targetZoom !== null
       ? targetZoom
       : map.getZoom() || DEFAULT_ZOOM;
-  const shareUrl = buildHashUrl(lat, lon, zoomLevel);
+  const shareUrl = buildHashUrl(lat, lon, zoomLevel, isEmbedded);
 
   const addressHtml =
     typeof formattedData === "object"
@@ -248,54 +358,7 @@ function setLocationMarker(lat, lon, formattedData, targetZoom = null) {
       ? formattedData.singleLine
       : formattedData;
 
-  const popupContent = document.createElement("div");
-  popupContent.className = "share-popup";
-  popupContent.innerHTML = `
-    <div class="popup-address">${addressHtml}</div>
-    <div class="popup-actions">
-      <button type="button" class="btn-action copy-addr-btn">
-        <span class="material-symbols-outlined">content_copy</span>
-        <span>Copy Address</span>
-      </button>
-      <button type="button" class="btn-action copy-link-btn">
-        <span class="material-symbols-outlined">link</span>
-        <span>Copy Direct Link</span>
-      </button>
-    </div>
-  `;
-
-  popupContent.querySelector(".copy-addr-btn").addEventListener("click", () => {
-    navigator.clipboard.writeText(copyText).then(() => {
-      const btn = popupContent.querySelector(".copy-addr-btn");
-      btn.innerHTML = `
-        <span class="material-symbols-outlined">check</span>
-        <span>Address Copied!</span>
-      `;
-      setTimeout(() => {
-        btn.innerHTML = `
-          <span class="material-symbols-outlined">content_copy</span>
-          <span>Copy Address</span>
-        `;
-      }, 2000);
-    });
-  });
-
-  popupContent.querySelector(".copy-link-btn").addEventListener("click", () => {
-    const liveUrl = buildHashUrl(lat, lon, map.getZoom());
-    navigator.clipboard.writeText(liveUrl).then(() => {
-      const btn = popupContent.querySelector(".copy-link-btn");
-      btn.innerHTML = `
-        <span class="material-symbols-outlined">check</span>
-        <span>Link Copied!</span>
-      `;
-      setTimeout(() => {
-        btn.innerHTML = `
-          <span class="material-symbols-outlined">link</span>
-          <span>Copy Direct Link</span>
-        `;
-      }, 2000);
-    });
-  });
+  const popupContent = createPopupContent(addressHtml, copyText, lat, lon);
 
   searchMarker = L.marker([lat, lon]).addTo(map).bindPopup(popupContent);
 
@@ -331,6 +394,7 @@ map.on("zoomend", () => {
       currentCoords.lat,
       currentCoords.lon,
       map.getZoom(),
+      isEmbedded,
     );
     window.history.replaceState(null, "", liveUrl);
   }
@@ -353,7 +417,11 @@ function navigateToCurrentLocation(lat, lon) {
   initialMarker = L.marker([lat, lon], { icon: homeIcon }).addTo(map);
 
   map.flyTo([lat, lon], maxZoom, { duration: 1.2 });
-  window.history.replaceState(null, "", buildHashUrl(lat, lon, maxZoom));
+  window.history.replaceState(
+    null,
+    "",
+    buildHashUrl(lat, lon, maxZoom, isEmbedded),
+  );
   if (!isEmbedded) clearBtn.style.display = "block";
 
   fetch(
@@ -367,57 +435,12 @@ function navigateToCurrentLocation(lat, lon) {
         autoResizeSearch(formatted.singleLine);
       }
 
-      const popupContent = document.createElement("div");
-      popupContent.className = "share-popup";
-      popupContent.innerHTML = `
-        <div class="popup-address">${formatted.html}</div>
-        <div class="popup-actions">
-          <button type="button" class="btn-action copy-addr-btn">
-            <span class="material-symbols-outlined">content_copy</span>
-            <span>Copy Address</span>
-          </button>
-          <button type="button" class="btn-action copy-link-btn">
-            <span class="material-symbols-outlined">link</span>
-            <span>Copy Direct Link</span>
-          </button>
-        </div>
-      `;
-
-      popupContent
-        .querySelector(".copy-addr-btn")
-        .addEventListener("click", (e) => {
-          navigator.clipboard.writeText(formatted.plainText).then(() => {
-            e.currentTarget.innerHTML = `
-            <span class="material-symbols-outlined">check</span>
-            <span>Address Copied!</span>
-          `;
-            setTimeout(() => {
-              e.currentTarget.innerHTML = `
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy Address</span>
-            `;
-            }, 2000);
-          });
-        });
-
-      popupContent
-        .querySelector(".copy-link-btn")
-        .addEventListener("click", (e) => {
-          const liveUrl = buildHashUrl(lat, lon, map.getZoom());
-          navigator.clipboard.writeText(liveUrl).then(() => {
-            e.currentTarget.innerHTML = `
-            <span class="material-symbols-outlined">check</span>
-            <span>Link Copied!</span>
-          `;
-            setTimeout(() => {
-              e.currentTarget.innerHTML = `
-              <span class="material-symbols-outlined">link</span>
-              <span>Copy Direct Link</span>
-            `;
-            }, 2000);
-          });
-        });
-
+      const popupContent = createPopupContent(
+        formatted.html,
+        formatted.plainText,
+        lat,
+        lon,
+      );
       initialMarker.bindPopup(popupContent).openPopup();
     })
     .catch((err) => {
@@ -481,7 +504,7 @@ if (!isEmbedded) {
 
 // 4. Click-on-Map Listener
 map.on("click", async (e) => {
-  if (isEmbedded) return; // Disable pin movement in embed mode
+  if (isEmbedded) return;
 
   const { lat, lng } = e.latlng;
   const maxZoom = map.getMaxZoom();

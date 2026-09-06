@@ -1,3 +1,45 @@
+/**
+ * ============================================================================
+ * Eagleburger Mapping Thingy - Application Stylesheet (style.css)
+ * ============================================================================
+ *
+ * Overview:
+ * This stylesheet defines the visual architecture, typography, responsiveness,
+ * and component hierarchy for the full-screen Leaflet.js mapping interface.
+ *
+ * Style Sections:
+ * 1. Global Resets & Typography
+ *    - Full-height page reset and global application of the Google Font (Solway).
+ *    - Font inheritance for native form controls and Leaflet container elements.
+ *    - Google Material Symbols baseline configuration (size, alignment, rendering).
+ *
+ * 2. Map Viewport
+ *    - Full-width and full-height map canvas definitions.
+ *    - Smooth opacity fade-in transition when the viewport finishes initializing.
+ *
+ * 3. Floating Search Bar
+ *    - Fixed-position floating search box with dynamic fluid-width expansion.
+ *    - Clear button and primary submission button styling with hover transitions.
+ *
+ * 4. Floating Map Utilities & Zoom Controls
+ *    - Bottom-right vertical utility palette containing zoom, reset, and GPS triggers.
+ *    - Cross-browser styling for the vertical HTML5 zoom slider track and thumbs.
+ *
+ * 5. Leaflet Popups & Address Card
+ *    - Multi-line structured address card formatting for resolved coordinates.
+ *    - Action buttons for clipboard copying (formatted address & direct link).
+ *    - Inline embed toggle checkbox and label alignment.
+ *
+ * 6. Loading Overlay & Spinner
+ *    - Full-screen blurred backdrop overlay shown during geocoding & cold boot.
+ *    - Hardware-accelerated CSS keyframe spinner animation.
+ *
+ * 7. Embed Mode Overrides (?embed=true)
+ *    - Body class modifier that suppresses UI chrome (search bar, zoom palette)
+ *      to display a clean, distraction-free embedded map viewport.
+ * ============================================================================
+ */
+
 /* ==========================================================================
    1. Global Resets & Typography
    ========================================================================== */
@@ -15,7 +57,6 @@ body {
 input,
 button,
 select,
-textarea,
 .leaflet-container {
   font-family: 'Solway', serif;
 }
@@ -184,8 +225,7 @@ textarea,
   background: #ddd;
   border-radius: 2px;
   outline: none;
-  transform: rotate(-90deg);
-  /* Rotate horizontal track to vertical */
+  transform: rotate(-90deg); /* Rotate horizontal track to vertical */
   cursor: pointer;
 }
 
@@ -241,6 +281,35 @@ textarea,
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.popup-share-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-share-row .copy-link-btn {
+  flex: 1;
+}
+
+.embed-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.embed-toggle-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #0078d4;
 }
 
 .btn-action {
