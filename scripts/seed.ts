@@ -21,7 +21,7 @@ async function runSeed() {
     uid: "user_admin_01",
     email: "director@eagleburgerband.com",
     displayName: "Alex Bass",
-    roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "section_leader"],
+    roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "section_leader"],
     sectionId: "sec_low_brass",
     instruments: ["Sousaphone", "Trombone"],
     onboardingStatus: "completed",
@@ -190,6 +190,55 @@ async function runSeed() {
     updatedAt: new Date().toISOString(),
   });
   console.log("✔ Seeded performance setlist");
+
+  // 9. Member Suggestions
+  await setDoc(doc(db, "suggestions", "sugg_brass_tune_01"), {
+    id: "sugg_brass_tune_01",
+    authorUid: "user_admin_01",
+    authorName: "Alex Bass",
+    category: "tune_request",
+    title: "Arrange 'Chameleon' for Street Marching",
+    description: "Herbie Hancock funk head would work great with 2 sousaphones swapping the octave bassline.",
+    status: "under_review",
+    upvoteUids: ["user_admin_01", "member_trumpet_02", "member_snare_01"],
+    adminNotes: "Director looking into horn charts for next rehearsal.",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  // 10. Discourse Comments & Notices
+  await setDoc(doc(db, "comments", "comment_pinned_mf"), {
+    id: "comment_pinned_mf",
+    targetType: "gig",
+    targetId: "gig_mattress_factory_2026",
+    targetTitle: "Mattress Factory Garden Gig",
+    authorUid: "user_admin_01",
+    authorName: "Alex Bass",
+    content: "Load-in notice: Museum gates unlock at 5:15 PM sharp. Enter through Sampsonia side door.",
+    isPinned: true,
+    isFlagged: false,
+    flagReason: "",
+    flaggedByUid: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await setDoc(doc(db, "comments", "comment_flagged_sample"), {
+    id: "comment_flagged_sample",
+    targetType: "tune",
+    targetId: "tune_ghost_town",
+    targetTitle: "Ghost Town",
+    authorUid: "member_anon_99",
+    authorName: "Guest Musician",
+    content: "Spam link: check out external soundcloud rip http://unverified-link.biz",
+    isPinned: false,
+    isFlagged: true,
+    flagReason: "External link spam in sheet music thread",
+    flaggedByUid: "user_admin_01",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded suggestions and discourse comments");
 
   console.log("✨ All records committed successfully!");
   process.exit(0);
