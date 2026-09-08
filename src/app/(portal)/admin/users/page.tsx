@@ -10,10 +10,10 @@ import { Section, SectionSchema } from "@/lib/schema/section";
 import { Role } from "@/lib/auth/permissions";
 import { ShieldAlert, Check, UserCog, Search } from "lucide-react";
 
-interface UserRecord extends User {
+type UserRecord = User & {
   status?: string;
   onboardingStatus?: string;
-}
+};
 
 const ALL_ROLES: Role[] = [
   "admin",
