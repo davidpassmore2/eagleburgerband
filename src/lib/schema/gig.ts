@@ -1,52 +1,61 @@
 import { z } from "zod";
 
+export const GigStatusEnum = z.enum([
+  "lead",
+  "tentative",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "archived",
+]);
+
+export const PublicDetailsSchema = z.object({
+  title: z.string().default(""),
+  venue: z.string().default(""),
+  city: z.string().default("Pittsburgh, PA"),
+  description: z.string().default(""),
+  admission: z.string().default("Free"),
+  facebookEventUrl: z.string().default(""),
+  ticketUrl: z.string().default(""),
+});
+
+export const InternalLogisticsSchema = z.object({
+  title: z.string().default(""),
+  callTime: z.string().default("18:00"),
+  downbeat: z.string().default("19:00"),
+  unloadingAddress: z.string().default(""),
+  parkingInstructions: z.string().default(""),
+  attire: z.string().default(""),
+  payPerMusician: z.number().default(0),
+  setlistId: z.string().default(""),
+  description: z.string().default(""),
+});
+
 export const GigSchema = z.object({
-  schemaVersion: z.number().default(1),
   id: z.string(),
-  status: z.enum(["draft", "confirmed", "cancelled"]).default("draft"),
-  isPubliclyVisible: z.boolean().default(false),
-  origin: z.enum(["direct_entry", "inquiry_conversion"]).default("direct_entry"),
-  originInquiryId: z.string().nullable().default(null),
-  contactId: z.string().nullable().default(null),
-  date: z.string(), // YYYY-MM-DD
-
-  publicDetails: z
-    .object({
-      title: z.string().min(1),
-      venue: z.string().default(""),
-      venueAddress: z.string().default(""),
-      city: z.string().default("Pittsburgh, PA"),
-      startTime: z.string().default(""),
-      endTime: z.string().default(""),
-      ticketUrl: z.string().nullable().default(null),
-      externalAlbumUrl: z.string().nullable().default(null),
-      description: z.string().default(""),
-    })
-    .passthrough(),
-
-  internalLogistics: z
-    .object({
-      title: z.string().default(""),
-      callTime: z.string().default(""),
-      downbeat: z.string().default(""),
-      attire: z.string().default(""),
-      unloadingAddress: z.string().default(""),
-      parkingNotes: z.string().default(""),
-      compensation: z.number().default(0),
-      paymentType: z.enum(["band_fund", "split", "volunteer"]).default("band_fund"),
-      setlistId: z.string().nullable().default(null),
-      description: z.string().default(""),
-    })
-    .passthrough(),
-
-  rsvpSummary: z
-    .object({
-      attendingCount: z.number().default(0),
-      declinedCount: z.number().default(0),
-    })
-    .default({ attendingCount: 0, declinedCount: 0 }),
-
-  metadata: z.record(z.string(), z.any()).optional().default({}),
+  date: z.string(),
+  status: GigStatusEnum.default("confirmed"),
+  publicDetails: PublicDetailsSchema.default(() => ({
+    title: "",
+    venue: "",
+    city: "Pittsburgh, PA",
+    description: "",
+    admission: "Free",
+    facebookEventUrl: "",
+    ticketUrl: "",
+  })),
+  internalLogistics: InternalLogisticsSchema.default(() => ({
+    title: "",
+    callTime: "18:00",
+    downbeat: "19:00",
+    unloadingAddress: "",
+    parkingInstructions: "",
+    attire: "",
+    payPerMusician: 0,
+    setlistId: "",
+    description: "",
+  })),
+  schemaVersion: z.number().default(1),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });

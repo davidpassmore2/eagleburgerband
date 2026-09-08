@@ -12,6 +12,7 @@ import {
   Layers,
   Users,
   CalendarCheck,
+  CalendarDays,
   LucideIcon,
 } from "lucide-react";
 
@@ -51,12 +52,12 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     requiredRoles: ["admin", "web_manager"],
   },
   {
-    id: "cms-pages",
-    title: "Page Studio",
-    description: "Edit /about, /giving, and press kit narratives.",
-    href: "/admin/pages",
-    icon: FileText,
-    requiredRoles: ["admin", "web_manager"],
+    id: "gigs-manager",
+    title: "Gig Management Studio",
+    description: "Schedule performances, configure internal logistics, and track production status.",
+    href: "/admin/gigs",
+    icon: CalendarDays,
+    requiredRoles: ["admin", "gig_manager"],
   },
   {
     id: "client-crm",

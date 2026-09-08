@@ -1,122 +1,127 @@
 // scripts/seed.ts
 process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, connectFirestoreEmulator, doc, setDoc } from "firebase/firestore";
-import { SectionSchema } from "../src/lib/schema/section";
-import { UserSchema } from "../src/lib/schema/user";
-import { GigSchema } from "../src/lib/schema/gig";
-import { TuneSchema } from "../src/lib/schema/tune";
 
-const app = initializeApp({ projectId: "eagleburger-band-dev" });
+const app = initializeApp({
+  projectId: "eagleburger-band-dev",
+  apiKey: "fake-api-key",
+});
+
 const db = getFirestore(app);
 connectFirestoreEmulator(db, "127.0.0.1", 8080);
 
-async function seedDatabase() {
+async function runSeed() {
   console.log("🌱 Starting local database seed...");
 
-  // 1. Seed Sections
-  const sections = [
-    SectionSchema.parse({
-      id: "sec_low_brass",
-      name: "Low Brass",
-      description: "Sousaphones, baritones, and bass trombones providing bassline groove.",
-      instruments: ["Sousaphone", "Tuba", "Baritone Horn", "Bass Trombone"],
-      leaderUids: ["user_admin_01"],
-      memberUids: ["user_admin_01"],
-      order: 1,
-    }),
-    SectionSchema.parse({
-      id: "sec_trumpets",
-      name: "Trumpets",
-      description: "Lead melody lines and high brass punch.",
-      instruments: ["Trumpet"],
-      leaderUids: [],
-      memberUids: [],
-      order: 2,
-    }),
-    SectionSchema.parse({
-      id: "sec_percussion",
-      name: "Battery Percussion",
-      description: "Snare, bass drum, and mobile auxiliary percussion.",
-      instruments: ["Snare Drum", "Bass Drum", "Cymbals"],
-      leaderUids: [],
-      memberUids: [],
-      order: 3,
-    }),
-  ];
-
-  for (const s of sections) {
-    await setDoc(doc(db, "sections", s.id), s);
-  }
-  console.log(`✅ Seeded ${sections.length} instrument sections.`);
-
-  // 2. Seed User
-  const adminUser = UserSchema.parse({
+  // 1. Admin User
+  await setDoc(doc(db, "users", "user_admin_01"), {
     uid: "user_admin_01",
     email: "director@eagleburgerband.com",
     displayName: "Alex Bass",
-    sectionId: "sec_low_brass",
-    instruments: ["Sousaphone"],
     roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "section_leader"],
+    sectionId: "sec_low_brass",
+    instruments: ["Sousaphone", "Trombone"],
+    onboardingStatus: "completed",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
-  await setDoc(doc(db, "users", adminUser.uid), adminUser);
-  console.log("✅ Seeded Admin User (Alex Bass).");
+  console.log("✔ Seeded Admin User (Alex Bass)");
 
-  // 3. Seed Sample Gig
-  const sampleGig = GigSchema.parse({
-    id: "gig_mf_2026",
-    status: "confirmed",
-    isPubliclyVisible: true,
+  // 2. Sections
+  await setDoc(doc(db, "sections", "sec_low_brass"), {
+    id: "sec_low_brass",
+    name: "Low Brass",
+    description: "Sousaphones, Trombones, Euphoniums, and Baritones holding down the low end.",
+    leaderUid: "user_admin_01",
+    order: 1,
+  });
+
+  await setDoc(doc(db, "sections", "sec_trumpets"), {
+    id: "sec_trumpets",
+    name: "Trumpets",
+    description: "High brass lead lines and fanfares.",
+    leaderUid: "user_admin_01",
+    order: 2,
+  });
+  console.log("✔ Seeded sections");
+
+  // 3. Active Performance
+  await setDoc(doc(db, "gigs", "gig_mattress_factory_2026"), {
+    id: "gig_mattress_factory_2026",
     date: "2026-09-25",
+    status: "confirmed",
     publicDetails: {
       title: "Mattress Factory Garden Party",
-      venue: "Mattress Factory Museum",
-      venueAddress: "500 Sampsonia Way, Pittsburgh, PA 15212",
-      startTime: "19:00",
-      endTime: "21:30",
-      description: "Outdoor street brass show with high energy grooves!",
+      venue: "Mattress Factory Museum Garden",
+      city: "Pittsburgh, PA",
+      description: "Annual outdoor garden performance featuring Eagleburger Band and special guests.",
+      admission: "Free / Museum Admission",
+      facebookEventUrl: "https://facebook.com/events/eagleburger-mf",
+      ticketUrl: "https://mattress.org/events",
     },
     internalLogistics: {
-      title: "Mattress Factory Show",
-      callTime: "17:45",
-      downbeat: "19:00",
-      attire: "Yellow & Polka dots (Full regalia)",
-      unloadingAddress: "Rear alley gate on Sampsonia St",
-      parkingNotes: "Free museum employee lot off Arch St.",
-      compensation: 1500,
+      title: "Mattress Factory Garden Gig",
+      callTime: "17:30",
+      downbeat: "18:30",
+      unloadingAddress: "500 Sampsonia Way (Garden Gate)",
+      parkingInstructions: "Unload at garden gate, then park along Jacksonia or Arch St.",
+      attire: "Band Yellows & Black Pants",
+      payPerMusician: 75,
+      setlistId: "set_garden_party_2026",
+      description: "Joint set with Buffalo guests. 2 x 45-minute street brass sets.",
     },
+    schemaVersion: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
-  await setDoc(doc(db, "gigs", sampleGig.id), sampleGig);
-  console.log("✅ Seeded sample gig (Mattress Factory).");
+  console.log("✔ Seeded sample gig");
 
-  // 4. Seed Sample Tune
-  const sampleTune = TuneSchema.parse({
-    id: "tune_ghost_town",
-    title: "Ghost Town",
-    composer: "The Specials",
-    phase: "in_catalog",
-    submittedByUid: "user_admin_01",
-    submittedByName: "Alex Bass",
-    tempoBpm: 138,
-    key: "C Minor",
-    pitchNotes: "Classic ska brass groove.",
+  // 4. RSVP
+  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_admin_01"), {
+    status: "attending",
+    sectionId: "sec_low_brass",
+    updatedAt: new Date().toISOString(),
   });
-  await setDoc(doc(db, "tunes", sampleTune.id), sampleTune);
-  console.log("✅ Seeded sample tune (Ghost Town).");
 
-  console.log("✨ Seeding writes dispatched successfully!");
+  // 5. CRM Client Contact
+  await setDoc(doc(db, "contacts", "contact_mf_events"), {
+    id: "contact_mf_events",
+    name: "Caitlin Sparks",
+    organization: "Mattress Factory Museum",
+    email: "events@mattress.org",
+    phone: "(412) 231-3169",
+    notes: "Coordinates Northside garden and courtyard parties. Net-30 invoice via museum accounts payable.",
+    totalGigsBooked: 3,
+    lastContactedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded client contact");
+
+  // 6. Inbound Lead
+  await setDoc(doc(db, "inquiries", "lead_bloomfield_fest"), {
+    id: "lead_bloomfield_fest",
+    contactName: "Marco Rossi",
+    organization: "Little Italy Days / Bloomfield",
+    email: "mrossi@bloomfieldpgh.org",
+    phone: "(412) 555-0182",
+    eventDate: "2026-10-10",
+    eventTitle: "Bloomfield Street Brass Parade",
+    venue: "Liberty Avenue",
+    estimatedBudget: 800,
+    notes: "45-minute roving brass performance starting at Cedarville and marching down Liberty Ave.",
+    status: "new",
+    createdAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded booking lead");
+
+  console.log("✨ All records committed successfully!");
+  process.exit(0);
 }
 
-seedDatabase()
-  .then(() => {
-    console.log("⏳ Waiting for emulator writes to flush...");
-    setTimeout(() => {
-      console.log("Done!");
-      process.exit(0);
-    }, 1500);
-  })
-  .catch((err) => {
-    console.error("❌ Seeding failed:", err);
-    process.exit(1);
-  });
+runSeed().catch((err) => {
+  console.error("❌ Seeding failed:", err);
+  process.exit(1);
+});
