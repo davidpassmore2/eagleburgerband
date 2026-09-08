@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
+import { canManageGigs } from "@/lib/auth/permissions";
+import SetlistBuilderModal, { PerformanceSet } from "@/components/portal/SetlistBuilderModal";
 import { 
   Calendar, 
   Clock, 
@@ -24,7 +26,10 @@ import {
   Users, 
   Navigation,
   Music2,
-  AlertCircle
+  AlertCircle,
+  ListMusic,
+  FileText,
+  Edit3
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -70,6 +75,7 @@ type GigDetails = {
     compensation?: number;
     description?: string;
   };
+  setlist?: PerformanceSet[];
   rsvpSummary?: {
     attendingCount: number;
     declinedCount: number;
@@ -93,6 +99,7 @@ export default function GigCallSheetPage() {
   const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
   const [optimisticStatus, setOptimisticStatus] = useState<AttendanceStatus | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [isSetlistModalOpen, setIsSetlistModalOpen] = useState(false);
 
   // Subscribe to Gig, RSVPs, Sections, and Users directory
   useEffect(() => {
@@ -248,7 +255,7 @@ export default function GigCallSheetPage() {
     description: "",
   };
 
-  // Merge optimistic local RSVP into the list for immediate UI reactivity
+  // Merge optimistic local RSVP into the list
   const effectiveRsvps: PerformerRsvp[] = rsvps.map((r) => {
     if (profile && r.uid === profile.uid && optimisticStatus) {
       return { ...r, status: optimisticStatus };
@@ -278,6 +285,7 @@ export default function GigCallSheetPage() {
   const declinedPlayers = effectiveRsvps.filter((r) => r.status === "declined");
   const tentativePlayers = effectiveRsvps.filter((r) => r.status === "tentative");
 
+  const setlist = gig.setlist || [];
   const mapsQuery = encodeURIComponent(logistics.unloadingAddress);
 
   return (
@@ -369,6 +377,97 @@ export default function GigCallSheetPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Setlist Section */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <ListMusic className="w-5 h-5 text-yellow-400" />
+            <h2 className="text-base font-bold text-white">Live Gig Setlist</h2>
+          </div>
+
+          {canManageGigs(profile) && (
+            <button
+              type="button"
+              onClick={() => setIsSetlistModalOpen(true)}
+              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition"
+            >
+              <Edit3 className="w-3.5 h-3.5" /> Manage Setlist
+            </button>
+          )}
+        </div>
+
+        {setlist.length === 0 || setlist.every((s) => s.items.length === 0) ? (
+          <div className="text-center py-6 text-slate-500 text-xs flex items-center justify-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            No setlist published for this performance yet.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {setlist.map((set) => (
+              <div key={set.id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">
+                    {set.setName}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500 font-bold">
+                    {set.items.length} tunes
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {set.items.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className="bg-slate-900 border border-slate-800/80 rounded-lg p-2.5 flex items-start justify-between gap-2"
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-mono font-bold text-yellow-400">
+                            {idx + 1}.
+                          </span>
+                          <span className="text-xs font-bold text-white truncate">
+                            {item.title}
+                          </span>
+                          {item.keySignature && (
+                            <span className="text-[10px] font-mono font-bold text-yellow-400 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800">
+                              {item.keySignature}
+                            </span>
+                          )}
+                        </div>
+
+                        {item.artist && (
+                          <span className="text-[10px] text-slate-400 block truncate">
+                            {item.artist}
+                          </span>
+                        )}
+
+                        {item.performanceNote && (
+                          <div className="text-[10px] text-amber-300/90 font-mono bg-amber-400/10 px-1.5 py-0.5 rounded mt-1 border border-amber-400/20">
+                            {item.performanceNote}
+                          </div>
+                        )}
+                      </div>
+
+                      {item.driveLink && (
+                        <a
+                          href={item.driveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-yellow-400 hover:text-yellow-300 p-1 bg-slate-950 border border-slate-800 rounded transition shrink-0"
+                          title="Open Chart PDF"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Logistics & Staging Grid */}
@@ -528,6 +627,16 @@ export default function GigCallSheetPage() {
           </div>
         )}
       </div>
+
+      {/* Setlist Builder Modal */}
+      {isSetlistModalOpen && (
+        <SetlistBuilderModal
+          gigId={gig.id}
+          initialSets={gig.setlist}
+          isOpen={isSetlistModalOpen}
+          onClose={() => setIsSetlistModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
