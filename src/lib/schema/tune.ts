@@ -1,44 +1,36 @@
+// src/lib/schema/tune.ts
 import { z } from "zod";
 
-export const TunePhaseEnum = z.enum([
-  "proposed",
-  "in_development",
-  "in_catalog",
-  "retired",
+export const TuneLifecycleEnum = z.enum([
+  "concept",
+  "in_rehearsal",
+  "active_rotation",
+  "archived",
 ]);
 
+export const ChartAttachmentSchema = z.object({
+  sectionId: z.string(),
+  partName: z.string(),
+  fileUrl: z.string(),
+  key: z.string().default(""),
+});
+
 export const TuneSchema = z.object({
-  schemaVersion: z.number().default(1),
   id: z.string(),
-  title: z.string().min(1),
-  composer: z.string().default(""),
+  title: z.string().min(1, "Title is required"),
+  originalArtist: z.string().default(""),
   arranger: z.string().default(""),
   key: z.string().default(""),
   tempoBpm: z.number().default(120),
-  phase: TunePhaseEnum.default("proposed"),
-  pitchNotes: z.string().default(""),
-  submittedByUid: z.string(),
-  submittedByName: z.string(),
-  driveLinks: z
-    .object({
-      folderUrl: z.string().default(""),
-      leadSheetUrl: z.string().default(""),
-      partsFolderUrl: z.string().default(""),
-    })
-    .default({ folderUrl: "", leadSheetUrl: "", partsFolderUrl: "" }),
-  referenceAudioUrl: z.string().default(""),
-  metrics: z
-    .object({
-      averageRating: z.number().default(0),
-      ratingCount: z.number().default(0),
-      commentCount: z.number().default(0),
-      setlistCount: z.number().default(0),
-      lastPerformedDate: z.string().nullable().default(null),
-    })
-    .default({ averageRating: 0, ratingCount: 0, commentCount: 0, setlistCount: 0, lastPerformedDate: null }),
-  metadata: z.record(z.string(), z.any()).optional().default({}),
+  timeSignature: z.string().default("4/4"),
+  durationSeconds: z.number().default(180),
+  lifecycleStatus: TuneLifecycleEnum.default("active_rotation"),
+  notes: z.string().default(""),
+  chartAttachments: z.array(ChartAttachmentSchema).default([]),
+  audioReferenceUrl: z.string().default(""),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
 
 export type Tune = z.infer<typeof TuneSchema>;
+export type ChartAttachment = z.infer<typeof ChartAttachmentSchema>;

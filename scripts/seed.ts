@@ -30,7 +30,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded Admin User (Alex Bass)");
 
-  // 2. Sections
+  // 2. Instrument Sections
   await setDoc(doc(db, "sections", "sec_low_brass"), {
     id: "sec_low_brass",
     name: "Low Brass",
@@ -48,7 +48,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded sections");
 
-  // 3. Active Performance
+  // 3. Active Performance Call
   await setDoc(doc(db, "gigs", "gig_mattress_factory_2026"), {
     id: "gig_mattress_factory_2026",
     date: "2026-09-25",
@@ -79,12 +79,13 @@ async function runSeed() {
   });
   console.log("✔ Seeded sample gig");
 
-  // 4. RSVP
+  // 4. RSVP Record
   await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_admin_01"), {
     status: "attending",
     sectionId: "sec_low_brass",
     updatedAt: new Date().toISOString(),
   });
+  console.log("✔ Seeded gig RSVP");
 
   // 5. CRM Client Contact
   await setDoc(doc(db, "contacts", "contact_mf_events"), {
@@ -100,7 +101,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded client contact");
 
-  // 6. Inbound Lead
+  // 6. Inbound Booking Lead
   await setDoc(doc(db, "inquiries", "lead_bloomfield_fest"), {
     id: "lead_bloomfield_fest",
     contactName: "Marco Rossi",
@@ -116,6 +117,79 @@ async function runSeed() {
     createdAt: new Date().toISOString(),
   });
   console.log("✔ Seeded booking lead");
+
+  // 7. Repertoire Tunes
+  await setDoc(doc(db, "tunes", "tune_ghost_town"), {
+    id: "tune_ghost_town",
+    title: "Ghost Town",
+    originalArtist: "The Specials",
+    arranger: "Eagleburger Arrangers",
+    key: "Cm",
+    tempoBpm: 76,
+    timeSignature: "4/4",
+    durationSeconds: 220,
+    lifecycleStatus: "active_rotation",
+    notes: "Heavy bass reggae groove. Baritone solo on bridge.",
+    chartAttachments: [
+      {
+        sectionId: "sec_low_brass",
+        partName: "Sousaphone & Low Brass",
+        fileUrl: "https://example.com/charts/ghost-town-low-brass.pdf",
+        key: "Cm",
+      },
+      {
+        sectionId: "sec_trumpets",
+        partName: "1st & 2nd Trumpets",
+        fileUrl: "https://example.com/charts/ghost-town-trumpets.pdf",
+        key: "Cm",
+      },
+    ],
+    audioReferenceUrl: "https://www.youtube.com/watch?v=RZ2oXzrnti4",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await setDoc(doc(db, "tunes", "tune_saint_james"), {
+    id: "tune_saint_james",
+    title: "St. James Infirmary",
+    originalArtist: "Traditional / Preservation Hall",
+    arranger: "Trad",
+    key: "Dm",
+    tempoBpm: 92,
+    timeSignature: "4/4",
+    durationSeconds: 200,
+    lifecycleStatus: "active_rotation",
+    notes: "Slow, theatrical funeral march build into double-time dance swing.",
+    chartAttachments: [],
+    audioReferenceUrl: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded repertoire catalog charts");
+
+  // 8. Performance Setlist
+  await setDoc(doc(db, "setlists", "set_garden_party_2026"), {
+    id: "set_garden_party_2026",
+    title: "Mattress Factory Garden Party - Set 1",
+    description: "Opening 45-minute street performance set in museum garden courtyard.",
+    gigId: "gig_mattress_factory_2026",
+    targetDurationMinutes: 45,
+    items: [
+      {
+        tuneId: "tune_ghost_town",
+        customNotes: "Extend intro bassline 8 bars while crowd gathers",
+        transitionType: "drum_roll",
+      },
+      {
+        tuneId: "tune_saint_james",
+        customNotes: "Segue directly out of funeral cadence into swing tempo",
+        transitionType: "direct_segue",
+      },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded performance setlist");
 
   console.log("✨ All records committed successfully!");
   process.exit(0);
