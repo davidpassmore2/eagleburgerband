@@ -8,7 +8,8 @@ export type Role =
   | "community_manager"
   | "treasurer"
   | "section_leader"
-  | "member";
+  | "member"
+  | "guest";
 
 export function hasRole(user: User | null, role: Role): boolean {
   if (!user || !user.roles) return false;
@@ -22,6 +23,14 @@ export function hasAnyRole(user: User | null, roles: Role[]): boolean {
 }
 
 export function isAdmin(user: User | null): boolean {
+  return hasRole(user, "admin");
+}
+
+export function canManageSections(user: User | null): boolean {
+  return hasRole(user, "admin");
+}
+
+export function canManageRoster(user: User | null): boolean {
   return hasRole(user, "admin");
 }
 

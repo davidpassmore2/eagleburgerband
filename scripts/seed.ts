@@ -16,25 +16,74 @@ connectFirestoreEmulator(db, "127.0.0.1", 8080);
 async function runSeed() {
   console.log("🌱 Starting local database seed...");
 
-  // 1. Admin User
+  // 1. Primary Director / Admin User
   await setDoc(doc(db, "users", "user_admin_01"), {
     uid: "user_admin_01",
     email: "director@eagleburgerband.com",
     displayName: "Alex Bass",
-    roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "section_leader"],
+    roles: [
+      "admin",
+      "web_manager",
+      "gig_manager",
+      "catalog_manager",
+      "community_manager",
+      "section_leader",
+      "member",
+    ],
     sectionId: "sec_low_brass",
     instruments: ["Sousaphone", "Trombone"],
+    phone: "(412) 555-0101",
     onboardingStatus: "completed",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-  console.log("✔ Seeded Admin User (Alex Bass)");
 
-  // 2. Instrument Sections
+  // 2. Additional Section Members & Leaders
+  await setDoc(doc(db, "users", "user_trumpet_01"), {
+    uid: "user_trumpet_01",
+    email: "lead.trumpet@eagleburgerband.com",
+    displayName: "Miles High",
+    roles: ["section_leader", "member"],
+    sectionId: "sec_trumpets",
+    instruments: ["Lead Trumpet", "Flugelhorn"],
+    phone: "(412) 555-0199",
+    onboardingStatus: "completed",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await setDoc(doc(db, "users", "user_bone_02"), {
+    uid: "user_bone_02",
+    email: "trombone2@eagleburgerband.com",
+    displayName: "Sam Slide",
+    roles: ["member"],
+    sectionId: "sec_low_brass",
+    instruments: ["2nd Trombone", "Euphonium"],
+    phone: "(412) 555-0144",
+    onboardingStatus: "completed",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  await setDoc(doc(db, "users", "user_drums_01"), {
+    uid: "user_drums_01",
+    email: "percussion@eagleburgerband.com",
+    displayName: "Rocco Beat",
+    roles: ["section_leader", "member"],
+    sectionId: "sec_percussion",
+    instruments: ["Snare Drum", "Bass Drum"],
+    phone: "(412) 555-0177",
+    onboardingStatus: "completed",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded roster performers and section leaders");
+
+  // 3. Instrument Sections
   await setDoc(doc(db, "sections", "sec_low_brass"), {
     id: "sec_low_brass",
     name: "Low Brass",
-    description: "Sousaphones, Trombones, Euphoniums, and Baritones holding down the low end.",
+    description: "Sousaphones, Trombones, Euphoniums, and Baritones holding down the groove and basslines.",
     leaderUid: "user_admin_01",
     order: 1,
   });
@@ -42,13 +91,21 @@ async function runSeed() {
   await setDoc(doc(db, "sections", "sec_trumpets"), {
     id: "sec_trumpets",
     name: "Trumpets",
-    description: "High brass lead lines and fanfares.",
-    leaderUid: "user_admin_01",
+    description: "High brass lead melodies, harmonies, and fanfares.",
+    leaderUid: "user_trumpet_01",
     order: 2,
   });
-  console.log("✔ Seeded sections");
 
-  // 3. Active Performance Call
+  await setDoc(doc(db, "sections", "sec_percussion"), {
+    id: "sec_percussion",
+    name: "Percussion",
+    description: "Snare, bass drum, cymbals, and auxiliary street battery.",
+    leaderUid: "user_drums_01",
+    order: 3,
+  });
+  console.log("✔ Seeded instrument sections");
+
+  // 4. Active Performance Call
   await setDoc(doc(db, "gigs", "gig_mattress_factory_2026"), {
     id: "gig_mattress_factory_2026",
     date: "2026-09-25",
@@ -79,15 +136,27 @@ async function runSeed() {
   });
   console.log("✔ Seeded sample gig");
 
-  // 4. RSVP Record
+  // 5. RSVPs
   await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_admin_01"), {
     status: "attending",
     sectionId: "sec_low_brass",
     updatedAt: new Date().toISOString(),
   });
-  console.log("✔ Seeded gig RSVP");
 
-  // 5. CRM Client Contact
+  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_bone_02"), {
+    status: "attending",
+    sectionId: "sec_low_brass",
+    updatedAt: new Date().toISOString(),
+  });
+
+  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_trumpet_01"), {
+    status: "tentative",
+    sectionId: "sec_trumpets",
+    updatedAt: new Date().toISOString(),
+  });
+  console.log("✔ Seeded gig attendance records");
+
+  // 6. CRM Client Contact
   await setDoc(doc(db, "contacts", "contact_mf_events"), {
     id: "contact_mf_events",
     name: "Caitlin Sparks",
@@ -101,7 +170,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded client contact");
 
-  // 6. Inbound Booking Lead
+  // 7. Inbound Booking Lead
   await setDoc(doc(db, "inquiries", "lead_bloomfield_fest"), {
     id: "lead_bloomfield_fest",
     contactName: "Marco Rossi",
@@ -118,7 +187,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded booking lead");
 
-  // 7. Repertoire Tunes
+  // 8. Repertoire Tunes
   await setDoc(doc(db, "tunes", "tune_ghost_town"), {
     id: "tune_ghost_town",
     title: "Ghost Town",
@@ -167,7 +236,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded repertoire catalog charts");
 
-  // 8. Performance Setlist
+  // 9. Performance Setlist
   await setDoc(doc(db, "setlists", "set_garden_party_2026"), {
     id: "set_garden_party_2026",
     title: "Mattress Factory Garden Party - Set 1",
@@ -191,7 +260,7 @@ async function runSeed() {
   });
   console.log("✔ Seeded performance setlist");
 
-  // 9. Member Suggestions
+  // 10. Member Suggestions
   await setDoc(doc(db, "suggestions", "sugg_brass_tune_01"), {
     id: "sugg_brass_tune_01",
     authorUid: "user_admin_01",
@@ -200,13 +269,13 @@ async function runSeed() {
     title: "Arrange 'Chameleon' for Street Marching",
     description: "Herbie Hancock funk head would work great with 2 sousaphones swapping the octave bassline.",
     status: "under_review",
-    upvoteUids: ["user_admin_01", "member_trumpet_02", "member_snare_01"],
+    upvoteUids: ["user_admin_01", "user_trumpet_01", "user_bone_02"],
     adminNotes: "Director looking into horn charts for next rehearsal.",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
 
-  // 10. Discourse Comments & Notices
+  // 11. Discourse Comments & Notices
   await setDoc(doc(db, "comments", "comment_pinned_mf"), {
     id: "comment_pinned_mf",
     targetType: "gig",
