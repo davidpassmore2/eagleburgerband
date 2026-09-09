@@ -2,229 +2,234 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, query, where, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { WORKSPACE_TOOLS } from "@/lib/portal/workspaceRegistry";
-import { hasRole } from "@/lib/auth/permissions";
-import { Gig, GigSchema } from "@/lib/schema/gig";
-import { Calendar, Clock, MapPin, Shirt, CheckCircle2, HelpCircle, XCircle, ExternalLink } from "lucide-react";
+import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  ArrowRight,
+  Sparkles,
+  Music2,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
-export default function PortalHomePage() {
-  const { profile, firebaseUser } = useAuth();
-  const [nextGig, setNextGig] = useState<Gig | null>(null);
-  const [currentRsvp, setCurrentRsvp] = useState<string | null>(null);
-  const [loadingGig, setLoadingGig] = useState(true);
+type AttendanceStatus = "attending" | "declined" | "tentative";
+
+type Gig = {
+  id: string;
+  date: string;
+  status: string;
+  publicDetails?: {
+    title: string;
+    venue: string;
+    venueAddress?: string;
+  };
+  internalLogistics?: {
+    title: string;
+    callTime: string;
+    downbeat: string;
+    attire: string;
+    unloadingAddress: string;
+    compensation?: number;
+  };
+  rsvpSummary?: {
+    attendingCount: number;
+    declinedCount: number;
+  };
+};
+
+export default function MusicianPortalOverviewPage() {
+  const { profile, loading: authLoading } = useAuth();
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
+  const [loadingGigs, setLoadingGigs] = useState(true);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   useEffect(() => {
-    async function loadNextGig() {
-      try {
-        const today = new Date().toISOString().split("T")[0];
-        const q = query(
-          collection(db, "gigs"),
-          where("date", ">=", today)
-        );
-        const snap = await getDocs(q);
-        const gigs: Gig[] = [];
-        snap.forEach((d) => {
-          const parsed = GigSchema.safeParse(d.data());
-          if (parsed.success && parsed.data.status === "confirmed") {
-            gigs.push(parsed.data);
-          }
-        });
-        gigs.sort((a, b) => a.date.localeCompare(b.date));
-
-        if (gigs.length > 0) {
-          const gig = gigs[0];
-          setNextGig(gig);
-
-          if (firebaseUser) {
-            const rsvpDoc = await getDoc(doc(db, `gigs/${gig.id}/rsvps`, firebaseUser.uid));
-            if (rsvpDoc.exists()) {
-              setCurrentRsvp(rsvpDoc.data().status);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error loading next performance:", err);
-      } finally {
-        setLoadingGig(false);
-      }
-    }
-
-    loadNextGig();
-  }, [firebaseUser]);
-
-  const handleRsvp = async (status: "attending" | "tentative" | "declined") => {
-    if (!nextGig || !firebaseUser) return;
-    setCurrentRsvp(status);
-    await setDoc(doc(db, `gigs/${nextGig.id}/rsvps`, firebaseUser.uid), {
-      status,
-      uid: firebaseUser.uid,
-      displayName: profile?.displayName || firebaseUser.displayName || "Musician",
-      sectionId: profile?.sectionId || null,
-      updatedAt: new Date().toISOString(),
+    const q = query(collection(db, "gigs"), orderBy("date", "asc"));
+    const unsubGigs = onSnapshot(q, (snapshot) => {
+      const gigList: Gig[] = [];
+      snapshot.forEach((doc) => {
+        gigList.push({ id: doc.id, ...doc.data() } as Gig);
+      });
+      setGigs(gigList);
+      setLoadingGigs(false);
     });
-  };
 
-  const authorizedTools = WORKSPACE_TOOLS.filter((tool) =>
-    tool.requiredRoles.some((role) => hasRole(profile, role))
-  );
+    return () => unsubGigs();
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const fetchUserRsvps = async () => {
+      const map: Record<string, AttendanceStatus> = {};
+      for (const gig of gigs) {
+        try {
+          const rsvpDocSnap = await getDocs(collection(db, "gigs", gig.id, "rsvps"));
+          rsvpDocSnap.forEach((docSnap) => {
+            if (docSnap.id === profile.uid) {
+              map[gig.id] = (docSnap.data().status as AttendanceStatus) || "tentative";
+            }
+          });
+        } catch (err) {
+          console.error("Error fetching user rsvp for gig", gig.id, err);
+        }
+      }
+      setUserRsvps(map);
+    };
+
+    if (gigs.length > 0) {
+      fetchUserRsvps();
+    }
+  }, [gigs, profile]);
+
+  if (authLoading || loadingGigs) {
+    return <div className="p-8 text-slate-400">Loading your performance schedule...</div>;
+  }
+
+  const upcomingGigs = gigs.filter((g) => g.status !== "cancelled" && g.status !== "completed");
+  const confirmedCount = Object.values(userRsvps).filter((s) => s === "attending").length;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8">
-      {/* Welcome Banner */}
-      <div className="border-b border-slate-800 pb-5">
-        <h1 className="text-2xl font-black text-white tracking-tight">
-          Welcome back, {profile?.displayName?.split(" ")[0] || "Musician"}
-        </h1>
-        <p className="text-sm text-slate-400">
-          Instrument: {profile?.instruments?.join(", ") || "General Ensemble"} • Section: {profile?.sectionId || "Unassigned"}
-        </p>
-      </div>
-
-      {/* Next Performance Hero Timeline */}
-      <div className="bg-slate-900 border border-yellow-500/30 rounded-xl p-6 relative overflow-hidden shadow-lg">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <span className="text-xs font-bold uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
-            <Calendar className="w-4 h-4" /> Next Performance Call
-          </span>
-          {nextGig && (
-            <span className="text-xs bg-yellow-400/10 text-yellow-300 font-mono px-2.5 py-0.5 rounded border border-yellow-400/20">
-              {nextGig.date}
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+      {/* Welcome & Quick Action Header */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+              Musician Portal
             </span>
-          )}
+            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Live Dispatch Active
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+            Welcome back, {profile?.displayName || "Musician"}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            You are confirmed for <strong className="text-emerald-400">{confirmedCount}</strong> upcoming{" "}
+            {confirmedCount === 1 ? "performance" : "performances"}.
+          </p>
         </div>
 
-        {loadingGig ? (
-          <div className="py-8 text-sm text-slate-400">Loading performance schedule...</div>
-        ) : nextGig ? (
-          <div className="pt-4 space-y-6">
-            <div>
-              <h2 className="text-xl font-black text-white">
-                {nextGig.internalLogistics.title || nextGig.publicDetails.title}
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                {nextGig.internalLogistics.description || nextGig.publicDetails.description}
-              </p>
-            </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setIsCalendarModalOpen(true)}
+            className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+          >
+            <CalendarIcon className="w-3.5 h-3.5" /> Sync Calendar
+          </button>
+          <Link
+            href="/portal/library"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-slate-700 flex-1 md:flex-initial"
+          >
+            <Music2 className="w-3.5 h-3.5 text-yellow-400" /> Chart Catalog
+          </Link>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white">Call Time / Downbeat</div>
-                  <div className="text-slate-400">
-                    Call: {nextGig.internalLogistics.callTime || "TBA"} • Beat: {nextGig.internalLogistics.downbeat || "TBA"}
-                  </div>
-                </div>
-              </div>
+      {/* Upcoming Performance Schedule List */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center px-1">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-yellow-400" /> Upcoming Gigs & Call Sheets
+          </h2>
+          <span className="text-xs font-mono text-slate-500">
+            {upcomingGigs.length} scheduled
+          </span>
+        </div>
 
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white">Location & Dock</div>
-                  <div className="text-slate-400 line-clamp-1">{nextGig.publicDetails.venue}</div>
-                  <div className="text-[11px] text-slate-500 line-clamp-1">{nextGig.internalLogistics.unloadingAddress}</div>
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5">
-                <Shirt className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white">Uniform Attire</div>
-                  <div className="text-slate-400">{nextGig.internalLogistics.attire || "Band Standard"}</div>
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5">
-                <ExternalLink className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white">Performance Setlist</div>
-                  <div className="text-slate-400">{nextGig.internalLogistics.setlistId ? "Charts Attached" : "Setlist Pending"}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Attendance RSVP Bar */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
-              <span className="text-xs font-semibold text-slate-300">Your Attendance Response:</span>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <button
-                  onClick={() => handleRsvp("attending")}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition ${
-                    currentRsvp === "attending"
-                      ? "bg-emerald-500 text-slate-950 shadow"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Attending
-                </button>
-                <button
-                  onClick={() => handleRsvp("tentative")}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition ${
-                    currentRsvp === "tentative"
-                      ? "bg-amber-500 text-slate-950 shadow"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4" /> Tentative
-                </button>
-                <button
-                  onClick={() => handleRsvp("declined")}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition ${
-                    currentRsvp === "declined"
-                      ? "bg-rose-500 text-slate-950 shadow"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  <XCircle className="w-4 h-4" /> Decline
-                </button>
-              </div>
-            </div>
+        {upcomingGigs.length === 0 ? (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-xs">
+            No upcoming gigs scheduled at this time. Check back soon!
           </div>
         ) : (
-          <div className="py-8 text-center text-sm text-slate-400">
-            No confirmed upcoming performances scheduled right now. Check back soon!
+          <div className="grid grid-cols-1 gap-3">
+            {upcomingGigs.map((gig) => {
+              const status = userRsvps[gig.id];
+              const title = gig.internalLogistics?.title || gig.publicDetails?.title || "Eagleburger Gig";
+              const venue = gig.publicDetails?.venue || gig.internalLogistics?.unloadingAddress || "TBD";
+              const callTime = gig.internalLogistics?.callTime || "TBD";
+              const downbeat = gig.internalLogistics?.downbeat || "TBD";
+
+              return (
+                <Link
+                  key={gig.id}
+                  href={`/portal/gigs/${gig.id}`}
+                  className="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+                >
+                  <div className="space-y-2 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        {gig.date}
+                      </span>
+                      <span className="text-xs font-bold text-white group-hover:text-yellow-400 transition truncate">
+                        {title}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        Call: <strong className="text-slate-200">{callTime}</strong> | Downbeat:{" "}
+                        <strong className="text-slate-200">{downbeat}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span className="truncate">{venue}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+                    {/* User RSVP Status Pill */}
+                    <div>
+                      {status === "attending" && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> You`&apos;`re In
+                        </span>
+                      )}
+                      {status === "declined" && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-lg">
+                          <XCircle className="w-3.5 h-3.5" /> Out
+                        </span>
+                      )}
+                      {status === "tentative" && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+                          <HelpCircle className="w-3.5 h-3.5" /> Tentative
+                        </span>
+                      )}
+                      {!status && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg">
+                          RSVP Needed
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-slate-500 group-hover:text-white transition flex items-center gap-0.5 text-xs font-semibold">
+                      Call Sheet <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Operational Tools Grid */}
-      <div className="space-y-4">
-        <h3 className="text-base font-bold text-white tracking-wide uppercase text-xs text-slate-400">
-          Your Management Workspaces
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {authorizedTools.map((tool) => {
-            const Icon = tool.icon;
-            return (
-              <Link
-                key={tool.id}
-                href={tool.href}
-                className="bg-slate-900 border border-slate-800 hover:border-yellow-400/50 p-5 rounded-xl transition flex flex-col justify-between group shadow-sm hover:shadow-md"
-              >
-                <div className="space-y-3">
-                  <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center group-hover:border-yellow-400/40 text-yellow-400 transition">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-white group-hover:text-yellow-400 transition">
-                      {tool.title}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      {tool.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-[11px] font-semibold text-yellow-400/80 pt-4 flex items-center gap-1 group-hover:translate-x-0.5 transition">
-                  Launch Studio &rarr;
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {/* Calendar Subscription Modal */}
+      <CalendarSubscribeModal
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
+      />
     </div>
   );
 }
