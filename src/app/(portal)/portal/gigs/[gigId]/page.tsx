@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import SetlistBuilderModal, { PerformanceSet } from "@/components/portal/SetlistBuilderModal";
 import GigFinanceModal, { GigFinancials } from "@/components/portal/GigFinanceModal";
+import InstrumentationAuditDrawer from "@/components/portal/InstrumentationAuditDrawer";
 import { 
   Calendar, 
   Clock, 
@@ -34,7 +35,8 @@ import {
   Printer,
   Copy,
   Check,
-  Wallet
+  Wallet,
+  ShieldCheck
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -107,6 +109,7 @@ export default function GigCallSheetPage() {
   const [updating, setUpdating] = useState(false);
   const [isSetlistModalOpen, setIsSetlistModalOpen] = useState(false);
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
+  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
   const [copiedBlast, setCopiedBlast] = useState(false);
 
   useEffect(() => {
@@ -292,7 +295,7 @@ export default function GigCallSheetPage() {
   const setlist = gig.setlist || [];
   const mapsQuery = encodeURIComponent(logistics.unloadingAddress);
 
-  // Individual logged in musician's payout record if available
+  // Individual logged-in performer payout record
   const myPayout = profile ? gig.financials?.payouts?.[profile.uid] : undefined;
 
   const handleCopyTextBlast = () => {
@@ -619,6 +622,13 @@ export default function GigCallSheetPage() {
             <h2 className="text-base font-bold text-white print:text-black uppercase tracking-wider">Performance Roster</h2>
           </div>
           <div className="flex items-center gap-2 text-xs font-mono print:text-black">
+            <button
+              type="button"
+              onClick={() => setIsAuditDrawerOpen(true)}
+              className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition print:hidden"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Audit Balance
+            </button>
             <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold print:bg-white print:text-black print:border-black">
               {attendingPlayers.length} Confirmed
             </span>
@@ -732,6 +742,24 @@ export default function GigCallSheetPage() {
           initialFinancials={gig.financials}
           isOpen={isFinanceModalOpen}
           onClose={() => setIsFinanceModalOpen(false)}
+        />
+      )}
+
+      {/* Instrumentation Audit Drawer */}
+      {isAuditDrawerOpen && (
+        <InstrumentationAuditDrawer
+          isOpen={isAuditDrawerOpen}
+          onClose={() => setIsAuditDrawerOpen(false)}
+          gigTitle={logistics.title}
+          gigDate={gig.date}
+          sections={sections.map((s) => ({ id: s.id, name: s.name, minRecommended: 2 }))}
+          performers={effectiveRsvps.map((r) => ({
+            uid: r.uid,
+            displayName: getEffectiveName(r.uid, r.displayName),
+            sectionId: getEffectiveSectionId(r),
+            instruments: getEffectiveInstruments(r),
+            status: r.status,
+          }))}
         />
       )}
     </div>
