@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { 
@@ -8,167 +9,163 @@ import {
   Clock, 
   MapPin, 
   DollarSign, 
-  Mail, 
-  Phone, 
   Send, 
   CheckCircle2, 
-  Music2, 
-  Building 
+  Sparkles,
+  ArrowLeft
 } from "lucide-react";
 
-export default function BookingPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function PublicBookingPage() {
+  const [clientName, setClientName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventType, setEventType] = useState("Festival / Community Event");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [venue, setVenue] = useState("");
+  const [venueAddress, setVenueAddress] = useState("");
+  const [budget, setBudget] = useState("");
+  const [message, setMessage] = useState("");
 
-  const [form, setForm] = useState({
-    contactName: "",
-    organization: "",
-    email: "",
-    phone: "",
-    eventTitle: "",
-    eventDate: "",
-    callTime: "",
-    venue: "",
-    estimatedBudget: "",
-    notes: "",
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSubmitting(true);
 
     try {
       await addDoc(collection(db, "inquiries"), {
-        contactName: form.contactName.trim(),
-        organization: form.organization.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        eventTitle: form.eventTitle.trim(),
-        eventDate: form.eventDate,
-        callTime: form.callTime.trim() || undefined,
-        venue: form.venue.trim(),
-        estimatedBudget: form.estimatedBudget ? Number(form.estimatedBudget) : 0,
-        notes: form.notes.trim(),
-        status: "new",
-        schemaVersion: 1,
+        clientName: clientName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        organization: organization.trim(),
+        eventTitle: eventTitle.trim(),
+        eventType,
+        date,
+        startTime: startTime.trim(),
+        venue: venue.trim(),
+        venueAddress: venueAddress.trim(),
+        budget: Number(budget) || 0,
+        message: message.trim(),
+        status: "pending",
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       });
 
       setSubmitted(true);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to submit booking inquiry.");
+    } catch (err) {
+      alert("Failed to submit inquiry: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 bg-yellow-400/10 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-yellow-400/20">
-          <Music2 className="w-4 h-4" /> Live Performance Requests
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold text-white">Inquiry Received!</h1>
+            <p className="text-sm text-slate-400">
+              Thanks for reaching out, <strong className="text-white">{clientName}</strong>. Our band managers have received your details for <strong>{eventTitle}</strong> and will follow up shortly.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs transition"
+            >
+              <ArrowLeft className="w-4 h-4" /> Return to Home
+            </Link>
+          </div>
         </div>
-        <h1 className="text-4xl font-extrabold text-white tracking-tight">Book The Eagleburger Band</h1>
-        <p className="text-slate-400 text-sm max-w-xl mx-auto">
-          Pittsburgh’s mobile brass and percussion street orchestra for parades, festivals, block parties, and private events.
-        </p>
       </div>
+    );
+  }
 
-      {submitted ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4 shadow-xl">
-          <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-          <h2 className="text-2xl font-bold text-white">Inquiry Received!</h2>
-          <p className="text-slate-400 text-sm max-w-md mx-auto">
-            Thanks for reaching out! Our Gig Coordinator will review our calendar and follow up via email with availability and staging details.
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4 sm:px-6">
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Page Header */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-xs font-mono font-bold text-yellow-400 uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" /> Book Eagleburger
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
+            Performance Inquiry & Booking
+          </h1>
+          <p className="text-sm text-slate-400 max-w-lg mx-auto">
+            Bring brass and percussion to your street festival, parade, block party, or private function. Submit event logistics below.
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setSubmitted(false);
-              setForm({
-                contactName: "",
-                organization: "",
-                email: "",
-                phone: "",
-                eventTitle: "",
-                eventDate: "",
-                callTime: "",
-                venue: "",
-                estimatedBudget: "",
-                notes: "",
-              });
-            }}
-            className="text-xs text-yellow-400 hover:text-yellow-300 font-semibold underline underline-offset-4"
-          >
-            Submit another performance request
-          </button>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-          {error && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-3.5 rounded-lg">
-              {error}
-            </div>
-          )}
 
+        {/* Inquiry Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl text-xs"
+        >
           {/* Contact Details */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-              1. Your Contact Info
-            </h3>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-yellow-400 border-b border-slate-800 pb-2">
+              1. Contact Information
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Your Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Caitlin Sparks"
-                  value={form.contactName}
-                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Building className="w-3.5 h-3.5 text-slate-500" /> Organization or Venue
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Your Full Name *
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Mattress Factory Museum"
-                  value={form.organization}
-                  onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  required
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Jane Smith"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-500" /> Email Address *
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Email Address *
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="caitlin@example.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-slate-500" /> Phone Number
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Phone Number
                 </label>
                 <input
                   type="tel"
-                  placeholder="(412) 555-0100"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(412) 555-0199"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Organization / Sponsor (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  placeholder="Neighborhood Arts Guild"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
             </div>
@@ -176,108 +173,141 @@ export default function BookingPage() {
 
           {/* Event Details */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-              2. Event & Performance Logistics
-            </h3>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-yellow-400 border-b border-slate-800 pb-2">
+              2. Event Logistics
+            </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Event Title or Occasion *</label>
+              <div className="sm:col-span-2">
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Event Name or Occasion *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Garden Party Kickoff, Street Fest Parade"
-                  value={form.eventTitle}
-                  onChange={(e) => setForm({ ...form, eventTitle: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  placeholder="Bloomfield Street Carnival"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" /> Proposed Date *
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Event Type
+                </label>
+                <select
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400 font-semibold"
+                >
+                  <option value="Festival / Community Event">Festival / Community Event</option>
+                  <option value="Parade / Procession">Parade / Procession</option>
+                  <option value="Private Party / Function">Private Party / Function</option>
+                  <option value="Wedding / Reception">Wedding / Reception</option>
+                  <option value="Civic / Fundraiser">Civic / Fundraiser</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Requested Date *
                 </label>
                 <input
                   type="date"
                   required
-                  value={form.eventDate}
-                  onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" /> Approximate Performance Time
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Performance / Downbeat Time
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 6:30 PM - 8:00 PM"
-                  value={form.callTime}
-                  onChange={(e) => setForm({ ...form, callTime: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  placeholder="6:30 PM - 8:00 PM"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-500" /> Location / Neighborhood *
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Allocated Entertainment Budget ($)
+                </label>
+                <div className="relative">
+                  <DollarSign className="w-3.5 h-3.5 absolute left-2.5 top-3 text-slate-500" />
+                  <input
+                    type="number"
+                    min="0"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder="1000"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Venue Setting *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Sampsonia Way, North Side"
-                  value={form.venue}
-                  onChange={(e) => setForm({ ...form, venue: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  value={venue}
+                  onChange={(e) => setVenue(e.target.value)}
+                  placeholder="Stage at Penn & 45th"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-slate-500" /> Estimated Band Budget ($)
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Venue Street Address / City
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  placeholder="e.g. 800"
-                  value={form.estimatedBudget}
-                  onChange={(e) => setForm({ ...form, estimatedBudget: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400"
+                  type="text"
+                  value={venueAddress}
+                  onChange={(e) => setVenueAddress(e.target.value)}
+                  placeholder="Pittsburgh, PA 15224"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">
-                Additional Details (Staging, Parade Route, Acoustic vs Outdoor, etc.)
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Share any details about marching vs stationary, crowd expectations, or performance length..."
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400 resize-none"
-              />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold py-3 rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {submitting ? (
-              <span>Sending Inquiry...</span>
-            ) : (
-              <>
-                <Send className="w-4 h-4" /> Submit Performance Inquiry
-              </>
-            )}
-          </button>
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="block text-slate-400 font-bold uppercase tracking-wider">
+              Additional Details / Description
+            </label>
+            <textarea
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Acoustic setup, parade route, sound expectations, etc..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg"
+            >
+              <Send className="w-4 h-4" />
+              {submitting ? "Transmitting Inquiry..." : "Submit Booking Inquiry"}
+            </button>
+          </div>
         </form>
-      )}
+      </div>
     </div>
   );
 }

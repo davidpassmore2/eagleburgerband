@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, query, orderBy, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
+import { canManageGigs } from "@/lib/auth/permissions";
 import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import {
   Calendar,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   Music2,
   Calendar as CalendarIcon,
+  Inbox
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -119,7 +121,16 @@ export default function MusicianPortalOverviewPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {canManageGigs(profile) && (
+            <Link
+              href="/portal/inquiries"
+              className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+            >
+              <Inbox className="w-3.5 h-3.5" /> Inquiries
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={() => setIsCalendarModalOpen(true)}
@@ -127,6 +138,7 @@ export default function MusicianPortalOverviewPage() {
           >
             <CalendarIcon className="w-3.5 h-3.5" /> Sync Calendar
           </button>
+
           <Link
             href="/portal/library"
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-slate-700 flex-1 md:flex-initial"
@@ -190,11 +202,10 @@ export default function MusicianPortalOverviewPage() {
                   </div>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
-                    {/* User RSVP Status Pill */}
                     <div>
                       {status === "attending" && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> You`&apos;`re In
+                          <CheckCircle2 className="w-3.5 h-3.5" /> You&apos;re In
                         </span>
                       )}
                       {status === "declined" && (
