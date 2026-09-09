@@ -14,6 +14,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import SetlistBuilderModal, { PerformanceSet } from "@/components/portal/SetlistBuilderModal";
+import GigFinanceModal, { GigFinancials } from "@/components/portal/GigFinanceModal";
 import { 
   Calendar, 
   Clock, 
@@ -32,7 +33,8 @@ import {
   Edit3,
   Printer,
   Copy,
-  Check
+  Check,
+  Wallet
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -79,6 +81,7 @@ type GigDetails = {
     description?: string;
   };
   setlist?: PerformanceSet[];
+  financials?: GigFinancials;
   rsvpSummary?: {
     attendingCount: number;
     declinedCount: number;
@@ -103,6 +106,7 @@ export default function GigCallSheetPage() {
   const [optimisticStatus, setOptimisticStatus] = useState<AttendanceStatus | null>(null);
   const [updating, setUpdating] = useState(false);
   const [isSetlistModalOpen, setIsSetlistModalOpen] = useState(false);
+  const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
   const [copiedBlast, setCopiedBlast] = useState(false);
 
   useEffect(() => {
@@ -288,6 +292,9 @@ export default function GigCallSheetPage() {
   const setlist = gig.setlist || [];
   const mapsQuery = encodeURIComponent(logistics.unloadingAddress);
 
+  // Individual logged in musician's payout record if available
+  const myPayout = profile ? gig.financials?.payouts?.[profile.uid] : undefined;
+
   const handleCopyTextBlast = () => {
     const text = [
       `🎺 EAGLEBURGER CALL SHEET: ${logistics.title}`,
@@ -307,6 +314,11 @@ export default function GigCallSheetPage() {
     setTimeout(() => setCopiedBlast(false), 2500);
   };
 
+  const attendingPerformersList = attendingPlayers.map((p) => ({
+    uid: p.uid,
+    displayName: getEffectiveName(p.uid, p.displayName),
+  }));
+
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none print:text-black">
       {/* Quick Action Dispatch Toolbar (Hidden on Print) */}
@@ -317,6 +329,16 @@ export default function GigCallSheetPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {canManageGigs(profile) && (
+            <button
+              type="button"
+              onClick={() => setIsFinanceModalOpen(true)}
+              className="bg-slate-900 hover:bg-slate-800 text-yellow-400 hover:text-yellow-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+            >
+              <Wallet className="w-3.5 h-3.5" /> Payouts & Ledger
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleCopyTextBlast}
@@ -455,10 +477,23 @@ export default function GigCallSheetPage() {
             </div>
             <div className="flex justify-between py-1">
               <span className="text-slate-400 print:text-black">Musician Pay:</span>
-              <span className="text-emerald-400 font-bold flex items-center gap-0.5 print:text-black">
-                <DollarSign className="w-3.5 h-3.5 print:hidden" />
-                {logistics.compensation ? `$${logistics.compensation}` : "Band Fund"}
-              </span>
+              <div className="text-right">
+                <span className="text-emerald-400 font-bold flex items-center justify-end gap-0.5 print:text-black">
+                  <DollarSign className="w-3.5 h-3.5 print:hidden" />
+                  {logistics.compensation ? `${logistics.compensation}` : "Band Fund"}
+                </span>
+                {myPayout && (
+                  <span
+                    className={`text-[10px] font-mono block ${
+                      myPayout.paymentStatus === "paid" ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  >
+                    {myPayout.paymentStatus === "paid"
+                      ? `Paid via ${myPayout.paymentMethod}`
+                      : "Pending Payment"}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -685,6 +720,18 @@ export default function GigCallSheetPage() {
           initialSets={gig.setlist}
           isOpen={isSetlistModalOpen}
           onClose={() => setIsSetlistModalOpen(false)}
+        />
+      )}
+
+      {/* Financial Ledger & Musician Payout Modal */}
+      {isFinanceModalOpen && (
+        <GigFinanceModal
+          gigId={gig.id}
+          gigTitle={logistics.title}
+          attendingPerformers={attendingPerformersList}
+          initialFinancials={gig.financials}
+          isOpen={isFinanceModalOpen}
+          onClose={() => setIsFinanceModalOpen(false)}
         />
       )}
     </div>
