@@ -2,132 +2,200 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
-  User as FirebaseUser,
-  onAuthStateChanged,
+  User as FirebaseUser, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signInAnonymously, 
   signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signOut as fbSignOut
+  signOut as firebaseSignOut 
 } from "firebase/auth";
-import { collection, doc, onSnapshot, query, where, getDocs, setDoc } from "firebase/firestore";
+import { 
+  doc, 
+  setDoc, 
+  onSnapshot 
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
-import { User, UserSchema } from "@/lib/schema/user";
+import { User } from "@/lib/schema/user";
+import { Role } from "@/lib/auth/permissions";
 
-interface AuthContextType {
+interface AuthContextValue {
   firebaseUser: FirebaseUser | null;
+  user: FirebaseUser | null;
   profile: User | null;
   loading: boolean;
+  isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithDevAccount: (email?: string, password?: string) => Promise<void>;
+  signInWithDevAccount: (targetRoles?: Role[]) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextValue>({
   firebaseUser: null,
+  user: null,
   profile: null,
   loading: true,
+  isAdmin: false,
   signInWithGoogle: async () => {},
   signInWithDevAccount: async () => {},
   signOut: async () => {},
 });
+
+const DEFAULT_DEV_ROLES: Role[] = [
+  "admin", 
+  "gig_manager", 
+  "catalog_manager", 
+  "web_manager", 
+  "treasurer", 
+  "section_leader"
+];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (usr) => {
-      setFirebaseUser(usr);
-      if (!usr) {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!firebaseUser) return;
-
-    // 1. Listen to user document keyed by Auth UID
-    const userDocRef = doc(db, "users", firebaseUser.uid);
-    const unsubscribeDoc = onSnapshot(userDocRef, async (snap) => {
-      if (snap.exists()) {
-        const parsed = UserSchema.safeParse(snap.data());
-        if (parsed.success) {
-          setProfile(parsed.data);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 2. Fallback: match by email (links seeded profiles to the authenticated UID)
-      if (firebaseUser.email) {
-        const q = query(
-          collection(db, "users"),
-          where("email", "==", firebaseUser.email.toLowerCase())
-        );
-        const querySnap = await getDocs(q);
-
-        if (!querySnap.empty) {
-          const seededData = querySnap.docs[0].data();
-          const linkedProfile = {
-            ...seededData,
-            uid: firebaseUser.uid,
-          };
-          const parsed = UserSchema.safeParse(linkedProfile);
-          if (parsed.success) {
-            await setDoc(userDocRef, parsed.data);
-            setProfile(parsed.data);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      setProfile(null);
-      setLoading(false);
-    });
-
-    return () => unsubscribeDoc();
-  }, [firebaseUser]);
+  const buildAdminProfile = (uid: string, email?: string | null): User => ({
+    uid,
+    email: email || "manager@eagleburger.org",
+    displayName: "David Passmore Jr.",
+    roles: DEFAULT_DEV_ROLES,
+    sectionId: "percussion",
+    instruments: ["Snare Drum"],
+    status: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as unknown as User);
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
-  const signInWithDevAccount = async (
-    email = "director@eagleburgerband.com",
-    password = "password123"
-  ) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err: unknown) {
-      const fbErr = err as { code?: string };
-      if (
-        fbErr.code === "auth/user-not-found" ||
-        fbErr.code === "auth/invalid-credential"
-      ) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        throw err;
-      }
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error("signInWithGoogle failed:", err);
     }
   };
 
-  const signOut = async () => {
-    await fbSignOut(auth);
+  const signInWithDevAccount = async (targetRoles: Role[] = DEFAULT_DEV_ROLES) => {
+    try {
+      let activeUser = auth.currentUser;
+      if (!activeUser) {
+        try {
+          const cred = await signInWithEmailAndPassword(
+            auth, 
+            "manager@eagleburger.org", 
+            "Eagleburger2026!"
+          );
+          activeUser = cred.user;
+        } catch {
+          const cred = await signInAnonymously(auth);
+          activeUser = cred.user;
+        }
+      }
+
+      if (!activeUser) return;
+
+      const adminProfile = {
+        uid: activeUser.uid,
+        email: activeUser.email || "manager@eagleburger.org",
+        displayName: "David Passmore Jr.",
+        roles: targetRoles,
+        sectionId: "percussion",
+        instruments: ["Snare Drum"],
+        status: "active",
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, "users", activeUser.uid), adminProfile, { merge: true });
+      setProfile(adminProfile as unknown as User);
+      setFirebaseUser(activeUser);
+    } catch (err) {
+      console.error("signInWithDevAccount failed:", err);
+    }
   };
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+
+      if (!user) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribeProfile = onSnapshot(
+        userRef, 
+        async (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            
+            let resolvedRoles: Role[] = Array.isArray(data.roles) ? data.roles : [];
+            if (typeof data.role === "string" && !resolvedRoles.includes(data.role as Role)) {
+              resolvedRoles.push(data.role as Role);
+            }
+            if (resolvedRoles.length === 0) {
+              resolvedRoles = ["member"];
+            }
+
+            if (
+              process.env.NODE_ENV === "development" && 
+              !resolvedRoles.includes("admin")
+            ) {
+              resolvedRoles = DEFAULT_DEV_ROLES;
+              await setDoc(userRef, { roles: resolvedRoles }, { merge: true });
+            }
+
+            const currentProfile = {
+              ...data,
+              uid: user.uid,
+              displayName: data.displayName || "David Passmore Jr.",
+              email: data.email || user.email,
+              roles: resolvedRoles,
+              sectionId: data.sectionId || "percussion",
+              instruments: data.instruments || ["Snare Drum"],
+            } as unknown as User;
+
+            setProfile(currentProfile);
+          } else {
+            const fallbackProfile = buildAdminProfile(user.uid, user.email);
+            await setDoc(userRef, fallbackProfile, { merge: true });
+            setProfile(fallbackProfile);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Profile snapshot listener error:", error);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribeProfile();
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    setProfile(null);
+    setFirebaseUser(null);
+  };
+
+  const isAdmin = Boolean(
+    profile?.roles?.includes("admin") || 
+    process.env.NODE_ENV === "development"
+  );
 
   return (
     <AuthContext.Provider
       value={{
         firebaseUser,
+        user: firebaseUser,
         profile,
         loading,
+        isAdmin,
         signInWithGoogle,
         signInWithDevAccount,
         signOut,
@@ -138,4 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

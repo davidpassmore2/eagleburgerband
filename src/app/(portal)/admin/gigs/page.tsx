@@ -1,695 +1,407 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import Link from "next/link";
+import { 
+  collection, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc, 
+  doc 
+} from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
-import { Gig, GigSchema } from "@/lib/schema/gig";
+import { User } from "@/lib/schema/user";
 import { 
-  CalendarDays, 
-  ShieldAlert, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Check, 
-  X, 
+  Calendar, 
   Clock, 
   MapPin, 
-  Shirt, 
   DollarSign, 
-  Globe 
+  Plus, 
+  Trash2, 
+  ExternalLink, 
+  Loader2, 
+  ShieldAlert, 
+  X, 
+  Check 
 } from "lucide-react";
 
-interface FormState {
+interface GigItem {
   id: string;
+  slug: string;
   date: string;
-  status: Gig["status"];
-  publicDetails: {
+  status: "confirmed" | "draft" | "completed" | "cancelled";
+  publicDetails?: {
     title: string;
     venue: string;
-    city: string;
-    description: string;
-    admission: string;
-    facebookEventUrl: string;
-    ticketUrl: string;
+    venueAddress?: string;
+    description?: string;
   };
-  internalLogistics: {
+  internalLogistics?: {
     title: string;
     callTime: string;
     downbeat: string;
-    unloadingAddress: string;
-    parkingInstructions: string;
-    attire: string;
-    payPerMusician: number;
-    setlistId: string;
-    description: string;
+    attire?: string;
+    compensation?: number;
+    parkingNotes?: string;
+  };
+  rsvpSummary?: {
+    attendingCount: number;
+    declinedCount: number;
   };
 }
 
-const DEFAULT_FORM: FormState = {
-  id: "",
-  date: new Date().toISOString().split("T")[0],
-  status: "confirmed",
-  publicDetails: {
-    title: "",
-    venue: "",
-    city: "Pittsburgh, PA",
-    description: "",
-    admission: "Free",
-    facebookEventUrl: "",
-    ticketUrl: "",
-  },
-  internalLogistics: {
-    title: "",
-    callTime: "18:00",
-    downbeat: "19:00",
-    unloadingAddress: "",
-    parkingInstructions: "",
-    attire: "Eagleburger Uniform - Bright Yellows & Brass Polish",
-    payPerMusician: 0,
-    setlistId: "",
-    description: "",
-  },
-};
-
-const statusColors: Record<string, string> = {
-  lead: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  tentative: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  completed: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  cancelled: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  archived: "bg-slate-700/30 text-slate-400 border-slate-700/40",
-};
-
-export default function GigsAdminPage() {
+export default function GigsAdminStudioPage() {
   const { profile, loading: authLoading } = useAuth();
-  const [gigs, setGigs] = useState<Gig[]>([]);
-  const [editingGig, setEditingGig] = useState<Gig | null>(null);
+  const [gigs, setGigs] = useState<GigItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"logistics" | "public">("logistics");
-  const [formData, setFormData] = useState<FormState>(DEFAULT_FORM);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    date: "",
+    status: "draft" as GigItem["status"],
+    venue: "",
+    venueAddress: "",
+    callTime: "5:00 PM",
+    downbeat: "6:00 PM",
+    attire: "Eagleburger Yellows & Black",
+    compensation: 50,
+    description: "",
+  });
 
   useEffect(() => {
-    const unsubGigs = onSnapshot(collection(db, "gigs"), (snap) => {
-      const list: Gig[] = [];
-      snap.forEach((d) => {
-        const parsed = GigSchema.safeParse(d.data());
-        if (parsed.success) list.push(parsed.data);
-      });
-      list.sort((a, b) => b.date.localeCompare(a.date));
-      setGigs(list);
-    });
+    if (authLoading) return;
 
-    return () => unsubGigs();
-  }, []);
+    const unsub = onSnapshot(
+      collection(db, "gigs"),
+      (snap) => {
+        const list: GigItem[] = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() } as GigItem));
+        list.sort((a, b) => b.date.localeCompare(a.date));
+        setGigs(list);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Gigs listener error:", err);
+        setLoading(false);
+      }
+    );
 
-  if (authLoading) return <div className="p-8 text-slate-400">Verifying authorization...</div>;
-  if (!canManageGigs(profile)) {
+    return () => unsub();
+  }, [authLoading]);
+
+  if (authLoading || loading) {
     return (
-      <div className="p-8 text-amber-400 flex items-center gap-3">
-        <ShieldAlert className="w-6 h-6 shrink-0" />
-        <span>Gig Manager or Administrator permissions required to manage performances.</span>
+      <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
+        <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+        Loading band performances...
       </div>
     );
   }
 
-  const handleStartCreate = () => {
-    setEditingGig(null);
-    setIsCreating(true);
-    setFormData({
-      ...DEFAULT_FORM,
-      id: `gig_${Date.now()}`,
-      date: new Date().toISOString().split("T")[0],
-    });
-  };
+  if (!canManageGigs(profile as unknown as User)) {
+    return (
+      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
+        <ShieldAlert className="w-4 h-4" />
+        Manager or Admin privileges required to access the Gig Management Studio.
+      </div>
+    );
+  }
 
-  const handleEdit = (gig: Gig) => {
-    setEditingGig(gig);
-    setIsCreating(false);
+  const handleCreateGig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim() || !formData.date) return;
 
-    const pub = (gig.publicDetails || {}) as Record<string, unknown>;
-    const log = (gig.internalLogistics || {}) as Record<string, unknown>;
+    setIsSaving(true);
+    try {
+      const gigId = `gig_${formData.date}_${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      const slug = `${formData.date}-${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
 
-    setFormData({
-      id: gig.id,
-      date: gig.date,
-      status: gig.status,
-      publicDetails: {
-        title: typeof pub.title === "string" ? pub.title : "",
-        venue: typeof pub.venue === "string" ? pub.venue : "",
-        city: typeof pub.city === "string" ? pub.city : "Pittsburgh, PA",
-        description: typeof pub.description === "string" ? pub.description : "",
-        admission: typeof pub.admission === "string" ? pub.admission : "Free",
-        facebookEventUrl: typeof pub.facebookEventUrl === "string" ? pub.facebookEventUrl : "",
-        ticketUrl: typeof pub.ticketUrl === "string" ? pub.ticketUrl : "",
-      },
-      internalLogistics: {
-        title: typeof log.title === "string" ? log.title : "",
-        callTime: typeof log.callTime === "string" ? log.callTime : "18:00",
-        downbeat: typeof log.downbeat === "string" ? log.downbeat : "19:00",
-        unloadingAddress: typeof log.unloadingAddress === "string" ? log.unloadingAddress : "",
-        parkingInstructions: typeof log.parkingInstructions === "string" ? log.parkingInstructions : "",
-        attire: typeof log.attire === "string" ? log.attire : "",
-        payPerMusician: typeof log.payPerMusician === "number" ? log.payPerMusician : 0,
-        setlistId: typeof log.setlistId === "string" ? log.setlistId : "",
-        description: typeof log.description === "string" ? log.description : "",
-      },
-    });
-  };
+      const payload = {
+        id: gigId,
+        slug,
+        date: formData.date,
+        status: formData.status,
+        publicDetails: {
+          title: formData.title.trim(),
+          venue: formData.venue.trim(),
+          venueAddress: formData.venueAddress.trim(),
+          description: formData.description.trim(),
+        },
+        internalLogistics: {
+          title: formData.title.trim(),
+          callTime: formData.callTime.trim(),
+          downbeat: formData.downbeat.trim(),
+          attire: formData.attire.trim(),
+          compensation: Number(formData.compensation) || 0,
+        },
+        rsvpSummary: { attendingCount: 0, declinedCount: 0 },
+        setlist: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-  const handleSave = async () => {
-    if (!formData.date.trim()) return;
-
-    const gigId = formData.id || `gig_${Date.now()}`;
-    const rawPayload: Record<string, unknown> = {
-      id: gigId,
-      date: formData.date,
-      status: formData.status,
-      publicDetails: formData.publicDetails,
-      internalLogistics: formData.internalLogistics,
-      schemaVersion: 1,
-      createdAt: editingGig?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const parsed = GigSchema.safeParse(rawPayload);
-    if (!parsed.success) {
-      console.error("Gig validation errors:", parsed.error);
-      alert("Please check all required fields.");
-      return;
+      await setDoc(doc(db, "gigs", gigId), payload, { merge: true });
+      setIsCreating(false);
+      setFormData({
+        title: "",
+        date: "",
+        status: "draft",
+        venue: "",
+        venueAddress: "",
+        callTime: "5:00 PM",
+        downbeat: "6:00 PM",
+        attire: "Eagleburger Yellows & Black",
+        compensation: 50,
+        description: "",
+      });
+    } catch (err) {
+      alert("Failed to create gig: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSaving(false);
     }
-
-    const gigDocRef = doc(db, "gigs", gigId);
-    if (isCreating) {
-      await setDoc(gigDocRef, parsed.data);
-    } else {
-      await updateDoc(gigDocRef, parsed.data as Record<string, unknown>);
-    }
-
-    setEditingGig(null);
-    setIsCreating(false);
   };
 
-  const handleDelete = async (gigId: string) => {
-    if (!confirm("Are you sure you want to delete this performance?")) return;
-    await deleteDoc(doc(db, "gigs", gigId));
+  const handleDeleteGig = async (id: string, title: string) => {
+    if (!confirm(`Delete performance "${title}" and all its call sheets?`)) return;
+    try {
+      await deleteDoc(doc(db, "gigs", id));
+    } catch (err) {
+      alert("Failed to delete gig: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <CalendarDays className="text-yellow-400" /> Gig Management Studio
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Maintain performance schedules, internal production call times, attire, and public listings.
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+              Admin Studio
+            </span>
+            <span className="text-xs font-mono text-slate-400">
+              {gigs.length} Performance(s)
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Gig Studio</h1>
+          <p className="text-xs text-slate-400">
+            Publish call sheets, assign logistics, set compensation, and track musician attendance.
           </p>
         </div>
-        {!editingGig && !isCreating && (
+
+        {!isCreating && (
           <button
-            onClick={handleStartCreate}
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded text-xs transition shadow"
+            type="button"
+            onClick={() => setIsCreating(true)}
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow shrink-0"
           >
-            <Plus className="w-4 h-4" /> Add Performance
+            <Plus className="w-4 h-4" /> Create New Gig
           </button>
         )}
       </div>
 
-      {(isCreating || editingGig) && (
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 space-y-5 shadow-2xl">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <div>
-              <h2 className="text-lg font-bold text-white">
-                {isCreating
-                  ? "Schedule New Performance"
-                  : `Edit Gig: ${formData.internalLogistics.title || formData.publicDetails.title || "Untitled"}`}
-              </h2>
-              <span className="text-xs text-slate-400 font-mono">ID: {formData.id}</span>
-            </div>
+      {isCreating && (
+        <form
+          onSubmit={handleCreateGig}
+          className="bg-slate-900 border border-yellow-400/30 rounded-2xl p-5 space-y-4 shadow-xl"
+        >
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-yellow-400" /> New Performance Call Sheet
+            </h2>
             <button
-              onClick={() => {
-                setEditingGig(null);
-                setIsCreating(false);
-              }}
+              type="button"
+              onClick={() => setIsCreating(false)}
               className="text-slate-400 hover:text-white"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Date</label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as Gig["status"] })}
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-              >
-                <option value="lead">Lead / Inbound</option>
-                <option value="tentative">Tentative / Hold</option>
-                <option value="confirmed">Confirmed Performance</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Setlist ID</label>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Gig Title *</label>
               <input
                 type="text"
-                placeholder="e.g. set_honk_fest_2026"
-                value={formData.internalLogistics.setlistId}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    internalLogistics: {
-                      ...formData.internalLogistics,
-                      setlistId: e.target.value,
-                    },
-                  })
-                }
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white font-mono"
+                required
+                placeholder="e.g. Penn Avenue Porchfest Finale"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Date *</label>
+              <input
+                type="date"
+                required
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as GigItem["status"] })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              >
+                <option value="draft">Draft (Unpublished)</option>
+                <option value="confirmed">Confirmed & Dispatched</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Venue Name</label>
+              <input
+                type="text"
+                placeholder="e.g. 43rd & Butler Street Stage"
+                value={formData.venue}
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Venue Address / Intersection</label>
+              <input
+                type="text"
+                placeholder="e.g. 43rd & Butler, Pittsburgh, PA"
+                value={formData.venueAddress}
+                onChange={(e) => setFormData({ ...formData, venueAddress: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
               />
             </div>
           </div>
 
-          <div className="flex border-b border-slate-800">
-            <button
-              type="button"
-              onClick={() => setActiveTab("logistics")}
-              className={`px-4 py-2 text-xs font-bold transition border-b-2 flex items-center gap-1.5 ${
-                activeTab === "logistics"
-                  ? "border-yellow-400 text-yellow-400"
-                  : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" /> Internal Band Logistics
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("public")}
-              className={`px-4 py-2 text-xs font-bold transition border-b-2 flex items-center gap-1.5 ${
-                activeTab === "public"
-                  ? "border-yellow-400 text-yellow-400"
-                  : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" /> Public Marketing Details
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Call Time</label>
+              <input
+                type="text"
+                placeholder="5:30 PM"
+                value={formData.callTime}
+                onChange={(e) => setFormData({ ...formData, callTime: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Downbeat</label>
+              <input
+                type="text"
+                placeholder="6:30 PM"
+                value={formData.downbeat}
+                onChange={(e) => setFormData({ ...formData, downbeat: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Musician Compensation ($)</label>
+              <input
+                type="number"
+                value={formData.compensation}
+                onChange={(e) => setFormData({ ...formData, compensation: parseInt(e.target.value, 10) || 0 })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              />
+            </div>
           </div>
 
-          {activeTab === "logistics" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Internal Gig Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.internalLogistics.title}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          title: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="e.g. Mattress Factory Garden Gig"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Pay Per Musician ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.internalLogistics.payPerMusician}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          payPerMusician: parseFloat(e.target.value) || 0,
-                        },
-                      })
-                    }
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Musician Call Time
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.internalLogistics.callTime}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          callTime: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="e.g. 5:30 PM"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Show Downbeat
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.internalLogistics.downbeat}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          downbeat: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="e.g. 6:30 PM"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Unloading Dock & Staging Address
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.internalLogistics.unloadingAddress}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          unloadingAddress: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="500 Sampsonia Way (Courtyard Gate)"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Attire & Uniform Specification
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.internalLogistics.attire}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalLogistics: {
-                          ...formData.internalLogistics,
-                          attire: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Band Yellows & Black Pants"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                  Parking & Production Directives
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.internalLogistics.parkingInstructions}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      internalLogistics: {
-                        ...formData.internalLogistics,
-                        parkingInstructions: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="Street parking available on Jacksonia. Do not park in museum van spot."
-                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === "public" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Public Performance Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.publicDetails.title}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        publicDetails: {
-                          ...formData.publicDetails,
-                          title: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Mattress Factory Garden Party"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Venue Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.publicDetails.venue}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        publicDetails: {
-                          ...formData.publicDetails,
-                          venue: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Mattress Factory Museum"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    City / Neighborhood
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.publicDetails.city}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        publicDetails: {
-                          ...formData.publicDetails,
-                          city: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Admission
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.publicDetails.admission}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        publicDetails: {
-                          ...formData.publicDetails,
-                          admission: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Free / $10"
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                    Ticket / RSVP URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.publicDetails.ticketUrl}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        publicDetails: {
-                          ...formData.publicDetails,
-                          ticketUrl: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="https://..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">
-                  Public Event Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.publicDetails.description}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      publicDetails: {
-                        ...formData.publicDetails,
-                        description: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="Public event promotion displayed on homepage calendar..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-2">
             <button
-              onClick={() => {
-                setEditingGig(null);
-                setIsCreating(false);
-              }}
-              className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+              type="button"
+              onClick={() => setIsCreating(false)}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition"
             >
               Cancel
             </button>
             <button
-              onClick={handleSave}
-              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-5 py-2 rounded text-xs transition shadow"
+              type="submit"
+              disabled={isSaving}
+              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1 transition disabled:opacity-50"
             >
-              <Check className="w-4 h-4" /> Save Performance
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              {isSaving ? "Saving..." : "Create Performance"}
             </button>
           </div>
-        </div>
+        </form>
       )}
 
-      <div className="space-y-3">
-        {gigs.map((gig) => {
-          const pub = gig.publicDetails as Record<string, unknown> | undefined;
-          const log = gig.internalLogistics as Record<string, unknown> | undefined;
-
-          const pay = typeof log?.payPerMusician === "number" ? log.payPerMusician : 0;
-          const gigTitle = (typeof log?.title === "string" && log.title) || (typeof pub?.title === "string" && pub.title) || "Untitled Performance";
-          const gigVenue = (typeof pub?.venue === "string" && pub.venue) || (typeof log?.unloadingAddress === "string" && log.unloadingAddress) || "Location TBA";
-          const gigCall = typeof log?.callTime === "string" ? log.callTime : "TBA";
-          const gigBeat = typeof log?.downbeat === "string" ? log.downbeat : "TBA";
-          const gigAttire = typeof log?.attire === "string" ? log.attire : "";
-
-          return (
-            <div
-              key={gig.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            >
-              <div className="space-y-1.5 flex-1">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-mono text-xs text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                    {gig.date}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                      statusColors[gig.status] || "bg-slate-800 text-slate-300 border-slate-700"
-                    }`}
-                  >
-                    {gig.status}
-                  </span>
-                  {pay > 0 && (
-                    <span className="text-[10px] font-semibold text-emerald-400 flex items-center">
-                      <DollarSign className="w-3 h-3" />
-                      {pay}/player
-                    </span>
-                  )}
-                </div>
-
-                <div className="font-bold text-base text-white">
-                  {gigTitle}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    {gigVenue}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    Call: {gigCall} | Beat: {gigBeat}
-                  </span>
-                  {gigAttire && (
-                    <span className="flex items-center gap-1">
-                      <Shirt className="w-3.5 h-3.5 text-slate-500" />
-                      {gigAttire}
-                    </span>
-                  )}
-                </div>
+      {/* Gig Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {gigs.map((g) => (
+          <div
+            key={g.id}
+            className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 shadow transition flex flex-col justify-between"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                  g.status === "confirmed"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : g.status === "completed"
+                    ? "bg-slate-800 text-slate-400 border-slate-700"
+                    : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+                }`}>
+                  {g.status}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteGig(g.id, g.publicDetails?.title || g.id)}
+                  className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                  title="Delete gig"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center">
-                <button
-                  onClick={() => handleEdit(gig)}
-                  className="p-2 text-slate-400 hover:text-yellow-400 rounded hover:bg-slate-800 transition"
-                  title="Edit Gig Logistics"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(gig.id)}
-                  className="p-2 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800 transition"
-                  title="Delete Gig"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <h2 className="text-base font-bold text-white truncate">
+                {g.publicDetails?.title || g.id}
+              </h2>
+
+              <div className="space-y-1 text-xs text-slate-400">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>{g.date}</span>
+                </div>
+                {g.publicDetails?.venue && (
+                  <div className="flex items-center gap-2 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                    <span className="truncate">{g.publicDetails.venue}</span>
+                  </div>
+                )}
+                {g.internalLogistics?.compensation ? (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                    <span>${g.internalLogistics.compensation} per musician</span>
+                  </div>
+                ) : null}
               </div>
             </div>
-          );
-        })}
+
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 font-mono">
+                ID: {g.id}
+              </span>
+              <Link
+                href={`/portal/gigs/${g.id}`}
+                className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+              >
+                <span>Call Sheet</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

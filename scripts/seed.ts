@@ -1,315 +1,695 @@
-// scripts/seed.ts
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
-
 import { initializeApp } from "firebase/app";
-import { getFirestore, connectFirestoreEmulator, doc, setDoc } from "firebase/firestore";
+import { 
+  getFirestore, 
+  connectFirestoreEmulator, 
+  doc, 
+  setDoc, 
+  collection 
+} from "firebase/firestore";
 
-const app = initializeApp({
+const localApp = initializeApp({
   projectId: "eagleburger-band-dev",
-  apiKey: "fake-api-key",
-});
+  apiKey: "fake-api-key-for-emulator"
+}, "seed-emulator-runner");
 
-const db = getFirestore(app);
+const db = getFirestore(localApp);
+
 connectFirestoreEmulator(db, "127.0.0.1", 8080);
 
 async function runSeed() {
-  console.log("🌱 Starting local database seed...");
+  console.log("🌱 Connecting directly to local Firestore emulator (127.0.0.1:8080)...");
 
-  // 1. Primary Director / Admin User
-  await setDoc(doc(db, "users", "user_admin_01"), {
-    uid: "user_admin_01",
-    email: "director@eagleburgerband.com",
-    displayName: "Alex Bass",
-    roles: [
-      "admin",
-      "web_manager",
-      "gig_manager",
-      "catalog_manager",
-      "community_manager",
-      "section_leader",
-      "member",
-    ],
-    sectionId: "sec_low_brass",
-    instruments: ["Sousaphone", "Trombone"],
-    phone: "(412) 555-0101",
-    onboardingStatus: "completed",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-
-  // 2. Additional Section Members & Leaders
-  await setDoc(doc(db, "users", "user_trumpet_01"), {
-    uid: "user_trumpet_01",
-    email: "lead.trumpet@eagleburgerband.com",
-    displayName: "Miles High",
-    roles: ["section_leader", "member"],
-    sectionId: "sec_trumpets",
-    instruments: ["Lead Trumpet", "Flugelhorn"],
-    phone: "(412) 555-0199",
-    onboardingStatus: "completed",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-
-  await setDoc(doc(db, "users", "user_bone_02"), {
-    uid: "user_bone_02",
-    email: "trombone2@eagleburgerband.com",
-    displayName: "Sam Slide",
-    roles: ["member"],
-    sectionId: "sec_low_brass",
-    instruments: ["2nd Trombone", "Euphonium"],
-    phone: "(412) 555-0144",
-    onboardingStatus: "completed",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-
-  await setDoc(doc(db, "users", "user_drums_01"), {
-    uid: "user_drums_01",
-    email: "percussion@eagleburgerband.com",
-    displayName: "Rocco Beat",
-    roles: ["section_leader", "member"],
-    sectionId: "sec_percussion",
-    instruments: ["Snare Drum", "Bass Drum"],
-    phone: "(412) 555-0177",
-    onboardingStatus: "completed",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded roster performers and section leaders");
-
-  // 3. Instrument Sections
-  await setDoc(doc(db, "sections", "sec_low_brass"), {
-    id: "sec_low_brass",
-    name: "Low Brass",
-    description: "Sousaphones, Trombones, Euphoniums, and Baritones holding down the groove and basslines.",
-    leaderUid: "user_admin_01",
-    order: 1,
-  });
-
-  await setDoc(doc(db, "sections", "sec_trumpets"), {
-    id: "sec_trumpets",
-    name: "Trumpets",
-    description: "High brass lead melodies, harmonies, and fanfares.",
-    leaderUid: "user_trumpet_01",
-    order: 2,
-  });
-
-  await setDoc(doc(db, "sections", "sec_percussion"), {
-    id: "sec_percussion",
-    name: "Percussion",
-    description: "Snare, bass drum, cymbals, and auxiliary street battery.",
-    leaderUid: "user_drums_01",
-    order: 3,
-  });
-  console.log("✔ Seeded instrument sections");
-
-  // 4. Active Performance Call
-  await setDoc(doc(db, "gigs", "gig_mattress_factory_2026"), {
-    id: "gig_mattress_factory_2026",
-    date: "2026-09-25",
-    status: "confirmed",
-    publicDetails: {
-      title: "Mattress Factory Garden Party",
-      venue: "Mattress Factory Museum Garden",
-      city: "Pittsburgh, PA",
-      description: "Annual outdoor garden performance featuring Eagleburger Band and special guests.",
-      admission: "Free / Museum Admission",
-      facebookEventUrl: "https://facebook.com/events/eagleburger-mf",
-      ticketUrl: "https://mattress.org/events",
+  // ==========================================
+  // 1. Band Sections (With Designated Section Leaders)
+  // ==========================================
+  const sections = [
+    { 
+      id: "percussion", 
+      name: "Drumline & Percussion", 
+      order: 1, 
+      minRecommended: 3,
+      leaderUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX", // David Passmore Jr.
+      leaderName: "David Passmore Jr.",
+      notes: "Carries groove tempo, battery cymbals, bass drums, and snares."
     },
-    internalLogistics: {
-      title: "Mattress Factory Garden Gig",
-      callTime: "17:30",
-      downbeat: "18:30",
-      unloadingAddress: "500 Sampsonia Way (Garden Gate)",
-      parkingInstructions: "Unload at garden gate, then park along Jacksonia or Arch St.",
-      attire: "Band Yellows & Black Pants",
-      payPerMusician: 75,
-      setlistId: "set_garden_party_2026",
-      description: "Joint set with Buffalo guests. 2 x 45-minute street brass sets.",
+    { 
+      id: "sousaphones", 
+      name: "Sousaphones & Tubas", 
+      order: 2, 
+      minRecommended: 2,
+      leaderUid: "user_rubin_jonathan", // Jonathan Rubin
+      leaderName: "Jonathan Rubin",
+      notes: "Bass line foundation; acoustic low end."
     },
-    schemaVersion: 1,
-    createdAt: new Date().toISOString(),
+    { 
+      id: "trombones", 
+      name: "Trombones", 
+      order: 3, 
+      minRecommended: 3,
+      leaderUid: "user_tbone_mike", // Mike Kowalski
+      leaderName: "Mike Kowalski",
+      notes: "Tenor & bass slides, mid-range punch."
+    },
+    { 
+      id: "trumpets", 
+      name: "Trumpets", 
+      order: 4, 
+      minRecommended: 4,
+      leaderUid: "user_ward_kristin", // Kristin Ward
+      leaderName: "Kristin Ward",
+      notes: "Lead melodies, fanfare blasts, high brass harmony."
+    },
+    { 
+      id: "saxophones", 
+      name: "Saxophones & Woodwinds", 
+      order: 5, 
+      minRecommended: 3,
+      leaderUid: "user_killebrew_joelle", // Joelle Levitt Killebrew
+      leaderName: "Joelle Levitt Killebrew",
+      notes: "Alto, tenor, and baritone horns."
+    },
+    { 
+      id: "auxiliary", 
+      name: "Auxiliary & Visuals", 
+      order: 6, 
+      minRecommended: 1,
+      leaderUid: "user_aux_megan",
+      leaderName: "Megan Ortiz",
+      notes: "Tambourines, shakers, banners, and crowd hype."
+    },
+  ];
+
+  for (const s of sections) {
+    await setDoc(doc(db, "sections", s.id), s, { merge: true });
+  }
+  console.log(`✅ Seeded ${sections.length} band sections with assigned section leaders.`);
+
+  // ==========================================
+  // 2. Band Roster & Musician Profiles
+  // ==========================================
+  const users = [
+    {
+      uid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
+      email: "manager@eagleburger.org",
+      displayName: "David Passmore Jr.",
+      roles: ["admin", "gig_manager", "catalog_manager", "web_manager", "treasurer", "section_leader"],
+      role: "admin",
+      status: "active",
+      sectionId: "percussion",
+      instruments: ["Snare Drum"],
+      phone: "412-555-0101",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "jkkJnLRU03IxB2gbyG5lolVghGsD",
+      email: "director@eagleburgerband.com",
+      displayName: "Band Director",
+      roles: ["admin", "gig_manager", "catalog_manager"],
+      role: "admin",
+      status: "active",
+      sectionId: "percussion",
+      instruments: ["Conductor", "Percussion"],
+      phone: "412-555-0102",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_fetkovich_john",
+      email: "john.fetkovich@eagleburger.org",
+      displayName: "John Fetkovich",
+      roles: ["member"],
+      role: "member",
+      status: "active",
+      sectionId: "percussion",
+      instruments: ["Bass Drum", "Cymbals"],
+      phone: "412-555-0103",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_rubin_jonathan",
+      email: "jonathan.rubin@eagleburger.org",
+      displayName: "Jonathan Rubin",
+      roles: ["member", "section_leader"],
+      role: "member",
+      status: "active",
+      sectionId: "sousaphones",
+      instruments: ["Sousaphone"],
+      phone: "412-555-0104",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_killebrew_joelle",
+      email: "joelle.killebrew@eagleburger.org",
+      displayName: "Joelle Levitt Killebrew",
+      roles: ["member", "section_leader", "community_manager"],
+      role: "member",
+      status: "active",
+      sectionId: "saxophones",
+      instruments: ["Alto Sax", "Tenor Sax"],
+      phone: "412-555-0105",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_ward_kristin",
+      email: "kristin.ward@eagleburger.org",
+      displayName: "Kristin Ward",
+      roles: ["member", "section_leader"],
+      role: "member",
+      status: "active",
+      sectionId: "trumpets",
+      instruments: ["Trumpet (Bb)"],
+      phone: "412-555-0106",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_tbone_mike",
+      email: "mike.tbone@eagleburger.org",
+      displayName: "Mike Kowalski",
+      roles: ["member", "section_leader"],
+      role: "member",
+      status: "active",
+      sectionId: "trombones",
+      instruments: ["Tenor Trombone"],
+      phone: "412-555-0107",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_bari_sarah",
+      email: "sarah.bari@eagleburger.org",
+      displayName: "Sarah Jenkins",
+      roles: ["member"],
+      role: "member",
+      status: "active",
+      sectionId: "saxophones",
+      instruments: ["Baritone Sax"],
+      phone: "412-555-0108",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_tbone_lead",
+      email: "dan.brass@eagleburger.org",
+      displayName: "Dan Gallagher",
+      roles: ["member"],
+      role: "member",
+      status: "active",
+      sectionId: "trombones",
+      instruments: ["Bass Trombone"],
+      phone: "412-555-0109",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      uid: "user_aux_megan",
+      email: "megan.aux@eagleburger.org",
+      displayName: "Megan Ortiz",
+      roles: ["member", "section_leader"],
+      role: "member",
+      status: "active",
+      sectionId: "auxiliary",
+      instruments: ["Tambourine", "Agogo Bells"],
+      phone: "412-555-0110",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const u of users) {
+    await setDoc(doc(db, "users", u.uid), u, { merge: true });
+  }
+  console.log(`✅ Seeded ${users.length} roster musicians with roles & contact phones.`);
+
+  // ==========================================
+  // 3. Tunes & Repertoire (Syncs to both 'songs' and 'tunes')
+  // ==========================================
+  const tunes = [
+    {
+      id: "song_renegade",
+      title: "Renegade",
+      artist: "Styx",
+      arranger: "Eagleburger Arrangers",
+      keySignature: "G Minor",
+      tempoBpm: 128,
+      status: "active",
+      audioSampleUrl: "https://example.com/audio/renegade.mp3",
+      driveLink: "https://drive.google.com/renegade-charts",
+      tags: ["Rock", "Styx", "Encore", "Crowd Favorite"],
+      notes: "Snare rolls drive into heavy downbeat brass riff.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_bloomfield_bounce",
+      title: "Bloomfield Bounce",
+      artist: "Eagleburger Band",
+      arranger: "Eagleburger",
+      keySignature: "Bb Major",
+      tempoBpm: 140,
+      status: "active",
+      audioSampleUrl: "https://example.com/audio/bounce.mp3",
+      driveLink: "https://drive.google.com/bloomfield-bounce",
+      tags: ["Street Beat", "Parade", "Original"],
+      notes: "Fast marching street stomp.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_river_groove",
+      title: "Clarion River Walk",
+      artist: "Traditional",
+      arranger: "Eagleburger",
+      keySignature: "F Major",
+      tempoBpm: 116,
+      status: "active",
+      audioSampleUrl: "https://example.com/audio/clarion.mp3",
+      driveLink: "https://drive.google.com/clarion-river",
+      tags: ["Slow Jam", "New Orleans", "Second Line"],
+      notes: "Heavy sousaphone groove with trombone trading solos.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_iron_city",
+      title: "Iron City Funk",
+      artist: "Traditional",
+      arranger: "Eagleburger",
+      keySignature: "Eb Major",
+      tempoBpm: 122,
+      status: "active",
+      audioSampleUrl: "",
+      driveLink: "https://drive.google.com/iron-city",
+      tags: ["Funk", "Crowd Favorite", "Opener"],
+      notes: "Main stage opener with horn section unisons.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_ghost_town",
+      title: "Ghost Town Ska",
+      artist: "The Specials",
+      arranger: "Eagleburger Arrangers",
+      keySignature: "C Minor",
+      tempoBpm: 126,
+      status: "active",
+      audioSampleUrl: "",
+      driveLink: "https://drive.google.com/ghost-town",
+      tags: ["Ska", "Crowd Favorite"],
+      notes: "Skank percussion accent on upbeat.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_foxburg_reel",
+      title: "Foxburg River Reel",
+      artist: "Traditional",
+      arranger: "Eagleburger",
+      keySignature: "G Major",
+      tempoBpm: 136,
+      status: "active",
+      audioSampleUrl: "",
+      driveLink: "https://drive.google.com/foxburg-reel",
+      tags: ["Folk", "Parade"],
+      notes: "Accordion or woodwind feature breakdown.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "song_bridge_burner",
+      title: "Bridge Burner Breakdown",
+      artist: "Eagleburger Band",
+      arranger: "Eagleburger",
+      keySignature: "D Minor",
+      tempoBpm: 144,
+      status: "review",
+      audioSampleUrl: "",
+      driveLink: "https://drive.google.com/bridge-burner",
+      tags: ["High Energy", "Drum Solo"],
+      notes: "Percussion feature section at letter C.",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const t of tunes) {
+    // Write to both 'songs' and 'tunes' to satisfy both catalog collections
+    await setDoc(doc(db, "songs", t.id), t, { merge: true });
+    await setDoc(doc(db, "tunes", t.id), t, { merge: true });
+  }
+  console.log(`✅ Seeded ${tunes.length} tunes into both 'songs' and 'tunes' collections.`);
+
+  // ==========================================
+  // 4. Contacts Directory (Organizers, Venues, Media, Tech)
+  // ==========================================
+  const contacts = [
+    {
+      id: "contact_mattress_factory",
+      name: "Sarah DeLuca",
+      organization: "Mattress Factory Museum",
+      role: "Events & Programming Curator",
+      email: "sdeluca@mattress.org",
+      phone: "412-555-7890",
+      notes: "Point of contact for Garden Party series. Preferred stage load-in via rear alley.",
+      tags: ["Venue", "Pittsburgh", "North Side"],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "contact_millvale_days",
+      name: "Megan Kelly",
+      organization: "Millvale Community Association",
+      role: "Parade Coordinator",
+      email: "megan@millvaledays.org",
+      phone: "412-555-0144",
+      notes: "Coordinates annual autumn parade marshaling and check-in.",
+      tags: ["Community", "Festival", "Parade"],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "contact_allegheny_grille",
+      name: "Mark Henderson",
+      organization: "Allegheny Grille / Foxburg Festivals",
+      role: "General Manager",
+      email: "mhenderson@foxburginn.com",
+      phone: "724-555-4321",
+      notes: "Riverside lawn sound stage organizer.",
+      tags: ["Venue", "Foxburg", "Riverside"],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "contact_pgh_marathon",
+      name: "Marcus Vance",
+      organization: "Pittsburgh Marathon Spirit Stations",
+      role: "Cheer Station Director",
+      email: "cheer@pittsburghmarathon.com",
+      phone: "412-555-0182",
+      notes: "Coordinates Bloomfield mile 11 corner placement and logistics permits.",
+      tags: ["Athletic", "Spirit Zone"],
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "contact_sound_tech",
+      name: "Alex Ramirez",
+      organization: "Three Rivers Sound Co.",
+      role: "Audio Lead & Rigging",
+      email: "alex@3riverssound.com",
+      phone: "412-555-9011",
+      notes: "Primary horn and drum mic vendor when outdoor PA is required.",
+      tags: ["Vendor", "Audio", "Production"],
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const c of contacts) {
+    await setDoc(doc(db, "contacts", c.id), c, { merge: true });
+  }
+  console.log(`✅ Seeded ${contacts.length} industry & venue contacts.`);
+
+  // ==========================================
+  // 5. Suggestions (Roster Song / Repertoire Pitches)
+  // ==========================================
+  const suggestions = [
+    {
+      id: "sug_brass_chameleon",
+      submittedByUid: "user_killebrew_joelle",
+      submittedByName: "Joelle Levitt Killebrew",
+      songTitle: "Cissy Strut",
+      originalArtist: "The Meters",
+      pitchNotes: "New Orleans funk groove that would fit our brass unisons perfectly.",
+      spotifyOrYoutubeUrl: "https://www.youtube.com/watch?v=4_iC0MyIykM",
+      votesCount: 6,
+      voters: ["T4qj4iyXePw2ZMvdzvZq644u9OiX", "user_fetkovich_john", "user_rubin_jonathan", "user_tbone_mike"],
+      status: "approved",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "sug_spanish_flea",
+      submittedByUid: "user_ward_kristin",
+      submittedByName: "Kristin Ward",
+      songTitle: "Spanish Flea",
+      originalArtist: "Herb Alpert & Tijuana Brass",
+      pitchNotes: "Short, high-tempo, nostalgic parade stroll tune.",
+      spotifyOrYoutubeUrl: "https://www.youtube.com/watch?v=mML2fPec7xU",
+      votesCount: 4,
+      voters: ["user_ward_kristin", "user_bari_sarah"],
+      status: "under_review",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const sug of suggestions) {
+    await setDoc(doc(db, "suggestions", sug.id), sug, { merge: true });
+  }
+  console.log(`✅ Seeded ${suggestions.length} repertoire song suggestions.`);
+
+  // ==========================================
+  // 6. Comments & Internal Discussion Feed
+  // ==========================================
+  const comments = [
+    {
+      id: "comment_mf_gear",
+      targetType: "gig",
+      targetId: "gig_mattress_factory_2026",
+      authorUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
+      authorName: "David Passmore Jr.",
+      text: "Reminder: load-in is via the courtyard rear gate on Sampsonia Way. Look for the band permit in the driveway.",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "comment_drum_heads",
+      targetType: "section",
+      targetId: "percussion",
+      authorUid: "user_fetkovich_john",
+      authorName: "John Fetkovich",
+      text: "New bass drum mallets and harness pins are packed in the master hardware duffel.",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const cm of comments) {
+    await setDoc(doc(db, "comments", cm.id), cm, { merge: true });
+  }
+  console.log(`✅ Seeded ${comments.length} discussion comments.`);
+
+  // ==========================================
+  // 7. Theme Configuration Document
+  // ==========================================
+  await setDoc(doc(db, "theme", "config"), {
+    primaryColor: "#facc15", // EBB Yellow
+    accentColor: "#0f172a",  // Slate 900
+    bandName: "Eagleburger Band",
+    subheading: "Brass, percussion, and mobile street revelry.",
+    logoUrl: "/ebb-logo.png",
+    activeSeason: "2026 Fall Season",
     updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded sample gig");
+  }, { merge: true });
+  console.log("✅ Seeded theme styling configuration.");
 
-  // 5. RSVPs
-  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_admin_01"), {
-    status: "attending",
-    sectionId: "sec_low_brass",
-    updatedAt: new Date().toISOString(),
-  });
+  // ==========================================
+  // 8. Master Setlist Templates
+  // ==========================================
+  const setlistTemplates = [
+    {
+      id: "template_parade_short",
+      name: "30-Minute Street Parade Block",
+      songCount: 4,
+      tags: ["Parade", "Street Beat", "Compact"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "template_festival_long",
+      name: "90-Minute Festival Showcase",
+      songCount: 10,
+      tags: ["Festival", "Stage", "Extended"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "template_beer_garden",
+      name: "Beer Garden & Porchfest Set",
+      songCount: 6,
+      tags: ["Acoustic", "Casual", "Outdoor"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
 
-  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_bone_02"), {
-    status: "attending",
-    sectionId: "sec_low_brass",
-    updatedAt: new Date().toISOString(),
-  });
+  for (const sl of setlistTemplates) {
+    await setDoc(doc(db, "setlists", sl.id), sl, { merge: true });
+  }
+  console.log(`✅ Seeded ${setlistTemplates.length} setlist templates.`);
 
-  await setDoc(doc(db, "gigs/gig_mattress_factory_2026/rsvps", "user_trumpet_01"), {
-    status: "tentative",
-    sectionId: "sec_trumpets",
-    updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded gig attendance records");
-
-  // 6. CRM Client Contact
-  await setDoc(doc(db, "contacts", "contact_mf_events"), {
-    id: "contact_mf_events",
-    name: "Caitlin Sparks",
-    organization: "Mattress Factory Museum",
-    email: "events@mattress.org",
-    phone: "(412) 231-3169",
-    notes: "Coordinates Northside garden and courtyard parties. Net-30 invoice via museum accounts payable.",
-    totalGigsBooked: 3,
-    lastContactedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded client contact");
-
-  // 7. Inbound Booking Lead
-  await setDoc(doc(db, "inquiries", "lead_bloomfield_fest"), {
-    id: "lead_bloomfield_fest",
-    contactName: "Marco Rossi",
-    organization: "Little Italy Days / Bloomfield",
-    email: "mrossi@bloomfieldpgh.org",
-    phone: "(412) 555-0182",
-    eventDate: "2026-10-10",
-    eventTitle: "Bloomfield Street Brass Parade",
-    venue: "Liberty Avenue",
-    estimatedBudget: 800,
-    notes: "45-minute roving brass performance starting at Cedarville and marching down Liberty Ave.",
-    status: "new",
-    createdAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded booking lead");
-
-  // 8. Repertoire Tunes
-  await setDoc(doc(db, "tunes", "tune_ghost_town"), {
-    id: "tune_ghost_town",
-    title: "Ghost Town",
-    originalArtist: "The Specials",
-    arranger: "Eagleburger Arrangers",
-    key: "Cm",
-    tempoBpm: 76,
-    timeSignature: "4/4",
-    durationSeconds: 220,
-    lifecycleStatus: "active_rotation",
-    notes: "Heavy bass reggae groove. Baritone solo on bridge.",
-    chartAttachments: [
-      {
-        sectionId: "sec_low_brass",
-        partName: "Sousaphone & Low Brass",
-        fileUrl: "https://example.com/charts/ghost-town-low-brass.pdf",
-        key: "Cm",
+  // ==========================================
+  // 9. Gigs, Call Sheets, RSVPs & Dispatch History
+  // ==========================================
+  const gigs = [
+    {
+      id: "gig_mattress_factory_2026",
+      slug: "2026-09-25-mattress-factory-garden-party",
+      date: "2026-09-25",
+      status: "confirmed",
+      publicDetails: {
+        title: "Mattress Factory Garden Party",
+        venue: "Mattress Factory Museum Garden",
+        venueAddress: "500 Sampsonia Way, Pittsburgh, PA 15212",
+        description: "Special double-bill outdoor performance featuring Eagleburger Band and The Honk Committee from Buffalo.",
       },
-      {
-        sectionId: "sec_trumpets",
-        partName: "1st & 2nd Trumpets",
-        fileUrl: "https://example.com/charts/ghost-town-trumpets.pdf",
-        key: "Cm",
+      internalLogistics: {
+        title: "Mattress Factory Garden Party",
+        callTime: "5:45 PM",
+        downbeat: "6:45 PM",
+        attire: "Eagleburger Yellows & Festive Black",
+        unloadingAddress: "500 Sampsonia Way (Rear Alley Gate), Pittsburgh, PA",
+        parkingNotes: "Band vehicle parking permits provided for Monterey St lot.",
+        compensation: 65,
+        description: "Co-billing with The Honk Committee. 45 min alternating sets in courtyard.",
       },
-    ],
-    audioReferenceUrl: "https://www.youtube.com/watch?v=RZ2oXzrnti4",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-
-  await setDoc(doc(db, "tunes", "tune_saint_james"), {
-    id: "tune_saint_james",
-    title: "St. James Infirmary",
-    originalArtist: "Traditional / Preservation Hall",
-    arranger: "Trad",
-    key: "Dm",
-    tempoBpm: 92,
-    timeSignature: "4/4",
-    durationSeconds: 200,
-    lifecycleStatus: "active_rotation",
-    notes: "Slow, theatrical funeral march build into double-time dance swing.",
-    chartAttachments: [],
-    audioReferenceUrl: "",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded repertoire catalog charts");
-
-  // 9. Performance Setlist
-  await setDoc(doc(db, "setlists", "set_garden_party_2026"), {
-    id: "set_garden_party_2026",
-    title: "Mattress Factory Garden Party - Set 1",
-    description: "Opening 45-minute street performance set in museum garden courtyard.",
-    gigId: "gig_mattress_factory_2026",
-    targetDurationMinutes: 45,
-    items: [
-      {
-        tuneId: "tune_ghost_town",
-        customNotes: "Extend intro bassline 8 bars while crowd gathers",
-        transitionType: "drum_roll",
+      setlist: [
+        {
+          id: "set-1",
+          setName: "Courtyard Set 1",
+          items: [
+            { id: "item-1-1", title: "Iron City Funk", artist: "Traditional", keySignature: "Eb Major" },
+            { id: "item-1-2", title: "Bloomfield Bounce", artist: "Eagleburger Band", keySignature: "Bb Major" },
+            { id: "item-1-3", title: "Ghost Town Ska", artist: "The Specials", keySignature: "C Minor" },
+            { id: "item-1-4", title: "Renegade", artist: "Styx", keySignature: "G Minor" },
+          ],
+        },
+      ],
+      financials: {
+        totalFee: 1400,
+        settlementType: "equal_split",
+        bandFundCut: 200,
+        payouts: {},
+        notes: "Joint fee with visiting band; sound system supplied by venue.",
       },
-      {
-        tuneId: "tune_saint_james",
-        customNotes: "Segue directly out of funeral cadence into swing tempo",
-        transitionType: "direct_segue",
+      rsvpSummary: {
+        attendingCount: 8,
+        declinedCount: 1,
       },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded performance setlist");
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "gig_bloomfield_2028",
+      slug: "2028-11-05-bloomfield-street-carnival",
+      date: "2028-11-05",
+      status: "draft",
+      publicDetails: {
+        title: "Bloomfield Street Carnival",
+        venue: "Liberty & 45th",
+        venueAddress: "Penn & 45th, Pittsburgh, PA 15224",
+        description: "Annual neighborhood street festival and parade performance.",
+      },
+      internalLogistics: {
+        title: "Bloomfield Street Carnival",
+        callTime: "5:30 PM",
+        downbeat: "6:30 PM",
+        attire: "Eagleburger Yellows & Black",
+        unloadingAddress: "Penn & 45th, Pittsburgh, PA 15224",
+        parkingNotes: "Street parking on adjacent residential avenues.",
+        compensation: 44,
+        description: "Official marching block & open plaza jam.",
+      },
+      setlist: [
+        {
+          id: "set-1",
+          setName: "Parade Stroll",
+          items: [
+            { id: "item-2-1", title: "Bloomfield Bounce", artist: "Eagleburger Band", keySignature: "Bb Major" },
+            { id: "item-2-2", title: "Foxburg River Reel", artist: "Traditional", keySignature: "G Major" },
+            { id: "item-2-3", title: "Clarion River Walk", artist: "Traditional", keySignature: "F Major" },
+          ],
+        },
+      ],
+      financials: {
+        totalFee: 800,
+        settlementType: "equal_split",
+        bandFundCut: 100,
+        payouts: {},
+        notes: "Deposit pending invoice confirmation.",
+      },
+      rsvpSummary: {
+        attendingCount: 7,
+        declinedCount: 0,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
 
-  // 10. Member Suggestions
-  await setDoc(doc(db, "suggestions", "sugg_brass_tune_01"), {
-    id: "sugg_brass_tune_01",
-    authorUid: "user_admin_01",
-    authorName: "Alex Bass",
-    category: "tune_request",
-    title: "Arrange 'Chameleon' for Street Marching",
-    description: "Herbie Hancock funk head would work great with 2 sousaphones swapping the octave bassline.",
-    status: "under_review",
-    upvoteUids: ["user_admin_01", "user_trumpet_01", "user_bone_02"],
-    adminNotes: "Director looking into horn charts for next rehearsal.",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  for (const g of gigs) {
+    await setDoc(doc(db, "gigs", g.id), g, { merge: true });
 
-  // 11. Discourse Comments & Notices
-  await setDoc(doc(db, "comments", "comment_pinned_mf"), {
-    id: "comment_pinned_mf",
-    targetType: "gig",
-    targetId: "gig_mattress_factory_2026",
-    targetTitle: "Mattress Factory Garden Gig",
-    authorUid: "user_admin_01",
-    authorName: "Alex Bass",
-    content: "Load-in notice: Museum gates unlock at 5:15 PM sharp. Enter through Sampsonia side door.",
-    isPinned: true,
-    isFlagged: false,
-    flagReason: "",
-    flaggedByUid: "",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+    for (let i = 0; i < users.length; i++) {
+      const musician = users[i];
+      let rsvpStatus: "attending" | "declined" | "tentative" = "attending";
+      if (i === 6) rsvpStatus = "declined";
+      if (i === 7 && g.status !== "completed") rsvpStatus = "tentative";
 
-  await setDoc(doc(db, "comments", "comment_flagged_sample"), {
-    id: "comment_flagged_sample",
-    targetType: "tune",
-    targetId: "tune_ghost_town",
-    targetTitle: "Ghost Town",
-    authorUid: "member_anon_99",
-    authorName: "Guest Musician",
-    content: "Spam link: check out external soundcloud rip http://unverified-link.biz",
-    isPinned: false,
-    isFlagged: true,
-    flagReason: "External link spam in sheet music thread",
-    flaggedByUid: "user_admin_01",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  console.log("✔ Seeded suggestions and discourse comments");
+      const rsvpDocRef = doc(db, "gigs", g.id, "rsvps", musician.uid);
+      await setDoc(
+        rsvpDocRef,
+        {
+          uid: musician.uid,
+          displayName: musician.displayName,
+          email: musician.email,
+          sectionId: musician.sectionId,
+          instruments: musician.instruments,
+          status: rsvpStatus,
+          notes: rsvpStatus === "declined" ? "Gig conflict" : "",
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    }
 
-  console.log("✨ All records committed successfully!");
+    const auditRef = doc(collection(db, "gigs", g.id, "dispatch_history"));
+    await setDoc(auditRef, {
+      type: "logistics_init",
+      message: `Call sheet initialized for ${g.publicDetails.title}.`,
+      initiatedBy: "System Seed",
+      dispatchedAt: new Date().toISOString(),
+    });
+  }
+  console.log(`✅ Seeded ${gigs.length} gigs across calendar with RSVPs and dispatch logs.`);
+
+  // ==========================================
+  // 10. Client Booking Inquiries
+  // ==========================================
+  const inquiries = [
+    {
+      id: "inq_millvale_days_2026",
+      clientName: "Megan Kelly",
+      organization: "Millvale Community Association",
+      email: "megan@millvaledays.org",
+      phone: "412-555-0144",
+      eventTitle: "Millvale Days Grand Street Parade",
+      eventType: "Community Parade & Festival",
+      date: "2026-10-10",
+      startTime: "11:00 AM",
+      venue: "Grant Avenue",
+      venueAddress: "Grant Ave & North Ave, Millvale, PA 15209",
+      budget: 1500,
+      message: "We would love to have Eagleburger lead the parade kick-off again this fall! Approximately 1.2 mile street route.",
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "inq_pgh_half_marathon_2027",
+      clientName: "Marcus Vance",
+      organization: "Pittsburgh Marathon Spirit Stations",
+      email: "cheer@pittsburghmarathon.com",
+      phone: "412-555-0182",
+      eventTitle: "Marathon Mile 11 Spirit Zone",
+      eventType: "Street Cheering Station",
+      date: "2027-05-02",
+      startTime: "7:30 AM",
+      venue: "Bloomfield Mile 11 Corner",
+      venueAddress: "Liberty Ave & Cedarville St, Pittsburgh, PA",
+      budget: 900,
+      message: "High-energy brass requested to motivate runners ascending the hill into Bloomfield!",
+      status: "contacted",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const inq of inquiries) {
+    await setDoc(doc(db, "inquiries", inq.id), inq, { merge: true });
+  }
+  console.log(`✅ Seeded ${inquiries.length} client booking inquiries.`);
+
+  console.log("🎉 Complete emulator seed finished! All collections and sections populated.");
   process.exit(0);
 }
 
