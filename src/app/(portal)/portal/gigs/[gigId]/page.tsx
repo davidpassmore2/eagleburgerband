@@ -7,8 +7,8 @@ import {
   onSnapshot, 
   updateDoc, 
   collection, 
-  getDocs,
-  setDoc
+  getDocs, 
+  setDoc 
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -24,12 +24,15 @@ import {
   XCircle, 
   HelpCircle, 
   Users, 
-  Navigation,
-  Music2,
-  AlertCircle,
-  ListMusic,
-  FileText,
-  Edit3
+  Navigation, 
+  Music2, 
+  AlertCircle, 
+  ListMusic, 
+  FileText, 
+  Edit3,
+  Printer,
+  Copy,
+  Check
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -100,8 +103,8 @@ export default function GigCallSheetPage() {
   const [optimisticStatus, setOptimisticStatus] = useState<AttendanceStatus | null>(null);
   const [updating, setUpdating] = useState(false);
   const [isSetlistModalOpen, setIsSetlistModalOpen] = useState(false);
+  const [copiedBlast, setCopiedBlast] = useState(false);
 
-  // Subscribe to Gig, RSVPs, Sections, and Users directory
   useEffect(() => {
     if (!gigId) return;
 
@@ -159,7 +162,6 @@ export default function GigCallSheetPage() {
     };
   }, [gigId]);
 
-  // Derived user attendance status
   const userStatus: AttendanceStatus | null =
     optimisticStatus ??
     (rsvps.find((r) => r.uid === profile?.uid)?.status as AttendanceStatus | undefined) ??
@@ -255,7 +257,6 @@ export default function GigCallSheetPage() {
     description: "",
   };
 
-  // Merge optimistic local RSVP into the list
   const effectiveRsvps: PerformerRsvp[] = rsvps.map((r) => {
     if (profile && r.uid === profile.uid && optimisticStatus) {
       return { ...r, status: optimisticStatus };
@@ -284,29 +285,80 @@ export default function GigCallSheetPage() {
   const attendingPlayers = effectiveRsvps.filter((r) => r.status === "attending");
   const declinedPlayers = effectiveRsvps.filter((r) => r.status === "declined");
   const tentativePlayers = effectiveRsvps.filter((r) => r.status === "tentative");
-
   const setlist = gig.setlist || [];
   const mapsQuery = encodeURIComponent(logistics.unloadingAddress);
 
+  const handleCopyTextBlast = () => {
+    const text = [
+      `🎺 EAGLEBURGER CALL SHEET: ${logistics.title}`,
+      `📅 Date: ${gig.date}`,
+      `⏰ Call Time: ${logistics.callTime} | Downbeat: ${logistics.downbeat}`,
+      `📍 Location: ${logistics.unloadingAddress}`,
+      `👔 Attire: ${logistics.attire}`,
+      `💵 Pay: ${logistics.compensation ? `$${logistics.compensation}` : "Band Fund"}`,
+      logistics.parkingNotes ? `🚗 Parking: ${logistics.parkingNotes}` : "",
+      `📋 Full Call Sheet & Setlist: ${window.location.href}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    navigator.clipboard.writeText(text);
+    setCopiedBlast(true);
+    setTimeout(() => setCopiedBlast(false), 2500);
+  };
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none print:text-black">
+      {/* Quick Action Dispatch Toolbar (Hidden on Print) */}
+      <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 print:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Quick Actions:
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyTextBlast}
+            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+          >
+            {copiedBlast ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied to Clipboard
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-yellow-400" /> Copy Text Blast
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+          >
+            <Printer className="w-3.5 h-3.5" /> Print / Save PDF
+          </button>
+        </div>
+      </div>
+
       {/* Call Sheet Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl print:bg-white print:border-black print:shadow-none print:p-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4 print:border-black">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800 print:bg-white print:text-black print:border-black">
                 Official Call Sheet
               </span>
-              <span className="text-xs font-mono text-slate-500 uppercase">
+              <span className="text-xs font-mono text-slate-500 uppercase print:text-black">
                 Status: {gig.status}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 print:text-black">
               {logistics.title}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1.5 mt-1">
-              <MapPin className="w-4 h-4 text-yellow-400 shrink-0" />
+            <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1.5 mt-1 print:text-black">
+              <MapPin className="w-4 h-4 text-yellow-400 shrink-0 print:hidden" />
               {gig.publicDetails?.venue || logistics.unloadingAddress}
             </p>
           </div>
@@ -315,15 +367,15 @@ export default function GigCallSheetPage() {
             href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 transition border border-slate-700"
+            className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 transition border border-slate-700 print:hidden"
           >
             <Navigation className="w-4 h-4 text-yellow-400" />
-            Open in Google Maps
+            Open in Maps
           </a>
         </div>
 
-        {/* Performer RSVP Action Banner */}
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        {/* Performer RSVP Action Banner (Hidden on Print) */}
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 print:hidden">
           <div>
             <span className="text-xs font-bold text-white uppercase tracking-wider block">
               Your Performance Commitment
@@ -379,19 +431,73 @@ export default function GigCallSheetPage() {
         </div>
       </div>
 
+      {/* Logistics & Staging Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-2">
+        {/* Timing & Financials */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 print:bg-white print:border-black print:p-3">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5 print:text-black print:border-black">
+            <Clock className="w-4 h-4 text-yellow-400 print:hidden" /> Timing & Pay
+          </h2>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-black">
+              <span className="text-slate-400 print:text-black">Date:</span>
+              <span className="text-white font-semibold font-mono flex items-center gap-1 print:text-black">
+                <Calendar className="w-3.5 h-3.5 text-slate-500 print:hidden" /> {gig.date}
+              </span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-black">
+              <span className="text-slate-400 print:text-black">Call Time:</span>
+              <span className="text-yellow-400 font-bold font-mono print:text-black">{logistics.callTime}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-black">
+              <span className="text-slate-400 print:text-black">Downbeat:</span>
+              <span className="text-white font-bold font-mono print:text-black">{logistics.downbeat}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-slate-400 print:text-black">Musician Pay:</span>
+              <span className="text-emerald-400 font-bold flex items-center gap-0.5 print:text-black">
+                <DollarSign className="w-3.5 h-3.5 print:hidden" />
+                {logistics.compensation ? `$${logistics.compensation}` : "Band Fund"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Uniform & Parking */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 print:bg-white print:border-black print:p-3">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5 print:text-black print:border-black">
+            <Shirt className="w-4 h-4 text-yellow-400 print:hidden" /> Attire & Load-In
+          </h2>
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="text-slate-400 block text-[11px] uppercase print:text-black font-bold">Uniform:</span>
+              <span className="text-white font-medium mt-0.5 block print:text-black">{logistics.attire}</span>
+            </div>
+            <div className="pt-2 border-t border-slate-800/60 print:border-black">
+              <span className="text-slate-400 block text-[11px] uppercase print:text-black font-bold">Location:</span>
+              <span className="text-white font-mono mt-0.5 block print:text-black">{logistics.unloadingAddress}</span>
+            </div>
+            <div className="pt-2 border-t border-slate-800/60 print:border-black">
+              <span className="text-slate-400 block text-[11px] uppercase print:text-black font-bold">Parking:</span>
+              <span className="text-slate-300 mt-0.5 block print:text-black">{logistics.parkingNotes}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Setlist Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 print:bg-white print:border-black print:p-3">
+        <div className="flex justify-between items-center border-b border-slate-800 pb-3 print:border-black">
           <div className="flex items-center gap-2">
-            <ListMusic className="w-5 h-5 text-yellow-400" />
-            <h2 className="text-base font-bold text-white">Live Gig Setlist</h2>
+            <ListMusic className="w-5 h-5 text-yellow-400 print:hidden" />
+            <h2 className="text-base font-bold text-white print:text-black uppercase tracking-wider">Setlist</h2>
           </div>
 
           {canManageGigs(profile) && (
             <button
               type="button"
               onClick={() => setIsSetlistModalOpen(true)}
-              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition"
+              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition print:hidden"
             >
               <Edit3 className="w-3.5 h-3.5" /> Manage Setlist
             </button>
@@ -399,52 +505,52 @@ export default function GigCallSheetPage() {
         </div>
 
         {setlist.length === 0 || setlist.every((s) => s.items.length === 0) ? (
-          <div className="text-center py-6 text-slate-500 text-xs flex items-center justify-center gap-2">
-            <AlertCircle className="w-4 h-4" />
+          <div className="text-center py-6 text-slate-500 text-xs flex items-center justify-center gap-2 print:text-black">
+            <AlertCircle className="w-4 h-4 print:hidden" />
             No setlist published for this performance yet.
           </div>
         ) : (
           <div className="space-y-4">
             {setlist.map((set) => (
-              <div key={set.id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">
+              <div key={set.id} className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 space-y-2.5 print:bg-white print:border-black print:p-2">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 print:border-black">
+                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider print:text-black">
                     {set.setName}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-500 font-bold">
+                  <span className="text-[10px] font-mono text-slate-500 font-bold print:text-black">
                     {set.items.length} tunes
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 print:grid-cols-2">
                   {set.items.map((item, idx) => (
                     <div
                       key={item.id}
-                      className="bg-slate-900 border border-slate-800/80 rounded-lg p-2.5 flex items-start justify-between gap-2"
+                      className="bg-slate-900 border border-slate-800/80 rounded-lg p-2.5 flex items-start justify-between gap-2 print:bg-white print:border-black print:p-1.5"
                     >
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-mono font-bold text-yellow-400">
+                          <span className="text-xs font-mono font-bold text-yellow-400 print:text-black">
                             {idx + 1}.
                           </span>
-                          <span className="text-xs font-bold text-white truncate">
+                          <span className="text-xs font-bold text-white truncate print:text-black">
                             {item.title}
                           </span>
                           {item.keySignature && (
-                            <span className="text-[10px] font-mono font-bold text-yellow-400 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800">
+                            <span className="text-[10px] font-mono font-bold text-yellow-400 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800 print:bg-white print:text-black print:border-black">
                               {item.keySignature}
                             </span>
                           )}
                         </div>
 
                         {item.artist && (
-                          <span className="text-[10px] text-slate-400 block truncate">
+                          <span className="text-[10px] text-slate-400 block truncate print:text-black">
                             {item.artist}
                           </span>
                         )}
 
                         {item.performanceNote && (
-                          <div className="text-[10px] text-amber-300/90 font-mono bg-amber-400/10 px-1.5 py-0.5 rounded mt-1 border border-amber-400/20">
+                          <div className="text-[10px] text-amber-300/90 font-mono bg-amber-400/10 px-1.5 py-0.5 rounded mt-1 border border-amber-400/20 print:bg-white print:text-black print:border-black">
                             {item.performanceNote}
                           </div>
                         )}
@@ -455,7 +561,7 @@ export default function GigCallSheetPage() {
                           href={item.driveLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-yellow-400 hover:text-yellow-300 p-1 bg-slate-950 border border-slate-800 rounded transition shrink-0"
+                          className="text-yellow-400 hover:text-yellow-300 p-1 bg-slate-950 border border-slate-800 rounded transition shrink-0 print:hidden"
                           title="Open Chart PDF"
                         >
                           <FileText className="w-3.5 h-3.5" />
@@ -470,97 +576,42 @@ export default function GigCallSheetPage() {
         )}
       </div>
 
-      {/* Logistics & Staging Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Timing & Financials */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-yellow-400" /> Timing & Pay
-          </h2>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-800/60">
-              <span className="text-slate-400">Date:</span>
-              <span className="text-white font-semibold font-mono flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" /> {gig.date}
-              </span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-800/60">
-              <span className="text-slate-400">Musician Call Time:</span>
-              <span className="text-yellow-400 font-bold font-mono">{logistics.callTime}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-800/60">
-              <span className="text-slate-400">Performance Downbeat:</span>
-              <span className="text-white font-bold font-mono">{logistics.downbeat}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-slate-400">Musician Pay:</span>
-              <span className="text-emerald-400 font-bold flex items-center gap-0.5">
-                <DollarSign className="w-3.5 h-3.5" />
-                {logistics.compensation ? `${logistics.compensation}` : "Band Fund"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Uniform & Parking */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5">
-            <Shirt className="w-4 h-4 text-yellow-400" /> Attire & Load-In
-          </h2>
-          <div className="space-y-2 text-xs">
-            <div>
-              <span className="text-slate-400 block text-[11px] uppercase">Uniform / Attire:</span>
-              <span className="text-white font-medium mt-0.5 block">{logistics.attire}</span>
-            </div>
-            <div className="pt-2 border-t border-slate-800/60">
-              <span className="text-slate-400 block text-[11px] uppercase">Unloading Location:</span>
-              <span className="text-white font-mono mt-0.5 block">{logistics.unloadingAddress}</span>
-            </div>
-            <div className="pt-2 border-t border-slate-800/60">
-              <span className="text-slate-400 block text-[11px] uppercase">Parking Guidance:</span>
-              <span className="text-slate-300 mt-0.5 block">{logistics.parkingNotes}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Confirmed Section Roster */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 print:bg-white print:border-black print:p-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3 print:border-black">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-yellow-400" />
-            <h2 className="text-base font-bold text-white">Live Performance Roster</h2>
+            <Users className="w-5 h-5 text-yellow-400 print:hidden" />
+            <h2 className="text-base font-bold text-white print:text-black uppercase tracking-wider">Performance Roster</h2>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+          <div className="flex items-center gap-2 text-xs font-mono print:text-black">
+            <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold print:bg-white print:text-black print:border-black">
               {attendingPlayers.length} Confirmed
             </span>
-            <span className="bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded border border-amber-400/20 font-bold">
+            <span className="bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded border border-amber-400/20 font-bold print:hidden">
               {tentativePlayers.length} Maybe
             </span>
-            <span className="bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">
+            <span className="bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700 print:hidden">
               {declinedPlayers.length} Out
             </span>
           </div>
         </div>
 
         {attendingPlayers.length === 0 ? (
-          <div className="text-center py-6 text-slate-500 text-xs flex items-center justify-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            No performers confirmed yet. Be the first to confirm attendance above!
+          <div className="text-center py-6 text-slate-500 text-xs flex items-center justify-center gap-2 print:text-black">
+            <AlertCircle className="w-4 h-4 print:hidden" />
+            No performers confirmed yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {/* Defined Sections */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 print:grid-cols-3 print:gap-2">
             {sections.map((sec) => {
               const secPlayers = attendingPlayers.filter((p) => getEffectiveSectionId(p) === sec.id);
               if (secPlayers.length === 0) return null;
 
               return (
-                <div key={sec.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                    <span className="text-xs font-bold text-yellow-400">{sec.name}</span>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">
+                <div key={sec.id} className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 print:bg-white print:border-black print:p-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 print:border-black">
+                    <span className="text-xs font-bold text-yellow-400 print:text-black">{sec.name}</span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold print:text-black">
                       {secPlayers.length}
                     </span>
                   </div>
@@ -570,11 +621,11 @@ export default function GigCallSheetPage() {
                       const insts = getEffectiveInstruments(player);
 
                       return (
-                        <div key={player.uid} className="text-xs text-white flex items-center justify-between">
+                        <div key={player.uid} className="text-xs text-white flex items-center justify-between print:text-black">
                           <span className="font-medium truncate">{name}</span>
                           {insts.length > 0 && (
-                            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-0.5">
-                              <Music2 className="w-2.5 h-2.5 text-slate-500" />
+                            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-0.5 print:text-black">
+                              <Music2 className="w-2.5 h-2.5 text-slate-500 print:hidden" />
                               {insts[0]}
                             </span>
                           )}
@@ -586,7 +637,6 @@ export default function GigCallSheetPage() {
               );
             })}
 
-            {/* Unassigned Performers Fallback */}
             {(() => {
               const knownSectionIds = new Set(sections.map((s) => s.id));
               const unassigned = attendingPlayers.filter(
@@ -596,10 +646,10 @@ export default function GigCallSheetPage() {
               if (unassigned.length === 0) return null;
 
               return (
-                <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                    <span className="text-xs font-bold text-slate-300">General / Unassigned</span>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">
+                <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 print:bg-white print:border-black print:p-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 print:border-black">
+                    <span className="text-xs font-bold text-slate-300 print:text-black">General / Unassigned</span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold print:text-black">
                       {unassigned.length}
                     </span>
                   </div>
@@ -609,11 +659,11 @@ export default function GigCallSheetPage() {
                       const insts = getEffectiveInstruments(player);
 
                       return (
-                        <div key={player.uid} className="text-xs text-white flex items-center justify-between">
+                        <div key={player.uid} className="text-xs text-white flex items-center justify-between print:text-black">
                           <span className="font-medium truncate">{name}</span>
                           {insts.length > 0 && (
-                            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-0.5">
-                              <Music2 className="w-2.5 h-2.5 text-slate-500" />
+                            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-0.5 print:text-black">
+                              <Music2 className="w-2.5 h-2.5 text-slate-500 print:hidden" />
                               {insts[0]}
                             </span>
                           )}
