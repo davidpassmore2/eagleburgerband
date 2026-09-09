@@ -1,8 +1,76 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isManager() {
+      return isAuthenticated() && (
+        (userDocExists() && 
+         'role' in getUserData() && 
+         getUserData().role in ['admin', 'manager', 'director']) ||
+        (request.auth.token.email != null && 
+         request.auth.token.email.matches('.*@eagleburger\\.org$'))
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isManager());
+    }
+
+    // Band sections & instrumentation
+    match /sections/{sectionId} {
+      allow read: if isAuthenticated();
+      allow write: if isManager();
+    }
+
+    // Sheet music library & charts
+    match /songs/{songId} {
+      allow read: if isAuthenticated();
+      allow write: if isManager();
+    }
+
+    // Gigs & logistics
+    match /gigs/{gigId} {
+      allow read: if true;
+      allow write: if isManager();
+
+      // Performer RSVPs subcollection
+      match /rsvps/{userId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && (request.auth.uid == userId || isManager());
+      }
+
+      // Logistics change dispatch audit logs
+      match /dispatch_history/{historyId} {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
+      }
+    }
+
+    // Public booking inquiries intake pipeline
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isManager();
+    }
+
+    // System configurations & app state
+    match /config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isManager();
     }
   }
 }

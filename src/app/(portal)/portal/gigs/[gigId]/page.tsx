@@ -8,7 +8,10 @@ import {
   updateDoc, 
   collection, 
   getDocs, 
-  setDoc 
+  setDoc,
+  query,
+  where,
+  getDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -16,6 +19,7 @@ import { canManageGigs } from "@/lib/auth/permissions";
 import SetlistBuilderModal, { PerformanceSet } from "@/components/portal/SetlistBuilderModal";
 import GigFinanceModal, { GigFinancials } from "@/components/portal/GigFinanceModal";
 import InstrumentationAuditDrawer from "@/components/portal/InstrumentationAuditDrawer";
+import EditGigLogisticsModal from "@/components/portal/EditGigLogisticsModal";
 import { 
   Calendar, 
   Clock, 
@@ -36,7 +40,8 @@ import {
   Copy,
   Check,
   Wallet,
-  ShieldCheck
+  ShieldCheck,
+  Settings
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -64,6 +69,7 @@ type UserProfile = {
 
 type GigDetails = {
   id: string;
+  slug?: string;
   date: string;
   status: string;
   publicDetails?: {
@@ -98,10 +104,12 @@ type SectionInfo = {
 };
 
 export default function GigCallSheetPage() {
-  const { gigId } = useParams() as { gigId: string };
+  const params = useParams();
+  const rawIdentifier = (params?.gigId as string) || "";
   const { profile, loading: authLoading } = useAuth();
 
   const [gig, setGig] = useState<GigDetails | null>(null);
+  const [resolvedGigId, setResolvedGigId] = useState<string>("");
   const [rsvps, setRsvps] = useState<PerformerRsvp[]>([]);
   const [sections, setSections] = useState<SectionInfo[]>([]);
   const [userMap, setUserMap] = useState<Record<string, UserProfile>>({});
@@ -110,18 +118,58 @@ export default function GigCallSheetPage() {
   const [isSetlistModalOpen, setIsSetlistModalOpen] = useState(false);
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState(false);
+  const [isEditLogisticsModalOpen, setIsEditLogisticsModalOpen] = useState(false);
   const [copiedBlast, setCopiedBlast] = useState(false);
 
+  // 1. Resolve whether identifier is a direct ID or a slug
   useEffect(() => {
-    if (!gigId) return;
+    if (!rawIdentifier) return;
 
-    const unsubGig = onSnapshot(doc(db, "gigs", gigId), (snap) => {
-      if (snap.exists()) {
-        setGig({ id: snap.id, ...snap.data() } as GigDetails);
+    let unsubGig: (() => void) | null = null;
+
+    const findGig = async () => {
+      // First try slug query
+      const slugQuery = query(collection(db, "gigs"), where("slug", "==", rawIdentifier));
+      const slugSnap = await getDocs(slugQuery);
+
+      let targetRef = null;
+      let targetId = "";
+
+      if (!slugSnap.empty) {
+        targetRef = slugSnap.docs[0].ref;
+        targetId = slugSnap.docs[0].id;
+      } else {
+        // Fall back to direct document lookup
+        const directRef = doc(db, "gigs", rawIdentifier);
+        const directSnap = await getDoc(directRef);
+        if (directSnap.exists()) {
+          targetRef = directRef;
+          targetId = directSnap.id;
+        }
       }
-    });
 
-    const unsubRsvps = onSnapshot(collection(db, "gigs", gigId, "rsvps"), (snap) => {
+      if (targetRef && targetId) {
+        setResolvedGigId(targetId);
+        unsubGig = onSnapshot(targetRef, (snap) => {
+          if (snap.exists()) {
+            setGig({ id: snap.id, ...snap.data() } as GigDetails);
+          }
+        });
+      }
+    };
+
+    findGig();
+
+    return () => {
+      if (unsubGig) unsubGig();
+    };
+  }, [rawIdentifier]);
+
+  // 2. Listen to RSVPs on resolved Firestore document ID
+  useEffect(() => {
+    if (!resolvedGigId) return;
+
+    const unsubRsvps = onSnapshot(collection(db, "gigs", resolvedGigId, "rsvps"), (snap) => {
       const list: PerformerRsvp[] = [];
       snap.forEach((d) => {
         const raw = d.data();
@@ -163,11 +211,10 @@ export default function GigCallSheetPage() {
     fetchSections();
 
     return () => {
-      unsubGig();
       unsubRsvps();
       unsubUsers();
     };
-  }, [gigId]);
+  }, [resolvedGigId]);
 
   const userStatus: AttendanceStatus | null =
     optimisticStatus ??
@@ -176,7 +223,7 @@ export default function GigCallSheetPage() {
 
   if (authLoading) return <div className="p-8 text-slate-400">Loading call sheet...</div>;
   if (!profile) return <div className="p-8 text-slate-400">Please sign in to access gig logistics.</div>;
-  if (!gig) return <div className="p-8 text-slate-400">Gig record not found.</div>;
+  if (!gig || !resolvedGigId) return <div className="p-8 text-slate-400">Gig record not found.</div>;
 
   const getEffectiveName = (uid: string, fallbackName?: string): string => {
     const fromUsers = userMap[uid]?.displayName || userMap[uid]?.name;
@@ -203,7 +250,7 @@ export default function GigCallSheetPage() {
   };
 
   const handleSetRsvp = async (status: AttendanceStatus) => {
-    if (!profile || updating) return;
+    if (!profile || updating || !resolvedGigId) return;
     setUpdating(true);
     setOptimisticStatus(status);
 
@@ -216,7 +263,7 @@ export default function GigCallSheetPage() {
         profile.email?.split("@")[0] ||
         "Musician";
 
-      const rsvpDocRef = doc(db, "gigs", gigId, "rsvps", profile.uid);
+      const rsvpDocRef = doc(db, "gigs", resolvedGigId, "rsvps", profile.uid);
       await setDoc(
         rsvpDocRef,
         {
@@ -238,7 +285,7 @@ export default function GigCallSheetPage() {
         rsvps.filter((r) => (r.uid === profile.uid ? status === "declined" : r.status === "declined")).length +
         (rsvps.every((r) => r.uid !== profile.uid) && status === "declined" ? 1 : 0);
 
-      await updateDoc(doc(db, "gigs", gigId), {
+      await updateDoc(doc(db, "gigs", resolvedGigId), {
         rsvpSummary: {
           attendingCount: attending,
           declinedCount: declined,
@@ -295,7 +342,6 @@ export default function GigCallSheetPage() {
   const setlist = gig.setlist || [];
   const mapsQuery = encodeURIComponent(logistics.unloadingAddress);
 
-  // Individual logged-in performer payout record
   const myPayout = profile ? gig.financials?.payouts?.[profile.uid] : undefined;
 
   const handleCopyTextBlast = () => {
@@ -324,22 +370,30 @@ export default function GigCallSheetPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none print:text-black">
-      {/* Quick Action Dispatch Toolbar (Hidden on Print) */}
-      <div className="flex items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 print:hidden">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Quick Actions:
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canManageGigs(profile) && (
-            <button
-              type="button"
-              onClick={() => setIsFinanceModalOpen(true)}
-              className="bg-slate-900 hover:bg-slate-800 text-yellow-400 hover:text-yellow-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
-            >
-              <Wallet className="w-3.5 h-3.5" /> Payouts & Ledger
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditLogisticsModalOpen(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+              >
+                <Settings className="w-3.5 h-3.5 text-yellow-400" /> Edit Logistics
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsFinanceModalOpen(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-yellow-400 hover:text-yellow-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+              >
+                <Wallet className="w-3.5 h-3.5" /> Payouts & Ledger
+              </button>
+            </>
           )}
 
           <button
@@ -357,6 +411,7 @@ export default function GigCallSheetPage() {
               </>
             )}
           </button>
+
           <button
             type="button"
             onClick={() => window.print()}
@@ -367,7 +422,6 @@ export default function GigCallSheetPage() {
         </div>
       </div>
 
-      {/* Call Sheet Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl print:bg-white print:border-black print:shadow-none print:p-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4 print:border-black">
           <div>
@@ -399,7 +453,6 @@ export default function GigCallSheetPage() {
           </a>
         </div>
 
-        {/* Performer RSVP Action Banner (Hidden on Print) */}
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 print:hidden">
           <div>
             <span className="text-xs font-bold text-white uppercase tracking-wider block">
@@ -456,9 +509,7 @@ export default function GigCallSheetPage() {
         </div>
       </div>
 
-      {/* Logistics & Staging Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-2">
-        {/* Timing & Financials */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 print:bg-white print:border-black print:p-3">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5 print:text-black print:border-black">
             <Clock className="w-4 h-4 text-yellow-400 print:hidden" /> Timing & Pay
@@ -501,7 +552,6 @@ export default function GigCallSheetPage() {
           </div>
         </div>
 
-        {/* Uniform & Parking */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 print:bg-white print:border-black print:p-3">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center gap-1.5 print:text-black print:border-black">
             <Shirt className="w-4 h-4 text-yellow-400 print:hidden" /> Attire & Load-In
@@ -523,7 +573,6 @@ export default function GigCallSheetPage() {
         </div>
       </div>
 
-      {/* Setlist Section */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 print:bg-white print:border-black print:p-3">
         <div className="flex justify-between items-center border-b border-slate-800 pb-3 print:border-black">
           <div className="flex items-center gap-2">
@@ -614,7 +663,6 @@ export default function GigCallSheetPage() {
         )}
       </div>
 
-      {/* Confirmed Section Roster */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 print:bg-white print:border-black print:p-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3 print:border-black">
           <div className="flex items-center gap-2">
@@ -723,20 +771,18 @@ export default function GigCallSheetPage() {
         )}
       </div>
 
-      {/* Setlist Builder Modal */}
       {isSetlistModalOpen && (
         <SetlistBuilderModal
-          gigId={gig.id}
+          gigId={resolvedGigId}
           initialSets={gig.setlist}
           isOpen={isSetlistModalOpen}
           onClose={() => setIsSetlistModalOpen(false)}
         />
       )}
 
-      {/* Financial Ledger & Musician Payout Modal */}
       {isFinanceModalOpen && (
         <GigFinanceModal
-          gigId={gig.id}
+          gigId={resolvedGigId}
           gigTitle={logistics.title}
           attendingPerformers={attendingPerformersList}
           initialFinancials={gig.financials}
@@ -745,7 +791,6 @@ export default function GigCallSheetPage() {
         />
       )}
 
-      {/* Instrumentation Audit Drawer */}
       {isAuditDrawerOpen && (
         <InstrumentationAuditDrawer
           isOpen={isAuditDrawerOpen}
@@ -760,6 +805,26 @@ export default function GigCallSheetPage() {
             instruments: getEffectiveInstruments(r),
             status: r.status,
           }))}
+        />
+      )}
+
+      {isEditLogisticsModalOpen && (
+        <EditGigLogisticsModal
+          gigId={resolvedGigId}
+          initialDate={gig.date}
+          initialLogistics={{
+            title: logistics.title,
+            callTime: logistics.callTime,
+            downbeat: logistics.downbeat,
+            attire: logistics.attire,
+            unloadingAddress: logistics.unloadingAddress,
+            parkingNotes: logistics.parkingNotes,
+            compensation: logistics.compensation,
+          }}
+          confirmedCount={attendingPlayers.length}
+          managerName={profile?.displayName || "Band Manager"}
+          isOpen={isEditLogisticsModalOpen}
+          onClose={() => setIsEditLogisticsModalOpen(false)}
         />
       )}
     </div>

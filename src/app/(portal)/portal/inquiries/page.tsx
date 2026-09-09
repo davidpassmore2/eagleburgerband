@@ -14,18 +14,13 @@ import {
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
+import { generateGigSlug } from "@/lib/utils/slug";
 import { 
-  Inbox, 
-  Calendar, 
-  MapPin, 
+  Building2,
   DollarSign, 
   Mail, 
   Phone, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  ArrowRight, 
-  Building2,
+  MapPin, 
   Sparkles
 } from "lucide-react";
 
@@ -92,8 +87,10 @@ export default function InquiriesInboxPage() {
 
     setConvertingId(inq.id);
     try {
-      // 1. Create a gig record from inquiry details
+      const slug = generateGigSlug(inq.date, inq.eventTitle);
+
       const newGigRef = await addDoc(collection(db, "gigs"), {
+        slug,
         date: inq.date,
         status: "draft",
         publicDetails: {
@@ -127,15 +124,13 @@ export default function InquiriesInboxPage() {
         updatedAt: new Date().toISOString(),
       });
 
-      // 2. Mark inquiry as accepted
       await updateDoc(doc(db, "inquiries", inq.id), {
         status: "accepted",
         convertedGigId: newGigRef.id,
         updatedAt: new Date().toISOString(),
       });
 
-      // 3. Navigate directly to newly created gig call sheet
-      router.push(`/portal/gigs/${newGigRef.id}`);
+      router.push(`/portal/gigs/${slug || newGigRef.id}`);
     } catch (err) {
       alert("Failed to convert inquiry: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -147,7 +142,6 @@ export default function InquiriesInboxPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -176,7 +170,6 @@ export default function InquiriesInboxPage() {
         </a>
       </div>
 
-      {/* Inquiries List */}
       {inquiries.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center text-slate-500 text-xs">
           No booking inquiries received yet.
@@ -188,7 +181,6 @@ export default function InquiriesInboxPage() {
               key={inq.id}
               className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm"
             >
-              {/* Row Header */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +211,6 @@ export default function InquiriesInboxPage() {
                   </div>
                 </div>
 
-                {/* Status Dropdown */}
                 <div className="flex items-center gap-2">
                   <select
                     value={inq.status}
@@ -242,7 +233,6 @@ export default function InquiriesInboxPage() {
                 </div>
               </div>
 
-              {/* Message / Details Body */}
               {inq.message && (
                 <div className="bg-slate-950 border border-slate-800/80 rounded-lg p-3 text-xs text-slate-300">
                   <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block mb-1">
@@ -252,7 +242,6 @@ export default function InquiriesInboxPage() {
                 </div>
               )}
 
-              {/* Action Bar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1 text-xs">
                 <div className="flex flex-wrap items-center gap-3">
                   <a
