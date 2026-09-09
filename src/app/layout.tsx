@@ -16,6 +16,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className="min-h-screen bg-slate-950 text-slate-100 antialiased"
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
         suppressHydrationWarning
       >
         {children}
