@@ -13,6 +13,8 @@ import {
   ListMusic,
   Send,
   Package,
+  BarChart3,
+  Bell
 } from "lucide-react";
 
 export const WORKSPACE_TOOLS = [
@@ -115,4 +117,25 @@ export const WORKSPACE_TOOLS = [
     icon: MessageSquare,
     requiredRoles: ["admin"],
   },
+  {
+    id: "checkin",
+    title: "Downbeat Check-In",
+    href: "/admin/checkin",
+    icon: UserCheck,
+    requiredRoles: ["admin", "gig_manager", "section_leader"],
+  },
+  {
+  id: "catalog-analytics",
+  title: "Repertoire Analytics",
+  href: "/admin/analytics/catalog",
+  icon: BarChart3,
+  requiredRoles: ["admin", "catalog_manager"],
+},
+{
+  id: "notifications",
+  title: "Broadcast & Alerts",
+  href: "/admin/notifications",
+  icon: Bell,
+  requiredRoles: ["admin", "gig_manager"],
+},
 ];
