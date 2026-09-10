@@ -1,58 +1,50 @@
+import { LucideIcon } from "lucide-react";
 import {
   Users,
-  UserCheck,
-  Palette,
-  CalendarDays,
+  Layers,
+  Calendar,
+  ListMusic,
+  Send,
+  DollarSign,
   Contact,
   Inbox,
   Library,
-  MessageSquare,
   Lightbulb,
-  DollarSign,
-  CheckSquare,
-  ListMusic,
-  Send,
-  Package,
+  Palette,
+  MessageSquare,
+  UserCheck,
   BarChart3,
-  Bell
+  Bell,
+  CheckSquare,
+  PackageCheck,
+  Music2,
 } from "lucide-react";
+import { Role } from "@/lib/auth/permissions";
 
-export const WORKSPACE_TOOLS = [
-  // Existing tools ...
-  {
-    id: "sections",
-    title: "Band Sections",
-    href: "/admin/sections",
-    icon: Users,
-    requiredRoles: ["admin", "section_leader"],
-  },
-  {
-    id: "roster",
-    title: "Band Roster & Invites",
-    href: "/admin/roster",
-    icon: UserCheck,
-    requiredRoles: ["admin", "section_leader"],
-  },
-  {
-    id: "attendance",
-    title: "Section Attendance",
-    href: "/admin/attendance",
-    icon: CheckSquare,
-    requiredRoles: ["admin", "gig_manager", "section_leader"],
-  },
-  {
-    id: "inventory",
-    title: "Equipment & Assets",
-    href: "/admin/inventory",
-    icon: Package,
-    requiredRoles: ["admin", "gig_manager", "section_leader"],
-  },
+export type ToolCategory =
+  | "Performances & Logistics"
+  | "Personnel & Attendance"
+  | "Music & Repertoire"
+  | "Business & Admin";
+
+export interface WorkspaceTool {
+  id: string;
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  requiredRoles: Role[];
+  category: ToolCategory;
+}
+
+export const WORKSPACE_TOOLS: WorkspaceTool[] = [
+  // --- Performances & Logistics ---
   {
     id: "gigs",
     title: "Gig Management Studio",
     href: "/admin/gigs",
-    icon: CalendarDays,
+    icon: Calendar,
     requiredRoles: ["admin", "gig_manager"],
+    category: "Performances & Logistics",
   },
   {
     id: "setlists",
@@ -60,62 +52,7 @@ export const WORKSPACE_TOOLS = [
     href: "/admin/setlists",
     icon: ListMusic,
     requiredRoles: ["admin", "gig_manager", "catalog_manager"],
-  },
-  {
-    id: "dispatch",
-    title: "Call Sheet Dispatch",
-    href: "/admin/dispatch",
-    icon: Send,
-    requiredRoles: ["admin", "gig_manager"],
-  },
-  {
-    id: "ledger",
-    title: "Financial Ledger",
-    href: "/admin/ledger",
-    icon: DollarSign,
-    requiredRoles: ["admin", "gig_manager"],
-  },
-  {
-    id: "contacts",
-    title: "Client CRM & Contacts",
-    href: "/admin/contacts",
-    icon: Contact,
-    requiredRoles: ["admin", "gig_manager"],
-  },
-  {
-    id: "leads",
-    title: "Booking Leads",
-    href: "/admin/inquiries",
-    icon: Inbox,
-    requiredRoles: ["admin", "gig_manager"],
-  },
-  {
-    id: "catalog",
-    title: "Catalog Studio",
-    href: "/admin/catalog",
-    icon: Library,
-    requiredRoles: ["admin", "catalog_manager"],
-  },
-  {
-    id: "suggestions",
-    title: "Suggestion Triage",
-    href: "/admin/suggestions",
-    icon: Lightbulb,
-    requiredRoles: ["admin", "catalog_manager"],
-  },
-  {
-    id: "theme",
-    title: "Brand & Palette",
-    href: "/admin/theme",
-    icon: Palette,
-    requiredRoles: ["admin"],
-  },
-  {
-    id: "comments",
-    title: "Comment Moderation",
-    href: "/admin/comments",
-    icon: MessageSquare,
-    requiredRoles: ["admin"],
+    category: "Performances & Logistics",
   },
   {
     id: "checkin",
@@ -123,19 +60,132 @@ export const WORKSPACE_TOOLS = [
     href: "/admin/checkin",
     icon: UserCheck,
     requiredRoles: ["admin", "gig_manager", "section_leader"],
+    category: "Performances & Logistics",
   },
   {
-  id: "catalog-analytics",
-  title: "Repertoire Analytics",
-  href: "/admin/analytics/catalog",
-  icon: BarChart3,
-  requiredRoles: ["admin", "catalog_manager"],
-},
-{
-  id: "notifications",
-  title: "Broadcast & Alerts",
-  href: "/admin/notifications",
-  icon: Bell,
-  requiredRoles: ["admin", "gig_manager"],
-},
+    id: "call-sheets",
+    title: "Call Sheet Dispatch",
+    href: "/admin/call-sheets",
+    icon: Send,
+    requiredRoles: ["admin", "gig_manager"],
+    category: "Performances & Logistics",
+  },
+  {
+    id: "notifications",
+    title: "Broadcast & Alerts",
+    href: "/admin/notifications",
+    icon: Bell,
+    requiredRoles: ["admin", "gig_manager"],
+    category: "Performances & Logistics",
+  },
+
+  // --- Personnel & Attendance ---
+  {
+    id: "sections",
+    title: "Band Sections",
+    href: "/admin/sections",
+    icon: Layers,
+    requiredRoles: ["admin", "section_leader", "membership_manager"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "roster",
+    title: "Band Roster & Invites",
+    href: "/admin/roster",
+    icon: Users,
+    requiredRoles: ["admin", "membership_manager"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "attendance",
+    title: "Section Attendance",
+    href: "/admin/attendance",
+    icon: CheckSquare,
+    requiredRoles: ["admin", "section_leader"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "assets",
+    title: "Equipment & Assets",
+    href: "/admin/assets",
+    icon: PackageCheck,
+    requiredRoles: ["admin", "asset_manager"],
+    category: "Personnel & Attendance",
+  },
+
+  // --- Music & Repertoire ---
+  {
+    id: "catalog",
+    title: "Catalog Studio",
+    href: "/admin/catalog",
+    icon: Library,
+    requiredRoles: ["admin", "catalog_manager"],
+    category: "Music & Repertoire",
+  },
+  {
+    id: "catalog-analytics",
+    title: "Repertoire Analytics",
+    href: "/admin/analytics/catalog",
+    icon: BarChart3,
+    requiredRoles: ["admin", "catalog_manager"],
+    category: "Music & Repertoire",
+  },
+  {
+    id: "vault",
+    title: "Rehearsal Vault",
+    href: "/portal/vault",
+    icon: Music2,
+    requiredRoles: ["admin", "catalog_manager", "section_leader", "member"],
+    category: "Music & Repertoire",
+  },
+  {
+    id: "suggestions",
+    title: "Suggestion Triage",
+    href: "/admin/suggestions",
+    icon: Lightbulb,
+    requiredRoles: ["admin", "catalog_manager"],
+    category: "Music & Repertoire",
+  },
+
+  // --- Business & Admin ---
+  {
+    id: "finance",
+    title: "Financial Ledger",
+    href: "/admin/finance",
+    icon: DollarSign,
+    requiredRoles: ["admin", "treasurer"],
+    category: "Business & Admin",
+  },
+  {
+    id: "crm",
+    title: "Client CRM & Contacts",
+    href: "/admin/crm",
+    icon: Contact,
+    requiredRoles: ["admin", "gig_manager"],
+    category: "Business & Admin",
+  },
+  {
+    id: "inquiries",
+    title: "Booking Leads",
+    href: "/admin/inquiries",
+    icon: Inbox,
+    requiredRoles: ["admin", "gig_manager"],
+    category: "Business & Admin",
+  },
+  {
+    id: "brand",
+    title: "Brand & Palette",
+    href: "/admin/brand",
+    icon: Palette,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "moderation",
+    title: "Comment Moderation",
+    href: "/admin/moderation",
+    icon: MessageSquare,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
 ];
