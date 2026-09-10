@@ -1,238 +1,564 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { 
+  collection, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc, 
+  doc, 
+  arrayUnion, 
+  arrayRemove 
+} from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { canManageContent } from "@/lib/auth/permissions";
-import { Suggestion, SuggestionSchema } from "@/lib/schema/suggestion";
+import { canManageCatalog } from "@/lib/auth/permissions";
+import { User } from "@/lib/schema/user";
 import { 
   Lightbulb, 
-  ShieldAlert, 
-  Trash2, 
-  Check, 
   ThumbsUp, 
-  MessageSquareText, 
-  Calendar 
+  Plus, 
+  Trash2, 
+  ArrowRight, 
+  ExternalLink, 
+  Search, 
+  Loader2, 
+  X, 
+  Check, 
+  Video 
 } from "lucide-react";
 
-export default function SuggestionsAdminPage() {
-  const { profile, loading: authLoading } = useAuth();
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeNoteEditId, setActiveNoteEditId] = useState<string | null>(null);
-  const [adminNoteInput, setAdminNoteInput] = useState<string>("");
+export type SuggestionStatus = "pitched" | "in_review" | "approved" | "shelved";
+
+interface TuneSuggestion {
+  id: string;
+  title: string;
+  originalArtist: string;
+  suggestedBy: string;
+  suggestedByUid: string;
+  referenceUrl?: string;
+  notes?: string;
+  status: SuggestionStatus;
+  upvotes: string[];
+  keyProposal?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Normalize legacy or alternate status strings into valid SuggestionStatus
+const normalizeStatus = (rawStatus?: string): SuggestionStatus => {
+  if (!rawStatus) return "pitched";
+  const cleaned = rawStatus.toLowerCase().replace(/[\s-]+/g, "_");
+  if (cleaned === "under_review" || cleaned === "in_review" || cleaned === "review") {
+    return "in_review";
+  }
+  if (cleaned === "approved" || cleaned === "promoted") return "approved";
+  if (cleaned === "shelved" || cleaned === "rejected" || cleaned === "archived") return "shelved";
+  return "pitched";
+};
+
+export default function TuneSuggestionsAdminPage() {
+  const { firebaseUser, profile, loading: authLoading } = useAuth();
+  const [suggestions, setSuggestions] = useState<TuneSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    originalArtist: "",
+    referenceUrl: "",
+    keyProposal: "Bb Major",
+    notes: "",
+  });
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "suggestions"), (snap) => {
-      const list: Suggestion[] = [];
-      snap.forEach((d) => {
-        const parsed = SuggestionSchema.safeParse(d.data());
-        if (parsed.success) list.push(parsed.data);
-      });
-      list.sort((a, b) => (b.upvoteUids?.length || 0) - (a.upvoteUids?.length || 0));
-      setSuggestions(list);
-    });
+    if (authLoading) return;
+
+    const unsub = onSnapshot(
+      collection(db, "suggestions"),
+      (snap) => {
+        const list: TuneSuggestion[] = [];
+        snap.forEach((d) => {
+          const data = d.data();
+          list.push({
+            id: d.id,
+            title: data.title || "",
+            originalArtist: data.originalArtist || data.artist || "",
+            suggestedBy: data.suggestedBy || "Anonymous",
+            suggestedByUid: data.suggestedByUid || "",
+            referenceUrl: data.referenceUrl || "",
+            notes: data.notes || "",
+            status: normalizeStatus(data.status),
+            upvotes: Array.isArray(data.upvotes) ? data.upvotes : [],
+            keyProposal: data.keyProposal || "Bb Major",
+            createdAt: data.createdAt || new Date().toISOString(),
+            updatedAt: data.updatedAt,
+          } as TuneSuggestion);
+        });
+
+        list.sort((a, b) => {
+          const voteDiff = (b.upvotes?.length || 0) - (a.upvotes?.length || 0);
+          if (voteDiff !== 0) return voteDiff;
+          return b.createdAt.localeCompare(a.createdAt);
+        });
+
+        setSuggestions(list);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Suggestions listener error:", err);
+        setLoading(false);
+      }
+    );
 
     return () => unsub();
-  }, []);
+  }, [authLoading]);
 
-  if (authLoading) return <div className="p-8 text-slate-400">Verifying authorization...</div>;
-  if (!canManageContent(profile)) {
+  if (authLoading || loading) {
     return (
-      <div className="p-8 text-amber-400 flex items-center gap-3">
-        <ShieldAlert className="w-6 h-6 shrink-0" />
-        <span>Community Manager or Administrator clearance required.</span>
+      <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
+        <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+        Loading repertoire proposals & votes...
       </div>
     );
   }
 
-  const handleUpdateStatus = async (suggestionId: string, status: Suggestion["status"]) => {
-    await updateDoc(doc(db, "suggestions", suggestionId), {
-      status,
-      updatedAt: new Date().toISOString(),
-    });
+  const userProfile = profile as unknown as User;
+  const isManager = Boolean(userProfile && canManageCatalog(userProfile));
+
+  const handleToggleVote = async (sug: TuneSuggestion) => {
+    if (!firebaseUser) return;
+    const hasVoted = sug.upvotes.includes(firebaseUser.uid);
+    const sugRef = doc(db, "suggestions", sug.id);
+
+    try {
+      if (hasVoted) {
+        await updateDoc(sugRef, {
+          upvotes: arrayRemove(firebaseUser.uid),
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        await updateDoc(sugRef, {
+          upvotes: arrayUnion(firebaseUser.uid),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      alert("Failed to toggle vote: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
-  const handleSaveAdminNote = async (suggestionId: string) => {
-    await updateDoc(doc(db, "suggestions", suggestionId), {
-      adminNotes: adminNoteInput,
-      updatedAt: new Date().toISOString(),
-    });
-    setActiveNoteEditId(null);
+  const handleStatusChange = async (sugId: string, nextStatus: SuggestionStatus) => {
+    try {
+      await updateDoc(doc(db, "suggestions", sugId), {
+        status: nextStatus,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      alert("Failed to change status: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
-  const handleDelete = async (suggestionId: string) => {
-    if (!confirm("Are you sure you want to delete this suggestion?")) return;
-    await deleteDoc(doc(db, "suggestions", suggestionId));
+  const handleCreateSuggestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim() || !firebaseUser) return;
+
+    setIsSaving(true);
+    try {
+      const sugId = `sug_${Date.now()}`;
+      const payload: TuneSuggestion = {
+        id: sugId,
+        title: formData.title.trim(),
+        originalArtist: formData.originalArtist.trim(),
+        suggestedBy: profile?.displayName || firebaseUser.displayName || "Musician",
+        suggestedByUid: firebaseUser.uid,
+        referenceUrl: formData.referenceUrl.trim(),
+        keyProposal: formData.keyProposal.trim(),
+        notes: formData.notes.trim(),
+        status: "pitched",
+        upvotes: [firebaseUser.uid],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, "suggestions", sugId), payload, { merge: true });
+      setIsCreating(false);
+      setFormData({
+        title: "",
+        originalArtist: "",
+        referenceUrl: "",
+        keyProposal: "Bb Major",
+        notes: "",
+      });
+    } catch (err) {
+      alert("Failed to submit tune proposal: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const statusBadges: Record<Suggestion["status"], string> = {
-    submitted: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    under_review: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    accepted: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    declined: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-    implemented: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  const handlePromoteToCatalog = async (sug: TuneSuggestion) => {
+    if (!confirm(`Promote "${sug.title}" directly to the active band repertoire catalog?`)) return;
+    setPromotingId(sug.id);
+
+    try {
+      const songId = `song_${sug.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      const payload = {
+        id: songId,
+        title: sug.title,
+        artist: sug.originalArtist,
+        arranger: "Eagleburger",
+        keySignature: sug.keyProposal || "Bb Major",
+        tempoBpm: 120,
+        driveLink: sug.referenceUrl || "",
+        tags: ["Ensemble Proposal", "In Development"],
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, "songs", songId), payload, { merge: true });
+      await setDoc(doc(db, "tunes", songId), payload, { merge: true });
+
+      await updateDoc(doc(db, "suggestions", sug.id), {
+        status: "approved",
+        promotedSongId: songId,
+        updatedAt: new Date().toISOString(),
+      });
+
+      alert(`"${sug.title}" is now added to the Repertoire Catalog!`);
+    } catch (err) {
+      alert("Failed to promote suggestion: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setPromotingId(null);
+    }
   };
 
-  const filteredSuggestions = statusFilter === "all"
-    ? suggestions
-    : suggestions.filter((s) => s.status === statusFilter);
+  const handleDeleteSuggestion = async (id: string, title: string) => {
+    if (!confirm(`Delete proposal for "${title}"?`)) return;
+    try {
+      await deleteDoc(doc(db, "suggestions", id));
+    } catch (err) {
+      alert("Failed to delete proposal: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const filtered = suggestions.filter((s) => {
+    const matchesStatus =
+      filterStatus === "all" ||
+      s.status === filterStatus ||
+      (filterStatus === "in_review" && (s.status === "in_review" as SuggestionStatus));
+
+    const matchesSearch =
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.originalArtist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.suggestedBy.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesStatus && matchesSearch;
+  });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Lightbulb className="text-yellow-400 w-6 h-6" /> Suggestion Box Triage
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Review member-submitted ideas, gauge section interest via upvotes, and log leadership responses.
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      {/* Banner */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+              Admin Studio
+            </span>
+            <span className="text-xs font-mono text-slate-400">
+              {suggestions.length} Pitched Song{suggestions.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Tune Proposals & Voting</h1>
+          <p className="text-xs text-slate-400">
+            Musician pitch room for arrangements, community upvoting, and promotion into active charts.
           </p>
         </div>
 
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {["all", "submitted", "under_review", "accepted", "declined", "implemented"].map((filter) => (
+        {!isCreating && (
+          <button
+            type="button"
+            onClick={() => setIsCreating(true)}
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Pitch a Tune
+          </button>
+        )}
+      </div>
+
+      {/* Suggestion Form Modal */}
+      {isCreating && (
+        <form
+          onSubmit={handleCreateSuggestion}
+          className="bg-slate-900 border border-yellow-400/30 rounded-2xl p-5 space-y-4 shadow-2xl"
+        >
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-400" /> Pitch New Song to Band
+            </h2>
             <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition ${
-                statusFilter === filter
-                  ? "bg-yellow-400 text-slate-950 font-bold"
-                  : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+              type="button"
+              onClick={() => setIsCreating(false)}
+              className="text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Song Title *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Papa Was a Rollin' Stone"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Original Artist *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. The Temptations"
+                value={formData.originalArtist}
+                onChange={(e) => setFormData({ ...formData, originalArtist: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Proposed Key</label>
+              <input
+                type="text"
+                placeholder="Bb Minor / Concert Eb"
+                value={formData.keyProposal}
+                onChange={(e) => setFormData({ ...formData, keyProposal: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Reference Audio / Video Link
+              </label>
+              <input
+                type="url"
+                placeholder="https://youtube.com/watch?v=..."
+                value={formData.referenceUrl}
+                onChange={(e) => setFormData({ ...formData, referenceUrl: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Arrangement Notes / Brass Vibe
+              </label>
+              <input
+                type="text"
+                placeholder="Heavy sousa baseline, second line snare groove"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsCreating(false)}
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1 transition disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              {isSaving ? "Pitching..." : "Submit Proposal"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+          <input
+            type="text"
+            placeholder="Search proposals by title, artist, or proposer..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-semibold"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 shrink-0">
+          {[
+            { key: "all", label: "All" },
+            { key: "pitched", label: "Pitched" },
+            { key: "in_review", label: "In Review" },
+            { key: "approved", label: "Approved" },
+            { key: "shelved", label: "Shelved" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterStatus(tab.key)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-bold transition border ${
+                filterStatus === tab.key
+                  ? "bg-yellow-400 text-slate-950 border-yellow-400"
+                  : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
               }`}
             >
-              {filter.replace("_", " ")}
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="space-y-4">
-        {filteredSuggestions.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-sm">
-            No suggestions found matching &ldquo;{statusFilter}&rdquo;.
-          </div>
-        ) : (
-          filteredSuggestions.map((item) => (
+      {/* Suggestions Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((sug) => {
+          const hasVoted = Boolean(firebaseUser && sug.upvotes.includes(firebaseUser.uid));
+
+          return (
             <div
-              key={item.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition flex flex-col md:flex-row justify-between gap-5"
+              key={sug.id}
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 shadow transition flex flex-col justify-between"
             >
-              <div className="space-y-3 flex-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                      statusBadges[item.status]
-                    }`}
-                  >
-                    {item.status.replace("_", " ")}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 uppercase">
-                    {item.category.replace("_", " ")}
-                  </span>
-                  <span className="text-xs text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    {item.createdAt.split("T")[0]}
-                  </span>
-                  <span className="text-xs font-semibold text-yellow-400 flex items-center gap-1 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    {item.upvoteUids?.length || 0} Upvotes
-                  </span>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  {/* Status Pill with interactive manager dropdown */}
+                  {isManager ? (
+                    <select
+                      value={sug.status}
+                      onChange={(e) => handleStatusChange(sug.id, e.target.value as SuggestionStatus)}
+                      className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border focus:outline-none cursor-pointer ${
+                        sug.status === "approved"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : sug.status === "in_review"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          : sug.status === "shelved"
+                          ? "bg-slate-800 text-slate-500 border-slate-700"
+                          : "bg-yellow-400/10 text-yellow-400 border-yellow-400/30"
+                      }`}
+                    >
+                      <option value="pitched" className="bg-slate-900 text-yellow-400">Pitched</option>
+                      <option value="in_review" className="bg-slate-900 text-blue-400">In Review</option>
+                      <option value="approved" className="bg-slate-900 text-emerald-400">Approved</option>
+                      <option value="shelved" className="bg-slate-900 text-slate-500">Shelved</option>
+                    </select>
+                  ) : (
+                    <span
+                      className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                        sug.status === "approved"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : sug.status === "in_review"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          : sug.status === "shelved"
+                          ? "bg-slate-800 text-slate-500 border-slate-700"
+                          : "bg-yellow-400/10 text-yellow-400 border-yellow-400/30"
+                      }`}
+                    >
+                      {sug.status.replace("_", " ")}
+                    </span>
+                  )}
+
+                  {isManager && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSuggestion(sug.id, sug.title)}
+                      className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                      title="Delete pitch"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 <div>
-                  <h2 className="text-base font-bold text-white">{item.title}</h2>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Proposed by: <span className="text-slate-200 font-semibold">{item.authorName}</span>
+                  <h3 className="font-bold text-white text-base leading-snug">{sug.title}</h3>
+                  <div className="text-xs text-slate-400 font-semibold">{sug.originalArtist}</div>
+                  <div className="text-[11px] text-slate-500 pt-0.5">
+                    Pitched by: <strong className="text-slate-400">{sug.suggestedBy}</strong>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800/80">
-                  {item.description}
-                </p>
-
-                {/* Leadership Response Note */}
-                <div className="pt-1">
-                  {activeNoteEditId === item.id ? (
-                    <div className="space-y-2 bg-slate-950 p-3 rounded-lg border border-slate-800">
-                      <label className="block text-[11px] font-semibold text-slate-400 uppercase">
-                        Leadership Directives / Feedback Note
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={adminNoteInput}
-                        onChange={(e) => setAdminNoteInput(e.target.value)}
-                        placeholder="Add public leadership feedback or timeline note..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setActiveNoteEditId(null)}
-                          className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleSaveAdminNote(item.id)}
-                          className="flex items-center gap-1 bg-yellow-400 text-slate-950 font-bold px-3 py-1 rounded text-xs"
-                        >
-                          <Check className="w-3.5 h-3.5" /> Save Note
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2 text-xs">
-                      <div className="text-slate-400 flex items-start gap-1.5">
-                        <MessageSquareText className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                        <span>
-                          {item.adminNotes ? (
-                            <span className="text-slate-300 font-medium">Leadership: &ldquo;{item.adminNotes}&rdquo;</span>
-                          ) : (
-                            <span className="italic text-slate-600">No leadership notes attached.</span>
-                          )}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setActiveNoteEditId(item.id);
-                          setAdminNoteInput(item.adminNotes || "");
-                        }}
-                        className="text-[11px] text-yellow-400 hover:underline shrink-0"
-                      >
-                        {item.adminNotes ? "Edit Note" : "+ Add Note"}
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+                  <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    Key: {sug.keyProposal || "Bb Major"}
+                  </span>
                 </div>
+
+                {sug.notes && (
+                  <p className="text-xs text-slate-400 italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">
+                    &ldquo;{sug.notes}&rdquo;
+                  </p>
+                )}
+
+                {sug.referenceUrl && (
+                  <a
+                    href={sug.referenceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 pt-1"
+                  >
+                    <Video className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Reference Recording</span>
+                    <ExternalLink className="w-3 h-3 text-slate-500" />
+                  </a>
+                )}
               </div>
 
-              {/* Status & Deletion Actions */}
-              <div className="flex md:flex-col justify-between items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-5">
-                <select
-                  value={item.status}
-                  onChange={(e) => handleUpdateStatus(item.id, e.target.value as Suggestion["status"])}
-                  className="bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-white"
-                >
-                  <option value="submitted">Submitted</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="accepted">Accepted</option>
-                  <option value="declined">Declined</option>
-                  <option value="implemented">Implemented</option>
-                </select>
-
+              {/* Card Footer */}
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                 <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800 transition"
-                  title="Delete Suggestion"
+                  type="button"
+                  onClick={() => handleToggleVote(sug)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border ${
+                    hasVoted
+                      ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow-md shadow-yellow-400/20"
+                      : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                  title={hasVoted ? "Remove your upvote" : "Upvote this suggestion"}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                  <span>{sug.upvotes.length}</span>
                 </button>
+
+                {isManager && sug.status !== "approved" && (
+                  <button
+                    type="button"
+                    disabled={promotingId === sug.id}
+                    onClick={() => handlePromoteToCatalog(sug)}
+                    className="bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1 transition disabled:opacity-50"
+                    title="Promote directly into active repertoire charts"
+                  >
+                    {promotingId === sug.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    )}
+                    <span>Promote</span>
+                  </button>
+                )}
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );
