@@ -1,18 +1,18 @@
-import { 
-  Users, 
-  UserCheck, 
-  Palette, 
-  CalendarDays, 
-  Contact, 
-  Inbox, 
-  Library, 
-  MessageSquare, 
-  Lightbulb, 
-  DollarSign, 
+import {
+  Users,
+  UserCheck,
+  Palette,
+  CalendarDays,
+  Contact,
+  Inbox,
+  Library,
+  MessageSquare,
+  Lightbulb,
+  DollarSign,
   CheckSquare,
   ListMusic,
   Send,
-  Package 
+  Package,
 } from "lucide-react";
 
 export const WORKSPACE_TOOLS = [
@@ -83,7 +83,7 @@ export const WORKSPACE_TOOLS = [
   {
     id: "leads",
     title: "Booking Leads",
-    href: "/admin/leads",
+    href: "/admin/inquiries",
     icon: Inbox,
     requiredRoles: ["admin", "gig_manager"],
   },

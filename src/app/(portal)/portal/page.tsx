@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { collection, query, orderBy, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -18,6 +18,9 @@ import {
   Sparkles,
   Music2,
   Calendar as CalendarIcon,
+  CalendarOff,
+  PlaySquare,
+  DollarSign,
   Inbox
 } from "lucide-react";
 
@@ -46,10 +49,20 @@ type Gig = {
   };
 };
 
+interface LedgerRecord {
+  gigId: string;
+  distributions?: {
+    uid: string;
+    amount: number;
+    paidStatus: "unpaid" | "cash" | "venmo" | "check";
+  }[];
+}
+
 export default function MusicianPortalOverviewPage() {
   const { profile, loading: authLoading } = useAuth();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
+  const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
   const [loadingGigs, setLoadingGigs] = useState(true);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
@@ -64,7 +77,23 @@ export default function MusicianPortalOverviewPage() {
       setLoadingGigs(false);
     });
 
-    return () => unsubGigs();
+    // Listen to financial ledgers to compute personal earnings
+    const unsubLedgers = onSnapshot(
+      collection(db, "gig_ledgers"),
+      (snapshot) => {
+        const list: LedgerRecord[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as LedgerRecord);
+        });
+        setLedgers(list);
+      },
+      (err) => console.warn("Notice: ledger subscriber note:", err)
+    );
+
+    return () => {
+      unsubGigs();
+      unsubLedgers();
+    };
   }, []);
 
   useEffect(() => {
@@ -92,6 +121,28 @@ export default function MusicianPortalOverviewPage() {
     }
   }, [gigs, profile]);
 
+  // Derived personal financial earnings
+  const personalEarnings = useMemo(() => {
+    if (!profile) return { paid: 0, unpaid: 0 };
+    let paid = 0;
+    let unpaid = 0;
+
+    ledgers.forEach((l) => {
+      if (Array.isArray(l.distributions)) {
+        const mySplit = l.distributions.find((d) => d.uid === profile.uid);
+        if (mySplit) {
+          if (mySplit.paidStatus === "unpaid") {
+            unpaid += mySplit.amount;
+          } else {
+            paid += mySplit.amount;
+          }
+        }
+      }
+    });
+
+    return { paid, unpaid };
+  }, [ledgers, profile]);
+
   if (authLoading || loadingGigs) {
     return <div className="p-8 text-slate-400">Loading your performance schedule...</div>;
   }
@@ -109,7 +160,7 @@ export default function MusicianPortalOverviewPage() {
               Musician Portal
             </span>
             <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Live Dispatch Active
+              <Sparkles className="w-3 dot h-3" /> Live Dispatch Active
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
@@ -122,6 +173,13 @@ export default function MusicianPortalOverviewPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <Link
+            href="/portal/availability"
+            className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+          >
+            <CalendarOff className="w-3.5 h-3.5" /> Blackout Dates
+          </Link>
+
           {canManageGigs(profile) && (
             <Link
               href="/portal/inquiries"
@@ -145,6 +203,33 @@ export default function MusicianPortalOverviewPage() {
           >
             <Music2 className="w-3.5 h-3.5 text-yellow-400" /> Chart Catalog
           </Link>
+        </div>
+      </div>
+
+      {/* Musician Financial Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+              <DollarSign className="w-3 h-3 text-emerald-400" /> Disbursed Payouts
+            </span>
+            <div className="text-2xl font-black text-white">${personalEarnings.paid}</div>
+          </div>
+          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
+            Settled
+          </span>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+              <DollarSign className="w-3 h-3 text-yellow-400" /> Pending Payout Split
+            </span>
+            <div className="text-2xl font-black text-yellow-400">${personalEarnings.unpaid}</div>
+          </div>
+          <span className="text-[11px] font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-1 rounded-lg">
+            Awaiting Payout
+          </span>
         </div>
       </div>
 
@@ -173,19 +258,21 @@ export default function MusicianPortalOverviewPage() {
               const downbeat = gig.internalLogistics?.downbeat || "TBD";
 
               return (
-                <Link
+                <div
                   key={gig.id}
-                  href={`/portal/gigs/${gig.id}`}
-                  className="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 rounded-xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group shadow"
                 >
                   <div className="space-y-2 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-mono font-bold text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
                         {gig.date}
                       </span>
-                      <span className="text-xs font-bold text-white group-hover:text-yellow-400 transition truncate">
+                      <Link
+                        href={`/portal/gigs/${gig.id}`}
+                        className="text-xs font-bold text-white hover:text-yellow-400 transition truncate"
+                      >
                         {title}
-                      </span>
+                      </Link>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400">
@@ -201,11 +288,11 @@ export default function MusicianPortalOverviewPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
                     <div>
                       {status === "attending" && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> You&apos;re In
+                          <CheckCircle2 className="w-3.5 h-3.5" /> In
                         </span>
                       )}
                       {status === "declined" && (
@@ -225,11 +312,24 @@ export default function MusicianPortalOverviewPage() {
                       )}
                     </div>
 
-                    <span className="text-slate-500 group-hover:text-white transition flex items-center gap-0.5 text-xs font-semibold">
-                      Call Sheet <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                    <Link
+                      href={`/portal/perform/${gig.id}`}
+                      className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-yellow-400/40 p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition"
+                      title="Launch Stage Teleprompter"
+                    >
+                      <PlaySquare className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Stage View</span>
+                    </Link>
+
+                    <Link
+                      href={`/portal/gigs/${gig.id}`}
+                      className="text-slate-400 hover:text-white transition flex items-center gap-0.5 text-xs font-semibold p-1.5"
+                    >
+                      <span>Call Sheet</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
