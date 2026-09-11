@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageTheme } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
-import { ThemeConfig, ThemeSchema, ThemeScopeConfig } from "@/lib/schema/theme";
+import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from "@/lib/schema/theme";
 import { 
   Save, 
   Check, 
@@ -21,7 +21,8 @@ import {
   Send,
   Video,
   Camera,
-  Share2
+  Share2,
+  Palette
 } from "lucide-react";
 
 const DEFAULT_THEME: ThemeConfig = ThemeSchema.parse({});
@@ -359,7 +360,84 @@ export default function ThemeCustomizerPage() {
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
+                {/* 5 Harmonious Scheme Presets */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-yellow-400" />
+                      Ensemble Default Color Schemes
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      5 harmonious presets
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {PORTAL_COLOR_SCHEMES.map((scheme) => {
+                      const isSelected = theme.portal.schemeId === scheme.id;
+                      return (
+                        <button
+                          key={scheme.id}
+                          type="button"
+                          onClick={() => {
+                            updatePortalScope({
+                              schemeId: scheme.id,
+                              primaryColor: scheme.primaryColor,
+                              accentColor: scheme.accentColor,
+                              backgroundColor: scheme.backgroundColor,
+                              surfaceColor: scheme.surfaceColor,
+                              mutedSurfaceColor: scheme.mutedSurfaceColor,
+                              borderColor: scheme.borderColor,
+                              textColor: scheme.textColor,
+                              tagline: scheme.tagline,
+                            });
+                          }}
+                          className={`text-left p-3 rounded-xl border transition-all relative group ${
+                            isSelected
+                              ? "border-yellow-400 bg-slate-950/80 shadow-md ring-1 ring-yellow-400/40"
+                              : "border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-950/70"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-white group-hover:text-yellow-400 transition-colors">
+                              {scheme.name}
+                            </span>
+                            {isSelected ? (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-400 text-slate-950 font-mono">
+                                Active Default
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition font-mono">
+                                Apply Preset
+                              </span>
+                            )}
+                          </div>
+
+                          {/* 4-dot swatch row */}
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            {scheme.previewSwatches.map((color, idx) => (
+                              <span
+                                key={idx}
+                                className="w-3 h-3 rounded-full border border-slate-700 shadow-sm"
+                                style={{ backgroundColor: color }}
+                                title={color}
+                              />
+                            ))}
+                            <span className="text-[9px] text-slate-400 font-mono ml-1">
+                              {scheme.primaryColor}
+                            </span>
+                          </div>
+
+                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                            {scheme.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                     Portal Operational Subheading
@@ -395,7 +473,7 @@ export default function ThemeCustomizerPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Sidebar Accent / Border (Hex)
+                      Secondary Accent / Badge Tint (Hex)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -415,7 +493,7 @@ export default function ThemeCustomizerPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Portal Workspace Background (Hex)
+                      Ambient Workspace Background (Hex)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -435,7 +513,7 @@ export default function ThemeCustomizerPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Portal Studio Surface / Card (Hex)
+                      Card & Sidebar Surface (Hex)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -448,6 +526,66 @@ export default function ThemeCustomizerPage() {
                         type="text"
                         value={theme.portal.surfaceColor}
                         onChange={(e) => updatePortalScope({ surfaceColor: e.target.value })}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Inner Well / Search Input Surface (Hex)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.portal.mutedSurfaceColor || "#1e1808"}
+                        onChange={(e) => updatePortalScope({ mutedSurfaceColor: e.target.value })}
+                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={theme.portal.mutedSurfaceColor || "#1e1808"}
+                        onChange={(e) => updatePortalScope({ mutedSurfaceColor: e.target.value })}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Card & Divider Border Tint (Hex)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.portal.borderColor || "#382c0f"}
+                        onChange={(e) => updatePortalScope({ borderColor: e.target.value })}
+                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={theme.portal.borderColor || "#382c0f"}
+                        onChange={(e) => updatePortalScope({ borderColor: e.target.value })}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      High-Contrast Text Color (Hex)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.portal.textColor || "#fefce8"}
+                        onChange={(e) => updatePortalScope({ textColor: e.target.value })}
+                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={theme.portal.textColor || "#fefce8"}
+                        onChange={(e) => updatePortalScope({ textColor: e.target.value })}
                         className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
                       />
                     </div>
@@ -689,21 +827,24 @@ export default function ThemeCustomizerPage() {
                 className="p-5 rounded-xl space-y-4 border transition-colors shadow-inner"
                 style={{
                   backgroundColor: theme.portal.backgroundColor,
-                  borderColor: theme.portal.accentColor + "40",
+                  borderColor: theme.portal.borderColor || theme.portal.accentColor + "40",
                   color: theme.portal.textColor,
                 }}
               >
                 {/* Portal Sidebar Segment Mock */}
                 <div
-                  className="p-4 rounded-xl space-y-3 border"
+                  className="p-4 rounded-xl space-y-3 border shadow-sm"
                   style={{
                     backgroundColor: theme.portal.surfaceColor,
-                    borderColor: theme.portal.accentColor + "50",
+                    borderColor: theme.portal.borderColor || theme.portal.accentColor + "50",
                   }}
                 >
-                  <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
+                  <div 
+                    className="flex items-center gap-2 pb-2 border-b"
+                    style={{ borderColor: theme.portal.borderColor || "#334155" }}
+                  >
                     <div
-                      className="font-black px-2 py-0.5 rounded text-[10px] tracking-wider"
+                      className="font-black px-2 py-0.5 rounded text-[10px] tracking-wider shadow-sm"
                       style={{
                         backgroundColor: theme.portal.primaryColor,
                         color: "#020617",
@@ -712,18 +853,20 @@ export default function ThemeCustomizerPage() {
                       EBB
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">{theme.bandName}</div>
-                      <div className="text-[10px] text-slate-400">Musician Portal</div>
+                      <div className="text-xs font-bold" style={{ color: theme.portal.textColor }}>
+                        {theme.bandName}
+                      </div>
+                      <div className="text-[10px] opacity-75">Musician Portal</div>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-[9px] font-mono uppercase font-bold text-slate-400">
+                    <div className="text-[9px] font-mono uppercase font-bold opacity-60">
                       Performances & Logistics
                     </div>
 
                     <div
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-bold shadow"
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-bold shadow-sm"
                       style={{
                         backgroundColor: theme.portal.primaryColor,
                         color: "#020617",
@@ -733,24 +876,55 @@ export default function ThemeCustomizerPage() {
                       <span>Call Sheet Dispatch</span>
                     </div>
 
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-slate-400 hover:text-white">
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs opacity-75 hover:opacity-100 transition">
                       <Compass className="w-3.5 h-3.5" />
-                      <span>Gig Management Studio</span>
+                      <span>Gig Central RSVPs</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Tactical Alert Mock */}
+                {/* Harmonious Inner Well Card Mock */}
                 <div
-                  className="p-3 rounded-xl text-xs space-y-1"
+                  className="p-3.5 rounded-xl border space-y-2 shadow-sm"
                   style={{
-                    backgroundColor: theme.portal.surfaceColor,
-                    borderLeft: `3px solid ${theme.portal.primaryColor}`,
+                    backgroundColor: theme.portal.mutedSurfaceColor || "#1e1808",
+                    borderColor: theme.portal.borderColor || "#382c0f",
                   }}
                 >
-                  <div className="font-bold text-white">{theme.portal.tagline}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Season active: {theme.activeSeason}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold" style={{ color: theme.portal.textColor }}>
+                      Next Rehearsal RSVP
+                    </span>
+                    <span
+                      className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border"
+                      style={{
+                        backgroundColor: `${theme.portal.primaryColor}20`,
+                        borderColor: `${theme.portal.primaryColor}50`,
+                        color: theme.portal.primaryColor,
+                      }}
+                    >
+                      Confirmed (18 / 22)
+                    </span>
+                  </div>
+                  <p className="text-[10px] opacity-70 leading-relaxed">
+                    Wednesday 7:00 PM @ Rehearsal Hall — Street parade run-through with full brass & battery.
+                  </p>
+                </div>
+
+                {/* Tactical Alert Mock */}
+                <div
+                  className="p-3 rounded-xl text-xs space-y-1 border shadow-sm"
+                  style={{
+                    backgroundColor: theme.portal.surfaceColor,
+                    borderColor: theme.portal.borderColor || "#382c0f",
+                    borderLeft: `4px solid ${theme.portal.primaryColor}`,
+                  }}
+                >
+                  <div className="font-bold" style={{ color: theme.portal.textColor }}>
+                    {theme.portal.tagline}
+                  </div>
+                  <div className="text-[10px] opacity-70 font-mono">
+                    Active season: {theme.activeSeason}
                   </div>
                 </div>
               </div>

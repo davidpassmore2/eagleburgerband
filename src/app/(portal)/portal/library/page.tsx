@@ -12,7 +12,8 @@ import {
   Archive, 
   RotateCcw,
   Sparkles,
-  Filter
+  Filter,
+  BookOpen
 } from "lucide-react";
 
 type Song = {
@@ -24,6 +25,7 @@ type Song = {
   tempoBpm?: number;
   driveLink?: string;
   tags?: string[];
+  status?: string;
 };
 
 export default function RepertoireLibraryPage() {
@@ -31,7 +33,7 @@ export default function RepertoireLibraryPage() {
   const [, setGigs] = useState<GigData[]>([]);
   const [analytics, setAnalytics] = useState<Record<string, TuneStat>>({});
   const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState<"all" | "frequent" | "vault" | "unplayed">("all");
+  const [filterCategory, setFilterCategory] = useState<"all" | "in_repertoire" | "frequent" | "vault" | "unplayed">("all");
   const [loading, setLoading] = useState(true);
 
   // Listen to library charts
@@ -80,6 +82,7 @@ export default function RepertoireLibraryPage() {
     if (!matchesSearch) return false;
 
     if (filterCategory === "all") return true;
+    if (filterCategory === "in_repertoire") return song.status === "in_repertoire";
     if (filterCategory === "unplayed") return !stat || stat.playCount === 0;
     if (filterCategory === "frequent") return stat?.statusCategory === "frequent";
     if (filterCategory === "vault") return stat?.statusCategory === "vault";
@@ -130,11 +133,23 @@ export default function RepertoireLibraryPage() {
           onClick={() => setFilterCategory("all")}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
             filterCategory === "all"
-              ? "bg-yellow-400 text-slate-950 border-yellow-400"
+              ? "bg-yellow-400 text-slate-950 border-yellow-400 font-black"
               : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
           }`}
         >
           All Repertoire ({songs.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilterCategory("in_repertoire")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border ${
+            filterCategory === "in_repertoire"
+              ? "bg-sky-400 text-slate-950 border-sky-300 font-black"
+              : "bg-slate-900 text-sky-400 border-slate-800 hover:text-white"
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" /> In Repertoire ({songs.filter((s) => s.status === "in_repertoire").length})
         </button>
 
         <button
@@ -174,6 +189,19 @@ export default function RepertoireLibraryPage() {
         </button>
       </div>
 
+      {/* In Repertoire Educational Callout */}
+      {filterCategory === "in_repertoire" && (
+        <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-3.5 text-xs text-sky-200 flex items-center gap-3 shadow-sm">
+          <BookOpen className="w-5 h-5 text-sky-400 shrink-0" />
+          <div>
+            <div className="font-bold text-sky-300">In Repertoire Expectations</div>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              Musicians should learn and maintain these charts in their folders. While called less frequently on regular gig call sheets than active rotation, they remain ready to be programmed for special events, requests, or deep setlist runs.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Repertoire Grid / List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filteredSongs.map((song) => {
@@ -197,11 +225,18 @@ export default function RepertoireLibraryPage() {
                     )}
                   </div>
 
-                  {song.keySignature && (
-                    <span className="text-[10px] font-mono font-bold text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 shrink-0">
-                      {song.keySignature}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {song.status === "in_repertoire" && (
+                      <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded flex items-center gap-1" title="Learn & maintain — called less often">
+                        <BookOpen className="w-3 h-3" /> In Repertoire
+                      </span>
+                    )}
+                    {song.keySignature && (
+                      <span className="text-[10px] font-mono font-bold text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 shrink-0">
+                        {song.keySignature}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {song.arranger && (

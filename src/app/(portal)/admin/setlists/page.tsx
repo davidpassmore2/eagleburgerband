@@ -35,6 +35,7 @@ interface SongItem {
   keySignature?: string;
   tempoBpm?: number;
   driveLink?: string;
+  status?: string;
 }
 
 interface SetlistEntry {
@@ -102,6 +103,7 @@ export default function SetlistStudioPage() {
             keySignature: data.keySignature || data.key || "Bb",
             tempoBpm: typeof data.tempoBpm === "number" ? data.tempoBpm : 120,
             driveLink: data.driveLink || "",
+            status: data.status || "",
           });
         });
         sList.sort((a, b) => a.title.localeCompare(b.title));
@@ -396,7 +398,14 @@ export default function SetlistStudioPage() {
                 className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between gap-2 transition"
               >
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">{song.title}</div>
+                  <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                    <span className="truncate">{song.title}</span>
+                    {song.status === "in_repertoire" && (
+                      <span className="text-[9px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded shrink-0" title="In Repertoire — called less often">
+                        In Rep
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500 mt-0.5">
                     <span>{song.keySignature}</span>
                     <span>•</span>

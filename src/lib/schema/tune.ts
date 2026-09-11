@@ -5,6 +5,14 @@ export const TuneLifecycleEnum = z.enum([
   "concept",
   "in_rehearsal",
   "active_rotation",
+  "in_repertoire",
+  "archived",
+]);
+
+export const TuneStatusEnum = z.enum([
+  "active",
+  "in_repertoire",
+  "in_rehearsal",
   "archived",
 ]);
 
@@ -25,6 +33,7 @@ export const TuneSchema = z.object({
   timeSignature: z.string().default("4/4"),
   durationSeconds: z.number().default(180),
   lifecycleStatus: TuneLifecycleEnum.default("active_rotation"),
+  status: TuneStatusEnum.default("active"),
   notes: z.string().default(""),
   chartAttachments: z.array(ChartAttachmentSchema).default([]),
   audioReferenceUrl: z.string().default(""),
@@ -33,4 +42,5 @@ export const TuneSchema = z.object({
 });
 
 export type Tune = z.infer<typeof TuneSchema>;
+export type TuneStatus = z.infer<typeof TuneStatusEnum>;
 export type ChartAttachment = z.infer<typeof ChartAttachmentSchema>;

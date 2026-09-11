@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PortalColorSchemeIdSchema } from "@/lib/schema/theme";
 
 export const RoleEnum = z.enum([
   "admin",
@@ -23,6 +24,7 @@ export const UserSchema = z.object({
   instruments: z.array(z.string()).default([]),
   roles: z.array(RoleEnum).default(["member"]),
   favoriteToolIds: z.array(z.string()).default([]),
+  portalThemeSchemeId: PortalColorSchemeIdSchema.default("eagleburger-gold"),
   status: z.enum(["active", "inactive", "pending"]).default("active"),
   phone: z.string().default(""),
   metadata: z.record(z.string(), z.any()).optional().default({}),

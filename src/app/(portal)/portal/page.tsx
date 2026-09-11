@@ -6,7 +6,9 @@ import { collection, query, orderBy, onSnapshot, getDocs } from "firebase/firest
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
+import { useTheme } from "@/lib/context/ThemeContext";
 import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
+import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import {
   Calendar,
   Clock,
@@ -17,11 +19,14 @@ import {
   ArrowRight,
   Sparkles,
   Music2,
+  Music,
+  Lightbulb,
   Calendar as CalendarIcon,
   CalendarOff,
   PlaySquare,
   DollarSign,
-  Inbox
+  Inbox,
+  Palette
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -41,8 +46,10 @@ type Gig = {
     downbeat: string;
     attire: string;
     unloadingAddress: string;
-    compensation?: number;
+    notes?: string;
   };
+  setlistRef?: string;
+  isCancelled?: boolean;
   rsvpSummary?: {
     attendingCount: number;
     declinedCount: number;
@@ -60,11 +67,15 @@ interface LedgerRecord {
 
 export default function MusicianPortalOverviewPage() {
   const { profile, loading: authLoading } = useAuth();
+  const { activePortalScheme } = useTheme();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
   const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
+  const [tuneCount, setTuneCount] = useState<number | null>(null);
+  const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
   const [loadingGigs, setLoadingGigs] = useState(true);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "gigs"), orderBy("date", "asc"));
@@ -90,9 +101,29 @@ export default function MusicianPortalOverviewPage() {
       (err) => console.warn("Notice: ledger subscriber note:", err)
     );
 
+    // Listen to active repertoire charts
+    const unsubTunes = onSnapshot(
+      collection(db, "tunes"),
+      (snapshot) => {
+        setTuneCount(snapshot.size);
+      },
+      (err) => console.warn("Notice: tunes subscriber note:", err)
+    );
+
+    // Listen to song proposals
+    const unsubSuggestions = onSnapshot(
+      collection(db, "suggestions"),
+      (snapshot) => {
+        setSuggestionCount(snapshot.size);
+      },
+      (err) => console.warn("Notice: suggestions subscriber note:", err)
+    );
+
     return () => {
       unsubGigs();
       unsubLedgers();
+      unsubTunes();
+      unsubSuggestions();
     };
   }, []);
 
@@ -153,10 +184,22 @@ export default function MusicianPortalOverviewPage() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Welcome & Quick Action Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+      <div 
+        suppressHydrationWarning
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl transition-colors duration-300"
+      >
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
+            <span 
+              suppressHydrationWarning
+              style={{ 
+                backgroundColor: "var(--ebb-surface-muted)", 
+                borderColor: "var(--ebb-border)",
+                color: "var(--ebb-primary)" 
+              }}
+              className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border"
+            >
               Musician Portal
             </span>
             <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
@@ -175,7 +218,9 @@ export default function MusicianPortalOverviewPage() {
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Link
             href="/portal/availability"
-            className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="text-slate-300 hover:text-white border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
           >
             <CalendarOff className="w-3.5 h-3.5" /> Blackout Dates
           </Link>
@@ -183,7 +228,9 @@ export default function MusicianPortalOverviewPage() {
           {canManageGigs(profile) && (
             <Link
               href="/portal/inquiries"
-              className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+              suppressHydrationWarning
+              style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+              className="text-slate-300 hover:text-white border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
             >
               <Inbox className="w-3.5 h-3.5" /> Inquiries
             </Link>
@@ -191,24 +238,43 @@ export default function MusicianPortalOverviewPage() {
 
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setIsCalendarModalOpen(true)}
-            className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="text-slate-300 hover:text-white border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial"
           >
             <CalendarIcon className="w-3.5 h-3.5" /> Sync Calendar
           </button>
 
           <Link
             href="/portal/library"
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border border-slate-700 flex-1 md:flex-initial"
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="text-slate-200 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border flex-1 md:flex-initial"
           >
-            <Music2 className="w-3.5 h-3.5 text-yellow-400" /> Chart Catalog
+            <Music2 className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} /> Chart Catalog
           </Link>
+
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => setIsThemeModalOpen(true)}
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="text-slate-300 hover:text-white border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition flex-1 md:flex-initial shadow-sm"
+          >
+            <Palette className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} />
+            <span>Theme: {activePortalScheme.name}</span>
+          </button>
         </div>
       </div>
 
       {/* Musician Financial Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div 
+          suppressHydrationWarning
+          style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-2xl p-4 flex items-center justify-between transition-colors duration-300"
+        >
           <div className="space-y-0.5">
             <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
               <DollarSign className="w-3 h-3 text-emerald-400" /> Disbursed Payouts
@@ -216,20 +282,113 @@ export default function MusicianPortalOverviewPage() {
             <div className="text-2xl font-black text-white">${personalEarnings.paid}</div>
           </div>
           <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
-            Settled
+            Settled via Treasurer
           </span>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div 
+          suppressHydrationWarning
+          style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-2xl p-4 flex items-center justify-between transition-colors duration-300"
+        >
           <div className="space-y-0.5">
             <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
-              <DollarSign className="w-3 h-3 text-yellow-400" /> Pending Payout Split
+              <DollarSign className="w-3 h-3" style={{ color: "var(--ebb-primary)" }} /> Pending Payout Split
             </span>
-            <div className="text-2xl font-black text-yellow-400">${personalEarnings.unpaid}</div>
+            <div className="text-2xl font-black" style={{ color: "var(--ebb-primary)" }}>${personalEarnings.unpaid}</div>
           </div>
-          <span className="text-[11px] font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-1 rounded-lg">
+          <span 
+            suppressHydrationWarning
+            style={{ 
+              backgroundColor: "var(--ebb-surface-muted)", 
+              borderColor: "var(--ebb-border)",
+              color: "var(--ebb-primary)"
+            }}
+            className="text-[11px] font-mono border px-2 py-1 rounded-lg"
+          >
             Awaiting Payout
           </span>
+        </div>
+      </div>
+
+      {/* Band Repertoire & Song Pitch Portal Quick Access */}
+      <div 
+        suppressHydrationWarning
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-5 shadow transition-colors flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      >
+        <div className="flex items-start gap-3.5">
+          <div 
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 mt-0.5 shadow-sm"
+          >
+            <Music2 className="w-5 h-5" style={{ color: "var(--ebb-primary)" }} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-extrabold text-sm sm:text-base text-white">
+                Band Repertoire &amp; Tune Pitches
+              </h3>
+              {tuneCount !== null && (
+                <span 
+                  suppressHydrationWarning
+                  style={{
+                    backgroundColor: "var(--ebb-surface-muted)",
+                    borderColor: "var(--ebb-border)",
+                    color: "var(--ebb-primary)"
+                  }}
+                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border"
+                >
+                  {tuneCount} Charts
+                </span>
+              )}
+              {suggestionCount !== null && (
+                <span 
+                  suppressHydrationWarning
+                  style={{
+                    backgroundColor: "var(--ebb-surface-muted)",
+                    borderColor: "var(--ebb-border)",
+                  }}
+                  className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded-full border"
+                >
+                  {suggestionCount} Pitched
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Access master sheet music charts, download section parts, pitch new arrangement ideas, and vote on peer suggestions.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto justify-end flex-wrap">
+          <Link
+            href="/admin/suggestions"
+            suppressHydrationWarning
+            style={{
+              backgroundColor: "var(--ebb-surface-muted)",
+              borderColor: "var(--ebb-border)",
+              color: "var(--ebb-text)",
+            }}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold border hover:brightness-125 transition flex items-center gap-1.5 shadow-sm"
+          >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            <span>Pitch / Vote</span>
+          </Link>
+
+          <Link
+            href="/admin/tunes"
+            suppressHydrationWarning
+            style={{
+              backgroundColor: "var(--ebb-primary)",
+              color: "#020617",
+            }}
+            className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow hover:brightness-110"
+          >
+            <Music className="w-3.5 h-3.5" />
+            <span>Browse Charts &amp; Submit</span>
+          </Link>
         </div>
       </div>
 
@@ -237,7 +396,7 @@ export default function MusicianPortalOverviewPage() {
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-yellow-400" /> Upcoming Gigs & Call Sheets
+            <Calendar className="w-4 h-4" style={{ color: "var(--ebb-primary)" }} /> Upcoming Gigs & Call Sheets
           </h2>
           <span className="text-xs font-mono text-slate-500">
             {upcomingGigs.length} scheduled
@@ -245,7 +404,11 @@ export default function MusicianPortalOverviewPage() {
         </div>
 
         {upcomingGigs.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center text-slate-500 text-xs">
+          <div 
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+            className="border rounded-xl p-8 text-center text-slate-400 text-xs transition-colors duration-300"
+          >
             No upcoming gigs scheduled at this time. Check back soon!
           </div>
         ) : (
@@ -260,11 +423,21 @@ export default function MusicianPortalOverviewPage() {
               return (
                 <div
                   key={gig.id}
-                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group shadow"
+                  suppressHydrationWarning
+                  style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+                  className="border rounded-xl p-4 sm:p-5 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group shadow transition-colors duration-300"
                 >
                   <div className="space-y-2 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                      <span 
+                        suppressHydrationWarning
+                        style={{ 
+                          backgroundColor: "var(--ebb-surface-muted)", 
+                          borderColor: "var(--ebb-border)",
+                          color: "var(--ebb-primary)" 
+                        }}
+                        className="text-xs font-mono font-bold px-2 py-0.5 rounded border"
+                      >
                         {gig.date}
                       </span>
                       <Link
@@ -340,6 +513,12 @@ export default function MusicianPortalOverviewPage() {
       <CalendarSubscribeModal
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
+      />
+
+      {/* Portal Appearance & Color Scheme Modal */}
+      <PortalThemeModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
       />
     </div>
   );

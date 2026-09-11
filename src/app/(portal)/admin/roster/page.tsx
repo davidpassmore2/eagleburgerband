@@ -20,6 +20,8 @@ const ALL_ROLES: Role[] = [
   "community_manager",
   "treasurer",
   "section_leader",
+  "membership_manager",
+  "asset_manager",
   "member",
   "guest",
 ];

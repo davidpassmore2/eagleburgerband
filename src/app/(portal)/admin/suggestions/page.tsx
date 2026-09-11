@@ -263,27 +263,46 @@ export default function TuneSuggestionsAdminPage() {
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
       {/* Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+      <div 
+        suppressHydrationWarning
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow transition-colors"
+      >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
-              Admin Studio
+            <span 
+              suppressHydrationWarning
+              style={{
+                backgroundColor: "var(--ebb-surface-muted)",
+                borderColor: "var(--ebb-border)",
+                color: "var(--ebb-primary)"
+              }}
+              className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border"
+            >
+              All Members Welcome
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-[11px] font-mono text-slate-400">
               {suggestions.length} Pitched Song{suggestions.length === 1 ? "" : "s"}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Tune Proposals & Voting</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+            <Lightbulb className="w-5 h-5" style={{ color: "var(--ebb-primary)" }} /> Tune Proposals & Member Pitches
+          </h1>
           <p className="text-xs text-slate-400">
-            Musician pitch room for arrangements, community upvoting, and promotion into active charts.
+            Musician pitch room for brass arrangements, peer upvoting, and promotion into active repertoire charts.
           </p>
         </div>
 
         {!isCreating && (
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setIsCreating(true)}
-            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow shrink-0"
+            style={{
+              backgroundColor: "var(--ebb-primary)",
+              color: "#020617",
+            }}
+            className="font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow hover:brightness-110 shrink-0"
           >
             <Plus className="w-4 h-4" /> Pitch a Tune
           </button>

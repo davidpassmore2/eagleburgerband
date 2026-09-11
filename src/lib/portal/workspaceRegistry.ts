@@ -18,8 +18,10 @@ import {
   CheckSquare,
   PackageCheck,
   Music2,
+  Music,
   LayoutTemplate,
   HeartHandshake,
+  BookOpen,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -117,6 +119,22 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
 
   // --- Music & Repertoire ---
   {
+    id: "tunes",
+    title: "Tunes & Chart Library",
+    href: "/admin/tunes",
+    icon: Music,
+    requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    category: "Music & Repertoire",
+  },
+  {
+    id: "library",
+    title: "Repertoire Catalog",
+    href: "/portal/library",
+    icon: ListMusic,
+    requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    category: "Music & Repertoire",
+  },
+  {
     id: "catalog",
     title: "Catalog Studio",
     href: "/admin/catalog",
@@ -145,7 +163,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Suggestion Triage",
     href: "/admin/suggestions",
     icon: Lightbulb,
-    requiredRoles: ["admin", "catalog_manager"],
+    requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
     category: "Music & Repertoire",
   },
 
@@ -204,6 +222,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/comments",
     icon: MessageSquare,
     requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "help",
+    title: "Help & Documentation",
+    href: "/portal/help",
+    icon: BookOpen,
+    requiredRoles: ["member"],
     category: "Business & Admin",
   },
 ];

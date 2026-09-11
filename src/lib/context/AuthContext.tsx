@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { 
   User as FirebaseUser, 
   onAuthStateChanged, 
@@ -23,8 +23,14 @@ interface AuthContextValue {
   firebaseUser: FirebaseUser | null;
   user: FirebaseUser | null;
   profile: User | null;
+  realProfile: User | null;
   loading: boolean;
   isAdmin: boolean;
+  isRealAdmin: boolean;
+  isEmulating: boolean;
+  emulatedRoles: Role[] | null;
+  setEmulatedRoles: (roles: Role[] | null) => void;
+  clearEmulation: () => void;
   signInWithGoogle: () => Promise<void>;
   signInWithDevAccount: (targetRoles?: Role[]) => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,8 +40,14 @@ const AuthContext = createContext<AuthContextValue>({
   firebaseUser: null,
   user: null,
   profile: null,
+  realProfile: null,
   loading: true,
   isAdmin: false,
+  isRealAdmin: false,
+  isEmulating: false,
+  emulatedRoles: null,
+  setEmulatedRoles: () => {},
+  clearEmulation: () => {},
   signInWithGoogle: async () => {},
   signInWithDevAccount: async () => {},
   signOut: async () => {},
@@ -50,10 +62,73 @@ const DEFAULT_DEV_ROLES: Role[] = [
   "section_leader"
 ];
 
+// External store for hydration-safe and effect-free emulated roles
+let cachedRawRoles: string | null = null;
+let cachedRoles: Role[] | null = null;
+
+function getEmulatedRolesSnapshot(): Role[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem("ebb_emulated_roles");
+    if (raw === cachedRawRoles) return cachedRoles;
+    cachedRawRoles = raw;
+    if (!raw) {
+      cachedRoles = null;
+    } else {
+      const parsed = JSON.parse(raw);
+      cachedRoles = Array.isArray(parsed) && parsed.length > 0 ? (parsed as Role[]) : null;
+    }
+    return cachedRoles;
+  } catch {
+    return null;
+  }
+}
+
+function getServerSnapshot(): Role[] | null {
+  return null;
+}
+
+const emulationListeners = new Set<() => void>();
+
+function subscribeEmulation(callback: () => void) {
+  emulationListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    emulationListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function notifyEmulationChange() {
+  emulationListeners.forEach((cb) => cb());
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [profile, setProfile] = useState<User | null>(null);
+  const [rawProfile, setRawProfile] = useState<User | null>(null);
+  const emulatedRoles = useSyncExternalStore(
+    subscribeEmulation,
+    getEmulatedRolesSnapshot,
+    getServerSnapshot
+  );
   const [loading, setLoading] = useState(true);
+
+  const setEmulatedRoles = (roles: Role[] | null) => {
+    try {
+      if (roles && roles.length > 0) {
+        sessionStorage.setItem("ebb_emulated_roles", JSON.stringify(roles));
+      } else {
+        sessionStorage.removeItem("ebb_emulated_roles");
+      }
+    } catch {
+      // Ignore sessionStorage access errors
+    }
+    notifyEmulationChange();
+  };
+
+  const clearEmulation = () => {
+    setEmulatedRoles(null);
+  };
 
   const buildAdminProfile = (uid: string, email?: string | null): User => ({
     uid,
@@ -62,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     roles: DEFAULT_DEV_ROLES,
     sectionId: "percussion",
     instruments: ["Snare Drum"],
+    portalThemeSchemeId: "eagleburger-gold",
     status: "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -102,12 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         roles: targetRoles,
         sectionId: "percussion",
         instruments: ["Snare Drum"],
+        portalThemeSchemeId: "eagleburger-gold",
         status: "active",
         updatedAt: new Date().toISOString(),
       };
 
       await setDoc(doc(db, "users", activeUser.uid), adminProfile, { merge: true });
-      setProfile(adminProfile as unknown as User);
+      setRawProfile(adminProfile as unknown as User);
       setFirebaseUser(activeUser);
     } catch (err) {
       console.error("signInWithDevAccount failed:", err);
@@ -119,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setFirebaseUser(user);
 
       if (!user) {
-        setProfile(null);
+        setRawProfile(null);
         setLoading(false);
         return;
       }
@@ -157,11 +234,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               instruments: data.instruments || ["Snare Drum"],
             } as unknown as User;
 
-            setProfile(currentProfile);
+            setRawProfile(currentProfile);
           } else {
             const fallbackProfile = buildAdminProfile(user.uid, user.email);
             await setDoc(userRef, fallbackProfile, { merge: true });
-            setProfile(fallbackProfile);
+            setRawProfile(fallbackProfile);
           }
           setLoading(false);
         },
@@ -178,14 +255,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    try {
+      sessionStorage.removeItem("ebb_emulated_roles");
+    } catch {
+      // Ignore
+    }
+    setEmulatedRoles(null);
     await firebaseSignOut(auth);
-    setProfile(null);
+    setRawProfile(null);
     setFirebaseUser(null);
   };
 
-  const isAdmin = Boolean(
-    profile?.roles?.includes("admin") || 
+  const isRealAdmin = Boolean(
+    rawProfile?.roles?.includes("admin") || 
+    (typeof (rawProfile as unknown as Record<string, unknown>)?.role === "string" && (rawProfile as unknown as Record<string, unknown>)?.role === "admin") ||
     process.env.NODE_ENV === "development"
+  );
+
+  const isEmulating = Boolean(
+    isRealAdmin &&
+    emulatedRoles &&
+    emulatedRoles.length > 0
+  );
+
+  const effectiveProfile: User | null = rawProfile
+    ? isEmulating
+      ? ({
+          ...rawProfile,
+          roles: emulatedRoles,
+        } as unknown as User)
+      : rawProfile
+    : null;
+
+  const isAdmin = Boolean(
+    isEmulating
+      ? emulatedRoles?.includes("admin")
+      : isRealAdmin
   );
 
   return (
@@ -193,9 +298,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         firebaseUser,
         user: firebaseUser,
-        profile,
+        profile: effectiveProfile,
+        realProfile: rawProfile,
         loading,
         isAdmin,
+        isRealAdmin,
+        isEmulating,
+        emulatedRoles,
+        setEmulatedRoles,
+        clearEmulation,
         signInWithGoogle,
         signInWithDevAccount,
         signOut,

@@ -74,3 +74,19 @@ export function isSectionLeader(user: User | null, sectionId?: string): boolean 
   if (!sectionId) return true;
   return user.sectionId === sectionId;
 }
+
+export function canViewAndSubmitTunes(user: User | null): boolean {
+  return hasAnyRole(user, [
+    "admin",
+    "catalog_manager",
+    "gig_manager",
+    "section_leader",
+    "membership_manager",
+    "asset_manager",
+    "community_manager",
+    "treasurer",
+    "web_manager",
+    "member",
+    "guest",
+  ]);
+}
