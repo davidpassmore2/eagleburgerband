@@ -26,7 +26,8 @@ import {
   PlaySquare,
   DollarSign,
   Inbox,
-  Palette
+  Palette,
+  Smartphone
 } from "lucide-react";
 
 type AttendanceStatus = "attending" | "declined" | "tentative";
@@ -267,6 +268,37 @@ export default function MusicianPortalOverviewPage() {
           </button>
         </div>
       </div>
+
+      {/* SMS Briefings & Mobile Enrollment Banner (if not opted in) */}
+      {(!profile?.phone || !profile?.smsConsent) && (
+        <div 
+          suppressHydrationWarning
+          style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-400/20">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white flex items-center gap-2">
+                <span>Never Miss a Call Time — Enable SMS Briefings</span>
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/30">Action Suggested</span>
+              </div>
+              <p className="text-slate-400 text-[11px] mt-0.5">
+                Register your mobile phone number to receive day-of-show schedule alerts, weather changes, and downbeat roll calls directly via text message.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/portal/profile"
+            className="shrink-0 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+          >
+            <span>Set Up SMS</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Musician Financial Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

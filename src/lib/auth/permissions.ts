@@ -90,3 +90,13 @@ export function canViewAndSubmitTunes(user: User | null): boolean {
     "guest",
   ]);
 }
+
+export function canDispatchBroadcasts(user: User | null): boolean {
+  return hasAnyRole(user, [
+    "admin",
+    "gig_manager",
+    "membership_manager",
+    "community_manager",
+    "section_leader",
+  ]);
+}

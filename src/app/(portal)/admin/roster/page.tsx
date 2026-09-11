@@ -5,9 +5,10 @@ import { collection, onSnapshot, doc, updateDoc, setDoc } from "firebase/firesto
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageRoster } from "@/lib/auth/permissions";
+import Link from "next/link";
 import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
-import { Users, ShieldAlert, UserPlus, Copy } from "lucide-react";
+import { Users, ShieldAlert, UserPlus, Copy, Mail } from "lucide-react";
 import { z } from "zod";
 
 type Role = z.infer<typeof RoleEnum>;
@@ -35,7 +36,12 @@ export default function RosterAdminPage() {
   const [inviteName, setInviteName] = useState("");
   const [inviteSection, setInviteSection] = useState("");
   const [inviteRoles] = useState<Role[]>(["member"]);
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [lastCreatedInvite, setLastCreatedInvite] = useState<{
+    email: string;
+    name: string;
+    token: string;
+    link: string;
+  } | null>(null);
 
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
@@ -105,7 +111,13 @@ export default function RosterAdminPage() {
       createdAt: new Date().toISOString(),
     });
 
-    setCopiedToken(`${window.location.origin}/claim?token=${token}`);
+    const link = `${window.location.origin}/claim?token=${token}`;
+    setLastCreatedInvite({
+      email: inviteEmail.trim(),
+      name: inviteName.trim(),
+      token,
+      link,
+    });
     setShowInviteModal(false);
     setInviteEmail("");
     setInviteName("");
@@ -130,18 +142,31 @@ export default function RosterAdminPage() {
         </button>
       </div>
 
-      {copiedToken && (
-        <div className="bg-emerald-950/80 border border-emerald-500/50 p-4 rounded-lg flex items-center justify-between text-xs text-emerald-200">
-          <span>Invite token generated! Share this link with the performer: <strong className="font-mono text-white">{copiedToken}</strong></span>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(copiedToken);
-              alert("Copied onboarding link to clipboard!");
-            }}
-            className="flex items-center gap-1 bg-emerald-500 text-slate-950 font-bold px-2 py-1 rounded hover:bg-emerald-400 transition"
-          >
-            <Copy className="w-3.5 h-3.5" /> Copy Link
-          </button>
+      {lastCreatedInvite && (
+        <div className="bg-emerald-950/80 border border-emerald-500/50 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-200 shadow-lg">
+          <div className="space-y-1">
+            <div className="font-semibold text-white flex items-center gap-1.5">
+              <span>Onboarding token created for {lastCreatedInvite.name} ({lastCreatedInvite.email})</span>
+            </div>
+            <div className="text-[11px] text-emerald-300/80 font-mono break-all">{lastCreatedInvite.link}</div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(lastCreatedInvite.link);
+                alert("Copied onboarding link to clipboard!");
+              }}
+              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg transition"
+            >
+              <Copy className="w-3.5 h-3.5" /> Copy Link
+            </button>
+            <Link
+              href={`/admin/notifications?template=member_invite&email=${encodeURIComponent(lastCreatedInvite.email)}&name=${encodeURIComponent(lastCreatedInvite.name)}&token=${encodeURIComponent(lastCreatedInvite.token)}`}
+              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition shadow"
+            >
+              <Mail className="w-3.5 h-3.5" /> Email Invitation
+            </Link>
+          </div>
         </div>
       )}
 

@@ -202,6 +202,39 @@ const ROUTE_DOCS: RouteDoc[] = [
       { title: "Roster Administration", path: "/admin/roster" }
     ]
   },
+  {
+    id: "musician-profile",
+    title: "My Profile & SMS Settings",
+    path: "/portal/profile",
+    category: "Musician Essentials",
+    roles: ["member"],
+    badge: "Profile & SMS Consent",
+    iconName: "Smartphone",
+    summary: "Personal musician contact information, mobile phone verification, and SMS text briefing opt-in/opt-out consent.",
+    description: "The Musician Profile allows every band member to manage their contact details, verify their mobile phone number, and control their SMS notification preferences. Band members can opt into urgent SMS text briefings (call time shifts, gate access, parking updates) with timestamped consent records compliant with TCPA regulations.",
+    keyFeatures: [
+      "Contact information management including display name, email, and mobile phone number.",
+      "Interactive SMS text briefing toggle with verified opt-in/opt-out consent tracking.",
+      "Real-time timestamp logging (smsConsentUpdatedAt) for verifiable consent compliance.",
+      "Live smartphone SMS briefing preview illustrating what text alerts look like in the field.",
+      "Direct integration with the Broadcast Notification Suite for instant rehearsal and gig day alerts."
+    ],
+    howToUse: [
+      "Navigate to My Profile from the sidebar or by clicking your pinned user avatar in the portal header.",
+      "Enter your active mobile phone number with standard 10-digit area code.",
+      "Toggle 'Enable SMS Text Briefings' to opt in to urgent gig alerts.",
+      "Review the live sample SMS preview to see how broadcasts will appear on your phone.",
+      "Click 'Save Profile Changes' to update your account and consent timestamp."
+    ],
+    proTips: [
+      "Enable SMS alerts before parade season: street road closures and last-minute staging shifts are dispatched via text briefing.",
+      "You can opt out anytime with 1 click in this studio or by replying STOP to any automated broadcast."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Notification Suite", path: "/admin/notifications" }
+    ]
+  },
 
   // --- Performances & Logistics ---
   {
@@ -338,33 +371,43 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-notifications",
-    title: "Broadcast & Alert Center",
+    title: "Email & SMS Notification Suite & Broadcast Studio",
     path: "/admin/notifications",
     category: "Performances & Logistics",
-    roles: ["admin", "gig_manager"],
-    badge: "Band Communications",
-    iconName: "Bell",
-    summary: "Send targeted push alerts and announcements across the entire band or specific instrument sections.",
-    description: "The Broadcast & Alert Center manages communication feeds across the portal. Coordinators can compose announcements, target specific instrument sections (e.g. Drumline only for rehearsal call), and review historical message delivery logs.",
+    roles: ["admin", "gig_manager", "membership_manager", "community_manager", "section_leader"],
+    badge: "Email & SMS Broadcasts",
+    iconName: "Mail",
+    summary: "Full WYSIWYG email and SMS text briefing authoring, 3-mode channel routing, audience consent telemetry, and delivery audit logs.",
+    description: "The Email & SMS Broadcast Notification Suite empowers band leadership to craft and dispatch branded HTML emails, instant mobile SMS briefings, or synchronized dual-channel broadcasts. Features 6 battle-tested scenario presets (New Member Invitations, Client Thank-Yous, Gig Call Sheets, RSVP Requests, Urgent Logistics, and Custom Announcements), live SMS consent telemetry (tracking opted-in, missing phone, and opted-out recipients), interactive preview simulator with smartphone chat bubble rendering, and granular delivery audit logs.",
     keyFeatures: [
-      "Targeted recipient filters: Whole Ensemble, Brass Only, Rhythm Battery Only, or Specific Section.",
-      "Delivery channels: In-Portal Banner, Email Broadcast, SMS Paging.",
-      "Scheduled broadcast capability for rehearsal reminders.",
-      "Historical broadcast audit log with delivery receipts."
+      "3-Mode Dispatch Selector: Rich Email Broadcast, Instant SMS Text Briefing, or Dual (Both Email & SMS).",
+      "SMS Text Briefing Editor with live character count (X/160 chars) and standard segment counter.",
+      "Audience SMS Consent Telemetry computing verified opted-in, missing phone, and opted-out recipients before dispatch.",
+      "WYSIWYG Rich-Text Editor with HTML code switching and automatic DOMPurify sanitization.",
+      "6 Scenario Presets with tailored email copy and dedicated SMS text briefings for each event.",
+      "Dynamic Variable Token Interpolation ({{recipient_name}}, {{gig_title}}, {{call_time}}, {{invite_url}}).",
+      "Interactive Multi-Viewport Simulator: Desktop Email, Mobile Email, and Smartphone SMS Chat Bubble.",
+      "Comprehensive Delivery Audit Log with channel filters (Email, SMS, Dual), search, and recipient inspection."
     ],
     howToUse: [
-      "Click 'Compose Broadcast' and enter the announcement subject and message body.",
-      "Select your recipient audience from the dropdown.",
-      "Set the notification priority level (Normal, High, Urgent).",
-      "Preview the alert format and click 'Send Broadcast'."
+      "Choose your dispatch channel: Email Broadcast, SMS Text Briefing, or Both Email & SMS.",
+      "Select a notification scenario preset (e.g. Gig Details or Urgent Update) or start from scratch.",
+      "Choose your target audience (All Band, Section, Gig Attending Roster, Musician, CRM Client, or Direct).",
+      "Review the Audience SMS Consent Telemetry banner to check how many recipients have opted in.",
+      "Draft your SMS briefing text or rich email body, using dynamic tokens to personalize messages.",
+      "Toggle between Desktop, Mobile, and SMS views in the live simulator to verify layout.",
+      "Click 'Dispatch' to broadcast immediately and audit the delivery in the Delivery Logs tab."
     ],
     proTips: [
-      "Reserve 'Urgent' priority strictly for same-day schedule shifts, weather cancellations, or venue emergency changes.",
-      "Keep messages brief and actionable: include time, location, and the direct link to the gig or call sheet."
+      "For day-of-show weather delays or gate shifts, select 'SMS Text Briefing' to reach musicians immediately without requiring them to check their inbox.",
+      "Keep SMS text briefings under 160 characters when possible to fit within a single standard carrier segment.",
+      "Check the SMS Consent Telemetry before dispatching—if key players are missing phones, remind them to update their profile."
     ],
     relatedRoutes: [
+      { title: "My Profile & SMS Settings", path: "/portal/profile" },
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
-      { title: "Home Base", path: "/portal" }
+      { title: "Band Roster & Invites", path: "/admin/roster" },
+      { title: "Client CRM & Contacts", path: "/admin/contacts" }
     ]
   },
 
@@ -1316,6 +1359,8 @@ export default function PortalHelpCenterPage() {
               portalThemeSchemeId: "eagleburger-gold",
               status: raw.status === "inactive" || raw.status === "pending" ? raw.status : "active",
               phone: raw.phone || "",
+              smsConsent: Boolean(raw.smsConsent),
+              smsConsentUpdatedAt: raw.smsConsentUpdatedAt || "",
               metadata: {},
               updatedAt: new Date().toISOString(),
             });

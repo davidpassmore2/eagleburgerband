@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import Link from "next/link";
 import { 
   Users2, 
   Mail, 
@@ -462,6 +463,16 @@ export default function ContactsCRMAdminPage() {
                   )}
                 </div>
               )}
+
+              <div className="pt-2">
+                <Link
+                  href={`/admin/notifications?template=contact_thank_you&contactId=${contact.id}&email=${encodeURIComponent(contact.email)}&name=${encodeURIComponent(contact.name)}`}
+                  className="w-full text-center py-1.5 px-3 rounded-xl text-xs font-bold bg-yellow-400/10 hover:bg-yellow-400 text-yellow-400 hover:text-slate-950 border border-yellow-400/30 transition flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Thank Organizer / Email</span>
+                </Link>
+              </div>
             </div>
           </div>
         ))}

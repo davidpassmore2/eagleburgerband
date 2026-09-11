@@ -7,10 +7,11 @@ import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import { hasRole } from "@/lib/auth/permissions";
-import { LogIn, LogOut, Compass, BookOpen, Palette, SlidersHorizontal } from "lucide-react";
+import { LogIn, LogOut, Compass, BookOpen, Palette, SlidersHorizontal, Smartphone } from "lucide-react";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
 import { RoleEmulationModal } from "@/components/portal/RoleEmulationModal";
+import { PortalLoadingProvider } from "@/lib/context/PortalLoadingContext";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -165,10 +166,14 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
             <div className="text-xs text-slate-500">Loading...</div>
           ) : firebaseUser ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <Link
+                href="/portal/profile"
+                title="Edit My Profile & SMS Preferences"
+                className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800/40 transition group"
+              >
                 <div 
                   suppressHydrationWarning
-                  className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border"
+                  className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border group-hover:border-amber-400 transition"
                   style={{ 
                     backgroundColor: "var(--ebb-surface-muted)",
                     borderColor: "var(--ebb-border)",
@@ -178,14 +183,17 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                   {profile?.displayName?.[0] || "U"}
                 </div>
                 <div className="overflow-hidden flex-1">
-                  <div className="text-xs font-bold text-white truncate">
+                  <div className="text-xs font-bold text-white group-hover:text-amber-400 truncate transition">
                     {profile?.displayName || firebaseUser.displayName || "Musician"}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate">
-                    {profile?.roles?.join(", ") || "member"}
+                  <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                    <span>{profile?.roles?.join(", ") || "member"}</span>
+                    {profile?.smsConsent && profile?.phone && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">SMS</span>
+                    )}
                   </div>
                 </div>
-              </div>
+              </Link>
 
               <div className="flex items-center gap-1.5 pt-1">
                 {isRealAdmin && (
@@ -206,6 +214,19 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                   </button>
                 )}
 
+                <Link
+                  href="/portal/profile"
+                  title="My Profile & SMS Settings"
+                  style={{
+                    backgroundColor: "var(--ebb-surface-muted)",
+                    borderColor: "var(--ebb-border)",
+                  }}
+                  className="flex items-center justify-center gap-1 text-xs text-slate-200 hover:text-white py-1.5 px-2.5 rounded-xl transition border font-medium"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                  <span>SMS</span>
+                </Link>
+
                 <button
                   type="button"
                   suppressHydrationWarning
@@ -215,7 +236,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                     backgroundColor: "var(--ebb-surface-muted)",
                     borderColor: "var(--ebb-border)",
                   }}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs text-slate-200 hover:text-white py-1.5 px-2 rounded-xl transition border font-medium"
+                  className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-200 hover:text-white py-1.5 px-2 rounded-xl transition border font-medium"
                 >
                   <Palette className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} />
                   <span>Theme</span>
@@ -295,7 +316,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <AuthProvider>
       <ThemeProvider>
-        <PortalNavigationShell>{children}</PortalNavigationShell>
+        <PortalLoadingProvider>
+          <PortalNavigationShell>{children}</PortalNavigationShell>
+        </PortalLoadingProvider>
       </ThemeProvider>
     </AuthProvider>
   );

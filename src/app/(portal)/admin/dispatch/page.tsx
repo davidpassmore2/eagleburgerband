@@ -10,6 +10,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import Link from "next/link";
 import { 
   Send, 
   Calendar, 
@@ -23,7 +24,8 @@ import {
   Copy, 
   Check, 
   Sparkles,
-  FileText
+  FileText,
+  Mail
 } from "lucide-react";
 
 interface GigSummary {
@@ -256,7 +258,15 @@ Questions or late changes? Contact Band Management.`;
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/admin/notifications?template=gig_details&gigId=${selectedGigId}`}
+            className="bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-yellow-400/30 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Email Call Sheet</span>
+          </Link>
+
           <button
             type="button"
             onClick={handleCopyClipboard}

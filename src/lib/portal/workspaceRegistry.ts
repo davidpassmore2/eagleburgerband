@@ -14,7 +14,6 @@ import {
   MessageSquare,
   UserCheck,
   BarChart3,
-  Bell,
   CheckSquare,
   PackageCheck,
   Music2,
@@ -22,6 +21,8 @@ import {
   LayoutTemplate,
   HeartHandshake,
   BookOpen,
+  Mail,
+  Smartphone,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -76,14 +77,22 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   },
   {
     id: "notifications",
-    title: "Broadcast & Alerts",
+    title: "Email & Broadcast Suite",
     href: "/admin/notifications",
-    icon: Bell,
-    requiredRoles: ["admin", "gig_manager"],
+    icon: Mail,
+    requiredRoles: ["admin", "gig_manager", "membership_manager", "community_manager", "section_leader"],
     category: "Performances & Logistics",
   },
 
   // --- Personnel & Attendance ---
+  {
+    id: "profile",
+    title: "My Profile & SMS Settings",
+    href: "/portal/profile",
+    icon: Smartphone,
+    requiredRoles: ["member", "guest"],
+    category: "Personnel & Attendance",
+  },
   {
     id: "sections",
     title: "Band Sections",

@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes portal-logo-white-glow {
+  0% {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.2));
+    opacity: 0.82;
+    transform: scale(0.97);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 34px rgba(255, 255, 255, 0.6));
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.2));
+    opacity: 0.82;
+    transform: scale(0.97);
+  }
+}
+
+.animate-portal-white-glow {
+  animation: portal-logo-white-glow 2.2s ease-in-out infinite alternate;
+  will-change: filter, transform, opacity;
+}

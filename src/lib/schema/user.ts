@@ -27,6 +27,8 @@ export const UserSchema = z.object({
   portalThemeSchemeId: PortalColorSchemeIdSchema.default("eagleburger-gold"),
   status: z.enum(["active", "inactive", "pending"]).default("active"),
   phone: z.string().default(""),
+  smsConsent: z.boolean().default(false),
+  smsConsentUpdatedAt: z.string().default(""),
   metadata: z.record(z.string(), z.any()).optional().default({}),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
