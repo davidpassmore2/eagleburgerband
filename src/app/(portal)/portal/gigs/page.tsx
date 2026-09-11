@@ -9,7 +9,6 @@ import {
   MapPin, 
   Clock, 
   ArrowRight, 
-  CheckCircle2, 
   Users 
 } from "lucide-react";
 

@@ -25,7 +25,6 @@ import {
   Check, 
   Search, 
   Radio, 
-  Layers,
   ArrowRight
 } from "lucide-react";
 

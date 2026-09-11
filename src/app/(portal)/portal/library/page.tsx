@@ -8,7 +8,6 @@ import {
   Music2, 
   Search, 
   ExternalLink, 
-  Clock, 
   Flame, 
   Archive, 
   RotateCcw,
@@ -29,7 +28,7 @@ type Song = {
 
 export default function RepertoireLibraryPage() {
   const [songs, setSongs] = useState<Song[]>([]);
-  const [gigs, setGigs] = useState<GigData[]>([]);
+  const [, setGigs] = useState<GigData[]>([]);
   const [analytics, setAnalytics] = useState<Record<string, TuneStat>>({});
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | "frequent" | "vault" | "unplayed">("all");

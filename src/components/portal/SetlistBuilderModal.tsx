@@ -50,7 +50,7 @@ export default function SetlistBuilderModal({ gigId, initialSets = [], isOpen, o
   );
   const [library, setLibrary] = useState<LibrarySong[]>([]);
   const [analytics, setAnalytics] = useState<Record<string, TuneStat>>({});
-  const [selectedSetIdx, setSelectedSetIdx] = useState(0);
+  const [selectedSetIdx] = useState(0);
   const [saving, setSaving] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 

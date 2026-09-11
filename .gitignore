@@ -13,29 +13,51 @@
 # testing
 /coverage
 
-# next.js
+# next.js & build caches
 /.next/
 /out/
+.turbo/
 
 # production
 /build
 
-# misc
+# misc & OS
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.pem
 
-# debug
+# debug & logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+hub-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
+# firebase
+.firebase/
+
+# editor & IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# env files (allow .env.example template)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
-# typescript
+# typescript & temp
 *.tsbuildinfo
 next-env.d.ts
+*.tmp
+*.bak

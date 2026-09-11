@@ -55,7 +55,7 @@ export default function LogisticsChangeModal({
             <BellRing className="w-5 h-5 text-yellow-400" />
             <div>
               <h2 className="text-base font-bold text-white">Logistics Changes Detected</h2>
-              <p className="text-xs text-slate-400 truncate max-w-xs">{gigTitle}</p>
+              <p className="text-xs text-slate-400 truncate max-w-xs">{gigTitle} {gigDate && `• ${gigDate}`}</p>
             </div>
           </div>
           <button 

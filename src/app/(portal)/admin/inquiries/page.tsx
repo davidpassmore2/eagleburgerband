@@ -20,10 +20,6 @@ import {
   Calendar, 
   MapPin, 
   DollarSign, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  MessageSquare, 
   ArrowRight, 
   Trash2, 
   Loader2, 
@@ -109,6 +105,14 @@ export default function InquiriesAdminPage() {
         status,
         updatedAt: new Date().toISOString(),
       });
+      try {
+        await updateDoc(doc(db, "booking_leads", id), {
+          status: status === "confirmed" ? "converted" : status,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch {
+        // silent fallback if lead does not exist in booking_leads
+      }
     } catch (err) {
       alert("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
     }
@@ -118,6 +122,11 @@ export default function InquiriesAdminPage() {
     if (!confirm(`Delete inquiry for "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, "inquiries", id));
+      try {
+        await deleteDoc(doc(db, "booking_leads", id));
+      } catch {
+        // silent fallback
+      }
     } catch (err) {
       alert("Failed to delete inquiry: " + (err instanceof Error ? err.message : String(err)));
     }

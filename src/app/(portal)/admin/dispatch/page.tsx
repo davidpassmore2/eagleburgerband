@@ -4,8 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { 
   collection, 
   onSnapshot, 
-  addDoc, 
-  doc 
+  addDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -18,8 +17,6 @@ import {
   Shirt, 
   MapPin, 
   Clock, 
-  CheckCircle2, 
-  AlertCircle, 
   Loader2, 
   ShieldAlert, 
   History, 

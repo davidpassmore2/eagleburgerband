@@ -18,6 +18,8 @@ import {
   CheckSquare,
   PackageCheck,
   Music2,
+  LayoutTemplate,
+  HeartHandshake,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -65,7 +67,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   {
     id: "call-sheets",
     title: "Call Sheet Dispatch",
-    href: "/admin/call-sheets",
+    href: "/admin/dispatch",
     icon: Send,
     requiredRoles: ["admin", "gig_manager"],
     category: "Performances & Logistics",
@@ -107,7 +109,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   {
     id: "assets",
     title: "Equipment & Assets",
-    href: "/admin/assets",
+    href: "/admin/inventory",
     icon: PackageCheck,
     requiredRoles: ["admin", "asset_manager"],
     category: "Personnel & Attendance",
@@ -159,7 +161,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   {
     id: "crm",
     title: "Client CRM & Contacts",
-    href: "/admin/crm",
+    href: "/admin/contacts",
     icon: Contact,
     requiredRoles: ["admin", "gig_manager"],
     category: "Business & Admin",
@@ -173,17 +175,33 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     category: "Business & Admin",
   },
   {
+    id: "pages",
+    title: "CMS Page Studio",
+    href: "/admin/pages",
+    icon: LayoutTemplate,
+    requiredRoles: ["admin", "web_manager"],
+    category: "Business & Admin",
+  },
+  {
     id: "brand",
     title: "Brand & Palette",
-    href: "/admin/brand",
+    href: "/admin/theme",
     icon: Palette,
-    requiredRoles: ["admin"],
+    requiredRoles: ["admin", "web_manager"],
+    category: "Business & Admin",
+  },
+  {
+    id: "giving",
+    title: "Charitable Giving & Donations",
+    href: "/admin/giving",
+    icon: HeartHandshake,
+    requiredRoles: ["admin", "treasurer"],
     category: "Business & Admin",
   },
   {
     id: "moderation",
     title: "Comment Moderation",
-    href: "/admin/moderation",
+    href: "/admin/comments",
     icon: MessageSquare,
     requiredRoles: ["admin"],
     category: "Business & Admin",

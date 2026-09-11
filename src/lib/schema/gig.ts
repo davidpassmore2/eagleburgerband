@@ -17,6 +17,7 @@ export const PublicDetailsSchema = z.object({
   admission: z.string().default("Free"),
   facebookEventUrl: z.string().default(""),
   ticketUrl: z.string().default(""),
+  isPublic: z.boolean().default(true),
 });
 
 export const InternalLogisticsSchema = z.object({
@@ -43,6 +44,7 @@ export const GigSchema = z.object({
     admission: "Free",
     facebookEventUrl: "",
     ticketUrl: "",
+    isPublic: true,
   })),
   internalLogistics: InternalLogisticsSchema.default(() => ({
     title: "",

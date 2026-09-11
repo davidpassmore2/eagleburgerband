@@ -1,6 +1,3 @@
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
-
 /**
  * Format a Date object or ISO string into iCalendar UTC timestamp: YYYYMMDDTHHMMSSZ
  */

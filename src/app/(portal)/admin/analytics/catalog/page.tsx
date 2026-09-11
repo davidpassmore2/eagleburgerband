@@ -8,7 +8,6 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageCatalog } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { 
-  BarChart3, 
   Flame, 
   Snowflake, 
   ArrowLeft, 

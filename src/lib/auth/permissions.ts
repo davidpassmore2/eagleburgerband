@@ -62,6 +62,10 @@ export function canManageFinances(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "treasurer"]);
 }
 
+export function canManageGiving(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "treasurer", "community_manager"]);
+}
+
 export function isSectionLeader(user: User | null, sectionId?: string): boolean {
   if (!user || !user.roles) return false;
   const userRoles = user.roles as readonly string[];

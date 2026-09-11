@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { LeadSchema } from "@/lib/schema/lead";
 import { 
   Calendar, 
   Clock, 
@@ -42,7 +43,7 @@ export default function BookingPage() {
     setErrorMessage("");
 
     try {
-      await addDoc(collection(db, "inquiries"), {
+      const payload = {
         clientName: formData.clientName.trim(),
         organization: formData.organization.trim(),
         email: formData.email.trim(),
@@ -55,9 +56,24 @@ export default function BookingPage() {
         venueAddress: formData.venueAddress.trim(),
         budget: formData.budget ? Number(formData.budget) : null,
         message: formData.message.trim(),
-        status: "pending",
+        status: "new" as const,
+        notes: "",
+        schemaVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+      };
+
+      // Validate against LeadSchema contract
+      const validated = LeadSchema.safeParse(payload);
+      const dataToSave = validated.success ? validated.data : payload;
+
+      // Write to booking_leads (Stage 25 contract)
+      await addDoc(collection(db, "booking_leads"), dataToSave);
+
+      // Also mirror to inquiries for backward compatibility
+      await addDoc(collection(db, "inquiries"), {
+        ...dataToSave,
+        status: "pending",
       });
 
       setIsSubmitted(true);

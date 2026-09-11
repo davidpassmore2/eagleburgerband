@@ -9,13 +9,11 @@ import { canManageGigs, canManageSections } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { 
   UserCheck, 
-  Calendar, 
   Clock, 
   MapPin, 
   ArrowRight, 
   Loader2, 
-  ShieldAlert,
-  Users
+  ShieldAlert
 } from "lucide-react";
 
 interface GigItem {

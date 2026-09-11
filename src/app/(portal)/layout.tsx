@@ -4,6 +4,7 @@ import React, { useSyncExternalStore, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
+import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import { hasRole } from "@/lib/auth/permissions";
 import { LogIn, LogOut, Compass } from "lucide-react";
@@ -27,6 +28,7 @@ const CATEGORY_ORDER: ToolCategory[] = [
 function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { profile, firebaseUser, loading, signInWithGoogle, signInWithDevAccount, signOut } = useAuth();
+  const { portalTheme, theme } = useTheme();
   const mounted = useMounted();
 
   const authorizedTools = useMemo(() => {
@@ -43,11 +45,14 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col min-h-0 flex-1">
           {/* Pinned Top Brand Header */}
           <div className="flex items-center gap-3 pb-4 border-b border-slate-800/80 shrink-0">
-            <div className="bg-yellow-400 text-slate-950 font-black px-2 py-1 rounded text-sm tracking-wider">
+            <div 
+              className="text-slate-950 font-black px-2 py-1 rounded text-sm tracking-wider"
+              style={{ backgroundColor: portalTheme.primaryColor }}
+            >
               EBB
             </div>
             <div>
-              <div className="font-bold text-sm text-white">Eagleburger Band</div>
+              <div className="font-bold text-sm text-white">{theme.bandName}</div>
               <div className="text-[11px] text-slate-400">Musician Portal</div>
             </div>
           </div>
@@ -159,7 +164,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <PortalNavigationShell>{children}</PortalNavigationShell>
+      <ThemeProvider>
+        <PortalNavigationShell>{children}</PortalNavigationShell>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

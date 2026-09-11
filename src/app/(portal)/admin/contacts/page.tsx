@@ -18,15 +18,13 @@ import {
   Phone, 
   Building, 
   MapPin, 
-  Tag, 
   Plus, 
   Trash2, 
   Search, 
   Loader2, 
   ShieldAlert, 
   X, 
-  Check, 
-  Info 
+  Check 
 } from "lucide-react";
 
 interface ContactEntry {

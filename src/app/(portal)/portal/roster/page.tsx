@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { User, UserSchema } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import {
   Users,

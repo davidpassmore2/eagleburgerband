@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageRoster } from "@/lib/auth/permissions";
 import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
-import { Users, ShieldAlert, UserPlus, Copy, Check } from "lucide-react";
+import { Users, ShieldAlert, UserPlus, Copy } from "lucide-react";
 import { z } from "zod";
 
 type Role = z.infer<typeof RoleEnum>;
@@ -32,7 +32,7 @@ export default function RosterAdminPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteSection, setInviteSection] = useState("");
-  const [inviteRoles, setInviteRoles] = useState<Role[]>(["member"]);
+  const [inviteRoles] = useState<Role[]>(["member"]);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   useEffect(() => {

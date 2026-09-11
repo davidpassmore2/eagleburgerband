@@ -461,16 +461,7 @@ async function runSeed() {
   // ==========================================
   // 7. Theme Configuration Document
   // ==========================================
-  await setDoc(doc(db, "theme", "config"), {
-    primaryColor: "#facc15", // EBB Yellow
-    accentColor: "#0f172a",  // Slate 900
-    bandName: "Eagleburger Band",
-    subheading: "Brass, percussion, and mobile street revelry.",
-    logoUrl: "/ebb-logo.png",
-    activeSeason: "2026 Fall Season",
-    updatedAt: new Date().toISOString(),
-  }, { merge: true });
-  console.log("✅ Seeded theme styling configuration.");
+  // Note: Full v2 scoped theme configuration is seeded in Section 11 below.
 
   // ==========================================
   // 8. Master Setlist Templates
@@ -686,8 +677,238 @@ async function runSeed() {
 
   for (const inq of inquiries) {
     await setDoc(doc(db, "inquiries", inq.id), inq, { merge: true });
+    // Mirror to booking_leads for unified schema
+    await setDoc(doc(db, "booking_leads", inq.id), {
+      ...inq,
+      status: inq.status === "pending" ? "new" : inq.status,
+      notes: "Seeded test inquiry",
+      schemaVersion: 1,
+    }, { merge: true });
   }
   console.log(`✅ Seeded ${inquiries.length} client booking inquiries.`);
+  console.log(`✅ Seeded ${inquiries.length} client booking inquiries & booking_leads.`);
+
+  // ==========================================
+  // 11. Theme & Dynamic Brand Config (v2 Scoped)
+  // ==========================================
+  const themeConfig = {
+    bandName: "Eagleburger Band",
+    logoUrl: "/ebb-logo.png",
+    activeSeason: "2026 Season",
+    socialLinks: {
+      youtube: "https://www.youtube.com/watch?v=v0x-fut30wE",
+      instagram: "https://www.instagram.com/eagleburgerband",
+      facebook: "https://www.facebook.com/col.eagleburger",
+    },
+    public: {
+      primaryColor: "#facc15",
+      accentColor: "#f59e0b",
+      backgroundColor: "#020617",
+      surfaceColor: "#0f172a",
+      textColor: "#f8fafc",
+      tagline: "Pittsburgh's Premier Street Brass & Battery Powerhouse",
+    },
+    portal: {
+      primaryColor: "#facc15",
+      accentColor: "#0f172a",
+      backgroundColor: "#020617",
+      surfaceColor: "#0f172a",
+      textColor: "#f8fafc",
+      tagline: "Musician Operations & Repertoire Command Center",
+    },
+    primaryColor: "#facc15",
+    accentColor: "#0f172a",
+    subheading: "Pittsburgh's mobile brass, percussion, and street revelry powerhouse.",
+    schemaVersion: 2,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await setDoc(doc(db, "theme", "config"), themeConfig, { merge: true });
+  console.log("✅ Seeded theme/config with v2 scoped public & portal themes.");
+
+  // ==========================================
+  // 12. Headless CMS Content Pages (Home)
+  // ==========================================
+  const homePage = {
+    id: "home",
+    slug: "home",
+    title: "Home",
+    description: "Official Website of the Eagleburger Band",
+    isPublished: true,
+    schemaVersion: 1,
+    updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    sections: [
+      {
+        id: "sec_hero",
+        type: "hero",
+        order: 1,
+        hero: {
+          headline: "Pittsburgh's High-Energy Street Brass & Drum Powerhouse",
+          subheadline: "Unstoppable brass, infectious percussion grooves, and high-stepping street revelry.",
+          ctaText: "Book the Band",
+          ctaHref: "/book",
+          secondaryCtaText: "Upcoming Shows",
+          secondaryCtaHref: "/gigs",
+          badgeText: "Acoustic Brass & Drums",
+          backgroundImageUrl: "",
+        },
+      },
+      {
+        id: "sec_media",
+        type: "media_highlight",
+        order: 2,
+        mediaHighlight: {
+          title: "Live on the March",
+          description: "Watch the Eagleburger Band bring the energy to the streets at the Greenfield Holiday Parade.",
+          mediaType: "youtube",
+          url: "https://www.youtube.com/watch?v=v0x-fut30wE",
+          caption: "Greenfield Holiday Parade Performance — Brass & Battery in Full Stride",
+        },
+      },
+      {
+        id: "sec_features",
+        type: "features",
+        order: 3,
+        features: {
+          title: "Why Event Organizers Choose Eagleburger",
+          subtitle: "100% mobile acoustic performance that electrifies crowds anywhere.",
+          items: [
+            {
+              icon: "Zap",
+              title: "100% Mobile & Acoustic",
+              description: "No stage, cables, generators, or PA systems required. We play while marching, dancing, and mingling directly with crowds.",
+            },
+            {
+              icon: "Music",
+              title: "Massive Brass & Drumline Sound",
+              description: "Sousaphones, trombones, trumpets, saxophones, and marching drums delivering high-decibel acoustic excitement.",
+            },
+            {
+              icon: "Calendar",
+              title: "Parades, Festivals & Celebrations",
+              description: "Civic parades, street festivals, beer gardens, wedding send-offs, and community block parties across Western PA.",
+            },
+          ],
+        },
+      },
+      {
+        id: "sec_gig_feed",
+        type: "gig_feed_preview",
+        order: 4,
+        gigFeedPreview: {
+          title: "Upcoming Performances",
+          maxItems: 3,
+          ctaText: "View Full Performance Schedule",
+          ctaHref: "/gigs",
+        },
+      },
+    ],
+  };
+
+  await setDoc(doc(db, "content_pages", "home"), homePage, { merge: true });
+  console.log("✅ Seeded content_pages/home with Greenfield Holiday Parade media highlight.");
+
+  // ==========================================
+  // 13. Charitable Donations & Giving
+  // ==========================================
+  const sampleDonations = [
+    {
+      id: "donation_pgh_food_bank",
+      organizationName: "Greater Pittsburgh Community Food Bank",
+      causeDescription: "Mobilizing community food resources across 11 Southwestern Pennsylvania counties to eradicate hunger and food insecurity.",
+      websiteUrl: "https://pittsburghfoodbank.org",
+      category: "hunger_relief",
+      amount: 500,
+      dateDonated: "2026-05-15",
+      fiscalYear: "2026",
+      isPublic: true,
+      publicImpactNote: "Sponsored regional nutritious meal distributions and emergency food pantry kits.",
+      notes: "Check #1102 approved during spring executive session.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "donation_band_together",
+      organizationName: "Band Together Pittsburgh",
+      causeDescription: "Enriching the lives of individuals on the autism spectrum through dynamic musical programs, open mics, and drum workshops.",
+      websiteUrl: "https://bandtogetherpgh.org",
+      category: "arts_music",
+      amount: 750,
+      dateDonated: "2026-04-10",
+      fiscalYear: "2026",
+      isPublic: true,
+      publicImpactNote: "Providing adaptive percussion instruments and specialized community clinic supplies.",
+      notes: "Direct wire from festival tip proceeds match.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "donation_girls_write",
+      organizationName: "Girls Write Pittsburgh",
+      causeDescription: "Empowering teen girls and gender-expansive youth through creative self-expression, literary arts mentorship, and writing programs.",
+      websiteUrl: "https://girlswritepgh.org",
+      category: "youth_education",
+      amount: 350,
+      dateDonated: "2026-03-25",
+      fiscalYear: "2026",
+      isPublic: true,
+      publicImpactNote: "Underwriting creative writing workshop supplies and youth poetry anthologies.",
+      notes: "Check #1098.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "donation_wp_conservancy",
+      organizationName: "Western Pennsylvania Conservancy",
+      causeDescription: "Protecting regional natural landscapes, caring for rivers, planting community flower gardens, and preserving Fallingwater.",
+      websiteUrl: "https://waterlandlife.org",
+      category: "environment",
+      amount: 400,
+      dateDonated: "2026-02-18",
+      fiscalYear: "2026",
+      isPublic: true,
+      publicImpactNote: "Funding Pittsburgh neighborhood community flower garden plantings and urban trees.",
+      notes: "Annual Earth Month green space contribution.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "donation_aami_pgh",
+      organizationName: "Afro American Music Institute",
+      causeDescription: "Preserving and promoting African American musical heritage through youth instrumental education in Pittsburgh's Homewood neighborhood.",
+      websiteUrl: "https://afroamericanmusic.org",
+      category: "arts_music",
+      amount: 600,
+      dateDonated: "2026-01-20",
+      fiscalYear: "2026",
+      isPublic: true,
+      publicImpactNote: "Providing youth brass and percussion lesson scholarships.",
+      notes: "Martin Luther King Jr. Day commemorative donation.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "donation_internal_relief",
+      organizationName: "Pittsburgh Community Musician Relief",
+      causeDescription: "Emergency micro-grants for local freelance performers and street artists facing sudden hardship.",
+      websiteUrl: "https://eagleburgerband.com",
+      category: "community_aid",
+      amount: 300,
+      dateDonated: "2025-11-12",
+      fiscalYear: "2025",
+      isPublic: false, // Internal confidential record
+      publicImpactNote: "",
+      notes: "Internal discretion grant; withheld from public showcase.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const d of sampleDonations) {
+    await setDoc(doc(db, "donations", d.id), d, { merge: true });
+  }
+  console.log(`✅ Seeded ${sampleDonations.length} charitable donations into 'donations' collection.`);
 
   console.log("🎉 Complete emulator seed finished! All collections and sections populated.");
   process.exit(0);

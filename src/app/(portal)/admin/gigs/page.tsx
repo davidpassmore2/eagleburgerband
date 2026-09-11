@@ -15,7 +15,6 @@ import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { 
   Calendar, 
-  Clock, 
   MapPin, 
   DollarSign, 
   Plus, 
