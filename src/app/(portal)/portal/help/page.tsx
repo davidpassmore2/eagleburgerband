@@ -800,28 +800,34 @@ const ROUTE_DOCS: RouteDoc[] = [
     roles: ["admin", "web_manager"],
     badge: "Content Management",
     iconName: "LayoutTemplate",
-    summary: "Multi-page public website builder, WYSIWYG rich text editor, section ordering, and full SEO Studio.",
-    description: "The Headless CMS Page Studio empowers web managers to build and maintain the public marketing website without writing code. Managers can create new pages, arrange polymorphic sections (Hero Banners, WYSIWYG Rich Text, Video Reels, Feature Grids), preview live in the Page Simulator, and optimize search engine visibility in the SEO Studio.",
+    summary: "Multi-page public website builder, configurable navigation & site banner, section engine with 10 presets, and full SEO Studio.",
+    description: "The Headless CMS Page Studio empowers web managers and administrators to build and maintain the public marketing website without writing code. Managers can manage public header and footer navigation links, configure a global announcement banner, assemble polymorphic sections (Hero, Rich Text, Video Reels, Feature Grids, Booking Form, Testimonials, FAQ Accordion, CTA Banners, Stats Counters), customize section visibility, background styles, and padding, preview live in the Page Simulator, and optimize search engine visibility in the SEO Studio.",
     keyFeatures: [
+      "Navigation & Banner Studio: reorder and toggle visibility of header and footer navigation links, designate CTA buttons, and configure a dismissible site-wide announcement banner.",
       "Multi-page management with dynamic URL slug routing (e.g. /about, /history, /giving, /book).",
-      "Polymorphic section builder: Hero Banner, WYSIWYG Rich Text, YouTube Media Reel, Feature Grid, Gig Feed.",
+      "10 polymorphic section presets: Hero Banner, WYSIWYG Rich Text, YouTube Media Reel, Feature Grid, Gig Feed Preview, Booking Form, Testimonials, FAQ Accordion, CTA Banner, and Stats Counter.",
+      "Per-section appearance controls: visibility toggle (Visible/Hidden), background styles (Default, Surface, Gradient, Muted), and padding presets (Compact, Standard, Generous).",
       "Modern WYSIWYG rich text editor backed by DOMPurify sanitization with bold, italic, headings, lists, and secure links.",
-      "Interactive Page Simulator for testing desktop and mobile layouts in real time before publishing.",
+      "Interactive Page Simulator for testing desktop, tablet, and mobile layouts in real time before publishing.",
       "Complete SEO Studio: Google SERP snippet preview, Social Share Card preview, character meters, robots directives, and Schema.org JSON-LD."
     ],
     howToUse: [
-      "Switch between existing pages or click '+ New Page' to create a custom page with a starting template.",
-      "In the 'Section Builder' tab, add, reorder, edit, or remove sections.",
-      "Use the 'Simulator' tab to preview live changes.",
+      "Access 'CMS Page Studio' from the 'Business & Admin' section in the portal sidebar.",
+      "Switch to the 'Navigation & Banner' tab to reorder header/footer links, toggle link visibility, or activate a global announcement banner.",
+      "Switch between published pages or click '+ New Page' to create a custom page with a starting template.",
+      "In the 'Section Builder' tab, add new section presets, toggle visibility, customize background and padding, and edit content.",
+      "Use the 'Simulator' tab to preview live changes across desktop, tablet, and mobile views.",
       "Open the 'SEO Studio' tab to customize Google search titles, descriptions, keywords, and OpenGraph social images.",
       "Click 'Save Changes' to persist your updates directly to Firestore."
     ],
     proTips: [
+      "Use the visibility toggle on navigation links or individual sections to temporarily hide upcoming concert promos or seasonal links without deleting them.",
       "Keep search titles between 40 and 60 characters and descriptions between 120 and 160 characters for optimal Google ranking.",
       "Always specify a high-resolution 1200x630 OpenGraph image so links shared on social media generate compelling visual cards."
     ],
     relatedRoutes: [
       { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Booking Inquiries", path: "/admin/inquiries" },
       { title: "Public Website", path: "/" }
     ]
   },

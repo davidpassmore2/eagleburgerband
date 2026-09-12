@@ -21,10 +21,21 @@ import {
   PageSeo,
   PageSeoSchema,
 } from "@/lib/schema/page";
-import { WysiwygEditor, sanitizeHtml } from "@/components/cms/WysiwygEditor";
+import {
+  SiteNavigation,
+  SiteNavigationSchema,
+  NavLink,
+  SocialLink,
+  SocialPlatform,
+  DEFAULT_SOCIAL_LINKS,
+} from "@/lib/schema/siteConfig";
+import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
+import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
+import { SocialIcon } from "@/components/ui/SocialIcon";
 import {
   Save,
   Eye,
+  EyeOff,
   Sparkles,
   Video,
   Layers,
@@ -53,6 +64,12 @@ import {
   ChevronUp,
   Smartphone,
   Monitor,
+  Compass,
+  Megaphone,
+  HelpCircle,
+  MessageSquare,
+  BarChart3,
+  Send,
 } from "lucide-react";
 
 const DEFAULT_HOME_PAGE: ContentPage = ContentPageSchema.parse({
@@ -148,7 +165,12 @@ export default function CMSPagesStudio() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<"builder" | "preview" | "seo" | "settings">("builder");
+  const [activeTab, setActiveTab] = useState<"builder" | "preview" | "seo" | "settings" | "navigation">("builder");
+
+  // Site Navigation & Announcement Banner State
+  const [siteNav, setSiteNav] = useState<SiteNavigation>(() => SiteNavigationSchema.parse({}));
+  const [isSavingNav, setIsSavingNav] = useState(false);
+  const [navSavedSuccess, setNavSavedSuccess] = useState(false);
 
   // New Page Modal State
   const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
@@ -203,7 +225,23 @@ export default function CMSPagesStudio() {
       }
     );
 
-    return () => unsub();
+    const unsubNav = onSnapshot(
+      doc(db, "site_navigation", "config"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = SiteNavigationSchema.safeParse(snap.data());
+          if (parsed.success) {
+            setSiteNav(parsed.data);
+          }
+        }
+      },
+      (err) => console.warn("site_navigation listener error:", err)
+    );
+
+    return () => {
+      unsub();
+      unsubNav();
+    };
   }, [authLoading]);
 
   const uniquePages = useMemo(() => {
@@ -245,6 +283,9 @@ export default function CMSPagesStudio() {
       id: newId,
       type,
       order: nextOrder,
+      isVisible: true,
+      background: "default",
+      padding: "standard",
     };
 
     if (type === "rich_text") {
@@ -304,6 +345,92 @@ export default function CMSPagesStudio() {
           ctaHref: "/gigs",
         },
       };
+    } else if (type === "booking_form") {
+      newSection = {
+        ...newSection,
+        bookingForm: {
+          headline: "Book the Eagleburger Band",
+          subheadline: "Bring mobile acoustic brass and high-energy drumline grooves to your festival, parade, or celebration.",
+          badgeText: "Direct Event Inquiry",
+          defaultEventType: "Community Parade & Festival",
+          buttonText: "Submit Booking Inquiry",
+        },
+      };
+    } else if (type === "testimonials") {
+      newSection = {
+        ...newSection,
+        testimonials: {
+          title: "What Organizers & Audiences Say",
+          subtitle: "From parade routes to street festivals, hear the crowd reaction.",
+          items: [
+            {
+              quote: "The Eagleburger Band brought unmatched energy to our parade. People were dancing in the streets!",
+              author: "Sarah M.",
+              roleOrEvent: "Community Festival Coordinator",
+              rating: 5,
+            },
+            {
+              quote: "Completely acoustic and mobile. They marched right through the crowd and blew everyone away.",
+              author: "David R.",
+              roleOrEvent: "Art Festival Director",
+              rating: 5,
+            },
+          ],
+        },
+      };
+    } else if (type === "faq") {
+      newSection = {
+        ...newSection,
+        faq: {
+          title: "Frequently Asked Questions",
+          subtitle: "Everything you need to know about booking and performance logistics.",
+          items: [
+            {
+              question: "Do you need electrical outlets or a stage?",
+              answer: "None! The Eagleburger Band is 100% mobile and acoustic. We perform anywhere — streets, lawns, pavilions, stairwells, and parade routes.",
+              category: "Logistics",
+            },
+            {
+              question: "How large is the ensemble?",
+              answer: "We typically march with 15 to 25 musicians featuring full brass (trumpets, trombones, sousaphones, saxophones) and a high-impact drumline battery.",
+              category: "Ensemble",
+            },
+            {
+              question: "How far in advance should we book?",
+              answer: "For summer parades and festival weekends, booking 2 to 6 months in advance is recommended. However, we always welcome inquiries for upcoming events.",
+              category: "Booking",
+            },
+          ],
+        },
+      };
+    } else if (type === "cta_banner") {
+      newSection = {
+        ...newSection,
+        ctaBanner: {
+          headline: "Ready to Bring Unstoppable Brass Energy to Your Event?",
+          subheadline: "Inquire today to check musician availability, rates, and custom parade setlists.",
+          buttonText: "Book the Band Now",
+          buttonHref: "/book",
+          secondaryButtonText: "View Schedule",
+          secondaryButtonHref: "/gigs",
+          badgeText: "Live Street Brass",
+          variant: "primary",
+        },
+      };
+    } else if (type === "stats_counter") {
+      newSection = {
+        ...newSection,
+        statsCounter: {
+          title: "By the Numbers",
+          subtitle: "Pittsburgh's most dynamic street brass sound.",
+          metrics: [
+            { value: "100%", label: "Acoustic & Mobile", description: "Zero cables or outlets required" },
+            { value: "50+", label: "Parades & Festivals", description: "Across Western Pennsylvania" },
+            { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery" },
+            { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat" },
+          ],
+        },
+      };
     }
 
     updateActivePage((prev) => ({
@@ -344,6 +471,165 @@ export default function CMSPagesStudio() {
     updateActivePage((prev) => ({
       ...prev,
       sections: prev.sections.map((s) => (s.id === sectionId ? { ...s, ...patch } : s)),
+    }));
+  };
+
+  // Site Navigation Management Handlers
+  const handleSaveNavigation = async () => {
+    setIsSavingNav(true);
+    setNavSavedSuccess(false);
+    try {
+      const validated = SiteNavigationSchema.parse({
+        ...siteNav,
+        updatedAt: new Date().toISOString(),
+      });
+      await setDoc(doc(db, "site_navigation", "config"), validated);
+      setNavSavedSuccess(true);
+      setTimeout(() => setNavSavedSuccess(false), 3000);
+    } catch (err) {
+      alert("Failed to save site navigation: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSavingNav(false);
+    }
+  };
+
+  const handleMoveHeaderLink = (index: number, direction: "up" | "down") => {
+    const links = [...siteNav.headerLinks];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= links.length) return;
+    const temp = links[index];
+    links[index] = links[targetIndex];
+    links[targetIndex] = temp;
+    links.forEach((l, i) => {
+      l.order = i + 1;
+    });
+    setSiteNav((prev) => ({ ...prev, headerLinks: links }));
+  };
+
+  const handleToggleHeaderLinkVisibility = (index: number) => {
+    const links = [...siteNav.headerLinks];
+    links[index] = { ...links[index], isVisible: !links[index].isVisible };
+    setSiteNav((prev) => ({ ...prev, headerLinks: links }));
+  };
+
+  const handleUpdateHeaderLink = (index: number, patch: Partial<NavLink>) => {
+    const links = [...siteNav.headerLinks];
+    links[index] = { ...links[index], ...patch };
+    setSiteNav((prev) => ({ ...prev, headerLinks: links }));
+  };
+
+  const handleRemoveHeaderLink = (index: number) => {
+    const links = siteNav.headerLinks.filter((_, i) => i !== index);
+    setSiteNav((prev) => ({ ...prev, headerLinks: links }));
+  };
+
+  const handleAddHeaderLink = (label = "New Link", href = "/") => {
+    const newLink: NavLink = {
+      id: `nav_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      label,
+      href,
+      isVisible: true,
+      order: siteNav.headerLinks.length + 1,
+      icon: "",
+      isButton: false,
+      isExternal: false,
+      openInNewTab: false,
+    };
+    setSiteNav((prev) => ({ ...prev, headerLinks: [...prev.headerLinks, newLink] }));
+  };
+
+  const handleMoveFooterLink = (index: number, direction: "up" | "down") => {
+    const links = [...siteNav.footerLinks];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= links.length) return;
+    const temp = links[index];
+    links[index] = links[targetIndex];
+    links[targetIndex] = temp;
+    links.forEach((l, i) => {
+      l.order = i + 1;
+    });
+    setSiteNav((prev) => ({ ...prev, footerLinks: links }));
+  };
+
+  const handleToggleFooterLinkVisibility = (index: number) => {
+    const links = [...siteNav.footerLinks];
+    links[index] = { ...links[index], isVisible: !links[index].isVisible };
+    setSiteNav((prev) => ({ ...prev, footerLinks: links }));
+  };
+
+  const handleUpdateFooterLink = (index: number, patch: Partial<NavLink>) => {
+    const links = [...siteNav.footerLinks];
+    links[index] = { ...links[index], ...patch };
+    setSiteNav((prev) => ({ ...prev, footerLinks: links }));
+  };
+
+  const handleRemoveFooterLink = (index: number) => {
+    const links = siteNav.footerLinks.filter((_, i) => i !== index);
+    setSiteNav((prev) => ({ ...prev, footerLinks: links }));
+  };
+
+  const handleAddFooterLink = (label = "New Footer Link", href = "/") => {
+    const newLink: NavLink = {
+      id: `nav_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      label,
+      href,
+      isVisible: true,
+      order: siteNav.footerLinks.length + 1,
+      icon: "",
+      isButton: false,
+      isExternal: false,
+      openInNewTab: false,
+    };
+    setSiteNav((prev) => ({ ...prev, footerLinks: [...prev.footerLinks, newLink] }));
+  };
+
+  // Social Links Handlers
+  const handleMoveSocialLink = (index: number, direction: "up" | "down") => {
+    const socials = [...(siteNav.socialLinks || DEFAULT_SOCIAL_LINKS)];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= socials.length) return;
+    const temp = socials[index];
+    socials[index] = socials[targetIndex];
+    socials[targetIndex] = temp;
+    socials.forEach((s, i) => {
+      s.order = i + 1;
+    });
+    setSiteNav((prev) => ({ ...prev, socialLinks: socials }));
+  };
+
+  const handleToggleSocialLinkVisibility = (index: number) => {
+    const socials = [...(siteNav.socialLinks || DEFAULT_SOCIAL_LINKS)];
+    socials[index] = { ...socials[index], isVisible: !socials[index].isVisible };
+    setSiteNav((prev) => ({ ...prev, socialLinks: socials }));
+  };
+
+  const handleUpdateSocialLink = (index: number, patch: Partial<SocialLink>) => {
+    const socials = [...(siteNav.socialLinks || DEFAULT_SOCIAL_LINKS)];
+    socials[index] = { ...socials[index], ...patch };
+    setSiteNav((prev) => ({ ...prev, socialLinks: socials }));
+  };
+
+  const handleRemoveSocialLink = (index: number) => {
+    const socials = (siteNav.socialLinks || DEFAULT_SOCIAL_LINKS).filter((_, i) => i !== index);
+    setSiteNav((prev) => ({ ...prev, socialLinks: socials }));
+  };
+
+  const handleAddSocialLink = (
+    platform: SocialPlatform = "custom",
+    label = "Social Channel",
+    href = "https://"
+  ) => {
+    const newSocial: SocialLink = {
+      id: `soc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      platform,
+      label,
+      href,
+      isVisible: true,
+      order: (siteNav.socialLinks?.length || 0) + 1,
+    };
+    setSiteNav((prev) => ({
+      ...prev,
+      socialLinks: [...(prev.socialLinks || DEFAULT_SOCIAL_LINKS), newSocial],
     }));
   };
 
@@ -393,6 +679,9 @@ export default function CMSPagesStudio() {
           id: `sec_${Date.now()}_${randomSuffix}_1`,
           type: "hero",
           order: 1,
+          isVisible: true,
+          background: "default",
+          padding: "standard",
           hero: {
             headline: newPageTitle,
             subheadline: newPageDesc || "Pittsburgh street brass & community revelry.",
@@ -408,6 +697,9 @@ export default function CMSPagesStudio() {
           id: `sec_${Date.now()}_${randomSuffix}_2`,
           type: "rich_text",
           order: 2,
+          isVisible: true,
+          background: "default",
+          padding: "standard",
           richText: {
             title: "About Our Ensemble",
             body: "<h2>Brass, Rhythm & Community</h2><p>The Eagleburger Band brings acoustic power and joyful street grooves to celebrations across Western PA.</p>",
@@ -422,6 +714,9 @@ export default function CMSPagesStudio() {
           id: `sec_${Date.now()}_${randomSuffix}_1`,
           type: "hero",
           order: 1,
+          isVisible: true,
+          background: "default",
+          padding: "standard",
           hero: {
             headline: newPageTitle,
             subheadline: "Watch and listen to the band in action.",
@@ -437,6 +732,9 @@ export default function CMSPagesStudio() {
           id: `sec_${Date.now()}_${randomSuffix}_2`,
           type: "media_highlight",
           order: 2,
+          isVisible: true,
+          background: "default",
+          padding: "standard",
           mediaHighlight: {
             title: "Live Street March Reel",
             description: "Greenfield Holiday Parade performance highlight reel.",
@@ -573,18 +871,26 @@ export default function CMSPagesStudio() {
 
           <button
             type="button"
-            onClick={handleSavePage}
-            disabled={isSaving}
+            onClick={activeTab === "navigation" ? handleSaveNavigation : handleSavePage}
+            disabled={activeTab === "navigation" ? isSavingNav : isSaving}
             className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 disabled:opacity-50"
           >
-            {isSaving ? (
+            {(activeTab === "navigation" ? isSavingNav : isSaving) ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : savedSuccess ? (
+            ) : (activeTab === "navigation" ? navSavedSuccess : savedSuccess) ? (
               <Check className="w-4 h-4 text-emerald-950" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            <span>{savedSuccess ? "Saved!" : "Save Changes"}</span>
+            <span>
+              {activeTab === "navigation"
+                ? navSavedSuccess
+                  ? "Nav Saved!"
+                  : "Save Navigation"
+                : savedSuccess
+                ? "Saved!"
+                : "Save Changes"}
+            </span>
           </button>
         </div>
       </div>
@@ -631,7 +937,7 @@ export default function CMSPagesStudio() {
           </button>
         </div>
 
-        {/* View Mode Tabs (Builder vs Preview vs Page Settings) */}
+        {/* View Mode Tabs (Builder vs Preview vs Page Settings vs Navigation) */}
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
           <button
             type="button"
@@ -683,6 +989,19 @@ export default function CMSPagesStudio() {
             <Settings className="w-3.5 h-3.5" />
             <span>Settings</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("navigation")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
+              activeTab === "navigation"
+                ? "bg-yellow-400 text-slate-950 shadow"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Navigation & Banner</span>
+          </button>
         </div>
       </div>
 
@@ -706,13 +1025,13 @@ export default function CMSPagesStudio() {
               </button>
 
               {showAddSectionMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-30 space-y-1 text-xs">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-30 space-y-1 text-xs max-h-96 overflow-y-auto">
                   <button
                     type="button"
                     onClick={() => handleAddSection("hero")}
                     className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
                   >
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <Sparkles className="w-4 h-4 text-yellow-400 shrink-0" />
                     <div>
                       <div className="font-bold">Hero Banner</div>
                       <div className="text-[10px] text-slate-400">Headline & CTA buttons</div>
@@ -724,7 +1043,7 @@ export default function CMSPagesStudio() {
                     onClick={() => handleAddSection("rich_text")}
                     className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
                   >
-                    <Edit3 className="w-4 h-4 text-purple-400" />
+                    <Edit3 className="w-4 h-4 text-purple-400 shrink-0" />
                     <div>
                       <div className="font-bold">Rich Text (WYSIWYG)</div>
                       <div className="text-[10px] text-slate-400">Formatted body copy & links</div>
@@ -733,10 +1052,70 @@ export default function CMSPagesStudio() {
 
                   <button
                     type="button"
+                    onClick={() => handleAddSection("booking_form")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Send className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Booking Request Form</div>
+                      <div className="text-[10px] text-slate-400">Preset lead inquiry form</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("testimonials")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <MessageSquare className="w-4 h-4 text-sky-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Reviews & Testimonials</div>
+                      <div className="text-[10px] text-slate-400">Organizer quotes & ratings</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("faq")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <HelpCircle className="w-4 h-4 text-teal-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">FAQ Accordion</div>
+                      <div className="text-[10px] text-slate-400">Logistics & common questions</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("cta_banner")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Megaphone className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">CTA Callout Banner</div>
+                      <div className="text-[10px] text-slate-400">High-impact action card</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("stats_counter")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <BarChart3 className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Metrics Counter</div>
+                      <div className="text-[10px] text-slate-400">Ensemble key stats</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => handleAddSection("media_highlight")}
                     className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
                   >
-                    <Video className="w-4 h-4 text-red-400" />
+                    <Video className="w-4 h-4 text-red-400 shrink-0" />
                     <div>
                       <div className="font-bold">Media Video Reel</div>
                       <div className="text-[10px] text-slate-400">YouTube video embed</div>
@@ -748,10 +1127,10 @@ export default function CMSPagesStudio() {
                     onClick={() => handleAddSection("features")}
                     className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
                   >
-                    <Layers className="w-4 h-4 text-blue-400" />
+                    <Layers className="w-4 h-4 text-blue-400 shrink-0" />
                     <div>
                       <div className="font-bold">Performance Features</div>
-                      <div className="text-[10px] text-slate-400">3-card value props</div>
+                      <div className="text-[10px] text-slate-400">Feature value props</div>
                     </div>
                   </button>
 
@@ -760,7 +1139,7 @@ export default function CMSPagesStudio() {
                     onClick={() => handleAddSection("gig_feed_preview")}
                     className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
                   >
-                    <Calendar className="w-4 h-4 text-emerald-400" />
+                    <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
                     <div>
                       <div className="font-bold">Upcoming Gig Feed</div>
                       <div className="text-[10px] text-slate-400">Live calendar preview</div>
@@ -789,7 +1168,9 @@ export default function CMSPagesStudio() {
               {activePage.sections.map((section, idx) => (
                 <div
                   key={section.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg transition-all"
+                  className={`bg-slate-900 border rounded-2xl p-5 space-y-4 shadow-lg transition-all ${
+                    section.isVisible === false ? "border-slate-800/60 opacity-60 bg-slate-900/50" : "border-slate-800"
+                  }`}
                 >
                   {/* Section Bar */}
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
@@ -800,6 +1181,11 @@ export default function CMSPagesStudio() {
                       <span className="text-xs font-extrabold uppercase text-white tracking-wider flex items-center gap-1.5">
                         {section.type === "hero" && <Sparkles className="w-3.5 h-3.5 text-yellow-400" />}
                         {section.type === "rich_text" && <Edit3 className="w-3.5 h-3.5 text-purple-400" />}
+                        {section.type === "booking_form" && <Send className="w-3.5 h-3.5 text-yellow-400" />}
+                        {section.type === "testimonials" && <MessageSquare className="w-3.5 h-3.5 text-sky-400" />}
+                        {section.type === "faq" && <HelpCircle className="w-3.5 h-3.5 text-teal-400" />}
+                        {section.type === "cta_banner" && <Megaphone className="w-3.5 h-3.5 text-amber-400" />}
+                        {section.type === "stats_counter" && <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />}
                         {section.type === "media_highlight" && <Video className="w-3.5 h-3.5 text-red-400" />}
                         {section.type === "features" && <Layers className="w-3.5 h-3.5 text-blue-400" />}
                         {section.type === "gig_feed_preview" && <Calendar className="w-3.5 h-3.5 text-emerald-400" />}
@@ -807,7 +1193,65 @@ export default function CMSPagesStudio() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Section Visibility Toggle */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateSection(section.id, {
+                            isVisible: section.isVisible === false ? true : false,
+                          })
+                        }
+                        className={`px-2 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition ${
+                          section.isVisible !== false
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                            : "bg-slate-800 text-slate-500 border border-slate-700 line-through"
+                        }`}
+                        title={section.isVisible !== false ? "Visible on public site" : "Hidden from public site"}
+                      >
+                        {section.isVisible !== false ? (
+                          <Eye className="w-3 h-3" />
+                        ) : (
+                          <EyeOff className="w-3 h-3" />
+                        )}
+                        <span>{section.isVisible !== false ? "Visible" : "Hidden"}</span>
+                      </button>
+
+                      {/* Section Background Preset */}
+                      <select
+                        value={section.background || "default"}
+                        onChange={(e) =>
+                          handleUpdateSection(section.id, {
+                            background: e.target.value as "default" | "surface" | "gradient" | "muted",
+                          })
+                        }
+                        className="bg-slate-950 border border-slate-800 text-[11px] text-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-yellow-400 font-mono"
+                        title="Section Background Style"
+                      >
+                        <option value="default">Bg: Default</option>
+                        <option value="surface">Bg: Surface</option>
+                        <option value="gradient">Bg: Gradient</option>
+                        <option value="muted">Bg: Muted</option>
+                      </select>
+
+                      {/* Section Padding Preset */}
+                      <select
+                        value={section.padding || "standard"}
+                        onChange={(e) =>
+                          handleUpdateSection(section.id, {
+                            padding: e.target.value as "compact" | "standard" | "generous",
+                          })
+                        }
+                        className="bg-slate-950 border border-slate-800 text-[11px] text-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-yellow-400 font-mono"
+                        title="Section Padding Spacing"
+                      >
+                        <option value="compact">Pad: Compact</option>
+                        <option value="standard">Pad: Standard</option>
+                        <option value="generous">Pad: Generous</option>
+                      </select>
+
+                      <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
+
                       <button
                         type="button"
                         disabled={idx === 0}
@@ -826,7 +1270,7 @@ export default function CMSPagesStudio() {
                       >
                         <ArrowDown className="w-4 h-4" />
                       </button>
-                      <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+                      <div className="w-[1px] h-4 bg-slate-800 mx-0.5" />
                       <button
                         type="button"
                         onClick={() => handleRemoveSection(section.id)}
@@ -1191,6 +1635,667 @@ export default function CMSPagesStudio() {
                       </div>
                     </div>
                   )}
+
+                  {section.type === "booking_form" && (
+                    <div className="space-y-4">
+                      <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-xl p-3.5 flex items-start gap-3 text-xs text-yellow-300">
+                        <Send className="w-4 h-4 shrink-0 text-yellow-400 mt-0.5" />
+                        <div className="space-y-1">
+                          <div className="font-bold">Dynamic Booking Request Preset</div>
+                          <div className="text-[11px] text-slate-400 leading-relaxed">
+                            Embeds the full public event inquiry form with honeypot bot trap, submission cooldown, and DOMPurify sanitization. Inquiries directly route to Portal Inquiries and CRM Booking Leads.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Badge Text</label>
+                          <input
+                            type="text"
+                            value={section.bookingForm?.badgeText ?? "Direct Event Inquiry"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                bookingForm: {
+                                  headline: section.bookingForm?.headline || "Book the Eagleburger Band",
+                                  subheadline: section.bookingForm?.subheadline || "",
+                                  badgeText: e.target.value,
+                                  defaultEventType: section.bookingForm?.defaultEventType || "Community Parade & Festival",
+                                  buttonText: section.bookingForm?.buttonText || "Submit Booking Inquiry",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Default Event Type</label>
+                          <select
+                            value={section.bookingForm?.defaultEventType ?? "Community Parade & Festival"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                bookingForm: {
+                                  headline: section.bookingForm?.headline || "Book the Eagleburger Band",
+                                  subheadline: section.bookingForm?.subheadline || "",
+                                  badgeText: section.bookingForm?.badgeText || "Direct Event Inquiry",
+                                  defaultEventType: e.target.value,
+                                  buttonText: section.bookingForm?.buttonText || "Submit Booking Inquiry",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          >
+                            <option value="Community Parade & Festival">Community Parade & Festival</option>
+                            <option value="Wedding / Private Celebration">Wedding / Private Celebration</option>
+                            <option value="Street Party / Porchfest">Street Party / Porchfest</option>
+                            <option value="Corporate / Brewery Event">Corporate / Brewery Event</option>
+                            <option value="School / Educational Clinic">School / Educational Clinic</option>
+                            <option value="Other High-Energy Gathering">Other High-Energy Gathering</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Headline</label>
+                          <input
+                            type="text"
+                            value={section.bookingForm?.headline ?? "Book the Eagleburger Band"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                bookingForm: {
+                                  headline: e.target.value,
+                                  subheadline: section.bookingForm?.subheadline || "",
+                                  badgeText: section.bookingForm?.badgeText || "Direct Event Inquiry",
+                                  defaultEventType: section.bookingForm?.defaultEventType || "Community Parade & Festival",
+                                  buttonText: section.bookingForm?.buttonText || "Submit Booking Inquiry",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subheadline</label>
+                          <textarea
+                            rows={2}
+                            value={section.bookingForm?.subheadline ?? "Bring mobile acoustic brass and high-energy drumline grooves to your festival, parade, or celebration."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                bookingForm: {
+                                  headline: section.bookingForm?.headline || "Book the Eagleburger Band",
+                                  subheadline: e.target.value,
+                                  badgeText: section.bookingForm?.badgeText || "Direct Event Inquiry",
+                                  defaultEventType: section.bookingForm?.defaultEventType || "Community Parade & Festival",
+                                  buttonText: section.bookingForm?.buttonText || "Submit Booking Inquiry",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Submit Button Text</label>
+                          <input
+                            type="text"
+                            value={section.bookingForm?.buttonText ?? "Submit Booking Inquiry"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                bookingForm: {
+                                  headline: section.bookingForm?.headline || "Book the Eagleburger Band",
+                                  subheadline: section.bookingForm?.subheadline || "",
+                                  badgeText: section.bookingForm?.badgeText || "Direct Event Inquiry",
+                                  defaultEventType: section.bookingForm?.defaultEventType || "Community Parade & Festival",
+                                  buttonText: e.target.value,
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {section.type === "testimonials" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={section.testimonials?.title ?? "What Organizers & Audiences Say"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                testimonials: {
+                                  title: e.target.value,
+                                  subtitle: section.testimonials?.subtitle || "",
+                                  items: section.testimonials?.items || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={section.testimonials?.subtitle ?? "From parade routes to street festivals, hear the crowd reaction."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                testimonials: {
+                                  title: section.testimonials?.title || "",
+                                  subtitle: e.target.value,
+                                  items: section.testimonials?.items || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+                          <span>Testimonials ({section.testimonials?.items?.length || 0})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const items = [
+                                ...(section.testimonials?.items || []),
+                                { quote: "Unbelievable energy and musicianship!", author: "New Reviewer", roleOrEvent: "Festival Organizer", rating: 5 },
+                              ];
+                              handleUpdateSection(section.id, {
+                                testimonials: {
+                                  title: section.testimonials?.title || "What Organizers & Audiences Say",
+                                  subtitle: section.testimonials?.subtitle || "",
+                                  items,
+                                },
+                              });
+                            }}
+                            className="text-yellow-400 hover:underline flex items-center gap-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3" /> Add Quote
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {section.testimonials?.items?.map((item, itemIdx) => (
+                            <div key={itemIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="text-[11px] font-bold text-yellow-400">Quote #{itemIdx + 1}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = section.testimonials!.items.filter((_, i) => i !== itemIdx);
+                                    handleUpdateSection(section.id, {
+                                      testimonials: { ...section.testimonials!, items: updated },
+                                    });
+                                  }}
+                                  className="text-slate-500 hover:text-rose-400"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <textarea
+                                rows={2}
+                                value={item.quote}
+                                placeholder="Quote content"
+                                onChange={(e) => {
+                                  const updated = [...section.testimonials!.items];
+                                  updated[itemIdx] = { ...updated[itemIdx], quote: e.target.value };
+                                  handleUpdateSection(section.id, {
+                                    testimonials: { ...section.testimonials!, items: updated },
+                                  });
+                                }}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none"
+                              />
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={item.author}
+                                  placeholder="Author Name"
+                                  onChange={(e) => {
+                                    const updated = [...section.testimonials!.items];
+                                    updated[itemIdx] = { ...updated[itemIdx], author: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      testimonials: { ...section.testimonials!, items: updated },
+                                    });
+                                  }}
+                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.roleOrEvent}
+                                  placeholder="Role / Event"
+                                  onChange={(e) => {
+                                    const updated = [...section.testimonials!.items];
+                                    updated[itemIdx] = { ...updated[itemIdx], roleOrEvent: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      testimonials: { ...section.testimonials!, items: updated },
+                                    });
+                                  }}
+                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {section.type === "faq" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={section.faq?.title ?? "Frequently Asked Questions"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                faq: {
+                                  title: e.target.value,
+                                  subtitle: section.faq?.subtitle || "",
+                                  items: section.faq?.items || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={section.faq?.subtitle ?? "Everything you need to know about booking and performance logistics."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                faq: {
+                                  title: section.faq?.title || "",
+                                  subtitle: e.target.value,
+                                  items: section.faq?.items || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+                          <span>Questions & Answers ({section.faq?.items?.length || 0})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const items = [
+                                ...(section.faq?.items || []),
+                                { question: "New Question?", answer: "Clear, helpful answer.", category: "General" },
+                              ];
+                              handleUpdateSection(section.id, {
+                                faq: {
+                                  title: section.faq?.title || "Frequently Asked Questions",
+                                  subtitle: section.faq?.subtitle || "",
+                                  items,
+                                },
+                              });
+                            }}
+                            className="text-yellow-400 hover:underline flex items-center gap-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3" /> Add Question
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {section.faq?.items?.map((item, itemIdx) => (
+                            <div key={itemIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <input
+                                  type="text"
+                                  value={item.question}
+                                  placeholder="Question"
+                                  onChange={(e) => {
+                                    const updated = [...section.faq!.items];
+                                    updated[itemIdx] = { ...updated[itemIdx], question: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      faq: { ...section.faq!, items: updated },
+                                    });
+                                  }}
+                                  className="flex-1 bg-transparent text-xs font-bold text-white focus:outline-none border-b border-slate-800 pb-1"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.category}
+                                  placeholder="Category"
+                                  onChange={(e) => {
+                                    const updated = [...section.faq!.items];
+                                    updated[itemIdx] = { ...updated[itemIdx], category: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      faq: { ...section.faq!, items: updated },
+                                    });
+                                  }}
+                                  className="w-28 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] text-slate-400 font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = section.faq!.items.filter((_, i) => i !== itemIdx);
+                                    handleUpdateSection(section.id, {
+                                      faq: { ...section.faq!, items: updated },
+                                    });
+                                  }}
+                                  className="text-slate-500 hover:text-rose-400"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <textarea
+                                rows={2}
+                                value={item.answer}
+                                placeholder="Answer explanation"
+                                onChange={(e) => {
+                                  const updated = [...section.faq!.items];
+                                  updated[itemIdx] = { ...updated[itemIdx], answer: e.target.value };
+                                  handleUpdateSection(section.id, {
+                                    faq: { ...section.faq!, items: updated },
+                                  });
+                                }}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {section.type === "cta_banner" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Headline</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.headline ?? "Ready to Bring Unstoppable Brass Energy to Your Event?"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: e.target.value,
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Banner Style Variant</label>
+                          <select
+                            value={section.ctaBanner?.variant ?? "primary"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: e.target.value as "primary" | "dark" | "gradient",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          >
+                            <option value="primary">Primary (Yellow Accent)</option>
+                            <option value="dark">Dark (Subtle Slate)</option>
+                            <option value="gradient">Gradient (Vibrant)</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subheadline</label>
+                          <textarea
+                            rows={2}
+                            value={section.ctaBanner?.subheadline ?? "Inquire today to check musician availability, rates, and custom parade setlists."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: e.target.value,
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Badge Text (Optional)</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.badgeText ?? ""}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: e.target.value,
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Live Street Brass"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Primary Button Text</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.buttonText ?? "Book the Band Now"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: e.target.value,
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Primary Button Link</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.buttonHref ?? "/book"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: e.target.value,
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {section.type === "stats_counter" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Section Title</label>
+                          <input
+                            type="text"
+                            value={section.statsCounter?.title ?? "By the Numbers"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                statsCounter: {
+                                  title: e.target.value,
+                                  subtitle: section.statsCounter?.subtitle || "",
+                                  metrics: section.statsCounter?.metrics || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subtitle</label>
+                          <input
+                            type="text"
+                            value={section.statsCounter?.subtitle ?? "Pittsburgh's most dynamic street brass sound."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                statsCounter: {
+                                  title: section.statsCounter?.title || "",
+                                  subtitle: e.target.value,
+                                  metrics: section.statsCounter?.metrics || [],
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+                          <span>Metrics ({section.statsCounter?.metrics?.length || 0})</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const metrics = [
+                                ...(section.statsCounter?.metrics || []),
+                                { value: "100+", label: "Performances", description: "Across Western PA" },
+                              ];
+                              handleUpdateSection(section.id, {
+                                statsCounter: {
+                                  title: section.statsCounter?.title || "By the Numbers",
+                                  subtitle: section.statsCounter?.subtitle || "",
+                                  metrics,
+                                },
+                              });
+                            }}
+                            className="text-yellow-400 hover:underline flex items-center gap-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3" /> Add Metric
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          {section.statsCounter?.metrics?.map((metric, metricIdx) => (
+                            <div key={metricIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-mono text-yellow-400 font-bold">Metric #{metricIdx + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = section.statsCounter!.metrics.filter((_, i) => i !== metricIdx);
+                                    handleUpdateSection(section.id, {
+                                      statsCounter: { ...section.statsCounter!, metrics: updated },
+                                    });
+                                  }}
+                                  className="text-slate-500 hover:text-rose-400"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <input
+                                type="text"
+                                value={metric.value}
+                                placeholder="Value (e.g. 100%)"
+                                onChange={(e) => {
+                                  const updated = [...section.statsCounter!.metrics];
+                                  updated[metricIdx] = { ...updated[metricIdx], value: e.target.value };
+                                  handleUpdateSection(section.id, {
+                                    statsCounter: { ...section.statsCounter!, metrics: updated },
+                                  });
+                                }}
+                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                              />
+
+                              <input
+                                type="text"
+                                value={metric.label}
+                                placeholder="Label"
+                                onChange={(e) => {
+                                  const updated = [...section.statsCounter!.metrics];
+                                  updated[metricIdx] = { ...updated[metricIdx], label: e.target.value };
+                                  handleUpdateSection(section.id, {
+                                    statsCounter: { ...section.statsCounter!, metrics: updated },
+                                  });
+                                }}
+                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
+                              />
+
+                              <input
+                                type="text"
+                                value={metric.description}
+                                placeholder="Description"
+                                onChange={(e) => {
+                                  const updated = [...section.statsCounter!.metrics];
+                                  updated[metricIdx] = { ...updated[metricIdx], description: e.target.value };
+                                  handleUpdateSection(section.id, {
+                                    statsCounter: { ...section.statsCounter!, metrics: updated },
+                                  });
+                                }}
+                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-400 focus:outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1205,71 +2310,14 @@ export default function CMSPagesStudio() {
             <span className="font-mono text-yellow-400 font-bold uppercase">
               Simulator: /{activePage.slug === "home" ? "" : activePage.slug}
             </span>
-            <span>Live Unsaved Preview</span>
+            <span className="font-mono text-emerald-400">Universal Section Engine Active</span>
           </div>
 
-          {activePage.sections?.map((section) => (
-            <div key={section.id} className="space-y-4">
-              {section.type === "hero" && section.hero && (
-                <div className="text-center space-y-4 max-w-3xl mx-auto py-8">
-                  {section.hero.badgeText && (
-                    <span className="inline-block bg-yellow-400/10 text-yellow-400 text-xs font-black uppercase px-3 py-1 rounded-full border border-yellow-400/20">
-                      {section.hero.badgeText}
-                    </span>
-                  )}
-                  <h2 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight">
-                    {section.hero.headline}
-                  </h2>
-                  <p className="text-sm text-slate-400 max-w-xl mx-auto">{section.hero.subheadline}</p>
-                </div>
-              )}
-
-              {section.type === "rich_text" && section.richText && (
-                <div
-                  className={`max-w-3xl mx-auto space-y-3 ${
-                    section.richText.alignment === "center" ? "text-center" : "text-left"
-                  }`}
-                >
-                  {section.richText.title && (
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">
-                      {section.richText.title}
-                    </h3>
-                  )}
-                  <div
-                    className="prose prose-invert prose-yellow max-w-none text-xs text-slate-300 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.richText.body) }}
-                  />
-                </div>
-              )}
-
-              {section.type === "media_highlight" && section.mediaHighlight && (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-3 max-w-2xl mx-auto">
-                  <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider block">
-                    {section.mediaHighlight.title}
-                  </span>
-                  <p className="text-xs text-slate-300">{section.mediaHighlight.description}</p>
-                  <div className="text-xs text-slate-500 font-mono">
-                    Video: {section.mediaHighlight.url}
-                  </div>
-                </div>
-              )}
-
-              {section.type === "features" && section.features && (
-                <div className="space-y-4 max-w-4xl mx-auto text-center">
-                  <h3 className="text-2xl font-black text-white uppercase">{section.features.title}</h3>
-                  <p className="text-xs text-slate-400">{section.features.subtitle}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    {section.features.items?.map((it, i) => (
-                      <div key={i} className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-left space-y-1">
-                        <div className="font-extrabold text-xs text-white">{it.title}</div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">{it.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+          <div className="space-y-12">
+            {activePage.sections?.map((section) => (
+              <PublicSectionRenderer key={section.id} section={section} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -1819,6 +2867,569 @@ export default function CMSPagesStudio() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Navigation & Announcement Banner Mode */}
+      {activeTab === "navigation" && (
+        <div className="space-y-8">
+          {/* Site Announcement Banner Card */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Global Announcement Banner</h3>
+                  <p className="text-xs text-slate-400">
+                    Display an urgent alert, concert update, or special callout across the top of all public pages.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={siteNav.announcementBanner?.enabled ?? false}
+                    onChange={(e) =>
+                      setSiteNav((prev) => ({
+                        ...prev,
+                        announcementBanner: {
+                          ...(prev.announcementBanner || { enabled: false, message: "", linkText: "", linkHref: "", bannerType: "highlight" }),
+                          enabled: e.target.checked,
+                        },
+                      }))
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                </label>
+                <span className={`text-xs font-bold font-mono ${siteNav.announcementBanner?.enabled ? "text-yellow-400" : "text-slate-500"}`}>
+                  {siteNav.announcementBanner?.enabled ? "Active" : "Disabled"}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Banner Preview */}
+            <div className="space-y-2">
+              <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+                Live Banner Preview
+              </div>
+              <div
+                className={`rounded-xl p-3 text-xs flex items-center justify-between gap-4 transition border ${
+                  siteNav.announcementBanner?.bannerType === "alert"
+                    ? "bg-rose-950/90 text-rose-200 border-rose-500/40"
+                    : siteNav.announcementBanner?.bannerType === "info"
+                    ? "bg-sky-950/90 text-sky-200 border-sky-500/40"
+                    : "bg-yellow-400 text-slate-950 font-semibold border-yellow-500"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 shrink-0" />
+                  <span className="font-semibold">
+                    {siteNav.announcementBanner?.message || "Sample announcement banner message for visitors."}
+                  </span>
+                  {siteNav.announcementBanner?.linkText && (
+                    <span className="underline font-bold ml-1">
+                      {siteNav.announcementBanner.linkText} &rarr;
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-mono opacity-60">
+                  {siteNav.announcementBanner?.enabled ? "Visible on Public Site" : "Preview (Currently Inactive)"}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Banner Announcement Text</label>
+                <input
+                  type="text"
+                  value={siteNav.announcementBanner?.message ?? ""}
+                  onChange={(e) =>
+                    setSiteNav((prev) => ({
+                      ...prev,
+                      announcementBanner: {
+                        ...(prev.announcementBanner || { enabled: false, message: "", linkText: "", linkHref: "", bannerType: "highlight" }),
+                        message: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="e.g. Next stop: Greenfield Holiday Parade this weekend! Check our full schedule."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Banner Color / Style</label>
+                <select
+                  value={siteNav.announcementBanner?.bannerType ?? "highlight"}
+                  onChange={(e) =>
+                    setSiteNav((prev) => ({
+                      ...prev,
+                      announcementBanner: {
+                        ...(prev.announcementBanner || { enabled: false, message: "", linkText: "", linkHref: "", bannerType: "highlight" }),
+                        bannerType: e.target.value as "highlight" | "info" | "alert",
+                      },
+                    }))
+                  }
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                >
+                  <option value="highlight">Highlight (Gold - Standard)</option>
+                  <option value="info">Info (Sky Blue - Informational)</option>
+                  <option value="alert">Alert (Rose - Rainouts / Urgency)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Link Action Text (Optional)</label>
+                <input
+                  type="text"
+                  value={siteNav.announcementBanner?.linkText ?? ""}
+                  onChange={(e) =>
+                    setSiteNav((prev) => ({
+                      ...prev,
+                      announcementBanner: {
+                        ...(prev.announcementBanner || { enabled: false, message: "", linkText: "", linkHref: "", bannerType: "highlight" }),
+                        linkText: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="e.g. View Gig Times"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Link URL (Optional)</label>
+                <input
+                  type="text"
+                  value={siteNav.announcementBanner?.linkHref ?? ""}
+                  onChange={(e) =>
+                    setSiteNav((prev) => ({
+                      ...prev,
+                      announcementBanner: {
+                        ...(prev.announcementBanner || { enabled: false, message: "", linkText: "", linkHref: "", bannerType: "highlight" }),
+                        linkHref: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="e.g. /gigs or https://..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Header Navigation Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Header Navigation Links</h3>
+                  <p className="text-xs text-slate-400">
+                    Configure the top navigation bar. Reorder, toggle visibility, or designate CTA action buttons.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleAddHeaderLink("New Link", "/")}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Header Link</span>
+              </button>
+            </div>
+
+            {/* Quick Add from CMS Pages */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <span className="text-slate-400 font-mono text-[11px]">Quick-add published page:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {uniquePages.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleAddHeaderLink(p.title, p.slug === "home" ? "/" : `/${p.slug}`)}
+                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-yellow-400/40 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium transition"
+                  >
+                    + {p.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Header Links List */}
+            <div className="space-y-3">
+              {siteNav.headerLinks.map((link, idx) => (
+                <div
+                  key={link.id}
+                  className={`bg-slate-950 border rounded-xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 transition ${
+                    link.isVisible ? "border-slate-800" : "border-slate-800/50 opacity-60 bg-slate-950/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-[10px] font-mono font-bold bg-slate-900 text-slate-400 px-2 py-1 rounded border border-slate-800 shrink-0">
+                      #{idx + 1}
+                    </span>
+
+                    <input
+                      type="text"
+                      value={link.label}
+                      placeholder="Link Label"
+                      onChange={(e) => handleUpdateHeaderLink(idx, { label: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-yellow-400 w-36"
+                    />
+
+                    <input
+                      type="text"
+                      value={link.href}
+                      placeholder="/path or https://"
+                      onChange={(e) => handleUpdateHeaderLink(idx, { href: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-yellow-400 flex-1"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Button Style Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateHeaderLink(idx, { isButton: !link.isButton })}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold transition border ${
+                        link.isButton
+                          ? "bg-yellow-400 text-slate-950 border-yellow-400"
+                          : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                      }`}
+                      title="Render as CTA Button in Header"
+                    >
+                      {link.isButton ? "CTA Button" : "Text Link"}
+                    </button>
+
+                    {/* Visibility Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleHeaderLinkVisibility(idx)}
+                      className={`p-1.5 rounded-lg border transition ${
+                        link.isVisible
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-slate-900 text-slate-500 border-slate-800 line-through"
+                      }`}
+                      title={link.isVisible ? "Link is visible" : "Link is hidden"}
+                    >
+                      {link.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveHeaderLink(idx, "up")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={idx === siteNav.headerLinks.length - 1}
+                      onClick={() => handleMoveHeaderLink(idx, "down")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHeaderLink(idx)}
+                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-900"
+                      title="Delete Link"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer Navigation Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Footer Navigation Links</h3>
+                  <p className="text-xs text-slate-400">
+                    Configure the bottom navigation links shown on all pages.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleAddFooterLink("New Footer Link", "/")}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Footer Link</span>
+              </button>
+            </div>
+
+            {/* Footer Links List */}
+            <div className="space-y-3">
+              {siteNav.footerLinks.map((link, idx) => (
+                <div
+                  key={link.id}
+                  className={`bg-slate-950 border rounded-xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 transition ${
+                    link.isVisible ? "border-slate-800" : "border-slate-800/50 opacity-60 bg-slate-950/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-[10px] font-mono font-bold bg-slate-900 text-slate-400 px-2 py-1 rounded border border-slate-800 shrink-0">
+                      #{idx + 1}
+                    </span>
+
+                    <input
+                      type="text"
+                      value={link.label}
+                      placeholder="Link Label"
+                      onChange={(e) => handleUpdateFooterLink(idx, { label: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-yellow-400 w-36"
+                    />
+
+                    <input
+                      type="text"
+                      value={link.href}
+                      placeholder="/path or https://"
+                      onChange={(e) => handleUpdateFooterLink(idx, { href: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-yellow-400 flex-1"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Visibility Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFooterLinkVisibility(idx)}
+                      className={`p-1.5 rounded-lg border transition ${
+                        link.isVisible
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-slate-900 text-slate-500 border-slate-800 line-through"
+                      }`}
+                      title={link.isVisible ? "Link is visible" : "Link is hidden"}
+                    >
+                      {link.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveFooterLink(idx, "up")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={idx === siteNav.footerLinks.length - 1}
+                      onClick={() => handleMoveFooterLink(idx, "down")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFooterLink(idx)}
+                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-900"
+                      title="Delete Link"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer Social Media Channels Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Footer Social Media Channels</h3>
+                  <p className="text-xs text-slate-400">
+                    Configure official social media channels, streaming links, and corresponding font icons in the website footer.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddSocialLink("youtube", "YouTube", "https://www.youtube.com/@EagleburgerBand")}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                  title="Add YouTube Channel"
+                >
+                  <Plus className="w-3.5 h-3.5 text-red-400" />
+                  <span>YouTube</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddSocialLink("instagram", "Instagram", "https://www.instagram.com/eagleburgerband")}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                  title="Add Instagram Profile"
+                >
+                  <Plus className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Instagram</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddSocialLink("custom", "Social Channel", "https://")}
+                  className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Channel</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Social Links List */}
+            <div className="space-y-3">
+              {(siteNav.socialLinks || DEFAULT_SOCIAL_LINKS).length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                  No social channels configured. Click &quot;Add Channel&quot; to configure profiles.
+                </div>
+              ) : (
+                (siteNav.socialLinks || DEFAULT_SOCIAL_LINKS).map((social, idx) => (
+                  <div
+                    key={social.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="w-6 text-center font-mono text-xs text-slate-500">
+                        #{idx + 1}
+                      </span>
+
+                      {/* Icon preview */}
+                      <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 shrink-0">
+                        <SocialIcon platform={social.platform} className="w-4 h-4" />
+                      </div>
+
+                      {/* Platform select */}
+                      <select
+                        value={social.platform}
+                        onChange={(e) =>
+                          handleUpdateSocialLink(idx, {
+                            platform: e.target.value as SocialPlatform,
+                            label:
+                              social.label === "" ||
+                              ["youtube", "instagram", "facebook", "tiktok", "spotify", "twitter", "custom"].includes(
+                                social.label.toLowerCase()
+                              )
+                                ? e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1)
+                                : social.label,
+                          })
+                        }
+                        className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-yellow-400 font-medium"
+                      >
+                        <option value="youtube">YouTube</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="spotify">Spotify</option>
+                        <option value="twitter">X / Twitter</option>
+                        <option value="custom">Custom Platform</option>
+                      </select>
+
+                      {/* Channel Label */}
+                      <input
+                        type="text"
+                        value={social.label}
+                        placeholder="Channel Name"
+                        onChange={(e) => handleUpdateSocialLink(idx, { label: e.target.value })}
+                        className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-yellow-400 w-32"
+                      />
+
+                      {/* Channel URL */}
+                      <input
+                        type="text"
+                        value={social.href}
+                        placeholder="https://..."
+                        onChange={(e) => handleUpdateSocialLink(idx, { href: e.target.value })}
+                        className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-yellow-400 flex-1"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      {/* Visibility Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSocialLinkVisibility(idx)}
+                        className={`p-1.5 rounded-lg border transition ${
+                          social.isVisible
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : "bg-slate-900 text-slate-500 border-slate-800 line-through"
+                        }`}
+                        title={social.isVisible ? "Channel is visible in footer" : "Channel is hidden"}
+                      >
+                        {social.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveSocialLink(idx, "up")}
+                        className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={idx === (siteNav.socialLinks || DEFAULT_SOCIAL_LINKS).length - 1}
+                        onClick={() => handleMoveSocialLink(idx, "down")}
+                        className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+
+                      <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSocialLink(idx)}
+                        className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-900"
+                        title="Delete Channel"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}
