@@ -12,11 +12,13 @@ import {
   getDoc,
   getDocs,
   writeBatch,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageFinances } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { Reimbursement } from "@/lib/schema/reimbursement";
 import {
   DollarSign,
   TrendingUp,
@@ -41,7 +43,13 @@ import {
   Percent,
   X,
   Split,
+  Copy,
+  Check,
+  ExternalLink,
+  Clock,
+  XCircle,
 } from "lucide-react";
+import DatePicker from "@/components/ui/DatePicker";
 
 export type TransactionType = "income" | "expense" | "payout";
 
@@ -52,7 +60,10 @@ export type ExpenseCategory =
   | "rehearsal_space"
   | "merchandise"
   | "admin_software"
+  | "sheet_music"
+  | "uniforms_attire"
   | "other";
+
 
 export type IncomeCategory =
   | "gig_fee"
@@ -112,7 +123,9 @@ const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; icon: typeof 
   { value: "travel_fuel", label: "Travel, Gas & Parking", icon: Truck },
   { value: "gear_repairs", label: "Gear, Drums & Equipment Repairs", icon: Wrench },
   { value: "rehearsal_space", label: "Rehearsal Rental / Practice Space", icon: Music },
-  { value: "merchandise", label: "Band Merch & Uniform Production", icon: Layers },
+  { value: "sheet_music", label: "Sheet Music & Arrangements", icon: Music },
+  { value: "uniforms_attire", label: "Uniforms & Band Attire", icon: Layers },
+  { value: "merchandise", label: "Band Merch & Production", icon: Layers },
   { value: "admin_software", label: "Software & Web Admin Subscriptions", icon: Briefcase },
   { value: "other", label: "Other Operating Expense", icon: Receipt },
 ];
@@ -164,6 +177,22 @@ export default function FinancialLedgerPage() {
 
   // Filter
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
+
+  // Main tab: Ledger vs Reimbursements
+  const [activeMainTab, setActiveMainTab] = useState<"ledger" | "reimbursements">("ledger");
+
+  // Reimbursements Queue State
+  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [reimbursementFilter, setReimbursementFilter] = useState<
+    "all" | "submitted" | "approved" | "paid" | "rejected"
+  >("submitted");
+  const [reimbursementToPay, setReimbursementToPay] = useState<Reimbursement | null>(null);
+  const [reimbursementToReject, setReimbursementToReject] = useState<Reimbursement | null>(null);
+  const [payoutReference, setPayoutReference] = useState("");
+  const [payoutDate, setPayoutDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isProcessingReimbursement, setIsProcessingReimbursement] = useState(false);
+  const [copiedHandleId, setCopiedHandleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -220,9 +249,23 @@ export default function FinancialLedgerPage() {
       }
     );
 
+    const qReimb = query(collection(db, "reimbursements"), orderBy("createdAt", "desc"));
+    const unsubReimb = onSnapshot(
+      qReimb,
+      (snap) => {
+        const list: Reimbursement[] = [];
+        snap.forEach((d) => {
+          list.push({ id: d.id, ...d.data() } as Reimbursement);
+        });
+        setReimbursements(list);
+      },
+      (err) => console.warn("Reimbursements subscriber note:", err)
+    );
+
     return () => {
       unsubTx();
       unsubGigs();
+      unsubReimb();
     };
   }, [authLoading]);
 
@@ -308,6 +351,34 @@ export default function FinancialLedgerPage() {
   const unsettledGigs = useMemo(() => {
     return gigs.filter((g) => !g.isSettled);
   }, [gigs]);
+
+  const pendingReimbursementsCount = useMemo(() => {
+    return reimbursements.filter((r) => r.status === "submitted" || r.status === "approved").length;
+  }, [reimbursements]);
+
+  const pendingReimbursementsTotal = useMemo(() => {
+    return reimbursements
+      .filter((r) => r.status === "submitted")
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  }, [reimbursements]);
+
+  const approvedReimbursementsTotal = useMemo(() => {
+    return reimbursements
+      .filter((r) => r.status === "approved")
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  }, [reimbursements]);
+
+  const paidReimbursementsTotal = useMemo(() => {
+    return reimbursements
+      .filter((r) => r.status === "paid")
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  }, [reimbursements]);
+
+  const filteredReimbursements = useMemo(() => {
+    if (reimbursementFilter === "all") return reimbursements;
+    return reimbursements.filter((r) => r.status === reimbursementFilter);
+  }, [reimbursements, reimbursementFilter]);
+
 
   // Modal Split Calculations
   const numericPool = Math.max(0, parseFloat(totalPool) || 0);
@@ -511,6 +582,101 @@ export default function FinancialLedgerPage() {
     }
   };
 
+  const handleCopyHandle = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHandleId(id);
+    setTimeout(() => setCopiedHandleId(null), 2000);
+  };
+
+  const handleApproveReimbursement = async (reimb: Reimbursement) => {
+    try {
+      await updateDoc(doc(db, "reimbursements", reimb.id), {
+        status: "approved",
+        reviewedByName: profile?.displayName || "Treasurer",
+        reviewedByUid: profile?.uid || null,
+        reviewedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      alert("Failed to approve claim: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!reimbursementToReject) return;
+    if (!rejectReason.trim()) {
+      alert("Please provide a reason for rejecting this claim.");
+      return;
+    }
+    setIsProcessingReimbursement(true);
+    try {
+      await updateDoc(doc(db, "reimbursements", reimbursementToReject.id), {
+        status: "rejected",
+        reviewNotes: rejectReason.trim(),
+        reviewedByName: profile?.displayName || "Treasurer",
+        reviewedByUid: profile?.uid || null,
+        reviewedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setReimbursementToReject(null);
+      setRejectReason("");
+    } catch (err) {
+      alert("Failed to reject claim: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsProcessingReimbursement(false);
+    }
+  };
+
+  const handleConfirmPay = async () => {
+    if (!reimbursementToPay) return;
+    setIsProcessingReimbursement(true);
+    try {
+      const batch = writeBatch(db);
+      const timestamp = new Date().toISOString();
+      const txId = `tx_reimb_${reimbursementToPay.id}_${Date.now()}`;
+
+      // 1. Create expense transaction in ledger
+      batch.set(doc(db, "transactions", txId), {
+        id: txId,
+        type: "expense",
+        category: reimbursementToPay.category,
+        amount: Number(Number(reimbursementToPay.amount).toFixed(2)),
+        description: `Reimbursement: ${reimbursementToPay.applicantName} - ${reimbursementToPay.description.slice(0, 45)}`,
+        date: payoutDate || timestamp.split("T")[0],
+        gigId: reimbursementToPay.gigId || null,
+        gigTitle: reimbursementToPay.gigTitle || null,
+        recordedBy: profile?.displayName || "Treasurer",
+        notes: `Reimbursed via ${reimbursementToPay.paymentMethod.toUpperCase()}${
+          reimbursementToPay.paymentHandle ? ` (${reimbursementToPay.paymentHandle})` : ""
+        }${
+          payoutReference.trim() ? ` [Ref: ${payoutReference.trim()}]` : ""
+        }. Claim ID: ${reimbursementToPay.id}`.trim(),
+        createdAt: timestamp,
+      });
+
+      // 2. Mark reimbursement as paid
+      batch.update(doc(db, "reimbursements", reimbursementToPay.id), {
+        status: "paid",
+        paidAt: timestamp,
+        reviewedByName: profile?.displayName || "Treasurer",
+        reviewedByUid: profile?.uid || null,
+        payoutReference: payoutReference.trim() || "",
+        transactionId: txId,
+        updatedAt: timestamp,
+      });
+
+      await batch.commit();
+      setReimbursementToPay(null);
+      setPayoutReference("");
+    } catch (err) {
+      alert("Failed to record payout: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsProcessingReimbursement(false);
+    }
+  };
+
+
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
@@ -552,32 +718,78 @@ export default function FinancialLedgerPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => setShowStartingBalanceModal(true)}
-            className="flex-1 md:flex-initial bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-          >
-            <Sliders className="w-3.5 h-3.5 text-yellow-400" />
-            <span>Set Opening Balance</span>
-          </button>
+          {activeMainTab === "ledger" ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowStartingBalanceModal(true)}
+                className="flex-1 md:flex-initial bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                <Sliders className="w-3.5 h-3.5 text-yellow-400" />
+                <span>Set Opening Balance</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setIsAddingTransaction(!isAddingTransaction);
-              setTxType("expense");
-              setTxCategory("food_beverage");
-            }}
-            className="flex-1 md:flex-initial bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Record Transaction</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingTransaction(!isAddingTransaction);
+                  setTxType("expense");
+                  setTxCategory("food_beverage");
+                }}
+                className="flex-1 md:flex-initial bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Record Transaction</span>
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-slate-400 hidden sm:inline">
+                Review, approve, and disburse member claims
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Treasury Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Main View Navigation Tabs */}
+      <div className="flex border-b border-slate-800 gap-6">
+        <button
+          type="button"
+          onClick={() => setActiveMainTab("ledger")}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+            activeMainTab === "ledger"
+              ? "border-yellow-400 text-yellow-400"
+              : "border-transparent text-slate-400 hover:text-white"
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          <span>Ledger & Settlements</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainTab("reimbursements")}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition relative ${
+            activeMainTab === "reimbursements"
+              ? "border-yellow-400 text-yellow-400"
+              : "border-transparent text-slate-400 hover:text-white"
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          <span>Member Reimbursements</span>
+          {pendingReimbursementsCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              {pendingReimbursementsCount} pending
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeMainTab === "ledger" && (
+        <>
+          {/* Treasury Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-mono uppercase font-bold tracking-wider">Current Treasury</span>
@@ -675,6 +887,9 @@ export default function FinancialLedgerPage() {
           </select>
         </div>
       </div>
+    </>
+  )}
+
 
       {/* Starting Balance Modal */}
       {showStartingBalanceModal && (
@@ -711,15 +926,11 @@ export default function FinancialLedgerPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
-                  Baseline Date
-                </label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Baseline Date"
                   required
                   value={tempStartingDate}
-                  onChange={(e) => setTempStartingDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                  onChange={(d) => setTempStartingDate(d)}
                 />
               </div>
             </div>
@@ -949,8 +1160,11 @@ export default function FinancialLedgerPage() {
         </div>
       )}
 
-      {/* Quick Entry Form */}
-      {isAddingTransaction && (
+      {activeMainTab === "ledger" && (
+        <>
+          {/* Quick Entry Form */}
+          {isAddingTransaction && (
+
         <form
           onSubmit={handleCreateTransaction}
           className="bg-slate-900 border border-yellow-400/40 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl transition animate-in fade-in duration-200"
@@ -1030,13 +1244,11 @@ export default function FinancialLedgerPage() {
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Date *</label>
-              <input
-                type="date"
+              <DatePicker
+                label="Date"
                 required
                 value={txDate}
-                onChange={(e) => setTxDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                onChange={(d) => setTxDate(d)}
               />
             </div>
           </div>
@@ -1221,6 +1433,562 @@ export default function FinancialLedgerPage() {
           </table>
         </div>
       </div>
+    </>
+  )}
+
+  {activeMainTab === "reimbursements" && (
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Reimbursement Overview Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Awaiting Review</span>
+            <Clock className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-400">
+            ${pendingReimbursementsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-slate-400">
+            {reimbursements.filter((r) => r.status === "submitted").length} claims pending review
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Ready to Disburse</span>
+            <CheckCircle2 className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-blue-400">
+            ${approvedReimbursementsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-slate-400">
+            {reimbursements.filter((r) => r.status === "approved").length} approved awaiting payout
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Total Disbursed</span>
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400">
+            ${paidReimbursementsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-slate-400">
+            {reimbursements.filter((r) => r.status === "paid").length} fulfilled & synced to ledger
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">All Submissions</span>
+            <Receipt className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-white">
+            {reimbursements.length}
+          </div>
+          <div className="text-[10px] font-mono text-slate-500">
+            {reimbursements.filter((r) => r.status === "rejected").length} claims declined
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setReimbursementFilter("submitted")}
+            className={`text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              reimbursementFilter === "submitted"
+                ? "bg-amber-500 text-slate-950 shadow"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Pending Review</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-950/40">
+              {reimbursements.filter((r) => r.status === "submitted").length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReimbursementFilter("approved")}
+            className={`text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              reimbursementFilter === "approved"
+                ? "bg-blue-500 text-white shadow"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Approved</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-950/40">
+              {reimbursements.filter((r) => r.status === "approved").length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReimbursementFilter("paid")}
+            className={`text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              reimbursementFilter === "paid"
+                ? "bg-emerald-500 text-slate-950 shadow"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Paid</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-950/40">
+              {reimbursements.filter((r) => r.status === "paid").length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReimbursementFilter("rejected")}
+            className={`text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              reimbursementFilter === "rejected"
+                ? "bg-rose-500 text-white shadow"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Rejected</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-950/40">
+              {reimbursements.filter((r) => r.status === "rejected").length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReimbursementFilter("all")}
+            className={`text-xs px-3 py-1.5 rounded-lg font-bold transition ${
+              reimbursementFilter === "all"
+                ? "bg-yellow-400 text-slate-950"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            All Claims ({reimbursements.length})
+          </button>
+        </div>
+
+        <div className="text-xs font-mono text-slate-400">
+          Showing {filteredReimbursements.length} claims
+        </div>
+      </div>
+
+      {/* Claims Queue List */}
+      <div className="space-y-4">
+        {filteredReimbursements.map((claim) => {
+          const isPending = claim.status === "submitted";
+          const isApproved = claim.status === "approved";
+          const isPaid = claim.status === "paid";
+          const isRejected = claim.status === "rejected";
+
+          return (
+            <div
+              key={claim.id}
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4 transition"
+            >
+              {/* Top Bar: Applicant Info & Amount & Status */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-white">
+                      {claim.applicantName}
+                    </span>
+                    {claim.applicantEmail && (
+                      <span className="text-xs text-slate-400">({claim.applicantEmail})</span>
+                    )}
+                    <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                      Claim ID: #{claim.id.slice(-6)}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      • Submitted {claim.createdAt.split("T")[0]}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold">
+                      {claim.category.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      Expense Date: {claim.expenseDate}
+                    </span>
+                    {claim.gigTitle && (
+                      <span className="text-xs text-slate-300 font-medium bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        Gig: {claim.gigTitle}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 sm:text-right">
+                  <div>
+                    <div className="text-2xl font-black text-white font-mono">
+                      ${claim.amount.toFixed(2)}
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      USD Requested
+                    </div>
+                  </div>
+
+                  <div>
+                    {isPending && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <Clock className="w-3.5 h-3.5" /> Pending Review
+                      </span>
+                    )}
+                    {isApproved && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+                      </span>
+                    )}
+                    {isPaid && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <Check className="w-3.5 h-3.5" /> Paid
+                      </span>
+                    )}
+                    {isRejected && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                        <XCircle className="w-3.5 h-3.5" /> Rejected
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description & Receipt Details */}
+              <div className="space-y-2">
+                <div className="text-xs text-slate-200 leading-relaxed font-medium">
+                  {claim.description}
+                </div>
+
+                <div className="flex items-center gap-4 flex-wrap text-xs">
+                  {claim.receiptUrl && (
+                    <a
+                      href={claim.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-yellow-400 hover:text-yellow-300 font-semibold underline underline-offset-2"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      <span>View Itemized Receipt</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {claim.receiptNote && (
+                    <span className="text-slate-400 text-xs italic">
+                      Receipt Note: &ldquo;{claim.receiptNote}&rdquo;
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Payout Destination Account Box */}
+              <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold shrink-0">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-mono uppercase text-slate-400 font-bold">
+                      Disbursement Account ({claim.paymentMethod.toUpperCase()})
+                    </div>
+                    <div className="text-xs font-mono font-bold text-white flex items-center gap-2">
+                      <span>{claim.paymentHandle || "No account handle provided"}</span>
+                      {claim.paymentHandle && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyHandle(claim.paymentHandle, claim.id)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[10px] font-mono border border-slate-800 transition"
+                          title="Copy account handle"
+                        >
+                          {copiedHandleId === claim.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-400">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-slate-400" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audit metadata if paid or rejected */}
+                {isPaid && (
+                  <div className="text-right text-[11px] font-mono text-emerald-400/90 space-y-0.5">
+                    <div>Paid on {claim.paidAt ? claim.paidAt.split("T")[0] : "Recorded"} by {claim.reviewedByName || "Treasurer"}</div>
+                    {claim.payoutReference && (
+                      <div className="text-slate-400">Ref: {claim.payoutReference}</div>
+                    )}
+                    {claim.transactionId && (
+                      <div className="text-slate-500">Ledger ID: {claim.transactionId}</div>
+                    )}
+                  </div>
+                )}
+
+                {isRejected && (
+                  <div className="text-right text-[11px] font-mono text-rose-400 space-y-0.5 max-w-sm">
+                    <div>Declined by {claim.reviewedByName || "Treasurer"}</div>
+                    {claim.reviewNotes && (
+                      <div className="text-rose-300 font-sans italic">
+                        &ldquo;{claim.reviewNotes}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isApproved && (
+                  <div className="text-right text-[11px] font-mono text-blue-400 space-y-0.5">
+                    <div>Approved by {claim.reviewedByName || "Treasurer"}</div>
+                    <div className="text-slate-400">Awaiting disbursement by Treasurer</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {(isPending || isApproved) && (
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                  {isPending && (
+                    <button
+                      type="button"
+                      onClick={() => handleApproveReimbursement(claim)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Approve Claim</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReimbursementToPay(claim);
+                      setPayoutReference("");
+                      setPayoutDate(new Date().toISOString().split("T")[0]);
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Disburse Payout & Record in Ledger</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReimbursementToReject(claim);
+                      setRejectReason("");
+                    }}
+                    className="bg-slate-950 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-800/50 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Reject</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {filteredReimbursements.length === 0 && (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
+            <Receipt className="w-10 h-10 text-slate-600 mx-auto" />
+            <h4 className="text-sm font-bold text-white">No Reimbursement Requests Found</h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              {reimbursementFilter === "all"
+                ? "Band members have not filed any expense reimbursement claims yet."
+                : `There are currently no reimbursement requests with status "${reimbursementFilter}".`}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )}
+
+  {/* Reimbursement Mark as Paid Modal */}
+  {reimbursementToPay && (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-in fade-in">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-400" /> Disburse Reimbursement
+            </h3>
+            <p className="text-xs text-slate-400">
+              Confirm payout to {reimbursementToPay.applicantName} and synchronize with Band Treasury.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReimbursementToPay(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-400">Amount Due:</span>
+            <span className="text-lg font-mono font-bold text-emerald-400">
+              ${reimbursementToPay.amount.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-400">Payment Channel:</span>
+            <span className="font-mono font-bold uppercase text-slate-200">
+              {reimbursementToPay.paymentMethod}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-400">Account Handle / Identifier:</span>
+            <div className="flex items-center gap-1.5 font-mono text-yellow-400 font-semibold">
+              <span>{reimbursementToPay.paymentHandle || "Not specified"}</span>
+              {reimbursementToPay.paymentHandle && (
+                <button
+                  type="button"
+                  onClick={() => handleCopyHandle(reimbursementToPay.paymentHandle, "modal")}
+                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  title="Copy Handle"
+                >
+                  {copiedHandleId === "modal" ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <DatePicker
+              label="Payment Date"
+              required
+              value={payoutDate}
+              onChange={(d) => setPayoutDate(d)}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1">
+              Payment Reference / Confirmation # (Optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Venmo tx #839104, Check #1055, or bank memo"
+              value={payoutReference}
+              onChange={(e) => setPayoutReference(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+            />
+          </div>
+
+          <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-xl p-3 text-[11px] text-emerald-300 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span>
+              Confirming this payout will automatically generate an <strong>expense transaction</strong> in the financial ledger, deducting <strong>${reimbursementToPay.amount.toFixed(2)}</strong> from the current band treasury fund.
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() => setReimbursementToPay(null)}
+            className="px-3 py-2 text-xs text-slate-400 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isProcessingReimbursement}
+            onClick={handleConfirmPay}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow"
+          >
+            {isProcessingReimbursement ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            )}
+            <span>Disburse & Record in Ledger</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Reimbursement Reject Modal */}
+  {reimbursementToReject && (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-in fade-in">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-rose-400" /> Decline Reimbursement Claim
+            </h3>
+            <p className="text-xs text-slate-400">
+              Claim #{reimbursementToReject.id.slice(-6)} • ${reimbursementToReject.amount.toFixed(2)} from {reimbursementToReject.applicantName}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReimbursementToReject(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1">
+              Reason for Declining *
+            </label>
+            <textarea
+              rows={3}
+              required
+              placeholder="Please explain why this expense is not approved (e.g. missing itemized receipt, duplicate claim, expense not authorized)..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-400 placeholder-slate-600"
+            />
+          </div>
+
+          <div className="text-[11px] text-slate-400">
+            The member will see this reason in their reimbursement history portal.
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={() => setReimbursementToReject(null)}
+            className="px-3 py-2 text-xs text-slate-400 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isProcessingReimbursement || !rejectReason.trim()}
+            onClick={handleConfirmReject}
+            className="bg-rose-500 hover:bg-rose-400 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow"
+          >
+            {isProcessingReimbursement ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5" />
+            )}
+            <span>Confirm Rejection</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+);
 }

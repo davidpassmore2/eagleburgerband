@@ -37,6 +37,8 @@ export const TuneSchema = z.object({
   notes: z.string().default(""),
   chartAttachments: z.array(ChartAttachmentSchema).default([]),
   audioReferenceUrl: z.string().default(""),
+  upvoteUids: z.array(z.string()).default([]),
+  downvoteUids: z.array(z.string()).default([]),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });

@@ -15,6 +15,16 @@ export const RoleEnum = z.enum([
   "guest",
 ]);
 
+export const PayoutPreferencesSchema = z.object({
+  preferredMethod: z.enum(["venmo", "paypal", "zelle", "check", "other"]).default("venmo"),
+  venmoHandle: z.string().default(""),
+  paypalEmail: z.string().default(""),
+  zelleIdentifier: z.string().default(""),
+  notes: z.string().default(""),
+});
+
+export type PayoutPreferences = z.infer<typeof PayoutPreferencesSchema>;
+
 export const UserSchema = z.object({
   schemaVersion: z.number().default(1),
   uid: z.string(),
@@ -29,6 +39,14 @@ export const UserSchema = z.object({
   phone: z.string().default(""),
   smsConsent: z.boolean().default(false),
   smsConsentUpdatedAt: z.string().default(""),
+  payoutPreferences: PayoutPreferencesSchema.default({
+    preferredMethod: "venmo",
+    venmoHandle: "",
+    paypalEmail: "",
+    zelleIdentifier: "",
+    notes: "",
+  }),
+
   metadata: z.record(z.string(), z.any()).optional().default({}),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });

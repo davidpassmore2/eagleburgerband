@@ -23,7 +23,9 @@ import {
   HelpCircle,
   Loader2,
   AlertCircle,
+  MessageSquare,
 } from "lucide-react";
+import CommentsStream from "@/components/portal/CommentsStream";
 
 interface SetlistItem {
   id: string;
@@ -473,6 +475,23 @@ export default function MusicianGigDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Gig Discussion Stream */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
+        <div>
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-yellow-400" /> Musician Discussion & Gig Notes
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Coordinate carpools, confirm gear/attire, ask questions, or leave notes for bandmates regarding this performance.
+          </p>
+        </div>
+        <CommentsStream
+          targetType="gig"
+          targetId={gigId}
+          targetTitle={gig.internalLogistics?.title || gig.publicDetails?.title || "Gig Discussion"}
+        />
+      </div>
     </div>
   );
 }

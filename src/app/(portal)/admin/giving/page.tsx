@@ -41,6 +41,7 @@ import {
   Tag,
   Filter,
 } from "lucide-react";
+import DatePicker from "@/components/ui/DatePicker";
 
 const CATEGORY_LABELS: Record<DonationCategory, { label: string; color: string }> = {
   arts_music: { label: "Arts & Music Access", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
@@ -592,18 +593,14 @@ export default function CharitableGivingAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Date Donated
-                  </label>
-                  <input
-                    type="date"
+                  <DatePicker
+                    label="Date Donated"
                     required
                     value={formDate}
-                    onChange={(e) => {
-                      setFormDate(e.target.value);
-                      if (e.target.value) setFormYear(e.target.value.slice(0, 4));
+                    onChange={(date) => {
+                      setFormDate(date);
+                      if (date) setFormYear(date.slice(0, 4));
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   />
                 </div>
 

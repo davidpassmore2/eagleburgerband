@@ -25,6 +25,8 @@ import {
   X, 
   Check 
 } from "lucide-react";
+import DatePicker from "@/components/ui/DatePicker";
+import TimePicker from "@/components/ui/TimePicker";
 
 interface GigItem {
   id: string;
@@ -234,13 +236,11 @@ export default function GigsAdminStudioPage() {
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Date *</label>
-              <input
-                type="date"
+              <DatePicker
+                label="Date"
                 required
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                onChange={(date) => setFormData({ ...formData, date })}
               />
             </div>
 
@@ -285,23 +285,17 @@ export default function GigsAdminStudioPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Call Time</label>
-              <input
-                type="text"
-                placeholder="5:30 PM"
+              <TimePicker
+                label="Call Time"
                 value={formData.callTime}
-                onChange={(e) => setFormData({ ...formData, callTime: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                onChange={(callTime) => setFormData({ ...formData, callTime })}
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Downbeat</label>
-              <input
-                type="text"
-                placeholder="6:30 PM"
+              <TimePicker
+                label="Downbeat"
                 value={formData.downbeat}
-                onChange={(e) => setFormData({ ...formData, downbeat: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                onChange={(downbeat) => setFormData({ ...formData, downbeat })}
               />
             </div>
             <div>

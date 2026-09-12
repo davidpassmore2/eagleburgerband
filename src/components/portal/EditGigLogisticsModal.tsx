@@ -11,6 +11,8 @@ import {
   Save, 
   Loader2 
 } from "lucide-react";
+import DatePicker from "@/components/ui/DatePicker";
+import TimePicker from "@/components/ui/TimePicker";
 
 type Props = {
   gigId: string;
@@ -155,37 +157,29 @@ export default function EditGigLogisticsModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-slate-400 uppercase font-bold mb-1">Performance Date</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Performance Date"
                   required
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
+                  onChange={(d) => setDate(d)}
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase font-bold mb-1">Musician Call Time</label>
-                <input
-                  type="text"
+                <TimePicker
+                  label="Musician Call Time"
                   required
                   value={callTime}
-                  onChange={(e) => setCallTime(e.target.value)}
-                  placeholder="e.g. 5:30 PM"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
+                  onChange={(t) => setCallTime(t)}
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase font-bold mb-1">Downbeat</label>
-                <input
-                  type="text"
+                <TimePicker
+                  label="Downbeat"
                   required
                   value={downbeat}
-                  onChange={(e) => setDownbeat(e.target.value)}
-                  placeholder="e.g. 6:30 PM"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
+                  onChange={(t) => setDownbeat(t)}
                 />
               </div>
             </div>

@@ -13,8 +13,10 @@ import {
   RotateCcw,
   Sparkles,
   Filter,
-  BookOpen
+  BookOpen,
+  MessageSquare,
 } from "lucide-react";
+import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
 
 type Song = {
   id: string;
@@ -35,6 +37,7 @@ export default function RepertoireLibraryPage() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<"all" | "in_repertoire" | "frequent" | "vault" | "unplayed">("all");
   const [loading, setLoading] = useState(true);
+  const [selectedTuneForComments, setSelectedTuneForComments] = useState<Song | null>(null);
 
   // Listen to library charts
   useEffect(() => {
@@ -274,21 +277,38 @@ export default function RepertoireLibraryPage() {
                   )}
                 </div>
 
-                {song.driveLink && (
-                  <a
-                    href={song.driveLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-yellow-400 hover:text-yellow-300 font-semibold text-xs flex items-center gap-1"
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTuneForComments(song)}
+                    className="text-slate-400 hover:text-yellow-400 font-semibold text-xs flex items-center gap-1 transition"
                   >
-                    Charts <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                    <MessageSquare className="w-3 h-3" /> Discussion
+                  </button>
+
+                  {song.driveLink && (
+                    <a
+                      href={song.driveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-400 hover:text-yellow-300 font-semibold text-xs flex items-center gap-1"
+                    >
+                      Charts <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Tune Discussion Modal */}
+      <TuneCommentsModal
+        isOpen={Boolean(selectedTuneForComments)}
+        onClose={() => setSelectedTuneForComments(null)}
+        tune={selectedTuneForComments}
+      />
     </div>
   );
 }

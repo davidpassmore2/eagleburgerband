@@ -1361,9 +1361,17 @@ export default function PortalHelpCenterPage() {
               phone: raw.phone || "",
               smsConsent: Boolean(raw.smsConsent),
               smsConsentUpdatedAt: raw.smsConsentUpdatedAt || "",
+              payoutPreferences: raw.payoutPreferences || {
+                preferredMethod: "venmo",
+                venmoHandle: "",
+                paypalEmail: "",
+                zelleIdentifier: "",
+                notes: "",
+              },
               metadata: {},
               updatedAt: new Date().toISOString(),
             });
+
           }
         });
         list.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || ""));

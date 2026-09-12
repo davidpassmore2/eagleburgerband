@@ -1,7 +1,7 @@
 // src/lib/schema/comment.ts
 import { z } from "zod";
 
-export const CommentTargetTypeEnum = z.enum(["gig", "tune", "general_announcement"]);
+export const CommentTargetTypeEnum = z.enum(["gig", "tune", "general_announcement", "suggestion"]);
 
 export const CommentSchema = z.object({
   id: z.string(),

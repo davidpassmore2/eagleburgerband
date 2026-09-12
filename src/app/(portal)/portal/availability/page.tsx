@@ -21,6 +21,7 @@ import {
   Calendar as CalendarIcon,
   Clock
 } from "lucide-react";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 
 interface MusicianBlackout {
   id: string;
@@ -170,28 +171,18 @@ export default function MusicianAvailabilityPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Start Date *</label>
-              <input
-                type="date"
-                required
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">End Date (optional)</label>
-              <input
-                type="date"
-                value={formData.endDate}
-                min={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-              />
-            </div>
+          <div>
+            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+              Blackout Date Range *
+            </label>
+            <DateRangePicker
+              startDate={formData.startDate}
+              endDate={formData.endDate}
+              onChange={({ startDate, endDate }) =>
+                setFormData({ ...formData, startDate, endDate })
+              }
+              placeholder="Select date range or single day..."
+            />
           </div>
 
           <div>

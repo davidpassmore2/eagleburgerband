@@ -83,11 +83,17 @@ service cloud.firestore {
     }
 
     match /inquiries/{inquiryId} {
-      allow read, write: if true;
+      allow create: if request.resource.data.clientName is string &&
+                    request.resource.data.email is string &&
+                    request.resource.data.date is string;
+      allow read, update, delete: if request.auth != null;
     }
 
     match /booking_leads/{leadId} {
-      allow read, write: if true;
+      allow create: if request.resource.data.clientName is string &&
+                    request.resource.data.email is string &&
+                    request.resource.data.date is string;
+      allow read, update, delete: if request.auth != null;
     }
 
     match /donations/{donationId} {

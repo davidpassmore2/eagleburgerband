@@ -23,6 +23,9 @@ import {
   BookOpen,
   Mail,
   Smartphone,
+  Receipt,
+  UserCog,
+  ShieldCheck,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -125,6 +128,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     requiredRoles: ["admin", "asset_manager"],
     category: "Personnel & Attendance",
   },
+  {
+    id: "users",
+    title: "User & Role Studio",
+    href: "/admin/users",
+    icon: UserCog,
+    requiredRoles: ["admin"],
+    category: "Personnel & Attendance",
+  },
 
   // --- Music & Repertoire ---
   {
@@ -169,14 +180,22 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   },
   {
     id: "suggestions",
-    title: "Suggestion Triage",
+    title: "Suggestion Triage & Voting",
     href: "/admin/suggestions",
     icon: Lightbulb,
-    requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    requiredRoles: ["admin", "catalog_manager", "gig_manager", "web_manager", "community_manager", "section_leader", "member", "guest"],
     category: "Music & Repertoire",
   },
 
   // --- Business & Admin ---
+  {
+    id: "reimbursements",
+    title: "Expense Reimbursements",
+    href: "/portal/reimbursements",
+    icon: Receipt,
+    requiredRoles: ["member", "guest"],
+    category: "Business & Admin",
+  },
   {
     id: "finance",
     title: "Financial Ledger",
@@ -230,6 +249,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Comment Moderation",
     href: "/admin/comments",
     icon: MessageSquare,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "admin-log",
+    title: "Admin Action Audit Log",
+    href: "/admin/audit-log",
+    icon: ShieldCheck,
     requiredRoles: ["admin"],
     category: "Business & Admin",
   },

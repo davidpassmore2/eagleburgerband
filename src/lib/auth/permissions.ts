@@ -100,3 +100,28 @@ export function canDispatchBroadcasts(user: User | null): boolean {
     "section_leader",
   ]);
 }
+
+export function canReviewSuggestion(user: User | null, category?: string): boolean {
+  if (!user || !user.roles) return false;
+  const userRoles = user.roles as readonly string[];
+  if (userRoles.includes("admin")) return true;
+
+  if (!category) return false;
+
+  switch (category) {
+    case "tune_request":
+      return userRoles.includes("catalog_manager");
+    case "gig_outreach":
+    case "gig_opportunity":
+      return userRoles.includes("gig_manager");
+    case "website_request":
+      return userRoles.includes("web_manager");
+    case "general_feedback":
+    case "general":
+    case "rehearsal_format":
+    case "gear_uniform":
+      return userRoles.includes("community_manager");
+    default:
+      return false;
+  }
+}

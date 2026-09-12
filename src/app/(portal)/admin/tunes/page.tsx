@@ -9,7 +9,9 @@ import {
   deleteDoc, 
   doc,
   setDoc,
-  getDocs
+  getDocs,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -27,8 +29,13 @@ import {
   UserCheck,
   Sparkles,
   BookOpen,
-  Filter
+  Filter,
+  MessageSquare,
+  ThumbsUp,
+  ThumbsDown,
+  ChevronDown,
 } from "lucide-react";
+import CommentsStream from "@/components/portal/CommentsStream";
 import { TuneStatus } from "@/lib/schema/tune";
 
 export type TuneRecord = {
@@ -45,6 +52,8 @@ export type TuneRecord = {
   tags?: string[];
   notes?: string;
   status: TuneStatus;
+  upvoteUids?: string[];
+  downvoteUids?: string[];
   createdAt: string;
   updatedAt: string;
   [key: string]: unknown;
@@ -57,7 +66,7 @@ type MemberOption = {
 };
 
 export default function AdminTunesStudioPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, firebaseUser, loading: authLoading } = useAuth();
   const [tunes, setTunes] = useState<TuneRecord[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,6 +74,14 @@ export default function AdminTunesStudioPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | TuneStatus>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTune, setEditingTune] = useState<TuneRecord | null>(null);
+  const [expandedTuneIds, setExpandedTuneIds] = useState<Record<string, boolean>>({});
+
+  const toggleCommentsDrawer = (id: string) => {
+    setExpandedTuneIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   // Form State
   const [title, setTitle] = useState("");
@@ -100,6 +117,8 @@ export default function AdminTunesStudioPage() {
           tags: Array.isArray(raw.tags) ? raw.tags : [],
           notes: raw.notes || "",
           status: raw.status || "active",
+          upvoteUids: Array.isArray(raw.upvoteUids) ? raw.upvoteUids : Array.isArray(raw.upvotes) ? raw.upvotes : [],
+          downvoteUids: Array.isArray(raw.downvoteUids) ? raw.downvoteUids : Array.isArray(raw.downvotes) ? raw.downvotes : [],
           createdAt: raw.createdAt || new Date().toISOString(),
           updatedAt: raw.updatedAt || new Date().toISOString(),
         });
@@ -256,6 +275,53 @@ export default function AdminTunesStudioPage() {
       } catch (err) {
         alert("Failed to delete chart: " + (err instanceof Error ? err.message : String(err)));
       }
+    }
+  };
+
+  const handleVote = async (tune: TuneRecord, voteType: "up" | "down") => {
+    if (!firebaseUser) {
+      alert("Please sign in to vote on repertoire charts.");
+      return;
+    }
+    const uid = firebaseUser.uid;
+    const upvotes = tune.upvoteUids || [];
+    const downvotes = tune.downvoteUids || [];
+
+    const hasUpvoted = upvotes.includes(uid);
+    const hasDownvoted = downvotes.includes(uid);
+
+    const tuneRef = doc(db, "tunes", tune.id);
+
+    try {
+      if (voteType === "up") {
+        if (hasUpvoted) {
+          await updateDoc(tuneRef, {
+            upvoteUids: arrayRemove(uid),
+            updatedAt: new Date().toISOString(),
+          });
+        } else {
+          await updateDoc(tuneRef, {
+            upvoteUids: arrayUnion(uid),
+            downvoteUids: arrayRemove(uid),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        if (hasDownvoted) {
+          await updateDoc(tuneRef, {
+            downvoteUids: arrayRemove(uid),
+            updatedAt: new Date().toISOString(),
+          });
+        } else {
+          await updateDoc(tuneRef, {
+            downvoteUids: arrayUnion(uid),
+            upvoteUids: arrayRemove(uid),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update tune rating:", err);
     }
   };
 
@@ -477,6 +543,7 @@ export default function AdminTunesStudioPage() {
             >
               <tr>
                 <th className="py-3 px-4">Title & Artist</th>
+                <th className="py-3 px-4">Rating</th>
                 <th className="py-3 px-4">Key / Tempo</th>
                 <th className="py-3 px-4">Charting Lead</th>
                 <th className="py-3 px-4">Tags</th>
@@ -488,115 +555,222 @@ export default function AdminTunesStudioPage() {
             <tbody className="divide-y font-sans" style={{ borderColor: "var(--ebb-border)" }}>
               {filteredTunes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
                     No charts found matching criteria.
                   </td>
                 </tr>
               ) : (
-                filteredTunes.map((tune) => (
-                  <tr key={tune.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-white text-sm">{tune.title}</div>
-                      {tune.artist && <div className="text-slate-400 text-xs">{tune.artist}</div>}
-                    </td>
-                    <td className="py-3 px-4 font-mono">
-                      <div className="text-yellow-400 font-bold">{tune.keySignature || "—"}</div>
-                      <div className="text-slate-500 text-[11px]">
-                        {tune.tempo ? `${tune.tempo} BPM` : ""} {tune.meter}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {tune.chartContactName ? (
-                        <span className="text-xs text-slate-300 flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                          {tune.chartContactName}
-                        </span>
-                      ) : (
-                        <span className="text-slate-600 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {(tune.tags || []).map((tg) => (
+                filteredTunes.map((tune) => {
+                  const upvotes = tune.upvoteUids || [];
+                  const downvotes = tune.downvoteUids || [];
+                  const netScore = upvotes.length - downvotes.length;
+                  const userUpvoted = firebaseUser ? upvotes.includes(firebaseUser.uid) : false;
+                  const userDownvoted = firebaseUser ? downvotes.includes(firebaseUser.uid) : false;
+                  const isDrawerOpen = Boolean(expandedTuneIds[tune.id]);
+
+                  return (
+                    <React.Fragment key={tune.id}>
+                      <tr className="hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-white text-sm">{tune.title}</div>
+                          {tune.artist && <div className="text-slate-400 text-xs">{tune.artist}</div>}
+                        </td>
+                        {/* Rating Score Column */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-0.5 w-fit shadow-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleVote(tune, "up")}
+                              className={`p-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                                userUpvoted
+                                  ? "bg-emerald-500 text-slate-950"
+                                  : "text-slate-400 hover:text-emerald-400 hover:bg-slate-900"
+                              }`}
+                              title="Vote Thumbs Up"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                              <span className="text-[11px]">{upvotes.length}</span>
+                            </button>
+
+                            <span
+                              className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                netScore > 0
+                                  ? "text-emerald-400 bg-emerald-500/10"
+                                  : netScore < 0
+                                  ? "text-rose-400 bg-rose-500/10"
+                                  : "text-slate-500"
+                              }`}
+                              title="Net Ensemble Rating Score"
+                            >
+                              {netScore > 0 ? `+${netScore}` : netScore}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleVote(tune, "down")}
+                              className={`p-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                                userDownvoted
+                                  ? "bg-rose-500 text-white"
+                                  : "text-slate-400 hover:text-rose-400 hover:bg-slate-900"
+                              }`}
+                              title="Vote Thumbs Down"
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                              <span className="text-[11px]">{downvotes.length}</span>
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-mono">
+                          <div className="text-yellow-400 font-bold">{tune.keySignature || "—"}</div>
+                          <div className="text-slate-500 text-[11px]">
+                            {tune.tempo ? `${tune.tempo} BPM` : ""} {tune.meter}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {tune.chartContactName ? (
+                            <span className="text-xs text-slate-300 flex items-center gap-1">
+                              <UserCheck className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                              {tune.chartContactName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(tune.tags || []).map((tg) => (
+                              <span
+                                key={tg}
+                                className="bg-slate-950 text-slate-300 text-[10px] px-1.5 py-0.5 rounded border border-slate-800"
+                              >
+                                {tg}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
                           <span
-                            key={tg}
-                            className="bg-slate-950 text-slate-300 text-[10px] px-1.5 py-0.5 rounded border border-slate-800"
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border inline-block ${
+                              tune.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : tune.status === "in_repertoire"
+                                ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                                : tune.status === "in_rehearsal"
+                                ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
+                                : "bg-slate-800 text-slate-500 border-slate-700"
+                            }`}
                           >
-                            {tg}
+                            {tune.status === "in_repertoire" ? "In Repertoire" : tune.status.replace("_", " ")}
                           </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border inline-block ${
-                          tune.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : tune.status === "in_repertoire"
-                            ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
-                            : tune.status === "in_rehearsal"
-                            ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
-                            : "bg-slate-800 text-slate-500 border-slate-700"
-                        }`}
-                      >
-                        {tune.status === "in_repertoire" ? "In Repertoire" : tune.status.replace("_", " ")}
-                      </span>
-                      {tune.status === "in_repertoire" && (
-                        <div className="text-[10px] text-sky-400/80 mt-0.5 font-normal">
-                          Learn & maintain
-                        </div>
+                          {tune.status === "in_repertoire" && (
+                            <div className="text-[10px] text-sky-400/80 mt-0.5 font-normal">
+                              Learn & maintain
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            {tune.driveLink && (
+                              <a
+                                href={tune.driveLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-yellow-400 hover:text-yellow-300 font-medium inline-flex items-center gap-1"
+                              >
+                                PDF <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                            {tune.audioSampleUrl && (
+                              <a
+                                href={tune.audioSampleUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-white font-medium inline-flex items-center gap-1"
+                              >
+                                Audio <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Comment Drawer Toggle Button */}
+                            <button
+                              type="button"
+                              onClick={() => toggleCommentsDrawer(tune.id)}
+                              className={`px-2 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1 border ${
+                                isDrawerOpen
+                                  ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold shadow-sm"
+                                  : "text-slate-400 hover:text-white bg-slate-900 border-slate-800 hover:border-slate-700"
+                              }`}
+                              title={isDrawerOpen ? "Close comment drawer" : "Open discussion drawer"}
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Comments</span>
+                              <ChevronDown
+                                className={`w-3 h-3 transition-transform duration-200 ${
+                                  isDrawerOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+                            {(isManager || tune.chartContactUid === profile?.uid) && (
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(tune)}
+                                className="text-slate-400 hover:text-white p-1 rounded transition"
+                                title="Edit Tune Details"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {(isManager || tune.chartContactUid === profile?.uid) && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTune(tune)}
+                                className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                                title="Delete Tune"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Comment Stream Drawer */}
+                      {isDrawerOpen && (
+                        <tr className="bg-slate-950/80 border-b border-slate-800 animate-in fade-in duration-150">
+                          <td colSpan={8} className="p-4 sm:p-5 bg-slate-950/40">
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl max-w-4xl mx-auto space-y-3">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">
+                                    Repertoire Discussion Drawer
+                                  </span>
+                                  <span className="text-white font-bold text-sm">{tune.title}</span>
+                                  {tune.artist && <span className="text-slate-400 text-xs">({tune.artist})</span>}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCommentsDrawer(tune.id)}
+                                  className="text-slate-400 hover:text-white text-xs px-2.5 py-1 rounded-lg hover:bg-slate-800 transition"
+                                >
+                                  Close Drawer
+                                </button>
+                              </div>
+                              <CommentsStream
+                                targetType="tune"
+                                targetId={tune.id}
+                                targetTitle={tune.title}
+                                compact
+                              />
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        {tune.driveLink && (
-                          <a
-                            href={tune.driveLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-yellow-400 hover:text-yellow-300 font-medium inline-flex items-center gap-1"
-                          >
-                            PDF <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                        {tune.audioSampleUrl && (
-                          <a
-                            href={tune.audioSampleUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-slate-400 hover:text-white font-medium inline-flex items-center gap-1"
-                          >
-                            Audio <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {(isManager || tune.chartContactUid === profile?.uid) && (
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(tune)}
-                            className="text-slate-400 hover:text-white p-1 rounded transition"
-                            title="Edit Tune Details"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                        )}
-                        {(isManager || tune.chartContactUid === profile?.uid) && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTune(tune)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
-                            title="Delete Tune"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
