@@ -77,6 +77,7 @@ interface RouteDoc {
   id: string;
   title: string;
   path: string;
+  launchPath?: string;
   category:
     | "Musician Essentials"
     | "Performances & Logistics"
@@ -299,6 +300,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "portal-perform",
     title: "Stage Readiness & Live Performance Chart Viewer",
     path: "/portal/perform/[gigId]",
+    launchPath: "/portal/gigs",
     category: "Musician Essentials",
     roles: ["member", "guest"],
     badge: "Stage Mode",
@@ -329,6 +331,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "portal-checkin",
     title: "Downbeat Musician Gig Check-In",
     path: "/portal/checkin/[gigId]",
+    launchPath: "/portal/gigs",
     category: "Musician Essentials",
     roles: ["member", "guest"],
     badge: "Attendance Verification",
@@ -483,39 +486,6 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "Catalog Studio", path: "/admin/catalog" },
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
-    ]
-  },
-  {
-    id: "admin-checkin",
-    title: "Downbeat Musician Check-In",
-    path: "/admin/checkin",
-    category: "Performances & Logistics",
-    roles: ["admin", "gig_manager", "section_leader"],
-    badge: "Day-of-Show Operations",
-    iconName: "UserCheck",
-    summary: "Fast mobile-first roll call at staging sites to record musician physical presence before the downbeat.",
-    description: "Downbeat Check-In is designed for section leaders and gig managers on the street. With a streamlined, tap-to-verify interface, coordinators can rapidly confirm who has arrived at the staging area, identify missing instruments, and make last-minute lineup adjustments.",
-    keyFeatures: [
-      "High-speed 1-tap check-in with large tap targets optimized for outdoor mobile use.",
-      "Section-by-section breakdown indicating present, late, and absent players.",
-      "Instant instrumentation tally highlighting missing critical voices (e.g. no Sousaphone present).",
-      "Timestamped attendance records stored directly into Firestore attendance tracking.",
-      "Quick call/SMS shortcuts to reach players who have not checked in 15 minutes before downbeat."
-    ],
-    howToUse: [
-      "Open Downbeat Check-In on your mobile device upon arriving at the staging area.",
-      "Select the active performance.",
-      "Tap on each arriving musician's name to toggle their status to 'Checked In'.",
-      "Review the section summary at the top to confirm minimum instrumentation requirements.",
-      "Mark any unexcused absences; records are archived automatically for attendance reporting."
-    ],
-    proTips: [
-      "Section leaders should begin roll call 20 minutes before call time so coordinators know if emergency part reassignments are necessary.",
-      "Offline resilient: if cell reception is weak at crowded festivals, status updates queue and sync once reconnected."
-    ],
-    relatedRoutes: [
-      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
-      { title: "Section Attendance", path: "/admin/attendance" }
     ]
   },
   {
@@ -1055,24 +1025,26 @@ const ROUTE_DOCS: RouteDoc[] = [
     roles: ["admin", "treasurer"],
     badge: "Treasury & Accounting",
     iconName: "DollarSign",
-    summary: "Band treasury accounting, gig fee revenues, merchandise, expense reconciliation, and musician payouts.",
-    description: "The Financial Ledger is the band treasurer's workbench. It handles revenue tracking from contracted performances, merch sales, tips, and charitable contributions, reconciles travel and equipment expenses, and manages fair musician payout distributions.",
+    summary: "Band treasury accounting, gig fee revenues, expense reconciliation, charitable giving reporting, and musician payouts.",
+    description: "The Financial Ledger is the band treasurer's central command center. It reconciles revenue tracking from contracted performances, merch, tips, and sponsorships against operating costs, member expense reimbursements, and logged charitable gifts to present a 100% accurate net treasury balance.",
     keyFeatures: [
-      "Gig payout reconciliation: calculate per-musician compensation based on confirmed attendance.",
-      "Payout distribution tracking with settlement status (Unpaid, Venmo, Check, Cash).",
-      "Band general fund balance and expense categorization (Permits, Insurance, Storage, Equipment).",
-      "Automated earnings calculation feeding into each musician's personal Home Base overview.",
-      "Tax-ready annual summary reports."
+      "Reconciled 5-card Treasury Metrics Grid: Current Net, Total Inflows, Operating & Payouts, Charitable Giving Outflow, and Opening Baseline.",
+      "Dedicated Charitable Giving reporting view: tracks all-time disbursements, fiscal year totals, and cause category breakdowns.",
+      "Gig payout reconciliation: calculate per-musician compensation based on confirmed attendance roll calls.",
+      "Member reimbursement workflow: review receipts, approve claims, and disburse payments directly into the ledger.",
+      "Direct integration with Charitable Giving Studio (/admin/giving) ensuring every community grant is reflected in liquid treasury balances."
     ],
     howToUse: [
-      "After gig completion, open the gig entry and confirm final revenue received from the organizer.",
-      "Click 'Calculate Distributions' to allocate equal or tiered payouts among attended musicians.",
-      "Execute payments via Venmo or check and mark each record as 'Paid'.",
-      "Log band operating expenses (e.g. trailer rental, rehearsal hall fees, sheet music licensing)."
+      "Open the Financial Ledger to inspect the real-time Current Treasury net balance.",
+      "Use the 'Ledger & Settlements' tab to close out completed gigs and record operating expenses.",
+      "Review and disburse pending claims in the 'Member Reimbursements' tab.",
+      "Switch to the 'Charitable Giving' tab to monitor all-time community contributions, fiscal year metrics, and category distributions.",
+      "Log new community donations in the Giving Studio (/admin/giving); they immediately update the treasury net."
     ],
     proTips: [
       "Reconcile payouts within 48 hours of gig completion to maintain strong ensemble morale and trust.",
-      "Always retain a 15-20% band fund deduction from paid gigs for equipment repairs, insurance, and trailer upkeep."
+      "Check the Charitable Giving tab before year-end financial meetings to report total community impact and tax-exempt giving totals.",
+      "Always retain a 15-20% band fund deduction from paid gigs for equipment repairs, insurance, and community grants."
     ],
     relatedRoutes: [
       { title: "Expense Reimbursements", path: "/portal/reimbursements" },
@@ -3018,7 +2990,7 @@ export default function PortalHelpCenterPage() {
                         </button>
 
                         <Link
-                          href={route.path}
+                          href={route.launchPath || (route.path.includes("[") ? "/portal/gigs" : route.path)}
                           suppressHydrationWarning
                           style={{
                             backgroundColor: "var(--ebb-primary)",

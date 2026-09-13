@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import {
   collection,
   doc,
@@ -19,6 +20,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageFinances } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { Reimbursement } from "@/lib/schema/reimbursement";
+import { Donation, DonationSchema, DonationCategory } from "@/lib/schema/donation";
 import {
   DollarSign,
   TrendingUp,
@@ -48,8 +50,22 @@ import {
   ExternalLink,
   Clock,
   XCircle,
+  HeartHandshake,
+  Heart,
+  Sparkles,
+  Search,
+  Filter,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
+
+export const DONATION_CATEGORY_LABELS: Record<DonationCategory, { label: string; color: string }> = {
+  arts_music: { label: "Arts & Music Access", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
+  community_aid: { label: "Community Aid", color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+  youth_education: { label: "Youth & Education", color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+  hunger_relief: { label: "Hunger Relief", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+  environment: { label: "Parks & Environment", color: "bg-teal-500/10 text-teal-400 border-teal-500/30" },
+  other: { label: "General Cause", color: "bg-slate-500/10 text-slate-400 border-slate-500/30" },
+};
 
 export type TransactionType = "income" | "expense" | "payout";
 
@@ -62,6 +78,7 @@ export type ExpenseCategory =
   | "admin_software"
   | "sheet_music"
   | "uniforms_attire"
+  | "charitable_giving"
   | "other";
 
 
@@ -127,6 +144,7 @@ const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; icon: typeof 
   { value: "uniforms_attire", label: "Uniforms & Band Attire", icon: Layers },
   { value: "merchandise", label: "Band Merch & Production", icon: Layers },
   { value: "admin_software", label: "Software & Web Admin Subscriptions", icon: Briefcase },
+  { value: "charitable_giving", label: "Charitable Gifts & Community Grants", icon: HeartHandshake },
   { value: "other", label: "Other Operating Expense", icon: Receipt },
 ];
 
@@ -178,8 +196,14 @@ export default function FinancialLedgerPage() {
   // Filter
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
 
-  // Main tab: Ledger vs Reimbursements
-  const [activeMainTab, setActiveMainTab] = useState<"ledger" | "reimbursements">("ledger");
+  // Main tab: Ledger vs Reimbursements vs Giving
+  const [activeMainTab, setActiveMainTab] = useState<"ledger" | "reimbursements" | "giving">("ledger");
+
+  // Charitable Giving State
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [givingSearchQuery, setGivingSearchQuery] = useState("");
+  const [givingCategoryFilter, setGivingCategoryFilter] = useState<string>("all");
+  const [givingYearFilter, setGivingYearFilter] = useState<string>("all");
 
   // Reimbursements Queue State
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
@@ -262,10 +286,29 @@ export default function FinancialLedgerPage() {
       (err) => console.warn("Reimbursements subscriber note:", err)
     );
 
+    const unsubDonations = onSnapshot(
+      collection(db, "donations"),
+      (snap) => {
+        const list: Donation[] = [];
+        snap.forEach((d) => {
+          const parsed = DonationSchema.safeParse({ ...d.data(), id: d.id });
+          if (parsed.success) {
+            list.push(parsed.data);
+          } else {
+            console.warn("Donation parse error on doc:", d.id, parsed.error);
+          }
+        });
+        list.sort((a, b) => b.dateDonated.localeCompare(a.dateDonated));
+        setDonations(list);
+      },
+      (err) => console.warn("Donations subscriber error:", err)
+    );
+
     return () => {
       unsubTx();
       unsubGigs();
       unsubReimb();
+      unsubDonations();
     };
   }, [authLoading]);
 
@@ -326,6 +369,51 @@ export default function FinancialLedgerPage() {
     }
   };
 
+  // Charitable Giving Calculations
+  const totalCharitableGiving = useMemo(() => {
+    return donations.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+  }, [donations]);
+
+  const currentYearCharitableGiving = useMemo(() => {
+    const yr = new Date().getFullYear().toString();
+    return donations
+      .filter((d) => d.fiscalYear === yr || d.dateDonated.startsWith(yr))
+      .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+  }, [donations]);
+
+  const uniqueCausesCount = useMemo(() => {
+    return new Set(donations.map((d) => d.organizationName.toLowerCase().trim())).size;
+  }, [donations]);
+
+  const availableDonationYears = useMemo(() => {
+    const years = new Set<string>();
+    donations.forEach((d) => {
+      if (d.fiscalYear) years.add(d.fiscalYear);
+      if (d.dateDonated) years.add(d.dateDonated.slice(0, 4));
+    });
+    return Array.from(years).sort().reverse();
+  }, [donations]);
+
+  const filteredDonations = useMemo(() => {
+    return donations.filter((d) => {
+      const q = givingSearchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        d.organizationName.toLowerCase().includes(q) ||
+        d.causeDescription.toLowerCase().includes(q) ||
+        d.publicImpactNote.toLowerCase().includes(q) ||
+        d.notes.toLowerCase().includes(q);
+
+      const matchesCat = givingCategoryFilter === "all" || d.category === givingCategoryFilter;
+      const matchesYear =
+        givingYearFilter === "all" ||
+        d.fiscalYear === givingYearFilter ||
+        d.dateDonated.startsWith(givingYearFilter);
+
+      return matchesSearch && matchesCat && matchesYear;
+    });
+  }, [donations, givingSearchQuery, givingCategoryFilter, givingYearFilter]);
+
   // Calculations
   const totalIncome = useMemo(() => {
     return transactions
@@ -340,8 +428,8 @@ export default function FinancialLedgerPage() {
   }, [transactions]);
 
   const currentTreasuryNet = useMemo(() => {
-    return (treasuryConfig.startingBalance || 0) + totalIncome - totalExpenses;
-  }, [treasuryConfig.startingBalance, totalIncome, totalExpenses]);
+    return (treasuryConfig.startingBalance || 0) + totalIncome - totalExpenses - totalCharitableGiving;
+  }, [treasuryConfig.startingBalance, totalIncome, totalExpenses, totalCharitableGiving]);
 
   const filteredTransactions = useMemo(() => {
     if (filterType === "all") return transactions;
@@ -752,6 +840,74 @@ export default function FinancialLedgerPage() {
         </div>
       </div>
 
+      {/* Treasury Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Current Treasury</span>
+            <Coins className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div className={`text-2xl sm:text-3xl font-black ${currentTreasuryNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+            ${currentTreasuryNet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-slate-500">
+            Baseline (${(treasuryConfig.startingBalance || 0).toFixed(2)}) + Inflow - Outflow - Giving
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Total Income</span>
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-white">
+            ${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-emerald-400/80">
+            Deposited into General Fund
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Operating & Payouts</span>
+            <TrendingDown className="w-4 h-4 text-rose-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-white">
+            ${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-rose-400/80">
+            Costs, Musician Cuts & Reimb.
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Charitable Giving</span>
+            <HeartHandshake className="w-4 h-4 text-purple-400" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-white">
+            ${totalCharitableGiving.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-purple-400/80">
+            {uniqueCausesCount} Causes • ${currentYearCharitableGiving.toLocaleString()} in {new Date().getFullYear()}
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-mono uppercase font-bold tracking-wider">Opening Baseline</span>
+            <DollarSign className="w-4 h-4 text-slate-500" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-slate-300">
+            ${(treasuryConfig.startingBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] font-mono text-slate-500">
+            Established: {treasuryConfig.startingDate || "Inception"}
+          </div>
+        </div>
+      </div>
+
       {/* Main View Navigation Tabs */}
       <div className="flex border-b border-slate-800 gap-6">
         <button
@@ -783,65 +939,27 @@ export default function FinancialLedgerPage() {
             </span>
           )}
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainTab("giving")}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition relative ${
+            activeMainTab === "giving"
+              ? "border-yellow-400 text-yellow-400"
+              : "border-transparent text-slate-400 hover:text-white"
+          }`}
+        >
+          <HeartHandshake className="w-4 h-4 text-purple-400" />
+          <span>Charitable Giving</span>
+          {donations.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+              ${totalCharitableGiving.toLocaleString()}
+            </span>
+          )}
+        </button>
       </div>
 
       {activeMainTab === "ledger" && (
         <>
-          {/* Treasury Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono uppercase font-bold tracking-wider">Current Treasury</span>
-            <Coins className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div className={`text-2xl sm:text-3xl font-black ${currentTreasuryNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-            ${currentTreasuryNet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[10px] font-mono text-slate-500">
-            Baseline (${(treasuryConfig.startingBalance || 0).toFixed(2)}) + Net Inflows
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono uppercase font-bold tracking-wider">Total Income</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">
-            ${totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[10px] font-mono text-emerald-400/80">
-            Deposited into General Fund
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono uppercase font-bold tracking-wider">Total Expenses</span>
-            <TrendingDown className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">
-            ${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[10px] font-mono text-rose-400/80">
-            Operating Costs, Food & Repairs
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-mono uppercase font-bold tracking-wider">Opening Baseline</span>
-            <DollarSign className="w-4 h-4 text-slate-500" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-300">
-            ${(treasuryConfig.startingBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="text-[10px] font-mono text-slate-500">
-            Established: {treasuryConfig.startingDate || "Inception"}
-          </div>
-        </div>
-      </div>
 
       {/* Gig Settlement Action Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
@@ -1341,6 +1459,15 @@ export default function FinancialLedgerPage() {
           >
             Expenses & Payouts
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveMainTab("giving")}
+            className="text-xs px-3 py-1.5 rounded-lg font-bold transition text-slate-400 hover:text-purple-400 flex items-center gap-1.5 border border-transparent hover:border-purple-500/30 hover:bg-purple-500/10"
+            title="Switch to Charitable Giving reporting"
+          >
+            <HeartHandshake className="w-3.5 h-3.5 text-purple-400" />
+            <span>Charitable Gifts ({donations.length})</span>
+          </button>
         </div>
 
         <div className="text-xs font-mono text-slate-400">
@@ -1807,6 +1934,286 @@ export default function FinancialLedgerPage() {
       </div>
     </div>
   )}
+
+      {/* Charitable Giving View */}
+      {activeMainTab === "giving" && (
+        <div className="space-y-6">
+          {/* Header Action Banner */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-bold shrink-0">
+                <HeartHandshake className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Charitable Gifts & Philanthropic Grants</span>
+                  <span className="bg-purple-500/20 text-purple-400 text-[10px] px-2.5 py-0.5 rounded-full font-mono font-semibold border border-purple-500/30">
+                    Reconciled Treasury Outflow
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Every charitable contribution logged by the ensemble is reconciled against the band treasury and reflected in the master financial statements.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+              <Link
+                href="/admin/giving"
+                className="w-full md:w-auto bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow"
+              >
+                <span>Open Giving Studio</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Giving Highlights Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow space-y-1">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[11px] font-mono uppercase font-bold">All-Time Disbursed</span>
+                <Heart className="w-3.5 h-3.5 text-purple-400" />
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-white">
+                ${totalCharitableGiving.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="text-[10px] font-mono text-purple-400/80">
+                {donations.length} total logged grants
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow space-y-1">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[11px] font-mono uppercase font-bold">Fiscal Year {new Date().getFullYear()}</span>
+                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-white">
+                ${currentYearCharitableGiving.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <div className="text-[10px] font-mono text-emerald-400/80">
+                Current season giving budget
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow space-y-1">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[11px] font-mono uppercase font-bold">Beneficiary Orgs</span>
+                <Building className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-white">
+                {uniqueCausesCount}
+              </div>
+              <div className="text-[10px] font-mono text-slate-500">
+                Unique non-profit partners
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow space-y-1">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-[11px] font-mono uppercase font-bold">Average Gift Size</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-white">
+                ${donations.length > 0 ? (totalCharitableGiving / donations.length).toFixed(2) : "0.00"}
+              </div>
+              <div className="text-[10px] font-mono text-slate-500">
+                Per charitable contribution
+              </div>
+            </div>
+          </div>
+
+          {/* Category Distribution Breakdown */}
+          {donations.length > 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>Giving Distribution by Cause Category</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                {Object.entries(DONATION_CATEGORY_LABELS).map(([catKey, catInfo]) => {
+                  const catDonations = donations.filter((d) => d.category === catKey);
+                  const catTotal = catDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+                  const percent = totalCharitableGiving > 0 ? Math.round((catTotal / totalCharitableGiving) * 100) : 0;
+                  if (catTotal === 0) return null;
+
+                  return (
+                    <div key={catKey} className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-200">{catInfo.label}</span>
+                        <span className="font-mono font-bold text-white">${catTotal.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                        <span>{catDonations.length} {catDonations.length === 1 ? "gift" : "gifts"}</span>
+                        <span>{percent}% of giving</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search gifts by organization, cause, or notes..."
+                value={givingSearchQuery}
+                onChange={(e) => setGivingSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                value={givingCategoryFilter}
+                onChange={(e) => setGivingCategoryFilter(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-400"
+              >
+                <option value="all">All Categories</option>
+                {Object.entries(DONATION_CATEGORY_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+
+              {availableDonationYears.length > 0 && (
+                <select
+                  value={givingYearFilter}
+                  onChange={(e) => setGivingYearFilter(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-400 font-mono"
+                >
+                  <option value="all">All Fiscal Years</option>
+                  {availableDonationYears.map((yr) => (
+                    <option key={yr} value={yr}>
+                      FY {yr}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* Master Table of Logged Charitable Gifts */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/70 font-mono text-[10px] uppercase text-slate-400">
+                    <th className="py-3 px-4">Date Donated</th>
+                    <th className="py-3 px-4">Beneficiary Organization & Cause</th>
+                    <th className="py-3 px-3">Cause Category</th>
+                    <th className="py-3 px-3 text-center">Fiscal Year</th>
+                    <th className="py-3 px-3 text-center">Visibility</th>
+                    <th className="py-3 px-4 text-right">Disbursed Amount</th>
+                    <th className="py-3 px-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredDonations.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-xs text-slate-500">
+                        {donations.length === 0
+                          ? "No charitable gifts logged yet. Use the Giving Studio to record contributions."
+                          : "No charitable gifts match the current search or filters."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDonations.map((d) => {
+                      const catBadge = DONATION_CATEGORY_LABELS[d.category] || {
+                        label: d.category,
+                        color: "bg-slate-500/10 text-slate-400 border-slate-500/30",
+                      };
+
+                      return (
+                        <tr key={d.id} className="hover:bg-slate-800/50 transition">
+                          <td className="py-3 px-4 font-mono text-slate-300 whitespace-nowrap">
+                            {d.dateDonated}
+                          </td>
+
+                          <td className="py-3 px-4 max-w-sm">
+                            <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                              <span>{d.organizationName}</span>
+                              {d.websiteUrl && (
+                                <a
+                                  href={d.websiteUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-slate-500 hover:text-purple-400 transition"
+                                  title="Visit organization website"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                            {d.causeDescription && (
+                              <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                                {d.causeDescription}
+                              </p>
+                            )}
+                            {d.notes && (
+                              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                Memo: {d.notes}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${catBadge.color}`}>
+                              {catBadge.label}
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-3 text-center font-mono text-slate-400 text-xs">
+                            FY {d.fiscalYear || d.dateDonated.slice(0, 4)}
+                          </td>
+
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            {d.isPublic ? (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                Public
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                Internal Only
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 font-mono font-bold text-right text-xs whitespace-nowrap text-rose-400">
+                            -${Number(d.amount || 0).toFixed(2)}
+                          </td>
+
+                          <td className="py-3 px-3 text-center">
+                            <Link
+                              href="/admin/giving"
+                              className="p-1 text-slate-500 hover:text-purple-400 transition inline-flex items-center"
+                              title="Edit in Giving Studio"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
   {/* Reimbursement Mark as Paid Modal */}
   {reimbursementToPay && (
