@@ -41,6 +41,7 @@ This directory maintains the historical and ongoing documentation of all develop
 | **28** | Repertoire Rating Scores, Inline Comment Drawers & Admin Action Audit Log | `feature/stage-28` | [Plan](./stage-28-implementation.md) | [Walkthrough](./stage-28-walkthrough.md) | Completed |
 | **29** | Public Website Modular Section Engine, Configurable Navigation & Social Media Integration | `feature/stage-29` | [Plan](./stage-29-implementation.md) | [Walkthrough](./stage-29-walkthrough.md) | Completed |
 | **30** | CMS Studio Section Customizers, Public Event Detail & Fan Engagement | `feature/stage-30` | [Plan](./stage-30-implementation.md) | [Walkthrough](./stage-30-walkthrough.md) | Completed |
+| **31** | Member Multi-Platform Authentication Hub & Dedicated Login Suite | `feature/stage-31` | [Plan](./stage-31-implementation.md) | [Walkthrough](./stage-31-walkthrough.md) | Completed |
 
 ---
 

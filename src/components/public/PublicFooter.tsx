@@ -13,8 +13,10 @@ import {
 } from "@/lib/schema/siteConfig";
 import { Music2, ExternalLink } from "lucide-react";
 import { SocialIcon, getSocialBrandColors } from "@/components/ui/SocialIcon";
+import { useAuth } from "@/lib/context/AuthContext";
 
 export default function PublicFooter() {
+  const { firebaseUser } = useAuth();
   const [links, setLinks] = useState<NavLink[]>(
     DEFAULT_FOOTER_LINKS.map((l) => ({ ...l, isExternal: false, isButton: false, openInNewTab: false }))
   );
@@ -105,30 +107,36 @@ export default function PublicFooter() {
         <div>
           <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Explore</h4>
           <ul className="space-y-2 text-xs" suppressHydrationWarning>
-            {links.map((link) => (
-              <li key={link.id}>
-                {link.isExternal ? (
-                  <a
-                    href={link.href}
-                    target={link.openInNewTab ? "_blank" : undefined}
-                    rel={link.openInNewTab ? "noopener noreferrer" : undefined}
-                    suppressHydrationWarning
-                    className="hover:text-yellow-400 transition-colors inline-flex items-center gap-1"
-                  >
-                    <span>{link.label}</span>
-                    <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
-                  </a>
-                ) : (
-                  <Link 
-                    href={link.href} 
-                    suppressHydrationWarning 
-                    className="hover:text-yellow-400 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                )}
-              </li>
-            ))}
+            {links.map((link) => {
+              const isPortalLink = link.href === "/portal" || link.href === "/login";
+              const targetHref = isPortalLink ? (firebaseUser ? "/portal" : "/login") : link.href;
+              const displayLabel = isPortalLink && !firebaseUser && link.label === "Musician Portal" ? "Member Sign In" : link.label;
+
+              return (
+                <li key={link.id}>
+                  {link.isExternal ? (
+                    <a
+                      href={targetHref}
+                      target={link.openInNewTab ? "_blank" : undefined}
+                      rel={link.openInNewTab ? "noopener noreferrer" : undefined}
+                      suppressHydrationWarning
+                      className="hover:text-yellow-400 transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>{displayLabel}</span>
+                      <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
+                    </a>
+                  ) : (
+                    <Link 
+                      href={targetHref} 
+                      suppressHydrationWarning 
+                      className="hover:text-yellow-400 transition-colors"
+                    >
+                      {displayLabel}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -153,11 +161,11 @@ export default function PublicFooter() {
         <div className="flex items-center gap-4">
           <span>Acoustic &bull; Mobile &bull; Electric</span>
           <Link 
-            href="/portal" 
+            href={firebaseUser ? "/portal" : "/login"} 
             suppressHydrationWarning 
-            className="text-slate-600 hover:text-slate-400"
+            className="text-slate-500 hover:text-yellow-400 transition-colors"
           >
-            Portal
+            {firebaseUser ? "Musician Portal" : "Member Sign In"}
           </Link>
         </div>
       </div>

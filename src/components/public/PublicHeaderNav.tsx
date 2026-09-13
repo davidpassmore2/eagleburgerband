@@ -15,8 +15,10 @@ import {
   X,
   ExternalLink,
   Users,
-  Sparkles
+  Sparkles,
+  LogIn
 } from "lucide-react";
+import { useAuth } from "@/lib/context/AuthContext";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   Calendar: <Calendar className="w-4 h-4" />,
@@ -29,6 +31,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 export default function PublicHeaderNav() {
+  const { firebaseUser, profile } = useAuth();
   const [links, setLinks] = useState<NavLink[]>(
     DEFAULT_HEADER_LINKS.map((l) => ({ ...l, isExternal: false, isButton: false, openInNewTab: false }))
   );
@@ -113,16 +116,27 @@ export default function PublicHeaderNav() {
           })}
         </nav>
 
-        {/* Action CTAs (Musician Portal & Book Button) */}
+        {/* Action CTAs (Musician Portal / Sign In & Book Button) */}
         <div className="hidden sm:flex items-center gap-4" suppressHydrationWarning>
-          <Link
-            href="/portal"
-            suppressHydrationWarning
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white px-3 py-2 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/50 transition-colors"
-          >
-            <Shield className="w-3.5 h-3.5 text-yellow-400" />
-            Musician Portal
-          </Link>
+          {firebaseUser ? (
+            <Link
+              href="/portal"
+              suppressHydrationWarning
+              className="inline-flex items-center gap-2 text-xs font-semibold text-yellow-400 hover:text-white px-3 py-2 rounded-xl border border-yellow-400/30 hover:border-yellow-400/60 bg-yellow-400/10 transition-colors shadow-sm"
+            >
+              <Shield className="w-3.5 h-3.5 text-yellow-400" />
+              <span>{profile?.displayName ? `${profile.displayName.split(" ")[0]}'s Portal` : "Musician Portal"}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              suppressHydrationWarning
+              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/60 hover:bg-slate-800 transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5 text-yellow-400" />
+              <span>Member Sign In</span>
+            </Link>
+          )}
           <Link
             href="/book"
             suppressHydrationWarning
@@ -194,15 +208,27 @@ export default function PublicHeaderNav() {
               <Send className="w-3.5 h-3.5" />
               Book the Band
             </Link>
-            <Link
-              href="/portal"
-              onClick={() => setMobileMenuOpen(false)}
-              suppressHydrationWarning
-              className="w-full inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 hover:text-white px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-900/50"
-            >
-              <Shield className="w-3.5 h-3.5 text-yellow-400" />
-              Musician Portal Access
-            </Link>
+            {firebaseUser ? (
+              <Link
+                href="/portal"
+                onClick={() => setMobileMenuOpen(false)}
+                suppressHydrationWarning
+                className="w-full inline-flex items-center justify-center gap-2 text-xs font-semibold text-yellow-300 px-3 py-2.5 rounded-xl border border-yellow-400/30 bg-yellow-400/10"
+              >
+                <Shield className="w-3.5 h-3.5 text-yellow-400" />
+                Musician Portal Access
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                suppressHydrationWarning
+                className="w-full inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 hover:text-white px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-900/50"
+              >
+                <LogIn className="w-3.5 h-3.5 text-yellow-400" />
+                Member Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}

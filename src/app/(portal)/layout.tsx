@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useSyncExternalStore, useMemo, useState } from "react";
+import React, { useSyncExternalStore, useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import { hasRole } from "@/lib/auth/permissions";
-import { LogIn, LogOut, Compass, BookOpen, Palette, SlidersHorizontal, Smartphone } from "lucide-react";
+import { LogIn, LogOut, Compass, BookOpen, Palette, SlidersHorizontal, Smartphone, Shield } from "lucide-react";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
 import { RoleEmulationModal } from "@/components/portal/RoleEmulationModal";
@@ -30,12 +30,28 @@ const CATEGORY_ORDER: ToolCategory[] = [
 ];
 
 function PortalNavigationShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const { profile, firebaseUser, loading, signInWithGoogle, signInWithDevAccount, signOut, isRealAdmin, isEmulating, emulatedRoles } = useAuth();
+  const { 
+    profile, 
+    firebaseUser, 
+    loading, 
+    authProviderId,
+    signOut, 
+    isRealAdmin, 
+    isEmulating, 
+    emulatedRoles 
+  } = useAuth();
   const { theme, getScopedStyles, activePortalScheme } = useTheme();
   const mounted = useMounted();
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isEmulationModalOpen, setIsEmulationModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !firebaseUser && mounted) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [loading, firebaseUser, mounted, pathname, router]);
 
   const authorizedTools = useMemo(() => {
     if (!mounted) return [];
@@ -46,6 +62,58 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 
   const isPortalActive = pathname === "/portal";
   const isHelpActive = pathname === "/portal/help" || pathname.startsWith("/portal/help/");
+
+  if (!mounted || loading) {
+    return (
+      <div 
+        suppressHydrationWarning
+        style={{
+          ...getScopedStyles("portal"),
+          backgroundColor: "var(--ebb-background)",
+        }}
+        className="min-h-screen flex items-center justify-center p-4 text-xs font-mono text-slate-400"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
+          <span>Verifying musician credentials...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!firebaseUser) {
+    return (
+      <div 
+        suppressHydrationWarning
+        style={{
+          ...getScopedStyles("portal"),
+          backgroundColor: "var(--ebb-background)",
+        }}
+        className="min-h-screen flex items-center justify-center p-4"
+      >
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-yellow-400/20 text-yellow-400 mx-auto flex items-center justify-center">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-black text-white uppercase tracking-tight">
+            Musician Portal Access
+          </h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Please sign in with your member credentials to access Eagleburger Band rehearsal charts, call sheets, and gig dispatch.
+          </p>
+          <div className="pt-2">
+            <Link
+              href={`/login?redirect=${encodeURIComponent(pathname)}`}
+              className="inline-flex items-center justify-center gap-2 w-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/10"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In to Member Portal</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -188,6 +256,19 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
                     <span>{profile?.roles?.join(", ") || "member"}</span>
+                    {authProviderId && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                        {authProviderId === "google.com"
+                          ? "Google"
+                          : authProviderId === "apple.com"
+                          ? "Apple"
+                          : authProviderId === "microsoft.com"
+                          ? "MS"
+                          : authProviderId === "github.com"
+                          ? "GH"
+                          : "Email"}
+                      </span>
+                    )}
                     {profile?.smsConsent && profile?.phone && (
                       <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">SMS</span>
                     )}
@@ -260,27 +341,12 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             <div className="space-y-2">
-              <button
-                onClick={() => signInWithDevAccount()}
-                className="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded text-xs transition shadow"
+              <Link
+                href={`/login?redirect=${encodeURIComponent(pathname)}`}
+                className="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-3 py-2 rounded-xl text-xs uppercase tracking-wider transition shadow"
               >
-                <LogIn className="w-3.5 h-3.5" /> Quick Sign In (Admin)
-              </button>
-              <div className="flex items-center justify-between gap-2 pt-1 text-[10px] text-slate-400">
-                <button
-                  onClick={signInWithGoogle}
-                  className="hover:text-slate-300 transition"
-                >
-                  Google Sign-In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsThemeModalOpen(true)}
-                  className="flex items-center gap-1 hover:text-yellow-400 transition"
-                >
-                  <Palette className="w-3 h-3" /> Theme
-                </button>
-              </div>
+                <LogIn className="w-3.5 h-3.5" /> Sign In to Portal
+              </Link>
             </div>
           )}
         </div>
