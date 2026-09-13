@@ -2,67 +2,57 @@
 
 import { useState, useEffect, useSyncExternalStore } from "react";
 import { Download, Share, PlusSquare, X, Smartphone, Check } from "lucide-react";
+import {
+  subscribePwa,
+  getStandaloneSnapshot,
+  getIOSSnapshot,
+  getDeferredPrompt,
+  clearDeferredPrompt,
+} from "@/lib/pwa/pwaStore";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+function subscribeStorage(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
 }
 
-const emptySubscribe = () => () => {};
-
-function getStandaloneSnapshot(): boolean {
+function getDismissedSnapshot(): boolean {
   if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true
-  );
-}
-
-function getIOSSnapshot(): boolean {
-  if (typeof window === "undefined") return false;
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent);
+  try {
+    const dismissedUntil = localStorage.getItem("ebb_pwa_dismissed_until");
+    return Boolean(dismissedUntil && Number(dismissedUntil) > Date.now());
+  } catch {
+    return false;
+  }
 }
 
 export default function PwaInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const isStandalone = useSyncExternalStore(emptySubscribe, getStandaloneSnapshot, () => false);
-  const isIOS = useSyncExternalStore(emptySubscribe, getIOSSnapshot, () => false);
-  const [isVisible, setIsVisible] = useState(false);
+  const isStandalone = useSyncExternalStore(subscribePwa, getStandaloneSnapshot, () => false);
+  const isIOS = useSyncExternalStore(subscribePwa, getIOSSnapshot, () => false);
+  const deferredPrompt = useSyncExternalStore(subscribePwa, getDeferredPrompt, () => null);
+  const isStorageDismissed = useSyncExternalStore(subscribeStorage, getDismissedSnapshot, () => false);
+  const [localDismissed, setLocalDismissed] = useState(false);
+  const [iosPromptReady, setIosPromptReady] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [installedSuccessfully, setInstalledSuccessfully] = useState(false);
 
   useEffect(() => {
     if (isStandalone) return;
 
-    // Check dismiss cooldown from localStorage (7 days)
-    const dismissedUntil = localStorage.getItem("ebb_pwa_dismissed_until");
-    if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
-      return;
-    }
-
-    // Capture beforeinstallprompt for Chromium/Android/Desktop
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsVisible(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
     // On iOS devices not yet in standalone, show the banner after 3 seconds
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (isIOS) {
       timer = setTimeout(() => {
-        setIsVisible(true);
+        setIosPromptReady(true);
       }, 3000);
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       if (timer) clearTimeout(timer);
     };
   }, [isStandalone, isIOS]);
+
+  const isDismissed = isStorageDismissed || localDismissed;
+  const isVisible = !isStandalone && !isDismissed && (Boolean(deferredPrompt) || (isIOS && iosPromptReady));
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -77,16 +67,16 @@ export default function PwaInstallBanner() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         setInstalledSuccessfully(true);
-        setTimeout(() => setIsVisible(false), 2500);
+        setTimeout(() => setLocalDismissed(true), 2500);
       }
-      setDeferredPrompt(null);
+      clearDeferredPrompt();
     } catch (err) {
       console.error("PWA install error:", err);
     }
   };
 
   const handleDismiss = () => {
-    setIsVisible(false);
+    setLocalDismissed(true);
     // Suppress for 7 days
     const sevenDays = Date.now() + 7 * 24 * 60 * 60 * 1000;
     localStorage.setItem("ebb_pwa_dismissed_until", sevenDays.toString());

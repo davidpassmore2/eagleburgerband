@@ -24,6 +24,7 @@ import {
   UserMinus,
   X,
 } from "lucide-react";
+import PortalPwaCard from "@/components/portal/PortalPwaCard";
 
 interface ProfileFormProps {
   profile: User;
@@ -262,6 +263,9 @@ function ProfileForm({ profile }: ProfileFormProps) {
             </div>
           </div>
         </div>
+
+        {/* Device & Progressive Web App (PWA) Hub */}
+        <PortalPwaCard />
 
         {/* Section 2: SMS Mobile Briefings & Consent Studio */}
         <div 

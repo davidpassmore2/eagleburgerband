@@ -19,6 +19,7 @@ import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import PortalMonthCalendar from "@/components/portal/PortalMonthCalendar";
 import MemberAnalyticsCard from "@/components/portal/MemberAnalyticsCard";
+import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import {
   Calendar,
@@ -335,6 +336,9 @@ export default function MusicianPortalOverviewPage() {
           </button>
         </div>
       </div>
+
+      {/* Musician PWA Status & Installation Card */}
+      <PortalPwaCard />
 
       {/* Inactive Member Notice */}
       {profile?.status === "inactive" && (
