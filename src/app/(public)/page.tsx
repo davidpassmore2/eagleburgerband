@@ -78,7 +78,10 @@ const DEFAULT_HOME_SECTIONS: ContentSection[] = [
     padding: "standard",
     gigFeedPreview: {
       title: "Upcoming Performances",
+      subtitle: "Catch the Eagleburger Band live on the streets and stages of Pittsburgh",
       maxItems: 3,
+      showVenueAddress: true,
+      showTicketLinks: true,
       ctaText: "View Full Performance Schedule",
       ctaHref: "/gigs",
     },

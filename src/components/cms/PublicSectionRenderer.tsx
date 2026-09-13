@@ -20,7 +20,12 @@ import {
   ChevronDown, 
   MapPin,
   HelpCircle,
-  Quote
+  Quote,
+  Award,
+  Flame,
+  Volume2,
+  Heart,
+  Clock,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -30,6 +35,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Users: <Users className="w-6 h-6 text-yellow-400" />,
   Calendar: <Calendar className="w-6 h-6 text-yellow-400" />,
   Sparkles: <Sparkles className="w-6 h-6 text-yellow-400" />,
+  Award: <Award className="w-6 h-6 text-yellow-400" />,
+  Flame: <Flame className="w-6 h-6 text-yellow-400" />,
+  Volume2: <Volume2 className="w-6 h-6 text-yellow-400" />,
+  Heart: <Heart className="w-6 h-6 text-yellow-400" />,
+  Clock: <Clock className="w-6 h-6 text-yellow-400" />,
+  MapPin: <MapPin className="w-6 h-6 text-yellow-400" />,
 };
 
 interface PublicGigSummary {
@@ -269,22 +280,48 @@ export default function PublicSectionRenderer({
             {section.testimonials.items.map((item, idx) => (
               <div
                 key={idx}
-                className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 relative shadow-lg"
+                className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4 relative shadow-lg flex flex-col justify-between hover:border-yellow-400/30 transition-colors"
               >
                 <Quote className="w-8 h-8 text-yellow-400/20 absolute top-6 right-6" />
-                <div className="flex items-center gap-1 text-yellow-400">
-                  {Array.from({ length: item.rating || 5 }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 text-yellow-400">
+                      {Array.from({ length: item.rating || 5 }).map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    {item.tag && (
+                      <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 px-2.5 py-0.5 rounded-full">
+                        {item.tag}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-sm sm:text-base text-slate-200 italic leading-relaxed">
+                    &quot;{item.quote}&quot;
+                  </p>
                 </div>
-                <p className="text-sm sm:text-base text-slate-200 italic leading-relaxed">
-                  &quot;{item.quote}&quot;
-                </p>
-                <div className="pt-2 border-t border-slate-800/80">
-                  <div className="font-bold text-white text-xs sm:text-sm">{item.author}</div>
-                  {item.roleOrEvent && (
-                    <div className="text-xs text-slate-400">{item.roleOrEvent}</div>
+
+                <div className="pt-3 border-t border-slate-800/80 flex items-center gap-3">
+                  {item.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.avatarUrl}
+                      alt={item.author}
+                      className="w-10 h-10 rounded-full object-cover border border-yellow-400/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-xs">
+                      {item.author ? item.author.charAt(0).toUpperCase() : "E"}
+                    </div>
                   )}
+                  <div>
+                    <div className="font-bold text-white text-xs sm:text-sm">{item.author}</div>
+                    {item.roleOrEvent && (
+                      <div className="text-xs text-slate-400">{item.roleOrEvent}</div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -306,13 +343,15 @@ export default function PublicSectionRenderer({
                 ? "bg-yellow-400 text-slate-950"
                 : section.ctaBanner.variant === "gradient"
                 ? "bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-400 text-slate-950"
+                : section.ctaBanner.variant === "forest"
+                ? "bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950 border border-emerald-800/40 text-white"
                 : "bg-slate-900 border border-slate-800 text-white"
             }`}
           >
             {section.ctaBanner.badgeText && (
               <div
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${
-                  section.ctaBanner.variant === "dark"
+                  section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
                     ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
                     : "bg-black/10 text-slate-950 border border-black/15"
                 }`}
@@ -329,7 +368,9 @@ export default function PublicSectionRenderer({
             {section.ctaBanner.subheadline && (
               <p
                 className={`text-sm sm:text-base max-w-2xl mx-auto leading-relaxed ${
-                  section.ctaBanner.variant === "dark" ? "text-slate-300" : "text-slate-900 font-medium"
+                  section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
+                    ? "text-slate-300"
+                    : "text-slate-900 font-medium"
                 }`}
               >
                 {section.ctaBanner.subheadline}
@@ -341,7 +382,11 @@ export default function PublicSectionRenderer({
                 href={section.ctaBanner.buttonHref || "/book"}
                 suppressHydrationWarning
                 className={`px-8 py-4 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 ${
-                  section.ctaBanner.variant === "dark"
+                  section.ctaBanner.buttonStyle === "white"
+                    ? "bg-white text-slate-950 hover:bg-slate-100 shadow-xl"
+                    : section.ctaBanner.buttonStyle === "outline"
+                    ? "bg-transparent border-2 border-current hover:bg-black/10"
+                    : section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
                     ? "bg-yellow-400 text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
                     : "bg-slate-950 text-white hover:bg-slate-900 shadow-black/30"
                 }`}
@@ -354,7 +399,11 @@ export default function PublicSectionRenderer({
                   href={section.ctaBanner.secondaryButtonHref || "/gigs"}
                   suppressHydrationWarning
                   className={`px-6 py-4 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition ${
-                    section.ctaBanner.variant === "dark"
+                    section.ctaBanner.secondaryButtonStyle === "white"
+                      ? "bg-white text-slate-950 hover:bg-slate-100 shadow-lg"
+                      : section.ctaBanner.secondaryButtonStyle === "solid-yellow"
+                      ? "bg-yellow-400 text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
+                      : section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
                       ? "text-slate-300 hover:text-white border border-slate-700"
                       : "text-slate-900 hover:text-black border border-slate-950/20"
                   }`}
@@ -382,24 +431,33 @@ export default function PublicSectionRenderer({
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {section.statsCounter.metrics.map((metric, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 text-center space-y-2 hover:border-yellow-400/40 transition shadow-lg"
-              >
-                <div className="text-3xl sm:text-5xl font-black text-yellow-400 font-mono tracking-tight">
-                  {metric.value}
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
-                  {metric.label}
-                </div>
-                {metric.description && (
-                  <div className="text-[11px] text-slate-400 leading-tight">
-                    {metric.description}
+            {section.statsCounter.metrics.map((metric, idx) => {
+              const iconNode = (metric.icon && ICON_MAP[metric.icon]) || (
+                <Award className="w-6 h-6 text-yellow-400" />
+              );
+
+              return (
+                <div
+                  key={idx}
+                  className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 text-center space-y-3 hover:border-yellow-400/40 transition shadow-lg group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                    {iconNode}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="text-3xl sm:text-5xl font-black text-yellow-400 font-mono tracking-tight">
+                    {metric.value}
+                  </div>
+                  <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">
+                    {metric.label}
+                  </div>
+                  {metric.description && (
+                    <div className="text-[11px] text-slate-400 leading-tight">
+                      {metric.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -411,7 +469,15 @@ export default function PublicSectionRenderer({
 function GigFeedSectionComponent({
   config,
 }: {
-  config: { title: string; maxItems: number; ctaText: string; ctaHref: string };
+  config: { 
+    title: string; 
+    subtitle?: string; 
+    maxItems: number; 
+    showVenueAddress?: boolean; 
+    showTicketLinks?: boolean; 
+    ctaText: string; 
+    ctaHref: string 
+  };
 }) {
   const [upcomingGigs, setUpcomingGigs] = useState<PublicGigSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -459,6 +525,11 @@ function GigFeedSectionComponent({
           <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
             {config.title || "Upcoming Performances"}
           </h2>
+          {config.subtitle && (
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {config.subtitle}
+            </p>
+          )}
         </div>
 
         <Link
@@ -482,9 +553,10 @@ function GigFeedSectionComponent({
           </div>
         ) : (
           upcomingGigs.map((gig) => (
-            <div
+            <Link
               key={gig.id}
-              className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between gap-4 hover:border-yellow-400/40 transition-colors shadow-lg group"
+              href={`/gigs/${gig.id}`}
+              className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between gap-4 hover:border-yellow-400/40 hover:shadow-xl hover:shadow-yellow-400/5 transition-all shadow-lg group block text-left"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-mono">
@@ -498,11 +570,16 @@ function GigFeedSectionComponent({
                 </h3>
               </div>
 
-              <div className="text-xs text-slate-400 flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
-                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                <span className="truncate">{gig.venue}, {gig.city}</span>
-              </div>
-            </div>
+              {config.showVenueAddress !== false && (
+                <div className="text-xs text-slate-400 flex items-center justify-between gap-1.5 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                    <span className="truncate">{gig.venue}, {gig.city}</span>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-yellow-400 transition-colors shrink-0" />
+                </div>
+              )}
+            </Link>
           ))
         )}
       </div>

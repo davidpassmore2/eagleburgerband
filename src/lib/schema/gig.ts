@@ -12,12 +12,21 @@ export const GigStatusEnum = z.enum([
 export const PublicDetailsSchema = z.object({
   title: z.string().default(""),
   venue: z.string().default(""),
+  address: z.string().default(""),
+  venueAddress: z.string().default(""),
+  coordinates: z
+    .object({
+      lat: z.number().default(40.4406),
+      lng: z.number().default(-79.9959),
+    })
+    .default(() => ({ lat: 40.4406, lng: -79.9959 })),
   city: z.string().default("Pittsburgh, PA"),
   description: z.string().default(""),
   admission: z.string().default("Free"),
   facebookEventUrl: z.string().default(""),
   ticketUrl: z.string().default(""),
   isPublic: z.boolean().default(true),
+  showExternalDirections: z.boolean().default(true),
 });
 
 export const InternalLogisticsSchema = z.object({
@@ -39,12 +48,16 @@ export const GigSchema = z.object({
   publicDetails: PublicDetailsSchema.default(() => ({
     title: "",
     venue: "",
+    address: "",
+    venueAddress: "",
+    coordinates: { lat: 40.4406, lng: -79.9959 },
     city: "Pittsburgh, PA",
     description: "",
     admission: "Free",
     facebookEventUrl: "",
     ticketUrl: "",
     isPublic: true,
+    showExternalDirections: true,
   })),
   internalLogistics: InternalLogisticsSchema.default(() => ({
     title: "",

@@ -28,6 +28,7 @@ export const SocialPlatformEnum = z.enum([
   "tiktok",
   "spotify",
   "twitter",
+  "bluesky",
   "custom",
 ]);
 
@@ -51,7 +52,7 @@ export const DEFAULT_FOOTER_LINKS = [
   { id: "fn_home", label: "Home", href: "/", isVisible: true, order: 1, icon: "" },
   { id: "fn_gigs", label: "Upcoming Shows", href: "/gigs", isVisible: true, order: 2, icon: "" },
   { id: "fn_book", label: "Book the Band", href: "/book", isVisible: true, order: 3, icon: "" },
-  { id: "fn_giving", label: "Support the Band", href: "/giving", isVisible: true, order: 4, icon: "" },
+  { id: "fn_giving", label: "Community Giving", href: "/giving", isVisible: true, order: 4, icon: "" },
   { id: "fn_portal", label: "Musician Portal", href: "/portal", isVisible: true, order: 5, icon: "" },
 ];
 

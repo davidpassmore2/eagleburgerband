@@ -10,8 +10,10 @@ import {
   ExternalLink, 
   Send, 
   Ticket, 
-  History
+  History,
+  ArrowRight,
 } from "lucide-react";
+import AddToCalendarButton from "@/components/public/AddToCalendarButton";
 
 interface PublicGig {
   id: string;
@@ -180,9 +182,12 @@ export default function PublicGigsPage() {
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-yellow-400">
                       {weekdayStr}
                     </span>
-                    <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    <Link
+                      href={`/gigs/${gig.id}`}
+                      className="text-xl font-black text-white hover:text-yellow-400 uppercase tracking-tight transition-colors block"
+                    >
                       {gig.title}
-                    </h3>
+                    </Link>
                     <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
                       <MapPin className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                       <span>{gig.venue} &bull; {gig.city}</span>
@@ -223,6 +228,26 @@ export default function PublicGigsPage() {
                         Tickets <Ticket className="w-3 h-3" />
                       </a>
                     )}
+
+                    <AddToCalendarButton
+                      event={{
+                        id: gig.id,
+                        title: gig.title,
+                        date: gig.date,
+                        venue: gig.venue,
+                        city: gig.city,
+                        description: gig.description,
+                      }}
+                      buttonVariant="subtle"
+                    />
+
+                    <Link
+                      href={`/gigs/${gig.id}`}
+                      className="inline-flex items-center gap-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-3 py-1 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm"
+                    >
+                      <span>Map & Details</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </div>
                 </div>
               </div>

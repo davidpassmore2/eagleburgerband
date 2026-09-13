@@ -24,8 +24,11 @@ import {
   Loader2,
   AlertCircle,
   MessageSquare,
+  Navigation,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
+import { canManageGigs } from "@/lib/auth/permissions";
+import { User } from "@/lib/schema/user";
 
 interface SetlistItem {
   id: string;
@@ -49,6 +52,7 @@ interface GigDetail {
     venue: string;
     venueAddress?: string;
     description?: string;
+    showExternalDirections?: boolean;
   };
   internalLogistics?: {
     title: string;
@@ -86,6 +90,7 @@ export default function MusicianGigDetailPage() {
   const [loading, setLoading] = useState(Boolean(gigId));
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
+  const [isTogglingNav, setIsTogglingNav] = useState(false);
 
   useEffect(() => {
     if (!gigId) return;
@@ -242,6 +247,30 @@ export default function MusicianGigDetailPage() {
     }
   };
 
+  const handleToggleNavigation = async () => {
+    if (!gig) return;
+    setIsTogglingNav(true);
+    try {
+      const current = gig.publicDetails?.showExternalDirections !== false;
+      await setDoc(
+        doc(db, "gigs", gig.id),
+        {
+          publicDetails: {
+            showExternalDirections: !current,
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      alert(
+        "Failed to update navigation setting: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    } finally {
+      setIsTogglingNav(false);
+    }
+  };
+
   const attendingCount = rsvps.filter((r) => r.status === "attending").length;
   const tentativeCount = rsvps.filter((r) => r.status === "tentative").length;
   const declinedCount = rsvps.filter((r) => r.status === "declined").length;
@@ -343,24 +372,53 @@ export default function MusicianGigDetailPage() {
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-md">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-yellow-400" /> Location & Load-In
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-md flex flex-col justify-between">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-3">
+              <MapPin className="w-4 h-4 text-yellow-400" /> Location & Load-In
+            </div>
+            <div className="space-y-1.5 text-xs text-slate-300">
+              <div>
+                <strong className="text-white">Venue:</strong>{" "}
+                {gig.publicDetails?.venue || "TBD"}
+              </div>
+              <div>
+                <strong className="text-white">Address:</strong>{" "}
+                {gig.publicDetails?.venueAddress || "TBD"}
+              </div>
+              <div>
+                <strong className="text-white">Unloading:</strong>{" "}
+                {gig.internalLogistics?.unloadingAddress || "Front Entrance"}
+              </div>
+            </div>
           </div>
-          <div className="space-y-1.5 text-xs text-slate-300">
-            <div>
-              <strong className="text-white">Venue:</strong>{" "}
-              {gig.publicDetails?.venue}
+
+          {canManageGigs(profile as unknown as User) && (
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                Public 1-Click Navigation:
+              </span>
+              <button
+                type="button"
+                disabled={isTogglingNav}
+                onClick={handleToggleNavigation}
+                title={
+                  gig.publicDetails?.showExternalDirections !== false
+                    ? "External directions buttons visible on public event map. Click to toggle OFF."
+                    : "External directions buttons hidden on public event map. Click to toggle ON."
+                }
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border transition flex items-center gap-1.5 ${
+                  gig.publicDetails?.showExternalDirections !== false
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                    : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${gig.publicDetails?.showExternalDirections !== false ? "bg-emerald-400" : "bg-slate-500"}`}></span>
+                {gig.publicDetails?.showExternalDirections !== false ? "ENABLED" : "DISABLED"}
+              </button>
             </div>
-            <div>
-              <strong className="text-white">Address:</strong>{" "}
-              {gig.publicDetails?.venueAddress}
-            </div>
-            <div>
-              <strong className="text-white">Unloading:</strong>{" "}
-              {gig.internalLogistics?.unloadingAddress || "Front Entrance"}
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-md">

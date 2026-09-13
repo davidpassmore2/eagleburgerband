@@ -92,6 +92,18 @@ export function SocialIcon({ platform, className = "w-4 h-4" }: SocialIconProps)
         </svg>
       );
 
+    case "bluesky":
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 568 501"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M123.12 35.78C180.84 79.09 238.56 166.57 284 219.06C329.44 166.57 387.16 79.09 444.88 35.78C486.23 4.75 544.5 -16.5 560.88 25.13C577.26 66.76 565.48 160.05 540.23 204.66C503.22 270.08 424.36 288.75 363.36 279.16C466.93 296.64 509.73 365.65 464.71 436.65C409.84 523.18 297.8 454.49 284 397.09C270.2 454.49 158.16 523.18 103.29 436.65C58.27 365.65 101.07 296.64 204.64 279.16C143.64 288.75 64.78 270.08 27.77 204.66C2.52 160.05 -9.26 66.76 7.12 25.13C23.5 -16.5 81.77 4.75 123.12 35.78Z" />
+        </svg>
+      );
+
     default:
       return <Globe className={className} />;
   }
@@ -142,6 +154,13 @@ export function getSocialBrandColors(platform: SocialPlatform | string) {
         hoverBorder: "hover:border-slate-400/50",
         hoverBg: "hover:bg-white/10",
         hoverText: "hover:text-white",
+      };
+    case "bluesky":
+      return {
+        text: "text-sky-400",
+        hoverBorder: "hover:border-sky-400/50",
+        hoverBg: "hover:bg-sky-500/10",
+        hoverText: "hover:text-sky-400",
       };
     default:
       return {

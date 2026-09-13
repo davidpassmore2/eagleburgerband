@@ -56,7 +56,10 @@ export const FeaturesSectionSchema = z.object({
 
 export const GigFeedPreviewSectionSchema = z.object({
   title: z.string().default("Upcoming Performances"),
+  subtitle: z.string().default("Catch the Eagleburger Band live on the streets and stages of Pittsburgh"),
   maxItems: z.number().default(3),
+  showVenueAddress: z.boolean().default(true),
+  showTicketLinks: z.boolean().default(true),
   ctaText: z.string().default("View Full Performance Schedule"),
   ctaHref: z.string().default("/gigs"),
 });
@@ -74,6 +77,8 @@ export const TestimonialItemSchema = z.object({
   author: z.string().default(""),
   roleOrEvent: z.string().default(""),
   rating: z.number().default(5),
+  avatarUrl: z.string().default(""),
+  tag: z.string().default("Community Event"),
 });
 
 export const TestimonialsSectionSchema = z.object({
@@ -85,12 +90,16 @@ export const TestimonialsSectionSchema = z.object({
       author: "Sarah M.",
       roleOrEvent: "Community Festival Coordinator",
       rating: 5,
+      avatarUrl: "",
+      tag: "Parade",
     },
     {
       quote: "Completely acoustic and mobile. They marched right through the crowd and blew everyone away.",
       author: "David R.",
       roleOrEvent: "Art Festival Director",
       rating: 5,
+      avatarUrl: "",
+      tag: "Street Festival",
     },
   ]),
 });
@@ -128,26 +137,29 @@ export const CtaBannerSectionSchema = z.object({
   subheadline: z.string().default("Inquire today to check musician availability, rates, and custom parade setlists."),
   buttonText: z.string().default("Book the Band Now"),
   buttonHref: z.string().default("/book"),
+  buttonStyle: z.enum(["solid-yellow", "white", "outline"]).default("solid-yellow"),
   secondaryButtonText: z.string().default("View Schedule"),
   secondaryButtonHref: z.string().default("/gigs"),
+  secondaryButtonStyle: z.enum(["solid-yellow", "white", "outline"]).default("outline"),
   badgeText: z.string().default("Live Street Brass"),
-  variant: z.enum(["primary", "dark", "gradient"]).default("primary"),
+  variant: z.enum(["primary", "dark", "gradient", "forest"]).default("primary"),
 });
 
 export const StatsMetricSchema = z.object({
   value: z.string().default("100%"),
   label: z.string().default("Acoustic & Mobile"),
   description: z.string().default("Zero wires or power needed"),
+  icon: z.string().default("Award"),
 });
 
 export const StatsCounterSectionSchema = z.object({
   title: z.string().default("By the Numbers"),
   subtitle: z.string().default("Pittsburgh's most dynamic street brass sound."),
   metrics: z.array(StatsMetricSchema).default(() => [
-    { value: "100%", label: "Acoustic & Mobile", description: "Zero cables or outlets required" },
-    { value: "50+", label: "Parades & Festivals", description: "Across Western Pennsylvania" },
-    { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery" },
-    { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat" },
+    { value: "100%", label: "Acoustic & Mobile", description: "Zero cables or outlets required", icon: "Award" },
+    { value: "50+", label: "Parades & Festivals", description: "Across Western Pennsylvania", icon: "Calendar" },
+    { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery", icon: "Users" },
+    { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat", icon: "Sparkles" },
   ]),
 });
 

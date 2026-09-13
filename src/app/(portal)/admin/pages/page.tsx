@@ -70,6 +70,7 @@ import {
   MessageSquare,
   BarChart3,
   Send,
+  Star,
 } from "lucide-react";
 
 const DEFAULT_HOME_PAGE: ContentPage = ContentPageSchema.parse({
@@ -340,7 +341,10 @@ export default function CMSPagesStudio() {
         ...newSection,
         gigFeedPreview: {
           title: "Upcoming Appearances",
+          subtitle: "Catch the Eagleburger Band live on the streets and stages of Pittsburgh",
           maxItems: 3,
+          showVenueAddress: true,
+          showTicketLinks: true,
           ctaText: "Full Schedule",
           ctaHref: "/gigs",
         },
@@ -368,12 +372,16 @@ export default function CMSPagesStudio() {
               author: "Sarah M.",
               roleOrEvent: "Community Festival Coordinator",
               rating: 5,
+              avatarUrl: "",
+              tag: "Parade",
             },
             {
               quote: "Completely acoustic and mobile. They marched right through the crowd and blew everyone away.",
               author: "David R.",
               roleOrEvent: "Art Festival Director",
               rating: 5,
+              avatarUrl: "",
+              tag: "Street Festival",
             },
           ],
         },
@@ -411,8 +419,10 @@ export default function CMSPagesStudio() {
           subheadline: "Inquire today to check musician availability, rates, and custom parade setlists.",
           buttonText: "Book the Band Now",
           buttonHref: "/book",
+          buttonStyle: "solid-yellow",
           secondaryButtonText: "View Schedule",
           secondaryButtonHref: "/gigs",
+          secondaryButtonStyle: "outline",
           badgeText: "Live Street Brass",
           variant: "primary",
         },
@@ -424,10 +434,10 @@ export default function CMSPagesStudio() {
           title: "By the Numbers",
           subtitle: "Pittsburgh's most dynamic street brass sound.",
           metrics: [
-            { value: "100%", label: "Acoustic & Mobile", description: "Zero cables or outlets required" },
-            { value: "50+", label: "Parades & Festivals", description: "Across Western Pennsylvania" },
-            { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery" },
-            { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat" },
+            { value: "100%", label: "Acoustic & Mobile", description: "Zero cables or outlets required", icon: "Award" },
+            { value: "50+", label: "Parades & Festivals", description: "Across Western Pennsylvania", icon: "Calendar" },
+            { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery", icon: "Users" },
+            { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat", icon: "Sparkles" },
           ],
         },
       };
@@ -1586,7 +1596,7 @@ export default function CMSPagesStudio() {
                   )}
 
                   {section.type === "gig_feed_preview" && section.gigFeedPreview && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-[11px] font-semibold text-slate-300 block mb-1">Section Title</label>
                         <input
@@ -1602,7 +1612,22 @@ export default function CMSPagesStudio() {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">Max Items Shown</label>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subtitle (Optional)</label>
+                        <input
+                          type="text"
+                          value={section.gigFeedPreview.subtitle || ""}
+                          placeholder="e.g. Catch the Eagleburger Band live"
+                          onChange={(e) =>
+                            handleUpdateSection(section.id, {
+                              gigFeedPreview: { ...section.gigFeedPreview!, subtitle: e.target.value },
+                            })
+                          }
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">Max Items Shown (1-10)</label>
                         <input
                           type="number"
                           min="1"
@@ -1632,6 +1657,50 @@ export default function CMSPagesStudio() {
                           }
                           className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                         />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">CTA Target Link</label>
+                        <input
+                          type="text"
+                          value={section.gigFeedPreview.ctaHref || "/gigs"}
+                          onChange={(e) =>
+                            handleUpdateSection(section.id, {
+                              gigFeedPreview: { ...section.gigFeedPreview!, ctaHref: e.target.value },
+                            })
+                          }
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-6 pt-5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={section.gigFeedPreview.showVenueAddress !== false}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                gigFeedPreview: { ...section.gigFeedPreview!, showVenueAddress: e.target.checked },
+                              })
+                            }
+                            className="rounded bg-slate-950 border-slate-700 text-yellow-400 focus:ring-0"
+                          />
+                          <span>Show Venue Address</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={section.gigFeedPreview.showTicketLinks !== false}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                gigFeedPreview: { ...section.gigFeedPreview!, showTicketLinks: e.target.checked },
+                              })
+                            }
+                            className="rounded bg-slate-950 border-slate-700 text-yellow-400 focus:ring-0"
+                          />
+                          <span>Show Ticket Links</span>
+                        </label>
                       </div>
                     </div>
                   )}
@@ -1798,7 +1867,7 @@ export default function CMSPagesStudio() {
                         </div>
                       </div>
 
-                      <div className="space-y-2 pt-2">
+                      <div className="space-y-3 pt-2">
                         <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
                           <span>Testimonials ({section.testimonials?.items?.length || 0})</span>
                           <button
@@ -1806,7 +1875,14 @@ export default function CMSPagesStudio() {
                             onClick={() => {
                               const items = [
                                 ...(section.testimonials?.items || []),
-                                { quote: "Unbelievable energy and musicianship!", author: "New Reviewer", roleOrEvent: "Festival Organizer", rating: 5 },
+                                { 
+                                  quote: "The Eagleburger Band brought high-voltage energy to our event!", 
+                                  author: "New Reviewer", 
+                                  roleOrEvent: "Community Coordinator", 
+                                  rating: 5,
+                                  avatarUrl: "",
+                                  tag: "Parade",
+                                },
                               ];
                               handleUpdateSection(section.id, {
                                 testimonials: {
@@ -1822,29 +1898,95 @@ export default function CMSPagesStudio() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {section.testimonials?.items?.map((item, itemIdx) => (
-                            <div key={itemIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                            <div key={itemIdx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 shadow">
                               <div className="flex items-center justify-between">
-                                <div className="text-[11px] font-bold text-yellow-400">Quote #{itemIdx + 1}</div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = section.testimonials!.items.filter((_, i) => i !== itemIdx);
-                                    handleUpdateSection(section.id, {
-                                      testimonials: { ...section.testimonials!, items: updated },
-                                    });
-                                  }}
-                                  className="text-slate-500 hover:text-rose-400"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-bold text-yellow-400">Quote #{itemIdx + 1}</span>
+                                  {/* Star Rating Selector */}
+                                  <div className="flex items-center gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((starVal) => (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = [...section.testimonials!.items];
+                                          updated[itemIdx] = { ...updated[itemIdx], rating: starVal };
+                                          handleUpdateSection(section.id, {
+                                            testimonials: { ...section.testimonials!, items: updated },
+                                          });
+                                        }}
+                                        className="p-0.5 hover:scale-110 transition-transform"
+                                        title={`${starVal} Stars`}
+                                      >
+                                        <Star
+                                          className={`w-3.5 h-3.5 ${
+                                            starVal <= (item.rating || 5)
+                                              ? "fill-yellow-400 text-yellow-400"
+                                              : "text-slate-600"
+                                          }`}
+                                        />
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    disabled={itemIdx === 0}
+                                    onClick={() => {
+                                      const updated = [...section.testimonials!.items];
+                                      const temp = updated[itemIdx];
+                                      updated[itemIdx] = updated[itemIdx - 1];
+                                      updated[itemIdx - 1] = temp;
+                                      handleUpdateSection(section.id, {
+                                        testimonials: { ...section.testimonials!, items: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-white disabled:opacity-20"
+                                    title="Move Up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={itemIdx === section.testimonials!.items.length - 1}
+                                    onClick={() => {
+                                      const updated = [...section.testimonials!.items];
+                                      const temp = updated[itemIdx];
+                                      updated[itemIdx] = updated[itemIdx + 1];
+                                      updated[itemIdx + 1] = temp;
+                                      handleUpdateSection(section.id, {
+                                        testimonials: { ...section.testimonials!, items: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-white disabled:opacity-20"
+                                    title="Move Down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = section.testimonials!.items.filter((_, i) => i !== itemIdx);
+                                      handleUpdateSection(section.id, {
+                                        testimonials: { ...section.testimonials!, items: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-rose-400"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
 
                               <textarea
                                 rows={2}
                                 value={item.quote}
-                                placeholder="Quote content"
+                                placeholder="Quote content..."
                                 onChange={(e) => {
                                   const updated = [...section.testimonials!.items];
                                   updated[itemIdx] = { ...updated[itemIdx], quote: e.target.value };
@@ -1852,7 +1994,7 @@ export default function CMSPagesStudio() {
                                     testimonials: { ...section.testimonials!, items: updated },
                                   });
                                 }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none"
+                                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-yellow-400"
                               />
 
                               <div className="grid grid-cols-2 gap-2">
@@ -1867,12 +2009,12 @@ export default function CMSPagesStudio() {
                                       testimonials: { ...section.testimonials!, items: updated },
                                     });
                                   }}
-                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none"
+                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
                                 />
                                 <input
                                   type="text"
                                   value={item.roleOrEvent}
-                                  placeholder="Role / Event"
+                                  placeholder="Role / Organization"
                                   onChange={(e) => {
                                     const updated = [...section.testimonials!.items];
                                     updated[itemIdx] = { ...updated[itemIdx], roleOrEvent: e.target.value };
@@ -1880,8 +2022,47 @@ export default function CMSPagesStudio() {
                                       testimonials: { ...section.testimonials!, items: updated },
                                     });
                                   }}
-                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none"
+                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
                                 />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={item.tag || ""}
+                                  placeholder="Category Tag (e.g. Festival)"
+                                  onChange={(e) => {
+                                    const updated = [...section.testimonials!.items];
+                                    updated[itemIdx] = { ...updated[itemIdx], tag: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      testimonials: { ...section.testimonials!, items: updated },
+                                    });
+                                  }}
+                                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                                />
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={item.avatarUrl || ""}
+                                    placeholder="Avatar URL (optional)"
+                                    onChange={(e) => {
+                                      const updated = [...section.testimonials!.items];
+                                      updated[itemIdx] = { ...updated[itemIdx], avatarUrl: e.target.value };
+                                      handleUpdateSection(section.id, {
+                                        testimonials: { ...section.testimonials!, items: updated },
+                                      });
+                                    }}
+                                    className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                                  />
+                                  {item.avatarUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={item.avatarUrl}
+                                      alt=""
+                                      className="w-7 h-7 rounded-full object-cover border border-yellow-400/40 shrink-0"
+                                    />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -2033,8 +2214,10 @@ export default function CMSPagesStudio() {
                                   subheadline: section.ctaBanner?.subheadline || "",
                                   buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
                                   buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: section.ctaBanner?.badgeText || "",
                                   variant: section.ctaBanner?.variant || "primary",
                                 },
@@ -2055,10 +2238,12 @@ export default function CMSPagesStudio() {
                                   subheadline: section.ctaBanner?.subheadline || "",
                                   buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
                                   buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: section.ctaBanner?.badgeText || "",
-                                  variant: e.target.value as "primary" | "dark" | "gradient",
+                                  variant: e.target.value as "primary" | "dark" | "gradient" | "forest",
                                 },
                               })
                             }
@@ -2066,7 +2251,8 @@ export default function CMSPagesStudio() {
                           >
                             <option value="primary">Primary (Yellow Accent)</option>
                             <option value="dark">Dark (Subtle Slate)</option>
-                            <option value="gradient">Gradient (Vibrant)</option>
+                            <option value="gradient">Gradient (Vibrant Amber)</option>
+                            <option value="forest">Forest (Emerald & Brass)</option>
                           </select>
                         </div>
 
@@ -2082,8 +2268,10 @@ export default function CMSPagesStudio() {
                                   subheadline: e.target.value,
                                   buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
                                   buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: section.ctaBanner?.badgeText || "",
                                   variant: section.ctaBanner?.variant || "primary",
                                 },
@@ -2105,8 +2293,10 @@ export default function CMSPagesStudio() {
                                   subheadline: section.ctaBanner?.subheadline || "",
                                   buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
                                   buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: e.target.value,
                                   variant: section.ctaBanner?.variant || "primary",
                                 },
@@ -2115,6 +2305,62 @@ export default function CMSPagesStudio() {
                             placeholder="e.g. Live Street Brass"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                           />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Primary Button Style</label>
+                          <select
+                            value={section.ctaBanner?.buttonStyle ?? "solid-yellow"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: e.target.value as "solid-yellow" | "white" | "outline",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          >
+                            <option value="solid-yellow">Solid Yellow</option>
+                            <option value="white">White Highlight</option>
+                            <option value="outline">Outline Border</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Secondary Button Style</label>
+                          <select
+                            value={section.ctaBanner?.secondaryButtonStyle ?? "outline"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: e.target.value as "solid-yellow" | "white" | "outline",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          >
+                            <option value="outline">Outline Border</option>
+                            <option value="white">White Highlight</option>
+                            <option value="solid-yellow">Solid Yellow</option>
+                          </select>
                         </div>
 
                         <div>
@@ -2129,8 +2375,10 @@ export default function CMSPagesStudio() {
                                   subheadline: section.ctaBanner?.subheadline || "",
                                   buttonText: e.target.value,
                                   buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: section.ctaBanner?.badgeText || "",
                                   variant: section.ctaBanner?.variant || "primary",
                                 },
@@ -2152,8 +2400,61 @@ export default function CMSPagesStudio() {
                                   subheadline: section.ctaBanner?.subheadline || "",
                                   buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
                                   buttonHref: e.target.value,
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
                                   secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
                                   secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Secondary Button Text</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.secondaryButtonText ?? ""}
+                            placeholder="e.g. View Schedule"
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
+                                  secondaryButtonText: e.target.value,
+                                  secondaryButtonHref: section.ctaBanner?.secondaryButtonHref || "",
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
+                                  badgeText: section.ctaBanner?.badgeText || "",
+                                  variant: section.ctaBanner?.variant || "primary",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">Secondary Button Link</label>
+                          <input
+                            type="text"
+                            value={section.ctaBanner?.secondaryButtonHref ?? "/gigs"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                ctaBanner: {
+                                  headline: section.ctaBanner?.headline || "",
+                                  subheadline: section.ctaBanner?.subheadline || "",
+                                  buttonText: section.ctaBanner?.buttonText || "Book the Band Now",
+                                  buttonHref: section.ctaBanner?.buttonHref || "/book",
+                                  buttonStyle: section.ctaBanner?.buttonStyle || "solid-yellow",
+                                  secondaryButtonText: section.ctaBanner?.secondaryButtonText || "",
+                                  secondaryButtonHref: e.target.value,
+                                  secondaryButtonStyle: section.ctaBanner?.secondaryButtonStyle || "outline",
                                   badgeText: section.ctaBanner?.badgeText || "",
                                   variant: section.ctaBanner?.variant || "primary",
                                 },
@@ -2206,7 +2507,7 @@ export default function CMSPagesStudio() {
                         </div>
                       </div>
 
-                      <div className="space-y-2 pt-2">
+                      <div className="space-y-3 pt-2">
                         <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
                           <span>Metrics ({section.statsCounter?.metrics?.length || 0})</span>
                           <button
@@ -2214,7 +2515,7 @@ export default function CMSPagesStudio() {
                             onClick={() => {
                               const metrics = [
                                 ...(section.statsCounter?.metrics || []),
-                                { value: "100+", label: "Performances", description: "Across Western PA" },
+                                { value: "100+", label: "Performances", description: "Across Western PA", icon: "Award" },
                               ];
                               handleUpdateSection(section.id, {
                                 statsCounter: {
@@ -2232,64 +2533,129 @@ export default function CMSPagesStudio() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           {section.statsCounter?.metrics?.map((metric, metricIdx) => (
-                            <div key={metricIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                            <div key={metricIdx} className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2.5 shadow">
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-mono text-yellow-400 font-bold">Metric #{metricIdx + 1}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = section.statsCounter!.metrics.filter((_, i) => i !== metricIdx);
+                                <span className="text-[11px] font-bold text-yellow-400">Item #{metricIdx + 1}</span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    disabled={metricIdx === 0}
+                                    onClick={() => {
+                                      const updated = [...section.statsCounter!.metrics];
+                                      const temp = updated[metricIdx];
+                                      updated[metricIdx] = updated[metricIdx - 1];
+                                      updated[metricIdx - 1] = temp;
+                                      handleUpdateSection(section.id, {
+                                        statsCounter: { ...section.statsCounter!, metrics: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-white disabled:opacity-20"
+                                    title="Move Up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={metricIdx === section.statsCounter!.metrics.length - 1}
+                                    onClick={() => {
+                                      const updated = [...section.statsCounter!.metrics];
+                                      const temp = updated[metricIdx];
+                                      updated[metricIdx] = updated[metricIdx + 1];
+                                      updated[metricIdx + 1] = temp;
+                                      handleUpdateSection(section.id, {
+                                        statsCounter: { ...section.statsCounter!, metrics: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-white disabled:opacity-20"
+                                    title="Move Down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = section.statsCounter!.metrics.filter((_, i) => i !== metricIdx);
+                                      handleUpdateSection(section.id, {
+                                        statsCounter: { ...section.statsCounter!, metrics: updated },
+                                      });
+                                    }}
+                                    className="p-1 text-slate-500 hover:text-rose-400"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-slate-400 block mb-0.5">Icon</label>
+                                <select
+                                  value={metric.icon || "Award"}
+                                  onChange={(e) => {
+                                    const updated = [...section.statsCounter!.metrics];
+                                    updated[metricIdx] = { ...updated[metricIdx], icon: e.target.value };
                                     handleUpdateSection(section.id, {
                                       statsCounter: { ...section.statsCounter!, metrics: updated },
                                     });
                                   }}
-                                  className="text-slate-500 hover:text-rose-400"
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  {["Award", "Calendar", "Users", "Sparkles", "Music", "MapPin", "Flame", "Volume2", "Heart", "Clock", "Zap", "Drum"].map((iconName) => (
+                                    <option key={iconName} value={iconName}>{iconName}</option>
+                                  ))}
+                                </select>
                               </div>
 
-                              <input
-                                type="text"
-                                value={metric.value}
-                                placeholder="Value (e.g. 100%)"
-                                onChange={(e) => {
-                                  const updated = [...section.statsCounter!.metrics];
-                                  updated[metricIdx] = { ...updated[metricIdx], value: e.target.value };
-                                  handleUpdateSection(section.id, {
-                                    statsCounter: { ...section.statsCounter!, metrics: updated },
-                                  });
-                                }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs font-bold text-white focus:outline-none"
-                              />
+                              <div>
+                                <label className="text-[10px] text-slate-400 block mb-0.5">Metric Value</label>
+                                <input
+                                  type="text"
+                                  value={metric.value}
+                                  placeholder="e.g. 100%"
+                                  onChange={(e) => {
+                                    const updated = [...section.statsCounter!.metrics];
+                                    updated[metricIdx] = { ...updated[metricIdx], value: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      statsCounter: { ...section.statsCounter!, metrics: updated },
+                                    });
+                                  }}
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
 
-                              <input
-                                type="text"
-                                value={metric.label}
-                                placeholder="Label"
-                                onChange={(e) => {
-                                  const updated = [...section.statsCounter!.metrics];
-                                  updated[metricIdx] = { ...updated[metricIdx], label: e.target.value };
-                                  handleUpdateSection(section.id, {
-                                    statsCounter: { ...section.statsCounter!, metrics: updated },
-                                  });
-                                }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none"
-                              />
+                              <div>
+                                <label className="text-[10px] text-slate-400 block mb-0.5">Label</label>
+                                <input
+                                  type="text"
+                                  value={metric.label}
+                                  placeholder="e.g. Acoustic & Mobile"
+                                  onChange={(e) => {
+                                    const updated = [...section.statsCounter!.metrics];
+                                    updated[metricIdx] = { ...updated[metricIdx], label: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      statsCounter: { ...section.statsCounter!, metrics: updated },
+                                    });
+                                  }}
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
 
-                              <input
-                                type="text"
-                                value={metric.description}
-                                placeholder="Description"
-                                onChange={(e) => {
-                                  const updated = [...section.statsCounter!.metrics];
-                                  updated[metricIdx] = { ...updated[metricIdx], description: e.target.value };
-                                  handleUpdateSection(section.id, {
-                                    statsCounter: { ...section.statsCounter!, metrics: updated },
-                                  });
-                                }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[10px] text-slate-400 focus:outline-none"
-                              />
+                              <div>
+                                <label className="text-[10px] text-slate-400 block mb-0.5">Description (Optional)</label>
+                                <input
+                                  type="text"
+                                  value={metric.description || ""}
+                                  placeholder="e.g. Zero wires needed"
+                                  onChange={(e) => {
+                                    const updated = [...section.statsCounter!.metrics];
+                                    updated[metricIdx] = { ...updated[metricIdx], description: e.target.value };
+                                    handleUpdateSection(section.id, {
+                                      statsCounter: { ...section.statsCounter!, metrics: updated },
+                                    });
+                                  }}
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -3341,7 +3707,7 @@ export default function CMSPagesStudio() {
                             platform: e.target.value as SocialPlatform,
                             label:
                               social.label === "" ||
-                              ["youtube", "instagram", "facebook", "tiktok", "spotify", "twitter", "custom"].includes(
+                              ["youtube", "instagram", "facebook", "tiktok", "spotify", "twitter", "bluesky", "custom"].includes(
                                 social.label.toLowerCase()
                               )
                                 ? e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1)
@@ -3355,6 +3721,7 @@ export default function CMSPagesStudio() {
                         <option value="facebook">Facebook</option>
                         <option value="tiktok">TikTok</option>
                         <option value="spotify">Spotify</option>
+                        <option value="bluesky">Bluesky</option>
                         <option value="twitter">X / Twitter</option>
                         <option value="custom">Custom Platform</option>
                       </select>

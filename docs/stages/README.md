@@ -39,8 +39,10 @@ This directory maintains the historical and ongoing documentation of all develop
 | **26** | Portal Theme System & Role Emulation Suite | `feature/stage-26` | [Plan](./stage-26-implementation.md) | [Walkthrough](./stage-26-walkthrough.md) | Completed |
 | **27** | Email & SMS Broadcast Suite, Musician Profile & Account Deactivation | `feature/stage-27` | [Plan](./stage-27-implementation.md) | [Walkthrough](./stage-27-walkthrough.md) | Completed |
 | **28** | Repertoire Rating Scores, Inline Comment Drawers & Admin Action Audit Log | `feature/stage-28` | [Plan](./stage-28-implementation.md) | [Walkthrough](./stage-28-walkthrough.md) | Completed |
-| **29** | Public Website Modular Section Engine, Configurable Navigation & Social Media Integration | `feature/stage-29` | [Plan](./stage-29-implementation.md) | [Walkthrough](./stage-29-walkthrough.md) | Active |
+| **29** | Public Website Modular Section Engine, Configurable Navigation & Social Media Integration | `feature/stage-29` | [Plan](./stage-29-implementation.md) | [Walkthrough](./stage-29-walkthrough.md) | Completed |
+| **30** | CMS Studio Section Customizers, Public Event Detail & Fan Engagement | `feature/stage-30` | [Plan](./stage-30-implementation.md) | [Walkthrough](./stage-30-walkthrough.md) | Completed |
 
 ---
+
 
 *Maintained automatically as part of the Eagleburger Band engineering lifecycle.*
