@@ -66,7 +66,8 @@ const CATEGORY_ORDER: ToolCategory[] = [
   "Performances & Logistics",
   "Personnel & Attendance",
   "Music & Repertoire",
-  "Intake",
+  "Website & Intake",
+  "Finance",
   "Business & Admin",
 ];
 

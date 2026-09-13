@@ -44,6 +44,7 @@ This directory maintains the historical and ongoing documentation of all develop
 | **31** | Member Multi-Platform Authentication Hub & Dedicated Login Suite | `feature/stage-31` | [Plan](./stage-31-implementation.md) | [Walkthrough](./stage-31-walkthrough.md) | Completed |
 | **32** | PWA Install Suite, Collapsible/Pinnable Sidebar & Super Admin Migration | `feature/stage-32` | [Plan](./stage-32-implementation.md) | [Walkthrough](./stage-32-walkthrough.md) | Completed |
 | **33** | Member Portal PWA Optimization & Installation Suite | `feature/stage-33` | [Plan](./stage-33-implementation.md) | [Walkthrough](./stage-33-walkthrough.md) | Completed |
+| **34** | Portal Workspace Taxonomy Unification & Help Center Knowledge Base Overhaul | `feature/stage-34` | [Plan](./stage-34-implementation.md) | [Walkthrough](./stage-34-walkthrough.md) | Completed |
 
 ---
 

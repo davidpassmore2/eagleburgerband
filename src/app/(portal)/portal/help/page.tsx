@@ -40,6 +40,24 @@ import {
   Phone,
   LayoutGrid,
   Table as TableIcon,
+  Receipt,
+  Star,
+  MessageSquareQuote,
+  Send,
+  ListMusic,
+  PackageCheck,
+  Library,
+  BarChart3,
+  Contact,
+  Layers,
+  HeartHandshake,
+  Music2,
+  Smartphone,
+  Palette,
+  LayoutTemplate,
+  MessageSquare,
+  Inbox,
+  CheckSquare,
 } from "lucide-react";
 
 export type HelpCategory =
@@ -48,7 +66,9 @@ export type HelpCategory =
   | "Performances & Logistics"
   | "Personnel & Attendance"
   | "Music & Repertoire"
-  | "Business & Public Web"
+  | "Website & Intake"
+  | "Finance"
+  | "Business & Admin"
   | "Portal Roles & Members"
   | "Permissions Matrix"
   | "FAQs";
@@ -57,7 +77,14 @@ interface RouteDoc {
   id: string;
   title: string;
   path: string;
-  category: "Musician Essentials" | "Performances & Logistics" | "Personnel & Attendance" | "Music & Repertoire" | "Business & Public Web";
+  category:
+    | "Musician Essentials"
+    | "Performances & Logistics"
+    | "Personnel & Attendance"
+    | "Music & Repertoire"
+    | "Website & Intake"
+    | "Finance"
+    | "Business & Admin";
   roles: Role[];
   badge: string;
   iconName: string;
@@ -67,6 +94,39 @@ interface RouteDoc {
   howToUse: string[];
   proTips: string[];
   relatedRoutes?: { title: string; path: string }[];
+}
+
+function getRouteIcon(iconName: string) {
+  switch (iconName) {
+    case "Calendar": return <Calendar className="w-4 h-4" />;
+    case "Music2": return <Music2 className="w-4 h-4" />;
+    case "Music": return <Music className="w-4 h-4" />;
+    case "Users": return <Users className="w-4 h-4" />;
+    case "Smartphone": return <Smartphone className="w-4 h-4" />;
+    case "ListMusic": return <ListMusic className="w-4 h-4" />;
+    case "UserCheck": return <UserCheck className="w-4 h-4" />;
+    case "Send": return <Send className="w-4 h-4" />;
+    case "Mail": return <Mail className="w-4 h-4" />;
+    case "Layers": return <Layers className="w-4 h-4" />;
+    case "CheckSquare": return <CheckSquare className="w-4 h-4" />;
+    case "PackageCheck": return <PackageCheck className="w-4 h-4" />;
+    case "Library": return <Library className="w-4 h-4" />;
+    case "BarChart3": return <BarChart3 className="w-4 h-4" />;
+    case "Lightbulb": return <Lightbulb className="w-4 h-4" />;
+    case "DollarSign": return <DollarSign className="w-4 h-4" />;
+    case "Receipt": return <Receipt className="w-4 h-4" />;
+    case "HeartHandshake": return <HeartHandshake className="w-4 h-4" />;
+    case "Inbox": return <Inbox className="w-4 h-4" />;
+    case "Star": return <Star className="w-4 h-4" />;
+    case "MessageSquareQuote": return <MessageSquareQuote className="w-4 h-4" />;
+    case "UserPlus": return <UserPlus className="w-4 h-4" />;
+    case "LayoutTemplate": return <LayoutTemplate className="w-4 h-4" />;
+    case "Palette": return <Palette className="w-4 h-4" />;
+    case "Contact": return <Contact className="w-4 h-4" />;
+    case "MessageSquare": return <MessageSquare className="w-4 h-4" />;
+    case "ShieldCheck": return <ShieldCheck className="w-4 h-4" />;
+    default: return <Compass className="w-4 h-4" />;
+  }
 }
 
 const ROUTE_DOCS: RouteDoc[] = [
@@ -235,8 +295,129 @@ const ROUTE_DOCS: RouteDoc[] = [
       { title: "Notification Suite", path: "/admin/notifications" }
     ]
   },
+  {
+    id: "portal-perform",
+    title: "Stage Readiness & Live Performance Chart Viewer",
+    path: "/portal/perform/[gigId]",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Stage Mode",
+    iconName: "Music",
+    summary: "High-contrast mobile chart viewer, offline print toolbar, downbeat countdown, and live gig setlist tracker.",
+    description: "Stage Readiness transforms any mobile phone or tablet into an outdoor stage chart reader. Designed for low-light porches, bright festival sunlight, and moving street parades, Stage View keeps the gig setlist in front of you with 1-tap sheet music chart rendering and quick transposition toggles.",
+    keyFeatures: [
+      "Gig-specific chronological setlist with tune keys, tempos, and horn notes.",
+      "1-tap sheet music viewer supporting pinch-to-zoom and dark stage mode.",
+      "Live downbeat countdown and call time status.",
+      "Offline print and PDF export toolbar for generating paper backup charts."
+    ],
+    howToUse: [
+      "Open the performance card from Home Base or Gig Central and tap 'Stage View'.",
+      "Keep the screen unlocked on your phone mount or music stand during downbeat.",
+      "Tap any tune title to immediately load your instrument part PDF."
+    ],
+    proTips: [
+      "Set your device display to maximum timeout before stepping onto the parade route.",
+      "Cache or print PDF parts ahead of time if performing at outdoor parks with poor cellular coverage."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Repertoire Catalog", path: "/portal/library" }
+    ]
+  },
+  {
+    id: "portal-checkin",
+    title: "Downbeat Musician Gig Check-In",
+    path: "/portal/checkin/[gigId]",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Attendance Verification",
+    iconName: "UserCheck",
+    summary: "Day-of-show attendance verification confirming your physical arrival at the staging area.",
+    description: "Downbeat Check-In enables musicians to confirm their arrival on site directly from their mobile device. Check-ins feed live into section leader roll calls and treasurer payout distributions.",
+    keyFeatures: [
+      "Geolocation or 1-tap self-check-in within the staging perimeter.",
+      "Real-time section roll call status showing who has arrived.",
+      "Emergency coordinator contacts for staging or parking delays."
+    ],
+    howToUse: [
+      "Upon arriving at the staging venue, open your gig call sheet and tap 'Check In'.",
+      "Verify your section and confirm arrival before the official downbeat.",
+      "If running late, notify your section leader immediately via the contact button."
+    ],
+    proTips: [
+      "Check in as soon as you unpack your instrument so section leaders know your part is covered.",
+      "Confirmed check-ins automatically certify your attendance for compensation payouts."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Gig Call Sheet", path: "/portal/gigs" }
+    ]
+  },
+  {
+    id: "portal-pwa",
+    title: "Progressive Web App (PWA) & Offline Mode",
+    path: "/portal",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Device & Offline App",
+    iconName: "Smartphone",
+    summary: "Install the Eagleburger Musician Portal directly to your iPhone, iPad, or Android home screen.",
+    description: "The Progressive Web App enables full standalone application functionality across iOS, Android, macOS, and Windows. Launch into your personal musician dashboard with 1 tap, bypass browser bars, and access cached charts and call sheets even when cell service drops.",
+    keyFeatures: [
+      "Standalone app window without browser URL bars or navigation clutter.",
+      "App icon quick shortcuts: My Gigs, Music Library, Availability Calendar.",
+      "Offline cache resilience for sheet music charts and logistics.",
+      "Low battery consumption optimized for long festival days."
+    ],
+    howToUse: [
+      "On iOS Safari: Tap Share -> 'Add to Home Screen'.",
+      "On Android Chrome: Tap the three dots -> 'Install app' or click the banner prompt.",
+      "On Desktop: Click the Install icon in the browser address bar."
+    ],
+    proTips: [
+      "Open your charts while connected to Wi-Fi at rehearsal to ensure PDFs are cached locally before festival appearances.",
+      "Add the app to your phone dock for instant access on show days."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "My Profile", path: "/portal/profile" }
+    ]
+  },
 
   // --- Performances & Logistics ---
+  {
+    id: "admin-checkin",
+    title: "Downbeat Check-In Studio",
+    path: "/admin/checkin",
+    category: "Performances & Logistics",
+    roles: ["admin", "gig_manager", "section_leader"],
+    badge: "Day-of-Show Roll Call",
+    iconName: "UserCheck",
+    summary: "Real-time musician arrival monitoring, section roll call verification, and attendance lock.",
+    description: "The Downbeat Check-In Studio allows gig coordinators and section leaders to monitor musician arrivals on gig day. Leaders can perform live roll calls, manually verify musicians, and lock final attendance to certify rosters for treasurer payout distribution.",
+    keyFeatures: [
+      "Live arrival board categorized by instrument section (Trumpet, Trombone, Sax, Low Brass, Battery).",
+      "1-tap status toggles (Arrived, Running Late, Excused, Absent).",
+      "Instrumentation deficit indicator highlighting missing voice parts.",
+      "Final attendance lock button feeding verified rosters directly to the Financial Ledger."
+    ],
+    howToUse: [
+      "Open Downbeat Check-In 45 minutes prior to call time on show day.",
+      "Monitor incoming self-check-ins from musicians on site.",
+      "Manually check in members who arrive directly at warm-up.",
+      "Lock attendance after the downbeat to finalize payout rosters."
+    ],
+    proTips: [
+      "Keep the check-in board open on a mobile phone during warm-ups to spot missing sections quickly.",
+      "If a key soloist is running late, coordinate an audible substitution with the setlist leader."
+    ],
+    relatedRoutes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
   {
     id: "admin-gigs",
     title: "Gig Management Studio",
@@ -667,136 +848,12 @@ const ROUTE_DOCS: RouteDoc[] = [
     ]
   },
 
-  // --- Business & Public Web ---
-  {
-    id: "admin-finance",
-    title: "Financial Ledger & Musician Payouts",
-    path: "/admin/finance",
-    category: "Business & Public Web",
-    roles: ["admin", "treasurer"],
-    badge: "Treasury & Accounting",
-    iconName: "DollarSign",
-    summary: "Band treasury accounting, gig fee revenues, merchandise, expense reconciliation, and musician payouts.",
-    description: "The Financial Ledger is the band treasurer's workbench. It handles revenue tracking from contracted performances, merch sales, tips, and charitable contributions, reconciles travel and equipment expenses, and manages fair musician payout distributions.",
-    keyFeatures: [
-      "Gig payout reconciliation: calculate per-musician compensation based on confirmed attendance.",
-      "Payout distribution tracking with settlement status (Unpaid, Venmo, Check, Cash).",
-      "Band general fund balance and expense categorization (Permits, Insurance, Storage, Equipment).",
-      "Automated earnings calculation feeding into each musician's personal Home Base overview.",
-      "Tax-ready annual summary reports."
-    ],
-    howToUse: [
-      "After gig completion, open the gig entry and confirm final revenue received from the organizer.",
-      "Click 'Calculate Distributions' to allocate equal or tiered payouts among attended musicians.",
-      "Execute payments via Venmo or check and mark each record as 'Paid'.",
-      "Log band operating expenses (e.g. trailer rental, rehearsal hall fees, sheet music licensing)."
-    ],
-    proTips: [
-      "Reconcile payouts within 48 hours of gig completion to maintain strong ensemble morale and trust.",
-      "Always retain a 15-20% band fund deduction from paid gigs for equipment repairs, insurance, and trailer upkeep."
-    ],
-    relatedRoutes: [
-      { title: "Charitable Giving", path: "/admin/giving" },
-      { title: "Gig Management", path: "/admin/gigs" }
-    ]
-  },
-  {
-    id: "admin-giving-mgmt",
-    title: "Charitable Giving & Donations Tracker",
-    path: "/admin/giving",
-    category: "Business & Public Web",
-    roles: ["admin", "treasurer"],
-    badge: "Philanthropy & Community",
-    iconName: "HeartHandshake",
-    summary: "Record band donations to worthy causes, manage beneficiary partners, and sync public community impact.",
-    description: "The Charitable Giving Studio allows band management to track philanthropic contributions made by the Eagleburger Band to community organizations, youth music programs, and neighborhood relief funds. It maintains strict privacy by syncing organizations to the public /giving page while keeping confidential dollar amounts internal.",
-    keyFeatures: [
-      "Donation logging: Organization, category, donation amount, date, payment method, tax receipt URL.",
-      "Cumulative philanthropy metrics: Total Donated, Number of Causes Supported, Average Contribution.",
-      "Public visibility toggle per donation: syncs beneficiary organization and website to public site while withholding dollar amount.",
-      "Direct integration with the fan-facing Community Giving showcase (/giving)."
-    ],
-    howToUse: [
-      "Click '+ Record Donation' whenever the band makes a charitable contribution.",
-      "Enter beneficiary name, donation amount, cause category, and optional organizer website.",
-      "Upload receipt or acknowledgment letter for treasurer archives.",
-      "Toggle 'Showcase on Public Giving Page' so fans and supporters can learn about the organizations the band champions."
-    ],
-    proTips: [
-      "Categorize donations (e.g. Youth Music, Food Security, Arts Education) to highlight community impact in annual reviews.",
-      "Check the public /giving page to ensure links to beneficiary websites are valid and active."
-    ],
-    relatedRoutes: [
-      { title: "Public Giving Page", path: "/giving" },
-      { title: "Financial Ledger", path: "/admin/finance" }
-    ]
-  },
-  {
-    id: "admin-inquiries",
-    title: "Booking Leads & Inquiries Pipeline",
-    path: "/admin/inquiries",
-    category: "Business & Public Web",
-    roles: ["admin", "gig_manager"],
-    badge: "Client Pipeline",
-    iconName: "Inbox",
-    summary: "Triage incoming client gig inquiries submitted from the public site, manage quotes, and convert to gigs.",
-    description: "The Booking Leads pipeline captures client requests submitted via the public /book form. Gig managers review event details, estimate performance fees, communicate with event organizers, and seamlessly convert approved leads into confirmed gigs in the Gig Management Studio.",
-    keyFeatures: [
-      "Lead pipeline stages: New Lead -> Contacted -> Quoted -> Confirmed/Booked -> Declined.",
-      "Automated client details capture: Event Type, Date, Venue/Location, Estimated Budget, Audience Size.",
-      "1-click 'Convert to Gig' button that generates a pre-populated draft gig entry in the Gig Studio.",
-      "Internal coordinator notes and client response email templates."
-    ],
-    howToUse: [
-      "Monitor the inbox for incoming booking requests.",
-      "Review client budget and date against the existing gig calendar to verify band availability.",
-      "Follow up with the organizer to negotiate performance length, call times, and compensation.",
-      "Once agreed upon, click 'Convert to Gig' to immediately transition the lead into an active gig record."
-    ],
-    proTips: [
-      "Respond to inquiries within 24 hours—event planners frequently contact multiple bands simultaneously.",
-      "Ask clients about parade staging acoustics, parade route length, and shade/water provisions for outdoor dates."
-    ],
-    relatedRoutes: [
-      { title: "Gig Management", path: "/admin/gigs" },
-      { title: "CRM Contacts", path: "/admin/contacts" }
-    ]
-  },
-  {
-    id: "admin-contacts",
-    title: "Client CRM & Venue Rolodex",
-    path: "/admin/contacts",
-    category: "Business & Public Web",
-    roles: ["admin", "gig_manager"],
-    badge: "CRM & Venues",
-    iconName: "Contact",
-    summary: "Rolodex of festival directors, parade marshals, brewery coordinators, and past corporate clients.",
-    description: "The Client CRM maintains relationships with the band's performance partners across Western Pennsylvania. Gig coordinators store venue logistics contacts, stage managers, noise ordinances, and historical performance relationships.",
-    keyFeatures: [
-      "Contact directory categorized by client type: Festival, Parade, Wedding, Brewery, Civic/Municipal.",
-      "Venue logistical profiles: Power availability, acoustic footprint, parking permits, load-in contacts.",
-      "Historical gig connection linking each client to past performances and fees.",
-      "Searchable notes for annual recurring bookings (e.g. 'Contact in March for Octoberfest')."
-    ],
-    howToUse: [
-      "Add organizers to the CRM whenever a new gig contract is initiated.",
-      "Store phone numbers and direct day-of-show contacts for parade marshals and festival stage hands.",
-      "Review past contacts in the spring to proactively pitch the band for recurring summer festivals."
-    ],
-    proTips: [
-      "Note specific venue quirks: which breweries provide meal vouchers, which parades have long staging delays, etc.",
-      "Keep contact emails up to date—municipal committee chairs often change annually after local elections."
-    ],
-    relatedRoutes: [
-      { title: "Booking Inquiries", path: "/admin/inquiries" },
-      { title: "Gig Management", path: "/admin/gigs" }
-    ]
-  },
+  // --- Website & Intake ---
   {
     id: "admin-pages-mgmt",
     title: "Headless CMS Page Studio & SEO",
     path: "/admin/pages",
-    category: "Business & Public Web",
+    category: "Website & Intake",
     roles: ["admin", "web_manager"],
     badge: "Content Management",
     iconName: "LayoutTemplate",
@@ -812,7 +869,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Complete SEO Studio: Google SERP snippet preview, Social Share Card preview, character meters, robots directives, and Schema.org JSON-LD."
     ],
     howToUse: [
-      "Access 'CMS Page Studio' from the 'Business & Admin' section in the portal sidebar.",
+      "Access 'CMS Page Studio' from the 'Website & Intake' section in the portal sidebar.",
       "Switch to the 'Navigation & Banner' tab to reorder header/footer links, toggle link visibility, or activate a global announcement banner.",
       "Switch between published pages or click '+ New Page' to create a custom page with a starting template.",
       "In the 'Section Builder' tab, add new section presets, toggle visibility, customize background and padding, and edit content.",
@@ -835,7 +892,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-theme-mgmt",
     title: "Brand, Palette & Style Customizer",
     path: "/admin/theme",
-    category: "Business & Public Web",
+    category: "Website & Intake",
     roles: ["admin", "web_manager"],
     badge: "Theme & Branding",
     iconName: "Palette",
@@ -864,10 +921,264 @@ const ROUTE_DOCS: RouteDoc[] = [
     ]
   },
   {
+    id: "admin-inquiries",
+    title: "Booking Leads & Client Intake Pipeline",
+    path: "/admin/inquiries",
+    category: "Website & Intake",
+    roles: ["admin", "gig_manager"],
+    badge: "Client Pipeline",
+    iconName: "Inbox",
+    summary: "Triage incoming client gig inquiries submitted from the public site, manage quotes, and convert to gigs.",
+    description: "The Booking Leads pipeline captures client requests submitted via the public /book form. Gig managers review event details, estimate performance fees, communicate with event organizers, and seamlessly convert approved leads into confirmed gigs in the Gig Management Studio.",
+    keyFeatures: [
+      "Lead pipeline stages: New Lead -> Contacted -> Quoted -> Confirmed/Booked -> Declined.",
+      "Automated client details capture: Event Type, Date, Venue/Location, Estimated Budget, Audience Size.",
+      "1-click 'Convert to Gig' button that generates a pre-populated draft gig entry in the Gig Studio.",
+      "Internal coordinator notes and client response email templates."
+    ],
+    howToUse: [
+      "Monitor the inbox for incoming booking requests.",
+      "Review client budget and date against the existing gig calendar to verify band availability.",
+      "Follow up with the organizer to negotiate performance length, call times, and compensation.",
+      "Once agreed upon, click 'Convert to Gig' to immediately transition the lead into an active gig record."
+    ],
+    proTips: [
+      "Respond to inquiries within 24 hours—event planners frequently contact multiple bands simultaneously.",
+      "Ask clients about parade staging acoustics, parade route length, and shade/water provisions for outdoor dates."
+    ],
+    relatedRoutes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "CRM Contacts", path: "/admin/contacts" }
+    ]
+  },
+  {
+    id: "admin-testimonials",
+    title: "Testimonials & Fan Reviews Studio",
+    path: "/admin/testimonials",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager", "community_manager"],
+    badge: "Public Social Proof",
+    iconName: "Star",
+    summary: "Curate, approve, and showcase fan testimonials, reviews, and event organizer quotes on the public site.",
+    description: "The Testimonials & Reviews Studio enables band managers to review submissions collected via the public /testimonials intake flow. Managers can review star ratings, sanitize review text, toggle public approval, feature top reviews on the homepage, and archive obsolete entries.",
+    keyFeatures: [
+      "Status lifecycle pipeline: Pending Review -> Approved (Public) -> Archived / Hidden.",
+      "Direct integration with the public testimonials form with Honeypot bot protection and DOMPurify sanitization.",
+      "Star rating triage (1 to 5 stars) and organizer event type tags (Wedding, Festival, Street Parade, Corporate).",
+      "Featured badge toggle for showcasing premier quotes prominently on the homepage and booking pages."
+    ],
+    howToUse: [
+      "Review incoming testimonials in the 'Pending' queue.",
+      "Click 'Approve for Public Display' to publish the quote directly to the fan-facing site.",
+      "Toggle 'Featured' on quotes from prominent festival organizers or parade marshals.",
+      "Archive duplicate or outdated reviews as needed."
+    ],
+    proTips: [
+      "Feature reviews that mention band punctuality, crowd energy, and seamless logistics to build client booking trust.",
+      "Rotate featured testimonials at the start of each season to keep the homepage fresh."
+    ],
+    relatedRoutes: [
+      { title: "Public Testimonials Form", path: "/testimonials" },
+      { title: "CMS Page Studio", path: "/admin/pages" }
+    ]
+  },
+  {
+    id: "admin-contact-inbox",
+    title: "General Contact & Fan Inbox",
+    path: "/admin/contact-inbox",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager", "community_manager", "gig_manager"],
+    badge: "Public Communication",
+    iconName: "MessageSquareQuote",
+    summary: "Centralized inbox for fan questions, press inquiries, volunteer offers, and community outreach.",
+    description: "The General Contact Inbox gathers messages submitted through the public /contact form. Categorized by inquiry type (General Question, Press/Media, Sponsorship/Donation, Volunteer/Crew), the studio allows managers to assign coordinators, mark inquiries as resolved, and archive threads.",
+    keyFeatures: [
+      "Filter by inquiry subject: General, Press & Media, Sponsorship, Volunteer & Roadie crew.",
+      "Status flags: New Unread, In Progress / Contacted, Resolved, and Archived.",
+      "Internal coordinator notes for collaboration between web managers and gig coordinators.",
+      "Automated spam prevention and sender email validation."
+    ],
+    howToUse: [
+      "Check the inbox for new messages submitted from the public site.",
+      "Assign media inquiries to the Community Manager or press liaison.",
+      "Mark threads as 'Resolved' once the inquiry has been answered.",
+      "Archive completed conversations to keep the active inbox clear."
+    ],
+    proTips: [
+      "Route press inquiries to the administrator immediately for upcoming parade and TV features.",
+      "If a contact inquiry asks to book the band, redirect the contact to the Booking Leads pipeline."
+    ],
+    relatedRoutes: [
+      { title: "Public Contact Form", path: "/contact" },
+      { title: "Booking Inquiries", path: "/admin/inquiries" }
+    ]
+  },
+  {
+    id: "admin-auditions",
+    title: "Musician Applications & Auditions Studio",
+    path: "/admin/auditions",
+    category: "Website & Intake",
+    roles: ["admin", "membership_manager", "section_leader", "gig_manager"],
+    badge: "Auditions Pipeline",
+    iconName: "UserPlus",
+    summary: "Review prospective musician applications, instrument auditions, experience profiles, and invite players.",
+    description: "The Auditions Studio captures musician applications submitted through the public /join portal. Section leaders and membership coordinators review candidate instrument proficiencies, years of marching/street band experience, audition links, and advance qualified players to rehearsal auditions or band invites.",
+    keyFeatures: [
+      "Audition candidate pipeline: New Applicant -> Reviewing -> Audition Scheduled -> Invited -> Declined.",
+      "Section-specific sorting: Trumpets, Trombones, Saxes, Low Brass / Sousaphones, Drum Battery.",
+      "Candidate profile inspection: Marching experience, reading ability, improvisation skills, doubling instruments.",
+      "Direct 1-click generation of membership invite codes upon candidate approval."
+    ],
+    howToUse: [
+      "Review new applications submitted by prospective brass and percussion players.",
+      "Section leaders evaluate candidate experience and audition audio/video links.",
+      "Schedule candidates for an upcoming rehearsal woodshedding session.",
+      "Once approved, generate an official band invite code directly from the applicant card."
+    ],
+    proTips: [
+      "Prioritize applicants who play high-demand brass voices (Sousaphone, Tenor Trombone) or battery percussion.",
+      "Invite promising players to a casual rehearsal before parade season to test endurance and chart sight-reading."
+    ],
+    relatedRoutes: [
+      { title: "Public Audition Form", path: "/join" },
+      { title: "Roster Administration", path: "/admin/roster" },
+      { title: "Band Sections", path: "/admin/sections" }
+    ]
+  },
+
+  // --- Finance ---
+  {
+    id: "admin-finance",
+    title: "Financial Ledger & Musician Compensation",
+    path: "/admin/finance",
+    category: "Finance",
+    roles: ["admin", "treasurer"],
+    badge: "Treasury & Accounting",
+    iconName: "DollarSign",
+    summary: "Band treasury accounting, gig fee revenues, merchandise, expense reconciliation, and musician payouts.",
+    description: "The Financial Ledger is the band treasurer's workbench. It handles revenue tracking from contracted performances, merch sales, tips, and charitable contributions, reconciles travel and equipment expenses, and manages fair musician payout distributions.",
+    keyFeatures: [
+      "Gig payout reconciliation: calculate per-musician compensation based on confirmed attendance.",
+      "Payout distribution tracking with settlement status (Unpaid, Venmo, Check, Cash).",
+      "Band general fund balance and expense categorization (Permits, Insurance, Storage, Equipment).",
+      "Automated earnings calculation feeding into each musician's personal Home Base overview.",
+      "Tax-ready annual summary reports."
+    ],
+    howToUse: [
+      "After gig completion, open the gig entry and confirm final revenue received from the organizer.",
+      "Click 'Calculate Distributions' to allocate equal or tiered payouts among attended musicians.",
+      "Execute payments via Venmo or check and mark each record as 'Paid'.",
+      "Log band operating expenses (e.g. trailer rental, rehearsal hall fees, sheet music licensing)."
+    ],
+    proTips: [
+      "Reconcile payouts within 48 hours of gig completion to maintain strong ensemble morale and trust.",
+      "Always retain a 15-20% band fund deduction from paid gigs for equipment repairs, insurance, and trailer upkeep."
+    ],
+    relatedRoutes: [
+      { title: "Expense Reimbursements", path: "/portal/reimbursements" },
+      { title: "Charitable Giving", path: "/admin/giving" },
+      { title: "Gig Management", path: "/admin/gigs" }
+    ]
+  },
+  {
+    id: "portal-reimbursements",
+    title: "Expense Reimbursements & Musician Claims",
+    path: "/portal/reimbursements",
+    category: "Finance",
+    roles: ["member", "guest"],
+    badge: "Musician Financials",
+    iconName: "Receipt",
+    summary: "Submit expense reimbursement claims, attach receipts, track approval statuses, and review personal payout history.",
+    description: "The Expense Reimbursements workspace allows musicians to submit out-of-pocket expenses incurred on behalf of the ensemble (e.g. equipment repair, trailer hitch parts, sheet music printing, gig water/snacks). Treasurers review receipts and disburse funds via Venmo, check, or direct transfer.",
+    keyFeatures: [
+      "1-click expense claim submission with category classification (Gear Repair, Travel/Gas, Rehearsal Supplies, Sheet Music).",
+      "Digital receipt attachment URL and expense note tracking.",
+      "Live claim lifecycle tracker: Submitted -> Approved -> Reimbursed / Settled.",
+      "Historical personal compensation and reimbursement summary record."
+    ],
+    howToUse: [
+      "Click '+ Submit Expense Claim' after purchasing supplies for band performances or rehearsals.",
+      "Enter expense title, category, purchase date, exact dollar amount, and attach your receipt.",
+      "Track approval status as the treasurer reviews the claim.",
+      "Receive payment via your configured preferred payout method in your profile."
+    ],
+    proTips: [
+      "Always take a photo of itemized receipts immediately upon purchase to avoid losing records.",
+      "Obtain treasurer or gig manager pre-approval before making large purchases over $100."
+    ],
+    relatedRoutes: [
+      { title: "Financial Ledger", path: "/admin/finance" },
+      { title: "My Profile & Payout Info", path: "/portal/profile" }
+    ]
+  },
+  {
+    id: "admin-giving-mgmt",
+    title: "Charitable Giving & Donations Tracker",
+    path: "/admin/giving",
+    category: "Finance",
+    roles: ["admin", "treasurer"],
+    badge: "Philanthropy & Community",
+    iconName: "HeartHandshake",
+    summary: "Record band donations to worthy causes, manage beneficiary partners, and sync public community impact.",
+    description: "The Charitable Giving Studio allows band management to track philanthropic contributions made by the Eagleburger Band to community organizations, youth music programs, and neighborhood relief funds. It maintains strict privacy by syncing organizations to the public /giving page while keeping confidential dollar amounts internal.",
+    keyFeatures: [
+      "Donation logging: Organization, category, donation amount, date, payment method, tax receipt URL.",
+      "Cumulative philanthropy metrics: Total Donated, Number of Causes Supported, Average Contribution.",
+      "Public visibility toggle per donation: syncs beneficiary organization and website to public site while withholding dollar amount.",
+      "Direct integration with the fan-facing Community Giving showcase (/giving)."
+    ],
+    howToUse: [
+      "Click '+ Record Donation' whenever the band makes a charitable contribution.",
+      "Enter beneficiary name, donation amount, cause category, and optional organizer website.",
+      "Upload receipt or acknowledgment letter for treasurer archives.",
+      "Toggle 'Showcase on Public Giving Page' so fans and supporters can learn about the organizations the band champions."
+    ],
+    proTips: [
+      "Categorize donations (e.g. Youth Music, Food Security, Arts Education) to highlight community impact in annual reviews.",
+      "Check the public /giving page to ensure links to beneficiary websites are valid and active."
+    ],
+    relatedRoutes: [
+      { title: "Public Giving Page", path: "/giving" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
+
+  // --- Business & Admin ---
+  {
+    id: "admin-contacts",
+    title: "Client CRM & Venue Rolodex",
+    path: "/admin/contacts",
+    category: "Business & Admin",
+    roles: ["admin", "gig_manager"],
+    badge: "CRM & Venues",
+    iconName: "Contact",
+    summary: "Rolodex of festival directors, parade marshals, brewery coordinators, and past corporate clients.",
+    description: "The Client CRM maintains relationships with the band's performance partners across Western Pennsylvania. Gig coordinators store venue logistics contacts, stage managers, noise ordinances, and historical performance relationships.",
+    keyFeatures: [
+      "Contact directory categorized by client type: Festival, Parade, Wedding, Brewery, Civic/Municipal.",
+      "Venue logistical profiles: Power availability, acoustic footprint, parking permits, load-in contacts.",
+      "Historical gig connection linking each client to past performances and fees.",
+      "Searchable notes for annual recurring bookings (e.g. 'Contact in March for Octoberfest')."
+    ],
+    howToUse: [
+      "Add organizers to the CRM whenever a new gig contract is initiated.",
+      "Store phone numbers and direct day-of-show contacts for parade marshals and festival stage hands.",
+      "Review past contacts in the spring to proactively pitch the band for recurring summer festivals."
+    ],
+    proTips: [
+      "Note specific venue quirks: which breweries provide meal vouchers, which parades have long staging delays, etc.",
+      "Keep contact emails up to date—municipal committee chairs often change annually after local elections."
+    ],
+    relatedRoutes: [
+      { title: "Booking Inquiries", path: "/admin/inquiries" },
+      { title: "Gig Management", path: "/admin/gigs" }
+    ]
+  },
+  {
     id: "admin-comments-mgmt",
     title: "Public Comment & Community Moderation",
     path: "/admin/comments",
-    category: "Business & Public Web",
+    category: "Business & Admin",
     roles: ["admin"],
     badge: "Content Moderation",
     iconName: "MessageSquare",
@@ -891,6 +1202,36 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "CMS Page Studio", path: "/admin/pages" },
       { title: "Public Website", path: "/" }
+    ]
+  },
+  {
+    id: "admin-audit-log",
+    title: "Admin Action Audit Log & Governance",
+    path: "/admin/audit-log",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Security & Governance",
+    iconName: "ShieldCheck",
+    summary: "Immutable audit trail of all administrative actions, role modifications, and system configuration changes.",
+    description: "The Admin Action Audit Log records operational changes across the platform. Whenever an administrator promotes a member, changes financial distributions, modifies CMS pages, or deactivates accounts, a timestamped audit entry is logged with actor details and IP context.",
+    keyFeatures: [
+      "Structured event logging capturing actor identity, action type, target resource, and description.",
+      "Searchable by administrator email, action keyword, or date range.",
+      "Security tracking for role elevations, super admin logins, and roster terminations.",
+      "Filter by event category: Personnel, Gigs, Repertoire, Finance, CMS/Theme, and System."
+    ],
+    howToUse: [
+      "Inspect the audit trail when investigating unexpected schedule, role, or website changes.",
+      "Filter by 'Finance' to verify that all payout adjustments were authorized by the treasurer.",
+      "Export or review logs quarterly for executive governance meetings."
+    ],
+    proTips: [
+      "Audit logs are immutable and cannot be edited or erased by any user.",
+      "Review role grant events periodically to ensure only active leadership maintains administrative access."
+    ],
+    relatedRoutes: [
+      { title: "User & Role Studio", path: "/admin/users" },
+      { title: "Financial Ledger", path: "/admin/finance" }
     ]
   }
 ];
@@ -1600,7 +1941,7 @@ export default function PortalHelpCenterPage() {
             }}
           >
             <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} />
-            <span><strong>23</strong> Workspaces Documented</span>
+            <span><strong>{ROUTE_DOCS.length}</strong> Workspaces Documented</span>
           </div>
           <div 
             suppressHydrationWarning
@@ -1728,7 +2069,9 @@ export default function PortalHelpCenterPage() {
               "Performances & Logistics",
               "Personnel & Attendance",
               "Music & Repertoire",
-              "Business & Public Web",
+              "Website & Intake",
+              "Finance",
+              "Business & Admin",
               "Portal Roles & Members",
               "Permissions Matrix",
               "FAQs",
@@ -2618,7 +2961,7 @@ export default function PortalHelpCenterPage() {
                             color: "var(--ebb-primary)",
                           }}
                         >
-                          <Compass className="w-4 h-4" />
+                          {getRouteIcon(route.iconName)}
                         </div>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">

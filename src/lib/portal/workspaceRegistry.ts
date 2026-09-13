@@ -36,7 +36,8 @@ export type ToolCategory =
   | "Performances & Logistics"
   | "Personnel & Attendance"
   | "Music & Repertoire"
-  | "Intake"
+  | "Website & Intake"
+  | "Finance"
   | "Business & Admin";
 
 export interface WorkspaceTool {
@@ -140,14 +141,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     requiredRoles: ["admin"],
     category: "Personnel & Attendance",
   },
-  {
-    id: "auditions",
-    title: "Musician Applications & Auditions",
-    href: "/admin/auditions",
-    icon: UserPlus,
-    requiredRoles: ["admin", "membership_manager", "section_leader", "gig_manager"],
-    category: "Personnel & Attendance",
-  },
 
   // --- Music & Repertoire ---
   {
@@ -199,62 +192,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     category: "Music & Repertoire",
   },
 
-  // --- Business & Admin ---
-  {
-    id: "reimbursements",
-    title: "Expense Reimbursements",
-    href: "/portal/reimbursements",
-    icon: Receipt,
-    requiredRoles: ["member", "guest"],
-    category: "Business & Admin",
-  },
-  {
-    id: "finance",
-    title: "Financial Ledger",
-    href: "/admin/finance",
-    icon: DollarSign,
-    requiredRoles: ["admin", "treasurer"],
-    category: "Business & Admin",
-  },
-  {
-    id: "crm",
-    title: "Client CRM & Contacts",
-    href: "/admin/contacts",
-    icon: Contact,
-    requiredRoles: ["admin", "gig_manager"],
-    category: "Business & Admin",
-  },
-  {
-    id: "inquiries",
-    title: "Booking Leads",
-    href: "/admin/inquiries",
-    icon: Inbox,
-    requiredRoles: ["admin", "gig_manager"],
-    category: "Intake",
-  },
-  {
-    id: "testimonials",
-    title: "Testimonials & Reviews Studio",
-    href: "/admin/testimonials",
-    icon: Star,
-    requiredRoles: ["admin", "web_manager", "community_manager"],
-    category: "Intake",
-  },
-  {
-    id: "contact-inbox",
-    title: "General Contact Inbox",
-    href: "/admin/contact-inbox",
-    icon: MessageSquareQuote,
-    requiredRoles: ["admin", "web_manager", "community_manager", "gig_manager"],
-    category: "Intake",
-  },
+  // --- Website & Intake ---
   {
     id: "pages",
     title: "CMS Page Studio",
     href: "/admin/pages",
     icon: LayoutTemplate,
     requiredRoles: ["admin", "web_manager"],
-    category: "Business & Admin",
+    category: "Website & Intake",
   },
   {
     id: "brand",
@@ -262,7 +207,57 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/theme",
     icon: Palette,
     requiredRoles: ["admin", "web_manager"],
-    category: "Business & Admin",
+    category: "Website & Intake",
+  },
+  {
+    id: "inquiries",
+    title: "Booking Leads",
+    href: "/admin/inquiries",
+    icon: Inbox,
+    requiredRoles: ["admin", "gig_manager"],
+    category: "Website & Intake",
+  },
+  {
+    id: "testimonials",
+    title: "Testimonials & Reviews Studio",
+    href: "/admin/testimonials",
+    icon: Star,
+    requiredRoles: ["admin", "web_manager", "community_manager"],
+    category: "Website & Intake",
+  },
+  {
+    id: "contact-inbox",
+    title: "General Contact Inbox",
+    href: "/admin/contact-inbox",
+    icon: MessageSquareQuote,
+    requiredRoles: ["admin", "web_manager", "community_manager", "gig_manager"],
+    category: "Website & Intake",
+  },
+  {
+    id: "auditions",
+    title: "Musician Applications & Auditions",
+    href: "/admin/auditions",
+    icon: UserPlus,
+    requiredRoles: ["admin", "membership_manager", "section_leader", "gig_manager"],
+    category: "Website & Intake",
+  },
+
+  // --- Finance ---
+  {
+    id: "finance",
+    title: "Financial Ledger",
+    href: "/admin/finance",
+    icon: DollarSign,
+    requiredRoles: ["admin", "treasurer"],
+    category: "Finance",
+  },
+  {
+    id: "reimbursements",
+    title: "Expense Reimbursements",
+    href: "/portal/reimbursements",
+    icon: Receipt,
+    requiredRoles: ["member", "guest"],
+    category: "Finance",
   },
   {
     id: "giving",
@@ -270,6 +265,16 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/giving",
     icon: HeartHandshake,
     requiredRoles: ["admin", "treasurer"],
+    category: "Finance",
+  },
+
+  // --- Business & Admin ---
+  {
+    id: "crm",
+    title: "Client CRM & Contacts",
+    href: "/admin/contacts",
+    icon: Contact,
+    requiredRoles: ["admin", "gig_manager"],
     category: "Business & Admin",
   },
   {
