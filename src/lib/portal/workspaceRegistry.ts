@@ -26,6 +26,9 @@ import {
   Receipt,
   UserCog,
   ShieldCheck,
+  UserPlus,
+  Star,
+  MessageSquareQuote,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -33,6 +36,7 @@ export type ToolCategory =
   | "Performances & Logistics"
   | "Personnel & Attendance"
   | "Music & Repertoire"
+  | "Intake"
   | "Business & Admin";
 
 export interface WorkspaceTool {
@@ -136,6 +140,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     requiredRoles: ["admin"],
     category: "Personnel & Attendance",
   },
+  {
+    id: "auditions",
+    title: "Musician Applications & Auditions",
+    href: "/admin/auditions",
+    icon: UserPlus,
+    requiredRoles: ["admin", "membership_manager", "section_leader", "gig_manager"],
+    category: "Personnel & Attendance",
+  },
 
   // --- Music & Repertoire ---
   {
@@ -218,7 +230,23 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/inquiries",
     icon: Inbox,
     requiredRoles: ["admin", "gig_manager"],
-    category: "Business & Admin",
+    category: "Intake",
+  },
+  {
+    id: "testimonials",
+    title: "Testimonials & Reviews Studio",
+    href: "/admin/testimonials",
+    icon: Star,
+    requiredRoles: ["admin", "web_manager", "community_manager"],
+    category: "Intake",
+  },
+  {
+    id: "contact-inbox",
+    title: "General Contact Inbox",
+    href: "/admin/contact-inbox",
+    icon: MessageSquareQuote,
+    requiredRoles: ["admin", "web_manager", "community_manager", "gig_manager"],
+    category: "Intake",
   },
   {
     id: "pages",

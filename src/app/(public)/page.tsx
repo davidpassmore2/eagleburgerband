@@ -5,6 +5,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { ContentPage, ContentPageSchema, ContentSection } from "@/lib/schema/page";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
+import IntakeCardsSection from "@/components/public/IntakeCardsSection";
 
 const DEFAULT_HOME_SECTIONS: ContentSection[] = [
   {
@@ -181,6 +182,9 @@ export default function PublicHomePage() {
       {sectionsToRender.map((section) => (
         <PublicSectionRenderer key={section.id} section={section} />
       ))}
+
+      {/* Three Intake Flows Cards Section */}
+      <IntakeCardsSection />
     </div>
   );
 }

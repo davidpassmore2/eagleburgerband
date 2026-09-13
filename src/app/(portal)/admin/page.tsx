@@ -11,6 +11,7 @@ const CATEGORIES: ToolCategory[] = [
   "Performances & Logistics",
   "Personnel & Attendance",
   "Music & Repertoire",
+  "Intake",
   "Business & Admin",
 ];
 

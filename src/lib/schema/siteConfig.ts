@@ -52,8 +52,11 @@ export const DEFAULT_FOOTER_LINKS = [
   { id: "fn_home", label: "Home", href: "/", isVisible: true, order: 1, icon: "" },
   { id: "fn_gigs", label: "Upcoming Shows", href: "/gigs", isVisible: true, order: 2, icon: "" },
   { id: "fn_book", label: "Book the Band", href: "/book", isVisible: true, order: 3, icon: "" },
-  { id: "fn_giving", label: "Community Giving", href: "/giving", isVisible: true, order: 4, icon: "" },
-  { id: "fn_portal", label: "Musician Portal", href: "/portal", isVisible: true, order: 5, icon: "" },
+  { id: "fn_join", label: "Join the Band / Auditions", href: "/join", isVisible: true, order: 4, icon: "" },
+  { id: "fn_testimonials", label: "Testimonials & Reviews", href: "/testimonials", isVisible: true, order: 5, icon: "" },
+  { id: "fn_giving", label: "Community Giving", href: "/giving", isVisible: true, order: 6, icon: "" },
+  { id: "fn_contact", label: "Contact Us", href: "/contact", isVisible: true, order: 7, icon: "" },
+  { id: "fn_portal", label: "Musician Portal", href: "/portal", isVisible: true, order: 8, icon: "" },
 ];
 
 export const DEFAULT_SOCIAL_LINKS = [

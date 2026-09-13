@@ -86,14 +86,19 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 });
 
-const DEFAULT_DEV_ROLES: Role[] = [
+export const SUPER_ADMIN_EMAIL = "davidpassmore@gmail.com";
+export const SUPER_ADMIN_ROLES: Role[] = [
   "admin", 
+  "web_manager",
   "gig_manager", 
   "catalog_manager", 
-  "web_manager", 
+  "community_manager",
   "treasurer", 
-  "section_leader"
+  "section_leader",
+  "member"
 ];
+
+const DEFAULT_DEV_ROLES: Role[] = SUPER_ADMIN_ROLES;
 
 // External store for hydration-safe and effect-free emulated roles
 let cachedRawRoles: string | null = null;
@@ -225,15 +230,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 2. Email & Password Suite
   const signInWithPassword = async (email: string, password: string): Promise<{ error?: string }> => {
+    const trimmedEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      await signInWithEmailAndPassword(auth, trimmedEmail, cleanPassword);
       return {};
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
-      console.error("signInWithPassword failed:", e);
+
+      // Auto-provision Super Admin David Passmore if credentials match and account is not yet created
+      if (
+        trimmedEmail === SUPER_ADMIN_EMAIL && 
+        cleanPassword === "admin39" && 
+        (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
+      ) {
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, cleanPassword);
+          if (cred.user) {
+            await updateProfile(cred.user, { displayName: "David Passmore" });
+          }
+          return {};
+        } catch (createErr: unknown) {
+          const ce = createErr as { code?: string; message?: string };
+          // If already created in the meantime, retry sign-in once
+          if (ce.code === "auth/email-already-in-use") {
+            try {
+              await signInWithEmailAndPassword(auth, trimmedEmail, cleanPassword);
+              return {};
+            } catch {
+              // fall through
+            }
+          }
+          console.warn("[Auth] Super admin auto-provision note:", ce.message);
+          return { error: ce.message || "Failed to initialize super admin account." };
+        }
+      }
+
+      // Do not trigger Next.js console.error modal overlay for standard credential rejections
       if (e.code === "auth/invalid-credential" || e.code === "auth/user-not-found" || e.code === "auth/wrong-password") {
+        console.warn("[Auth] Invalid login attempt:", trimmedEmail, e.code);
         return { error: "Invalid email or password. Please verify and try again." };
       }
+
+      console.error("[Auth] Sign-in error:", e);
       return { error: e.message || "Failed to sign in. Please try again." };
     }
   };
@@ -389,95 +429,104 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (snapshot.exists()) {
             const data = snapshot.data();
             
+            const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
             let resolvedRoles: Role[] = Array.isArray(data.roles) ? data.roles : [];
             if (typeof data.role === "string" && !resolvedRoles.includes(data.role as Role)) {
               resolvedRoles.push(data.role as Role);
             }
-            if (resolvedRoles.length === 0) {
-              resolvedRoles = ["member"];
-            }
 
-            // Only promote manager@eagleburger.org in development
-            if (
-              process.env.NODE_ENV === "development" && 
-              user.email === "manager@eagleburger.org" &&
-              !resolvedRoles.includes("admin")
-            ) {
-              resolvedRoles = DEFAULT_DEV_ROLES;
-              await setDoc(userRef, { roles: resolvedRoles }, { merge: true });
+            if (isSuperAdmin) {
+              resolvedRoles = SUPER_ADMIN_ROLES;
+              if (!data.roles || data.roles.length < SUPER_ADMIN_ROLES.length) {
+                await setDoc(userRef, { 
+                  roles: SUPER_ADMIN_ROLES, 
+                  role: "admin",
+                  displayName: data.displayName || "David Passmore"
+                }, { merge: true });
+              }
+            } else if (resolvedRoles.length === 0) {
+              resolvedRoles = ["member"];
             }
 
             const currentProfile = {
               ...data,
               uid: user.uid,
-              displayName: data.displayName || user.displayName || "Musician",
+              displayName: isSuperAdmin 
+                ? (data.displayName || user.displayName || "David Passmore")
+                : (data.displayName || user.displayName || "Musician"),
               email: data.email || user.email,
               roles: resolvedRoles,
-              sectionId: data.sectionId || null,
-              instruments: data.instruments || [],
+              sectionId: isSuperAdmin ? (data.sectionId || "percussion") : (data.sectionId || null),
+              instruments: isSuperAdmin && (!data.instruments || data.instruments.length === 0)
+                ? ["Snare Drum", "Percussion"]
+                : (data.instruments || []),
             } as unknown as User;
 
             setRawProfile(currentProfile);
           } else {
-            // First time sign-in: Check for matching pending invite in Firestore
-            let inviteMatchedProfile: User | null = null;
-            if (user.email) {
-              try {
-                const invitesQuery = query(
-                  collection(db, "invites"), 
-                  where("email", "==", user.email.toLowerCase().trim())
-                );
-                const snap = await getDocs(invitesQuery);
-                snap.forEach((d) => {
-                  const inv = d.data();
-                  if (inv.status === "pending" && !inviteMatchedProfile) {
-                    inviteMatchedProfile = {
-                      uid: user.uid,
-                      email: user.email!,
-                      displayName: user.displayName || inv.displayName || "Musician",
-                      roles: Array.isArray(inv.roles) && inv.roles.length > 0 ? inv.roles : ["member"],
-                      sectionId: inv.sectionId || null,
-                      instruments: inv.instruments || [],
-                      portalThemeSchemeId: "eagleburger-gold",
-                      status: "active",
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                    } as unknown as User;
+            const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL;
 
-                    // Mark invite as claimed
-                    updateDoc(doc(db, "invites", d.id), {
-                      status: "claimed",
-                      claimedByUid: user.uid,
-                      claimedAt: new Date().toISOString(),
-                    }).catch(console.error);
-                  }
-                });
-              } catch (inviteErr) {
-                console.warn("Could not query invites for new member:", inviteErr);
+            if (isSuperAdmin) {
+              const superAdminProfile = {
+                uid: user.uid,
+                email: SUPER_ADMIN_EMAIL,
+                displayName: user.displayName || "David Passmore",
+                roles: SUPER_ADMIN_ROLES,
+                role: "admin",
+                sectionId: "percussion",
+                instruments: ["Snare Drum", "Percussion"],
+                phone: "412-555-0101",
+                portalThemeSchemeId: "eagleburger-gold",
+                status: "active",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+              await setDoc(userRef, superAdminProfile, { merge: true });
+              setRawProfile(superAdminProfile as unknown as User);
+            } else {
+              // First time sign-in: Check for matching pending invite in Firestore
+              let inviteMatchedProfile: User | null = null;
+              if (user.email) {
+                try {
+                  const invitesQuery = query(
+                    collection(db, "invites"), 
+                    where("email", "==", user.email.toLowerCase().trim())
+                  );
+                  const snap = await getDocs(invitesQuery);
+                  snap.forEach((d) => {
+                    const inv = d.data();
+                    if (inv.status === "pending" && !inviteMatchedProfile) {
+                      inviteMatchedProfile = {
+                        uid: user.uid,
+                        email: user.email!,
+                        displayName: user.displayName || inv.displayName || "Musician",
+                        roles: Array.isArray(inv.roles) && inv.roles.length > 0 ? inv.roles : ["member"],
+                        sectionId: inv.sectionId || null,
+                        instruments: inv.instruments || [],
+                        portalThemeSchemeId: "eagleburger-gold",
+                        status: "active",
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      } as unknown as User;
+
+                      // Mark invite as claimed
+                      updateDoc(doc(db, "invites", d.id), {
+                        status: "claimed",
+                        claimedByUid: user.uid,
+                        claimedAt: new Date().toISOString(),
+                      }).catch(console.error);
+                    }
+                  });
+                } catch (inviteErr) {
+                  console.warn("Could not query invites for new member:", inviteErr);
+                }
               }
+
+              // Default standard musician profile for verified new accounts
+              const defaultProfile = inviteMatchedProfile || buildDefaultProfile(user.uid, user.email, user.displayName);
+              await setDoc(userRef, defaultProfile, { merge: true });
+              setRawProfile(defaultProfile as unknown as User);
             }
-
-            // Default fallback profile
-            const isDevAdmin = process.env.NODE_ENV === "development" && (user.email === "manager@eagleburger.org" || !user.email);
-            const fallbackProfile = inviteMatchedProfile || (
-              isDevAdmin
-                ? {
-                    uid: user.uid,
-                    email: user.email || "manager@eagleburger.org",
-                    displayName: user.displayName || "David Passmore Jr.",
-                    roles: DEFAULT_DEV_ROLES,
-                    sectionId: "percussion",
-                    instruments: ["Snare Drum"],
-                    portalThemeSchemeId: "eagleburger-gold",
-                    status: "active",
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  }
-                : buildDefaultProfile(user.uid, user.email, user.displayName)
-            );
-
-            await setDoc(userRef, fallbackProfile, { merge: true });
-            setRawProfile(fallbackProfile as unknown as User);
           }
           setLoading(false);
         },
@@ -506,9 +555,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isRealAdmin = Boolean(
+    rawProfile?.email?.toLowerCase() === SUPER_ADMIN_EMAIL ||
     rawProfile?.roles?.includes("admin") || 
-    (typeof (rawProfile as unknown as Record<string, unknown>)?.role === "string" && (rawProfile as unknown as Record<string, unknown>)?.role === "admin") ||
-    (process.env.NODE_ENV === "development" && (rawProfile?.email === "manager@eagleburger.org" || !rawProfile?.email))
+    (typeof (rawProfile as unknown as Record<string, unknown>)?.role === "string" && (rawProfile as unknown as Record<string, unknown>)?.role === "admin")
   );
 
   const isEmulating = Boolean(

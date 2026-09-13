@@ -140,19 +140,50 @@ export default function PublicFooter() {
           </ul>
         </div>
 
-        {/* Col 3: Community & Booking Callout */}
-        <div>
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Booking Inquiries</h4>
-          <p className="text-xs text-slate-400 leading-relaxed mb-3">
-            Planning a festival, parade, block party, or special event? Inquire with our gig coordination team.
-          </p>
-          <Link
-            href="/book"
-            suppressHydrationWarning
-            className="inline-block bg-slate-900 hover:bg-slate-800 border border-slate-700 text-yellow-400 font-bold px-4 py-2 rounded-lg text-xs transition"
-          >
-            Submit Inquiry &rarr;
-          </Link>
+        {/* Col 3: Community & Direct Links */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Book the Band</h4>
+            <p className="text-xs text-slate-400 leading-relaxed mb-2">
+              Parades, festivals, block parties, and celebrations.
+            </p>
+            <Link
+              href="/book"
+              suppressHydrationWarning
+              className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-yellow-400 font-bold px-3 py-1.5 rounded-lg text-xs transition"
+            >
+              Event Inquiry &rarr;
+            </Link>
+          </div>
+          <div className="pt-2 border-t border-slate-900">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Get Involved</h4>
+            <div className="flex flex-col gap-1.5 text-xs" suppressHydrationWarning>
+              <Link 
+                href="/join" 
+                suppressHydrationWarning 
+                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span aria-hidden="true">&bull;</span>
+                <span>Join the Band / Auditions</span>
+              </Link>
+              <Link 
+                href="/testimonials" 
+                suppressHydrationWarning 
+                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span aria-hidden="true">&bull;</span>
+                <span>Testimonials & Reviews</span>
+              </Link>
+              <Link 
+                href="/contact" 
+                suppressHydrationWarning 
+                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span aria-hidden="true">&bull;</span>
+                <span>General Contact & Press</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

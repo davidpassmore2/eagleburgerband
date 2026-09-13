@@ -7,11 +7,27 @@ import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import { hasRole } from "@/lib/auth/permissions";
-import { LogIn, LogOut, Compass, BookOpen, Palette, SlidersHorizontal, Smartphone, Shield } from "lucide-react";
+import { 
+  LogIn, 
+  LogOut, 
+  Compass, 
+  BookOpen, 
+  Palette, 
+  SlidersHorizontal, 
+  Smartphone, 
+  Shield, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  Pin, 
+  PinOff, 
+  Menu, 
+  X 
+} from "lucide-react";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
 import { RoleEmulationModal } from "@/components/portal/RoleEmulationModal";
 import { PortalLoadingProvider } from "@/lib/context/PortalLoadingContext";
+import PwaInstallBanner from "@/components/common/PwaInstallBanner";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -22,10 +38,35 @@ function useMounted() {
   );
 }
 
+const sidebarListeners = new Set<() => void>();
+function subscribeSidebarPinned(callback: () => void) {
+  sidebarListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    sidebarListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+function notifySidebarChange() {
+  sidebarListeners.forEach((cb) => cb());
+}
+function getSidebarPinnedSnapshot(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return localStorage.getItem("ebb_sidebar_pinned") !== "false";
+  } catch {
+    return true;
+  }
+}
+function getSidebarPinnedServerSnapshot(): boolean {
+  return true;
+}
+
 const CATEGORY_ORDER: ToolCategory[] = [
   "Performances & Logistics",
   "Personnel & Attendance",
   "Music & Repertoire",
+  "Intake",
   "Business & Admin",
 ];
 
@@ -46,6 +87,38 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const mounted = useMounted();
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isEmulationModalOpen, setIsEmulationModalOpen] = useState(false);
+
+  // Sidebar responsive drawer & pin open states via useSyncExternalStore
+  const isPinned = useSyncExternalStore(
+    subscribeSidebarPinned,
+    getSidebarPinnedSnapshot,
+    getSidebarPinnedServerSnapshot
+  );
+  const [isOpen, setIsOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  // Close unpinned drawer on route change
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (!isPinned && isOpen) {
+      setIsOpen(false);
+    }
+  }
+
+  const handleTogglePin = () => {
+    const next = !isPinned;
+    try {
+      localStorage.setItem("ebb_sidebar_pinned", String(next));
+    } catch {
+      // Ignore
+    }
+    notifySidebarChange();
+    if (next) {
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !firebaseUser && mounted) {
@@ -122,34 +195,123 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         ...getScopedStyles("portal"),
         backgroundColor: "var(--ebb-background)",
       }}
-      className="min-h-screen text-slate-100 flex flex-col md:flex-row transition-colors duration-300"
+      className="h-screen max-h-screen h-dvh max-h-dvh overflow-hidden text-slate-100 flex flex-col md:flex-row transition-colors duration-300 relative"
     >
-      {/* Sidebar container with pinned header and footer */}
+      {/* Mobile Top App Bar (< md) */}
+      <div 
+        suppressHydrationWarning
+        style={{
+          backgroundColor: "var(--ebb-surface)",
+          borderColor: "var(--ebb-border)",
+        }}
+        className="md:hidden flex items-center justify-between px-4 py-3 border-b shrink-0 z-30 sticky top-0"
+      >
+        <div className="flex items-center gap-2.5">
+          <div 
+            suppressHydrationWarning
+            className="text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider shadow"
+            style={{ backgroundColor: "var(--ebb-primary)" }}
+          >
+            EBB
+          </div>
+          <span className="font-bold text-xs text-white truncate">{theme.bandName}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 transition cursor-pointer"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+        >
+          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Backdrop scrim when unpinned drawer is open on desktop or mobile */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className={`fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 transition-opacity ${
+            isPinned ? "md:hidden" : "block"
+          }`}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar container with pinned header and footer, toggle mode, and pin open option */}
       <aside 
         suppressHydrationWarning
         style={{
           backgroundColor: "var(--ebb-surface)",
           borderColor: "var(--ebb-border)",
         }}
-        className="w-full md:w-64 border-b md:border-b-0 md:border-r p-4 flex flex-col justify-between shrink-0 md:h-screen md:sticky md:top-0 transition-colors duration-300"
+        className={`
+          p-4 flex flex-col justify-between shrink-0 h-screen h-dvh max-h-screen max-h-dvh overflow-hidden transition-all duration-300 ease-in-out
+          ${
+            isPinned 
+              ? "hidden md:flex md:w-72 lg:w-80 md:border-r md:sticky md:top-0" 
+              : `fixed inset-y-0 left-0 z-50 w-80 md:w-76 lg:w-80 border-r shadow-2xl ${
+                  isOpen ? "translate-x-0" : "-translate-x-full"
+                }`
+          }
+          ${
+            isPinned && isOpen 
+              ? "!flex fixed inset-y-0 left-0 z-50 w-80 border-r shadow-2xl md:static md:w-72 lg:w-80 md:shadow-none" 
+              : ""
+          }
+        `}
       >
         <div className="flex flex-col min-h-0 flex-1">
-          {/* Pinned Top Brand Header */}
+          {/* Top Brand & Pin/Collapse Action Header */}
           <div 
             suppressHydrationWarning
             style={{ borderColor: "var(--ebb-border)" }}
-            className="flex items-center gap-3 pb-4 border-b shrink-0"
+            className="flex items-center justify-between pb-4 border-b shrink-0"
           >
-            <div 
-              suppressHydrationWarning
-              className="text-slate-950 font-black px-2 py-1 rounded text-sm tracking-wider shadow"
-              style={{ backgroundColor: "var(--ebb-primary)" }}
-            >
-              EBB
+            <div className="flex items-center gap-3">
+              <div 
+                suppressHydrationWarning
+                className="text-slate-950 font-black px-2 py-1 rounded text-sm tracking-wider shadow"
+                style={{ backgroundColor: "var(--ebb-primary)" }}
+              >
+                EBB
+              </div>
+              <div>
+                <div className="font-bold text-sm text-white">{theme.bandName}</div>
+                <div className="text-[11px] text-slate-400">Musician Portal</div>
+              </div>
             </div>
-            <div>
-              <div className="font-bold text-sm text-white">{theme.bandName}</div>
-              <div className="text-[11px] text-slate-400">Musician Portal</div>
+
+            {/* Sidebar Toggle & Pin Controls */}
+            <div className="flex items-center gap-1">
+              {/* Pin / Unpin Button (Desktop) */}
+              <button
+                type="button"
+                onClick={handleTogglePin}
+                title={isPinned ? "Unpin sidebar (auto-collapse)" : "Pin sidebar open"}
+                className={`p-1.5 rounded-lg border transition cursor-pointer hidden md:flex items-center justify-center ${
+                  isPinned
+                    ? "bg-yellow-400/10 border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/20"
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                }`}
+                aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
+              >
+                {isPinned ? <Pin className="w-3.5 h-3.5" /> : <PinOff className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* Close Drawer Button */}
+              {(!isPinned || isOpen) && (
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  title="Close sidebar"
+                  className={`p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer ${
+                    isPinned ? "md:hidden" : "flex"
+                  }`}
+                  aria-label="Close sidebar"
+                >
+                  <PanelLeftClose className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -160,26 +322,28 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                 href="/portal"
                 suppressHydrationWarning
                 style={isPortalActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition ${
+                className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   isPortalActive
                     ? "text-slate-950 font-bold shadow"
                     : "text-slate-300 hover:bg-slate-800"
                 }`}
               >
-                <Compass className="w-4 h-4" /> Home Base
+                <Compass className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="leading-snug break-words whitespace-normal flex-1 text-left">Home Base</span>
               </Link>
 
               <Link
                 href="/portal/help"
                 suppressHydrationWarning
                 style={isHelpActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded text-xs font-semibold transition ${
+                className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   isHelpActive
                     ? "text-slate-950 font-bold shadow"
                     : "text-slate-300 hover:bg-slate-800"
                 }`}
               >
-                <BookOpen className="w-4 h-4" /> Help & Guides
+                <BookOpen className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="leading-snug break-words whitespace-normal flex-1 text-left">Help & Guides</span>
               </Link>
             </div>
 
@@ -204,14 +368,16 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                               href={tool.href}
                               suppressHydrationWarning
                               style={isActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                              className={`flex items-center gap-2.5 px-3 py-2 rounded text-xs font-medium transition ${
+                              className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition ${
                                 isActive
                                   ? "text-slate-950 font-semibold shadow"
                                   : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                               }`}
                             >
-                              <Icon className="w-4 h-4 shrink-0" />
-                              <span className="truncate">{tool.title}</span>
+                              <Icon className="w-4 h-4 shrink-0 mt-0.5" />
+                              <span className="leading-snug break-words whitespace-normal flex-1 text-left">
+                                {tool.title}
+                              </span>
                             </Link>
                           );
                         })}
@@ -228,7 +394,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         <div 
           suppressHydrationWarning
           style={{ borderColor: "var(--ebb-border)" }}
-          className="pt-4 border-t mt-4 shrink-0"
+          className="pt-3 border-t mt-2 shrink-0"
         >
           {!mounted || loading ? (
             <div className="text-xs text-slate-500">Loading...</div>
@@ -250,14 +416,14 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                 >
                   {profile?.displayName?.[0] || "U"}
                 </div>
-                <div className="overflow-hidden flex-1">
-                  <div className="text-xs font-bold text-white group-hover:text-amber-400 truncate transition">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-white group-hover:text-amber-400 leading-snug break-words transition">
                     {profile?.displayName || firebaseUser.displayName || "Musician"}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                  <div className="text-[10px] text-slate-400 leading-tight break-words flex flex-wrap items-center gap-1 mt-0.5">
                     <span>{profile?.roles?.join(", ") || "member"}</span>
                     {authProviderId && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono shrink-0">
                         {authProviderId === "google.com"
                           ? "Google"
                           : authProviderId === "apple.com"
@@ -270,13 +436,13 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                       </span>
                     )}
                     {profile?.smsConsent && profile?.phone && (
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">SMS</span>
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold shrink-0">SMS</span>
                     )}
                   </div>
                 </div>
               </Link>
 
-              <div className="flex items-center gap-1.5 pt-1">
+              <div className="grid grid-cols-4 gap-1 pt-1">
                 {isRealAdmin && (
                   <button
                     type="button"
@@ -288,10 +454,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                       borderColor: isEmulating ? "#b45309" : "var(--ebb-border)",
                       color: isEmulating ? "#fde047" : undefined,
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-200 hover:text-white py-1.5 px-2 rounded-xl transition border font-medium"
+                    className="flex items-center justify-center gap-1 text-[11px] text-slate-200 hover:text-white py-1.5 px-1 rounded-xl transition border font-medium"
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isEmulating ? "Emulating" : "Roles"}</span>
+                    <SlidersHorizontal className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span className="truncate">{isEmulating ? "Emu" : "Roles"}</span>
                   </button>
                 )}
 
@@ -302,9 +468,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                     backgroundColor: "var(--ebb-surface-muted)",
                     borderColor: "var(--ebb-border)",
                   }}
-                  className="flex items-center justify-center gap-1 text-xs text-slate-200 hover:text-white py-1.5 px-2.5 rounded-xl transition border font-medium"
+                  className="flex items-center justify-center gap-1 text-[11px] text-slate-200 hover:text-white py-1.5 px-1 rounded-xl transition border font-medium"
                 >
-                  <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                  <Smartphone className="w-3 h-3 text-amber-400 shrink-0" />
                   <span>SMS</span>
                 </Link>
 
@@ -317,9 +483,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                     backgroundColor: "var(--ebb-surface-muted)",
                     borderColor: "var(--ebb-border)",
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-200 hover:text-white py-1.5 px-2 rounded-xl transition border font-medium"
+                  className="flex items-center justify-center gap-1 text-[11px] text-slate-200 hover:text-white py-1.5 px-1 rounded-xl transition border font-medium"
                 >
-                  <Palette className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} />
+                  <Palette className="w-3 h-3 shrink-0" style={{ color: "var(--ebb-primary)" }} />
                   <span>Theme</span>
                 </button>
 
@@ -332,9 +498,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                     backgroundColor: "var(--ebb-surface-muted)",
                     borderColor: "var(--ebb-border)",
                   }}
-                  className="flex items-center justify-center gap-1 text-xs text-slate-400 hover:text-rose-400 py-1.5 px-2.5 rounded-xl transition border font-medium"
+                  className="flex items-center justify-center gap-1 text-[11px] text-slate-400 hover:text-rose-400 py-1.5 px-1 rounded-xl transition border font-medium"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3 h-3 shrink-0" />
                   <span>Exit</span>
                 </button>
               </div>
@@ -355,12 +521,33 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
       <main 
         suppressHydrationWarning
         style={{ backgroundColor: "var(--ebb-background)" }}
-        className="flex-1 overflow-y-auto min-w-0 transition-colors duration-300 flex flex-col"
+        className="flex-1 h-full md:h-screen md:h-dvh max-h-screen max-h-dvh overflow-y-auto min-w-0 transition-colors duration-300 flex flex-col"
       >
+        {/* Unpinned Sidebar Slide-Out Trigger Header (Desktop) */}
+        {!isPinned && (
+          <div className="hidden md:flex items-center justify-between px-6 py-2.5 border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-sm shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition shadow-sm cursor-pointer"
+              title="Open navigation sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4 text-yellow-400" />
+              <span>Navigation Menu</span>
+            </button>
+            <div className="text-[11px] font-mono text-slate-500">
+              Sidebar unpinned (maximized workspace)
+            </div>
+          </div>
+        )}
+
         <RoleEmulationBanner onOpenCustomModal={() => setIsEmulationModalOpen(true)} />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
           {children}
         </div>
+
+        {/* PWA Musician Install Banner */}
+        <PwaInstallBanner />
       </main>
 
       {/* Interactive Portal Theme Selector Modal */}

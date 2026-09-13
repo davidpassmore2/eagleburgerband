@@ -90,13 +90,13 @@ async function runSeed() {
   const users = [
     {
       uid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
-      email: "manager@eagleburger.org",
-      displayName: "David Passmore Jr.",
-      roles: ["admin", "gig_manager", "catalog_manager", "web_manager", "treasurer", "section_leader"],
+      email: "davidpassmore@gmail.com",
+      displayName: "David Passmore",
+      roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "treasurer", "section_leader", "member"],
       role: "admin",
       status: "active",
       sectionId: "percussion",
-      instruments: ["Snare Drum"],
+      instruments: ["Snare Drum", "Percussion"],
       phone: "412-555-0101",
       createdAt: new Date().toISOString(),
     },
@@ -909,6 +909,233 @@ async function runSeed() {
     await setDoc(doc(db, "donations", d.id), d, { merge: true });
   }
   console.log(`✅ Seeded ${sampleDonations.length} charitable donations into 'donations' collection.`);
+
+  // ==========================================
+  // 12. Testimonials & Client Reviews
+  // ==========================================
+  const sampleTestimonials = [
+    {
+      id: "test_bloomfield_parade",
+      authorName: "Sarah M.",
+      roleOrEvent: "Parade Coordinator",
+      organization: "Bloomfield Little Italy Days",
+      email: "sarah.m@pittsburghfestivals.org",
+      quote: "The Eagleburger Band brought unmatched energy to our parade! Thousands of people were dancing on the sidewalks as the brass line roared down Liberty Ave.",
+      rating: 5,
+      eventDate: "2025-08-16",
+      tag: "Parade",
+      permissionToPublish: true,
+      status: "featured",
+      notes: "Headline quote for homepage highlight.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "test_art_festival",
+      authorName: "Marcus Vance",
+      roleOrEvent: "Art Festival Director",
+      organization: "Three Rivers Arts Gathering",
+      email: "marcus@artsfestpa.com",
+      quote: "Completely acoustic and mobile. They marched directly through the vendor plazas and blew everyone away. We are booking them again immediately.",
+      rating: 5,
+      eventDate: "2025-06-07",
+      tag: "Festival",
+      permissionToPublish: true,
+      status: "approved",
+      notes: "Verified by gig manager.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "test_wedding_party",
+      authorName: "Emily & Jason K.",
+      roleOrEvent: "Newlyweds",
+      organization: "Private Wedding Reception",
+      email: "emily.k@gmail.com",
+      quote: "Eagleburger crashed our cocktail hour as a surprise second-line brass entrance. Our guests are still talking about it months later!",
+      rating: 5,
+      eventDate: "2025-09-20",
+      tag: "Wedding",
+      permissionToPublish: true,
+      status: "approved",
+      notes: "Permission confirmed via email.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "test_pending_fan",
+      authorName: "Tyler Higgins",
+      roleOrEvent: "Fan / Spectator",
+      organization: "South Side St. Patrick's Parade",
+      email: "tyler.higgins@gmail.com",
+      quote: "Best drumline grooves in Pittsburgh. The sousaphone bass line could shake a building. Loved every second.",
+      rating: 5,
+      eventDate: "2026-03-14",
+      tag: "Parade",
+      permissionToPublish: true,
+      status: "pending",
+      notes: "Submitted from public form; awaiting review.",
+      schemaVersion: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const t of sampleTestimonials) {
+    await setDoc(doc(db, "testimonials", t.id), t, { merge: true });
+  }
+  console.log(`✅ Seeded ${sampleTestimonials.length} testimonials into 'testimonials' collection.`);
+
+  // ==========================================
+  // 13. Musician Applications & Auditions
+  // ==========================================
+  const sampleAuditions = [
+    {
+      id: "aud_trom_carlos",
+      name: "Carlos Rivera",
+      email: "carlos.rivera.trombone@gmail.com",
+      phone: "412-555-0819",
+      primaryInstrument: "Tenor Trombone",
+      targetSectionId: "trombones",
+      secondaryInstruments: "Bass Trombone",
+      experienceLevel: "Community Band / Brass Band",
+      sampleLinks: "https://www.youtube.com/watch?v=sample1",
+      availability: "Available for Tuesday rehearsals and weekend parades",
+      bioNotes: "Played 4 years in college marching band. Relocated to Lawrenceville last year and eager to march with a street brass unit!",
+      status: "invited_to_rehearsal",
+      assignedLeaderUid: "user_tbone_mike",
+      reviewerNotes: "Great sound on video clip. Invited to upcoming Tuesday sectional.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "aud_per_maya",
+      name: "Maya Patel",
+      email: "maya.patel.drums@gmail.com",
+      phone: "412-555-0432",
+      primaryInstrument: "Snare Drum",
+      targetSectionId: "percussion",
+      secondaryInstruments: "Tenor Quads, Bass Drum",
+      experienceLevel: "High School / College Marching",
+      sampleLinks: "https://www.youtube.com/watch?v=sample2",
+      availability: "Evenings and weekends",
+      bioNotes: "DCI drum corps experience (2022). Looking for a fun, high-energy acoustic drumline ensemble in Pittsburgh.",
+      status: "new",
+      assignedLeaderUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
+      reviewerNotes: "",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "aud_sousa_greg",
+      name: "Greg Thornton",
+      email: "greg.thornton@gmail.com",
+      phone: "724-555-0188",
+      primaryInstrument: "Sousaphone",
+      targetSectionId: "sousaphones",
+      secondaryInstruments: "Concert Tuba",
+      experienceLevel: "Semi-Pro / Professional",
+      sampleLinks: "",
+      availability: "Full weekend availability",
+      bioNotes: "Seasoned low brass player with own silver fiberglass sousaphone. Love New Orleans funk and Balkan street grooves.",
+      status: "under_review",
+      assignedLeaderUid: "user_rubin_jonathan",
+      reviewerNotes: "Owns horn, very solid tone. Jonathan reviewing.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const a of sampleAuditions) {
+    await setDoc(doc(db, "auditions", a.id), a, { merge: true });
+  }
+  console.log(`✅ Seeded ${sampleAuditions.length} musician audition applications into 'auditions' collection.`);
+
+  // ==========================================
+  // 14. General Contact Messages
+  // ==========================================
+  const sampleContactMessages = [
+    {
+      id: "msg_press_tribune",
+      name: "Rachel Stern",
+      email: "rstern@triblive.com",
+      phone: "412-555-0922",
+      category: "press",
+      subject: "Trib Total Media Feature Article on Pittsburgh Street Bands",
+      message: "Hi! I am working on a culture feature covering grassroots mobile brass ensembles in Western PA. Would love to interview your band director or gig coordinator for a 15-minute phone chat this week.",
+      status: "in_progress",
+      assignedToUid: "",
+      internalNotes: "David Passmore replied with contact details. Phone interview slated for Thursday.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "msg_comm_greensburg",
+      name: "Hannah Brooks",
+      email: "hbrooks@greensburgpa.gov",
+      phone: "724-555-0371",
+      category: "community",
+      subject: "Partnership for Greensburg Summer Solstice Stroll",
+      message: "Our parks & recreation committee is planning our annual Solstice Stroll in June. We would love to know if Eagleburger Band participates in municipal community outreach partnerships.",
+      status: "new",
+      assignedToUid: "",
+      internalNotes: "",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "msg_merch_fan",
+      name: "Evan O'Connor",
+      email: "evan.oc@gmail.com",
+      phone: "",
+      category: "merch",
+      subject: "Brass & Battery Hoodies restock?",
+      message: "Saw your band members wearing the yellow & black Eagleburger windbreakers at Greenfield parade. Are those available for public purchase?",
+      status: "resolved",
+      assignedToUid: "",
+      internalNotes: "Directed to online fan merch store link.",
+      schemaVersion: 1,
+      createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const m of sampleContactMessages) {
+    await setDoc(doc(db, "contact_messages", m.id), m, { merge: true });
+  }
+  console.log(`✅ Seeded ${sampleContactMessages.length} contact messages into 'contact_messages' collection.`);
+
+  // 15. Ensure Super Admin in Auth Emulator
+  try {
+    const authRes = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key-for-emulator", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "davidpassmore@gmail.com",
+        password: "admin39",
+        displayName: "David Passmore",
+        returnSecureToken: true,
+      }),
+    });
+    if (authRes.ok) {
+      console.log("✅ Seeded Super Admin Auth user: davidpassmore@gmail.com (admin39)");
+    } else {
+      const data = await authRes.json() as { error?: { message?: string } };
+      if (data.error?.message === "EMAIL_EXISTS") {
+        console.log("ℹ️ Super Admin Auth account confirmed: davidpassmore@gmail.com");
+      }
+    }
+  } catch (authErr) {
+    console.warn("⚠️ Auth emulator note:", authErr);
+  }
 
   console.log("🎉 Complete emulator seed finished! All collections and sections populated.");
   process.exit(0);

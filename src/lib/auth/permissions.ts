@@ -66,6 +66,18 @@ export function canManageGiving(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "treasurer", "community_manager"]);
 }
 
+export function canManageTestimonials(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "web_manager", "community_manager"]);
+}
+
+export function canManageAuditions(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "membership_manager", "gig_manager", "section_leader"]);
+}
+
+export function canManageContactInbox(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "web_manager", "community_manager", "gig_manager"]);
+}
+
 export function isSectionLeader(user: User | null, sectionId?: string): boolean {
   if (!user || !user.roles) return false;
   const userRoles = user.roles as readonly string[];
