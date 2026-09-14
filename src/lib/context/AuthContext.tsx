@@ -370,7 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 4. Dev Account & Persona Fast Switcher
   const signInWithDevAccount = async (
     targetRoles: Role[] = DEFAULT_DEV_ROLES,
-    personaName = "David Passmore Jr.",
+    personaName = "Band Operations Manager",
     personaSection = "percussion"
   ) => {
     try {

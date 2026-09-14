@@ -4,6 +4,8 @@ import {
   connectFirestoreEmulator, 
   doc, 
   setDoc, 
+  deleteDoc,
+  getDocs,
   collection 
 } from "firebase/firestore";
 
@@ -20,6 +22,62 @@ async function runSeed() {
   console.log("🌱 Connecting directly to local Firestore emulator (127.0.0.1:8080)...");
 
   // ==========================================
+  // 0. Super Admin Account Resolution & Hygiene
+  // ==========================================
+  let superAdminUid = "iFlz1Htyk3PTEold26gYqIvHQciu";
+  try {
+    const authRes = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key-for-emulator", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "davidpassmore@gmail.com",
+        password: "admin39",
+        displayName: "David Passmore",
+        returnSecureToken: true,
+      }),
+    });
+    if (authRes.ok) {
+      const data = await authRes.json() as { localId?: string };
+      if (data.localId) superAdminUid = data.localId;
+      console.log(`✅ Seeded Super Admin Auth user: davidpassmore@gmail.com (${superAdminUid})`);
+    } else {
+      const loginRes = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake-api-key-for-emulator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "davidpassmore@gmail.com",
+          password: "admin39",
+          returnSecureToken: true,
+        }),
+      });
+      if (loginRes.ok) {
+        const loginData = await loginRes.json() as { localId?: string };
+        if (loginData.localId) superAdminUid = loginData.localId;
+        console.log(`ℹ️ Super Admin Auth account confirmed: davidpassmore@gmail.com (${superAdminUid})`);
+      }
+    }
+  } catch (authErr) {
+    console.warn("⚠️ Auth emulator note:", authErr);
+  }
+
+  // Purge any stale or non-superadmin David Passmore user records
+  try {
+    const existingUsersSnap = await getDocs(collection(db, "users"));
+    for (const userDoc of existingUsersSnap.docs) {
+      const userData = userDoc.data();
+      const isDavidName = (userData.displayName || "").toLowerCase().includes("david passmore");
+      const isSuperAdminEmail = (userData.email || "").toLowerCase() === "davidpassmore@gmail.com";
+
+      if ((isDavidName && !isSuperAdminEmail) || (isSuperAdminEmail && userDoc.id !== superAdminUid) || userDoc.id === "T4qj4iyXePw2ZMvdzvZq644u9OiX") {
+        await deleteDoc(doc(db, "users", userDoc.id));
+        console.log(`🗑️ Removed non-superadmin user: ${userDoc.id} (${userData.displayName} / ${userData.email})`);
+      }
+    }
+  } catch (purgeErr) {
+    console.warn("⚠️ User purge note:", purgeErr);
+  }
+
+  // ==========================================
   // 1. Band Sections (With Designated Section Leaders)
   // ==========================================
   const sections = [
@@ -28,8 +86,8 @@ async function runSeed() {
       name: "Drumline & Percussion", 
       order: 1, 
       minRecommended: 3,
-      leaderUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX", // David Passmore Jr.
-      leaderName: "David Passmore Jr.",
+      leaderUid: superAdminUid, // David Passmore (Super Admin)
+      leaderName: "David Passmore",
       notes: "Carries groove tempo, battery cymbals, bass drums, and snares."
     },
     { 
@@ -89,7 +147,7 @@ async function runSeed() {
   // ==========================================
   const users = [
     {
-      uid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
+      uid: superAdminUid,
       email: "davidpassmore@gmail.com",
       displayName: "David Passmore",
       roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "treasurer", "section_leader", "member"],
@@ -466,7 +524,7 @@ async function runSeed() {
       pitchNotes: "New Orleans funk groove that would fit our brass unisons perfectly.",
       spotifyOrYoutubeUrl: "https://www.youtube.com/watch?v=4_iC0MyIykM",
       votesCount: 6,
-      voters: ["T4qj4iyXePw2ZMvdzvZq644u9OiX", "user_fetkovich_john", "user_rubin_jonathan", "user_tbone_mike"],
+      voters: [superAdminUid, "user_fetkovich_john", "user_rubin_jonathan", "user_tbone_mike"],
       status: "approved",
       createdAt: new Date().toISOString(),
     },
@@ -492,7 +550,7 @@ async function runSeed() {
       pitchNotes: "The drum groove is iconic and our sousaphones would kill the bassline.",
       spotifyOrYoutubeUrl: "https://www.youtube.com/watch?v=0CFuCYNx-1g",
       votesCount: 5,
-      voters: ["T4qj4iyXePw2ZMvdzvZq644u9OiX", "user_rubin_jonathan", "user_killebrew_joelle"],
+      voters: [superAdminUid, "user_rubin_jonathan", "user_killebrew_joelle"],
       status: "approved",
       createdAt: new Date().toISOString(),
     },
@@ -524,8 +582,8 @@ async function runSeed() {
       id: "comment_mf_gear",
       targetType: "gig",
       targetId: "gig_mattress_factory_2026",
-      authorUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
-      authorName: "David Passmore Jr.",
+      authorUid: superAdminUid,
+      authorName: "David Passmore",
       text: "Reminder: load-in is via the courtyard rear gate on Sampsonia Way. Look for the band permit in the driveway.",
       createdAt: new Date().toISOString(),
     },
@@ -1260,7 +1318,7 @@ async function runSeed() {
       date: "2026-03-14",
       gigId: "gig_st_patricks_2026",
       gigTitle: "Downtown Pittsburgh St. Patrick's Parade",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Official parade committee wire settled.",
       schemaVersion: 1,
       createdAt: "2026-03-14T18:00:00.000Z",
@@ -1274,7 +1332,7 @@ async function runSeed() {
       date: "2026-04-05",
       gigId: "gig_millvale_days_2026",
       gigTitle: "Millvale Days Grand Street Parade",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Community cultural council sponsorship grant disbursed.",
       schemaVersion: 1,
       createdAt: "2026-04-05T12:00:00.000Z",
@@ -1288,7 +1346,7 @@ async function runSeed() {
       date: "2026-04-22",
       gigId: "gig_mattress_factory_2026",
       gigTitle: "Mattress Factory Garden Party",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Contract advance deposit received.",
       schemaVersion: 1,
       createdAt: "2026-04-22T14:30:00.000Z",
@@ -1302,7 +1360,7 @@ async function runSeed() {
       date: "2026-05-02",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Online shop + in-person merch pop-up batch deposit.",
       schemaVersion: 1,
       createdAt: "2026-05-02T19:00:00.000Z",
@@ -1316,7 +1374,7 @@ async function runSeed() {
       date: "2026-05-18",
       gigId: "gig_lawrenceville_porchfest_2026",
       gigTitle: "Lawrenceville Porchfest Stomp",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Cash tips counted and deposited to operating checking.",
       schemaVersion: 1,
       createdAt: "2026-05-18T10:00:00.000Z",
@@ -1330,7 +1388,7 @@ async function runSeed() {
       date: "2026-06-12",
       gigId: null,
       gigTitle: "Robotics Industry Gala",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Corporate private gala booking fee.",
       schemaVersion: 1,
       createdAt: "2026-06-12T22:00:00.000Z",
@@ -1344,7 +1402,7 @@ async function runSeed() {
       date: "2026-07-01",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Operating support micro-grant for mobile acoustics.",
       schemaVersion: 1,
       createdAt: "2026-07-01T09:00:00.000Z",
@@ -1359,7 +1417,7 @@ async function runSeed() {
       date: "2026-02-10",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Drumline equipment refresh prior to spring parade season.",
       schemaVersion: 1,
       createdAt: "2026-02-10T11:00:00.000Z",
@@ -1373,7 +1431,7 @@ async function runSeed() {
       date: "2026-02-28",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Arrangements for Renegade and Ghost Town Ska.",
       schemaVersion: 1,
       createdAt: "2026-02-28T15:00:00.000Z",
@@ -1387,7 +1445,7 @@ async function runSeed() {
       date: "2026-03-31",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Quarterly gym rental for full battery and brass drills.",
       schemaVersion: 1,
       createdAt: "2026-03-31T17:00:00.000Z",
@@ -1401,7 +1459,7 @@ async function runSeed() {
       date: "2026-04-14",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Equipment van transport reimbursement.",
       schemaVersion: 1,
       createdAt: "2026-04-14T20:00:00.000Z",
@@ -1415,7 +1473,7 @@ async function runSeed() {
       date: "2026-04-28",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Direct manufacturing order from Commonwealth Press.",
       schemaVersion: 1,
       createdAt: "2026-04-28T13:00:00.000Z",
@@ -1429,7 +1487,7 @@ async function runSeed() {
       date: "2026-05-01",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Annual DNS, SSL, and database hosting charges.",
       schemaVersion: 1,
       createdAt: "2026-05-01T08:00:00.000Z",
@@ -1443,7 +1501,7 @@ async function runSeed() {
       date: "2026-05-25",
       gigId: null,
       gigTitle: null,
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Hydration station supplies for marching musicians.",
       schemaVersion: 1,
       createdAt: "2026-05-25T11:30:00.000Z",
@@ -1458,7 +1516,7 @@ async function runSeed() {
       date: "2026-03-16",
       gigId: "gig_st_patricks_2026",
       gigTitle: "Downtown Pittsburgh St. Patrick's Parade",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Settled via Venmo batch dispatch to active roster performers.",
       schemaVersion: 1,
       createdAt: "2026-03-16T14:00:00.000Z",
@@ -1472,7 +1530,7 @@ async function runSeed() {
       date: "2026-06-15",
       gigId: null,
       gigTitle: "Robotics Industry Gala",
-      recordedBy: "David Passmore Jr.",
+      recordedBy: "David Passmore",
       notes: "Even split disbursement for private performance.",
       schemaVersion: 1,
       createdAt: "2026-06-15T16:00:00.000Z",
@@ -1490,8 +1548,8 @@ async function runSeed() {
   const sampleReimbursements = [
     {
       id: "reimb_snare_straps",
-      applicantUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
-      applicantName: "David Passmore Jr.",
+      applicantUid: superAdminUid,
+      applicantName: "David Passmore",
       applicantEmail: "davidpassmore@gmail.com",
       applicantSectionId: "percussion",
       amount: 85.50,
@@ -1534,8 +1592,8 @@ async function runSeed() {
       paymentHandle: "@kristin-ward-horns",
       status: "approved",
       reviewNotes: "Approved by Treasurer; queued for next batch disbursement.",
-      reviewedByUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
-      reviewedByName: "David Passmore Jr.",
+      reviewedByUid: superAdminUid,
+      reviewedByName: "David Passmore",
       reviewedAt: "2026-05-26T10:00:00.000Z",
       paidAt: null,
       transactionId: null,
@@ -1722,7 +1780,7 @@ async function runSeed() {
       availability: "Evenings and weekends",
       bioNotes: "DCI drum corps experience (2022). Looking for a fun, high-energy acoustic drumline ensemble in Pittsburgh.",
       status: "new",
-      assignedLeaderUid: "T4qj4iyXePw2ZMvdzvZq644u9OiX",
+      assignedLeaderUid: superAdminUid,
       reviewerNotes: "",
       schemaVersion: 1,
       createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
@@ -1811,30 +1869,9 @@ async function runSeed() {
   console.log(`✅ Seeded ${sampleContactMessages.length} contact messages into 'contact_messages' collection.`);
 
   // ==========================================
-  // 19. Ensure Super Admin in Auth Emulator
+  // 19. Super Admin Confirmation
   // ==========================================
-  try {
-    const authRes = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key-for-emulator", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: "davidpassmore@gmail.com",
-        password: "admin39",
-        displayName: "David Passmore",
-        returnSecureToken: true,
-      }),
-    });
-    if (authRes.ok) {
-      console.log("✅ Seeded Super Admin Auth user: davidpassmore@gmail.com (admin39)");
-    } else {
-      const data = await authRes.json() as { error?: { message?: string } };
-      if (data.error?.message === "EMAIL_EXISTS") {
-        console.log("ℹ️ Super Admin Auth account confirmed: davidpassmore@gmail.com");
-      }
-    }
-  } catch (authErr) {
-    console.warn("⚠️ Auth emulator note:", authErr);
-  }
+  console.log(`ℹ️ Confirmed canonical Super Admin: davidpassmore@gmail.com (UID: ${superAdminUid})`);
 
   console.log("🎉 Complete emulator seed finished! All collections and sections populated.");
   process.exit(0);
