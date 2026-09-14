@@ -186,3 +186,4 @@ npm run build
 For deep context on how any feature or collection was designed, browse the stage documents in [`docs/stages/`](./stages/README.md). Each completed stage includes:
 - **`stage-XX-implementation.md`**: Initial architecture, schema designs, and route layouts.
 - **`stage-XX-walkthrough.md`**: Verified accomplishments, code changes, and test outcomes.
+
