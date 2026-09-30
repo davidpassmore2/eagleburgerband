@@ -21,6 +21,7 @@ import {
   Megaphone,
   User as UserIcon,
   RotateCcw,
+  ListMusic,
 } from "lucide-react";
 
 interface RoleEmulationModalProps {
@@ -69,6 +70,14 @@ const ROLE_OPTIONS: RoleOption[] = [
     target: "Librarians & Arrangers",
     description: "Manages repertoire charts, uploads sheet music PDFs, organizes setlists, and reviews song suggestions.",
     icon: <Music className="w-4 h-4 text-emerald-400" />,
+  },
+  {
+    role: "setlist_manager",
+    title: "Setlist Manager",
+    badge: "Setlists & Sequencing",
+    target: "Setlist Curators & Drum Majors",
+    description: "Curates, arranges, and saves reusable performance setlists, and assigns them across upcoming gigs.",
+    icon: <ListMusic className="w-4 h-4 text-amber-400" />,
   },
   {
     role: "treasurer",

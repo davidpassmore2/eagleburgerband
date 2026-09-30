@@ -17,8 +17,22 @@ export type GigData = {
   date: string;
   status: string;
   publicDetails?: { title?: string };
-  internalLogistics?: { title?: string };
-  setlist?: GigSet[];
+  internalLogistics?: { title?: string; setlistId?: string };
+  setlistId?: string;
+  setlist?: GigSet[] | unknown[];
+};
+
+export type SetlistUsageStat = {
+  setlistId: string;
+  name: string;
+  category: string;
+  tuneCount: number;
+  targetDurationMinutes: number;
+  usageCount: number;
+  lastUsedDate: string | null;
+  lastUsedGigTitle: string | null;
+  assignedGigs: { id: string; title: string; date: string; status: string }[];
+  tags: string[];
 };
 
 export type TuneStat = {
@@ -49,11 +63,12 @@ export function buildRepertoireAnalytics(gigs: GigData[]): Record<string, TuneSt
 
     if (!Array.isArray(gig.setlist)) return;
 
-    gig.setlist.forEach((set) => {
-      if (!Array.isArray(set.items)) return;
+    gig.setlist.forEach((setRaw) => {
+      const set = setRaw as { items?: { title?: string }[] } | undefined;
+      if (!set || !Array.isArray(set.items)) return;
 
       set.items.forEach((item) => {
-        if (!item.title) return;
+        if (!item || !item.title) return;
         const key = normalizeSongTitle(item.title);
 
         if (!stats[key]) {
@@ -90,4 +105,68 @@ export function buildRepertoireAnalytics(gigs: GigData[]): Record<string, TuneSt
   });
 
   return stats;
+}
+
+export function buildSetlistUsageAnalytics(
+  setlists: {
+    id: string;
+    name?: string;
+    title?: string;
+    category?: string;
+    tunes?: unknown[];
+    items?: unknown[];
+    targetDurationMinutes?: number;
+    tags?: string[];
+    assignedGigIds?: string[];
+    usageCount?: number;
+    lastUsedDate?: string | null;
+  }[],
+  gigs: GigData[]
+): SetlistUsageStat[] {
+  return setlists.map((sl) => {
+    const slName = sl.name || sl.title || "Untitled Setlist";
+    const tunes = sl.tunes || sl.items || [];
+    const tuneCount = Array.isArray(tunes) ? tunes.length : 0;
+    const duration = sl.targetDurationMinutes || 45;
+
+    // Find all matching gigs
+    const assignedGigs: { id: string; title: string; date: string; status: string }[] = [];
+
+    gigs.forEach((gig) => {
+      const gigTitle = gig.internalLogistics?.title || gig.publicDetails?.title || `Gig ${gig.id.slice(0, 6)}`;
+      const matchesSetlistId = gig.setlistId === sl.id || gig.internalLogistics?.setlistId === sl.id;
+      const inAssignedList = Array.isArray(sl.assignedGigIds) && sl.assignedGigIds.includes(gig.id);
+
+      if (matchesSetlistId || inAssignedList) {
+        if (!assignedGigs.some((ag) => ag.id === gig.id)) {
+          assignedGigs.push({
+            id: gig.id,
+            title: gigTitle,
+            date: gig.date || "TBD",
+            status: gig.status || "confirmed",
+          });
+        }
+      }
+    });
+
+    // Sort gigs by date desc
+    assignedGigs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const usageCount = Math.max(assignedGigs.length, sl.usageCount || 0);
+    const lastUsedDate = assignedGigs.length > 0 ? assignedGigs[0].date : (sl.lastUsedDate || null);
+    const lastUsedGigTitle = assignedGigs.length > 0 ? assignedGigs[0].title : null;
+
+    return {
+      setlistId: sl.id,
+      name: slName,
+      category: sl.category || "parade",
+      tuneCount,
+      targetDurationMinutes: duration,
+      usageCount,
+      lastUsedDate,
+      lastUsedGigTitle,
+      assignedGigs,
+      tags: sl.tags || [],
+    };
+  }).sort((a, b) => b.usageCount - a.usageCount || a.name.localeCompare(b.name));
 }

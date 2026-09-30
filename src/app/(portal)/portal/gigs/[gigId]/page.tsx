@@ -25,16 +25,22 @@ import {
   AlertCircle,
   MessageSquare,
   Navigation,
+  Plus,
+  ExternalLink,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
-import { canManageGigs } from "@/lib/auth/permissions";
+import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { SetlistTuneItem } from "@/lib/schema/setlist";
+import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
 
 interface SetlistItem {
   id: string;
   title: string;
   artist?: string;
   keySignature?: string;
+  tempoBpm?: number;
+  notes?: string;
 }
 
 interface SetGroup {
@@ -63,8 +69,14 @@ interface GigDetail {
     parkingNotes?: string;
     compensation?: number;
     description?: string;
+    setlistId?: string;
+    setlistName?: string;
+    setlistTitle?: string;
   };
-  setlist?: SetGroup[];
+  setlistId?: string;
+  setlistName?: string;
+  setlistTitle?: string;
+  setlist?: (SetGroup | SetlistTuneItem)[];
 }
 
 interface MusicianRsvp {
@@ -85,12 +97,19 @@ export default function MusicianGigDetailPage() {
 
   const { firebaseUser, profile } = useAuth();
   const [gig, setGig] = useState<GigDetail | null>(null);
+  const [stageSetlistInfo, setStageSetlistInfo] = useState<{
+    templateName?: string;
+    templateId?: string;
+    name?: string;
+    title?: string;
+  } | null>(null);
   const [rsvps, setRsvps] = useState<MusicianRsvp[]>([]);
   // Only start in loading state if gigId exists to fetch
   const [loading, setLoading] = useState(Boolean(gigId));
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
   const [isTogglingNav, setIsTogglingNav] = useState(false);
+  const [isManagingSetlist, setIsManagingSetlist] = useState(false);
 
   useEffect(() => {
     if (!gigId) return;
@@ -158,10 +177,35 @@ export default function MusicianGigDetailPage() {
       },
     );
 
+    // 4. Real-time listener for stage view setlist document
+    const unsubStageSetlist = onSnapshot(
+      doc(db, "setlists", gigId),
+      (snap) => {
+        if (isMounted) {
+          if (snap.exists()) {
+            setStageSetlistInfo(
+              snap.data() as {
+                templateName?: string;
+                templateId?: string;
+                name?: string;
+                title?: string;
+              }
+            );
+          } else {
+            setStageSetlistInfo(null);
+          }
+        }
+      },
+      (err) => {
+        console.warn("Notice: stage setlist listener note:", err);
+      }
+    );
+
     return () => {
       isMounted = false;
       unsubGig();
       unsubRsvps();
+      unsubStageSetlist();
     };
   }, [gigId]);
 
@@ -274,6 +318,31 @@ export default function MusicianGigDetailPage() {
   const attendingCount = rsvps.filter((r) => r.status === "attending").length;
   const tentativeCount = rsvps.filter((r) => r.status === "tentative").length;
   const declinedCount = rsvps.filter((r) => r.status === "declined").length;
+
+  const canManage = profile
+    ? canManageGigs(profile as User) || canManageSetlists(profile as User)
+    : false;
+
+  const hasSetlist = Array.isArray(gig.setlist) && gig.setlist.length > 0;
+  const isFlatSetlist =
+    hasSetlist && "title" in (gig.setlist![0] as Record<string, unknown>);
+
+  const effectiveSetlistName =
+    gig.setlistName ||
+    gig.setlistTitle ||
+    gig.internalLogistics?.setlistName ||
+    gig.internalLogistics?.setlistTitle ||
+    stageSetlistInfo?.templateName ||
+    stageSetlistInfo?.name ||
+    stageSetlistInfo?.title ||
+    (!isFlatSetlist &&
+    gig.setlist &&
+    gig.setlist.length > 0 &&
+    typeof gig.setlist[0] === "object" &&
+    gig.setlist[0] !== null &&
+    "setName" in gig.setlist[0]
+      ? (gig.setlist[0] as SetGroup).setName
+      : "");
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
@@ -489,50 +558,164 @@ export default function MusicianGigDetailPage() {
         </div>
       </div>
 
-      {/* Setlist */}
-      {gig.setlist && gig.setlist.length > 0 && (
+      {/* Setlist Section */}
+      {hasSetlist ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <ListMusic className="w-4 h-4 text-yellow-400" /> Repertoire Setlist
-          </h2>
-          <div className="space-y-4">
-            {gig.setlist.map((group) => (
-              <div key={group.id} className="space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  {group.setName}
-                </div>
-                <div className="space-y-1.5">
-                  {group.items.map((song, i) => (
-                    <div
-                      key={song.id || i}
-                      className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 flex items-center justify-between text-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-yellow-400 font-mono text-[11px]">
-                          #{i + 1}
-                        </span>
-                        <span className="font-bold text-white">
-                          {song.title}
-                        </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+            <div className="flex items-center gap-2 flex-wrap">
+              <ListMusic className="w-4 h-4 text-yellow-400 shrink-0" />
+              <h2 className="text-sm font-bold text-white">Repertoire Setlist</h2>
+              {effectiveSetlistName && (
+                <span className="text-xs font-bold text-yellow-300 bg-yellow-400/10 border border-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                  {effectiveSetlistName}
+                </span>
+              )}
+              <span className="text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-bold">
+                {isFlatSetlist
+                  ? `${gig.setlist!.length} Tunes`
+                  : `${gig.setlist!.length} Sets`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/portal/perform/${gig.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-yellow-400" /> Stage View
+              </a>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setIsManagingSetlist(true)}
+                  className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                >
+                  <ListMusic className="w-3.5 h-3.5" /> Manage Setlist
+                </button>
+              )}
+            </div>
+          </div>
+
+          {isFlatSetlist ? (
+            <div className="space-y-1.5">
+              {(gig.setlist as SetlistTuneItem[]).map((song, i) => (
+                <div
+                  key={song.id || song.tuneId || i}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-yellow-400 font-mono text-[11px] font-bold w-6">
+                      #{i + 1}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{song.title}</span>
                         {song.artist && (
                           <span className="text-slate-500 text-[11px]">
                             ({song.artist})
                           </span>
                         )}
+                        {song.transitionType === "direct_segue" && (
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.5 rounded">
+                            &gt; SEGUE
+                          </span>
+                        )}
                       </div>
-                      {song.keySignature && (
-                        <span className="text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-400">
-                          {song.keySignature}
-                        </span>
+                      {song.notes && (
+                        <p className="text-[11px] text-yellow-300/80 italic mt-0.5">
+                          Cue: {song.notes}
+                        </p>
                       )}
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {song.tempoBpm && (
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        {song.tempoBpm} BPM
+                      </span>
+                    )}
+                    {song.keySignature && (
+                      <span className="text-[10px] font-mono font-bold text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-0.5 rounded">
+                        {song.keySignature}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(gig.setlist as SetGroup[]).map((group, gIdx) => (
+                <div key={group.id || gIdx} className="space-y-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <span>{group.setName || `Set ${gIdx + 1}`}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      ({group.items?.length || 0} tunes)
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {(group.items || []).map((song: SetlistItem, i: number) => (
+                      <div
+                        key={song.id || i}
+                        className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-yellow-400 font-mono text-[11px]">
+                            #{i + 1}
+                          </span>
+                          <span className="font-bold text-white">
+                            {song.title}
+                          </span>
+                          {song.artist && (
+                            <span className="text-slate-500 text-[11px]">
+                              ({song.artist})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {song.tempoBpm && (
+                            <span className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                              {song.tempoBpm} BPM
+                            </span>
+                          )}
+                          {song.keySignature && (
+                            <span className="text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-400">
+                              {song.keySignature}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ) : canManage ? (
+        <div className="bg-slate-900 border border-dashed border-slate-800 hover:border-slate-700 transition rounded-2xl p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-yellow-400/10 text-yellow-400">
+              <ListMusic className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Repertoire Setlist</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                No setlist has been assigned to this gig yet. Choose an existing reusable setlist or craft a custom order.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsManagingSetlist(true)}
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shrink-0 shadow-md shadow-yellow-400/10"
+          >
+            <Plus className="w-4 h-4" /> Assign or Create Setlist
+          </button>
+        </div>
+      ) : null}
 
       {/* Gig Discussion Stream */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
@@ -550,6 +733,16 @@ export default function MusicianGigDetailPage() {
           targetTitle={gig.internalLogistics?.title || gig.publicDetails?.title || "Gig Discussion"}
         />
       </div>
+
+      {/* Setlist Assignment & Creator Modal */}
+      {isManagingSetlist && gig && (
+        <GigSetlistAssignmentModal
+          gig={gig}
+          isOpen={isManagingSetlist}
+          onClose={() => setIsManagingSetlist(false)}
+          onSaved={() => setIsManagingSetlist(false)}
+        />
+      )}
     </div>
   );
 }

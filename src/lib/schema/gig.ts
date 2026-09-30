@@ -38,6 +38,8 @@ export const InternalLogisticsSchema = z.object({
   attire: z.string().default(""),
   payPerMusician: z.number().default(0),
   setlistId: z.string().default(""),
+  setlistName: z.string().default(""),
+  setlistTitle: z.string().default(""),
   description: z.string().default(""),
 });
 
@@ -45,6 +47,9 @@ export const GigSchema = z.object({
   id: z.string(),
   date: z.string(),
   status: GigStatusEnum.default("confirmed"),
+  setlistId: z.string().default(""),
+  setlistName: z.string().default(""),
+  setlistTitle: z.string().default(""),
   publicDetails: PublicDetailsSchema.default(() => ({
     title: "",
     venue: "",
@@ -68,6 +73,8 @@ export const GigSchema = z.object({
     attire: "",
     payPerMusician: 0,
     setlistId: "",
+    setlistName: "",
+    setlistTitle: "",
     description: "",
   })),
   schemaVersion: z.number().default(1),

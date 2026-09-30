@@ -5,6 +5,7 @@ export type Role =
   | "web_manager"
   | "gig_manager"
   | "catalog_manager"
+  | "setlist_manager"
   | "community_manager"
   | "treasurer"
   | "section_leader"
@@ -52,6 +53,14 @@ export function canManageGigs(user: User | null): boolean {
 
 export function canManageCatalog(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "catalog_manager"]);
+}
+
+export function canManageSetlists(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "setlist_manager", "catalog_manager", "gig_manager"]);
+}
+
+export function canViewRepertoireAnalytics(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "catalog_manager", "setlist_manager", "gig_manager"]);
 }
 
 export function canManageContent(user: User | null): boolean {

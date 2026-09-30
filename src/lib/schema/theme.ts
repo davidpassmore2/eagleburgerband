@@ -10,6 +10,9 @@ export const PortalColorSchemeIdSchema = z.enum([
 
 export type PortalColorSchemeId = z.infer<typeof PortalColorSchemeIdSchema>;
 
+export const PortalThemeModeSchema = z.enum(["dark", "light"]);
+export type PortalThemeMode = z.infer<typeof PortalThemeModeSchema>;
+
 export const ThemeSocialLinksSchema = z.object({
   youtube: z.string().default("https://www.youtube.com/watch?v=v0x-fut30wE"),
   instagram: z.string().default("https://www.instagram.com/eagleburgerband"),
@@ -78,19 +81,27 @@ export const ThemeSchema = z.object({
 
 export type ThemeConfig = z.infer<typeof ThemeSchema>;
 
-export interface PortalColorScheme {
+export interface PortalThemeTokens {
+  primaryColor: string;
+  accentColor: string;
+  backgroundColor: string;       // Ambient background
+  surfaceColor: string;          // Sidebar and primary card surfaces
+  mutedSurfaceColor: string;     // Inner wells, search inputs, active badges
+  borderColor: string;           // Card and separator borders
+  textColor: string;             // Crisp readable text
+  previewSwatches: [string, string, string, string]; // [primary, accent, surface, bg]
+}
+
+export interface PortalColorScheme extends PortalThemeTokens {
   id: PortalColorSchemeId;
   name: string;
   tagline: string;
   description: string;
-  primaryColor: string;
-  accentColor: string;
-  backgroundColor: string;       // Deep harmonious ambient background
-  surfaceColor: string;          // Sidebar and primary card surfaces
-  mutedSurfaceColor: string;     // Inner wells, search inputs, active badges
-  borderColor: string;           // Harmonious card and separator borders
-  textColor: string;             // Crisp readable text
-  previewSwatches: [string, string, string, string]; // [primary, accent, surface, bg]
+  mode?: PortalThemeMode;
+  modes: {
+    dark: PortalThemeTokens;
+    light: PortalThemeTokens;
+  };
 }
 
 export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
@@ -107,6 +118,28 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
     borderColor: "#382c0f",
     textColor: "#fefce8",
     previewSwatches: ["#facc15", "#f59e0b", "#151105", "#0a0802"],
+    modes: {
+      dark: {
+        primaryColor: "#facc15",
+        accentColor: "#f59e0b",
+        backgroundColor: "#0a0802",
+        surfaceColor: "#151105",
+        mutedSurfaceColor: "#1e1808",
+        borderColor: "#382c0f",
+        textColor: "#fefce8",
+        previewSwatches: ["#facc15", "#f59e0b", "#151105", "#0a0802"],
+      },
+      light: {
+        primaryColor: "#b45309",
+        accentColor: "#d97706",
+        backgroundColor: "#fefce8",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#fef9c3",
+        borderColor: "#fde047",
+        textColor: "#1c1917",
+        previewSwatches: ["#b45309", "#d97706", "#ffffff", "#fefce8"],
+      },
+    },
   },
   {
     id: "neon-parade",
@@ -121,6 +154,28 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
     borderColor: "#1e2f5d",
     textColor: "#f0f9ff",
     previewSwatches: ["#38bdf8", "#818cf8", "#091126", "#040817"],
+    modes: {
+      dark: {
+        primaryColor: "#38bdf8",
+        accentColor: "#818cf8",
+        backgroundColor: "#040817",
+        surfaceColor: "#091126",
+        mutedSurfaceColor: "#0f1c3d",
+        borderColor: "#1e2f5d",
+        textColor: "#f0f9ff",
+        previewSwatches: ["#38bdf8", "#818cf8", "#091126", "#040817"],
+      },
+      light: {
+        primaryColor: "#0284c7",
+        accentColor: "#6366f1",
+        backgroundColor: "#f0f9ff",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#e0f2fe",
+        borderColor: "#bae6fd",
+        textColor: "#0f172a",
+        previewSwatches: ["#0284c7", "#6366f1", "#ffffff", "#f0f9ff"],
+      },
+    },
   },
   {
     id: "sousa-crimson",
@@ -135,6 +190,28 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
     borderColor: "#4c0f20",
     textColor: "#fff1f2",
     previewSwatches: ["#f43f5e", "#fb7185", "#1c070e", "#0f0307"],
+    modes: {
+      dark: {
+        primaryColor: "#f43f5e",
+        accentColor: "#fb7185",
+        backgroundColor: "#0f0307",
+        surfaceColor: "#1c070e",
+        mutedSurfaceColor: "#2a0c16",
+        borderColor: "#4c0f20",
+        textColor: "#fff1f2",
+        previewSwatches: ["#f43f5e", "#fb7185", "#1c070e", "#0f0307"],
+      },
+      light: {
+        primaryColor: "#be123c",
+        accentColor: "#e11d48",
+        backgroundColor: "#fff1f2",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#ffe4e6",
+        borderColor: "#fecdd3",
+        textColor: "#1c1917",
+        previewSwatches: ["#be123c", "#e11d48", "#ffffff", "#fff1f2"],
+      },
+    },
   },
   {
     id: "emerald-groove",
@@ -149,6 +226,28 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
     borderColor: "#114b32",
     textColor: "#ecfdf5",
     previewSwatches: ["#10b981", "#34d399", "#072618", "#02140d"],
+    modes: {
+      dark: {
+        primaryColor: "#10b981",
+        accentColor: "#34d399",
+        backgroundColor: "#02140d",
+        surfaceColor: "#072618",
+        mutedSurfaceColor: "#0c3623",
+        borderColor: "#114b32",
+        textColor: "#ecfdf5",
+        previewSwatches: ["#10b981", "#34d399", "#072618", "#02140d"],
+      },
+      light: {
+        primaryColor: "#047857",
+        accentColor: "#059669",
+        backgroundColor: "#ecfdf5",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#d1fae5",
+        borderColor: "#a7f3d0",
+        textColor: "#064e3b",
+        previewSwatches: ["#047857", "#059669", "#ffffff", "#ecfdf5"],
+      },
+    },
   },
   {
     id: "monongahela-steel",
@@ -163,11 +262,47 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
     borderColor: "#2d3545",
     textColor: "#ffffff",
     previewSwatches: ["#e2e8f0", "#94a3b8", "#13161c", "#090a0f"],
+    modes: {
+      dark: {
+        primaryColor: "#e2e8f0",
+        accentColor: "#94a3b8",
+        backgroundColor: "#090a0f",
+        surfaceColor: "#13161c",
+        mutedSurfaceColor: "#1c212a",
+        borderColor: "#2d3545",
+        textColor: "#ffffff",
+        previewSwatches: ["#e2e8f0", "#94a3b8", "#13161c", "#090a0f"],
+      },
+      light: {
+        primaryColor: "#334155",
+        accentColor: "#64748b",
+        backgroundColor: "#f8fafc",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#f1f5f9",
+        borderColor: "#cbd5e1",
+        textColor: "#0f172a",
+        previewSwatches: ["#334155", "#64748b", "#ffffff", "#f8fafc"],
+      },
+    },
   },
 ];
 
-export function getPortalColorScheme(id: string): PortalColorScheme {
-  const found = PORTAL_COLOR_SCHEMES.find((s) => s.id === id);
-  return found || PORTAL_COLOR_SCHEMES[0];
+export function getPortalColorScheme(id: string, mode: PortalThemeMode = "dark"): PortalColorScheme {
+  const base = PORTAL_COLOR_SCHEMES.find((s) => s.id === id) || PORTAL_COLOR_SCHEMES[0];
+  const tokens = base.modes?.[mode] || base.modes?.dark || {
+    primaryColor: base.primaryColor,
+    accentColor: base.accentColor,
+    backgroundColor: base.backgroundColor,
+    surfaceColor: base.surfaceColor,
+    mutedSurfaceColor: base.mutedSurfaceColor,
+    borderColor: base.borderColor,
+    textColor: base.textColor,
+    previewSwatches: base.previewSwatches,
+  };
+  return {
+    ...base,
+    ...tokens,
+    mode,
+  };
 }
 

@@ -18,6 +18,7 @@ const ALL_ROLES: Role[] = [
   "web_manager",
   "gig_manager",
   "catalog_manager",
+  "setlist_manager",
   "community_manager",
   "treasurer",
   "section_leader",

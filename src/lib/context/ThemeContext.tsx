@@ -9,13 +9,15 @@ import {
   ThemeScopeConfig,
   PortalColorScheme,
   PortalColorSchemeId,
+  PortalThemeMode,
   PORTAL_COLOR_SCHEMES,
   getPortalColorScheme
 } from "@/lib/schema/theme";
 import { useAuth } from "./AuthContext";
 
 const DEFAULT_THEME: ThemeConfig = ThemeSchema.parse({});
-const LOCAL_STORAGE_KEY = "ebb_portal_theme_scheme";
+const LOCAL_STORAGE_SCHEME_KEY = "ebb_portal_theme_scheme";
+const LOCAL_STORAGE_MODE_KEY = "ebb_portal_theme_mode";
 
 const storageSubscribe = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -26,22 +28,35 @@ const storageSubscribe = (callback: () => void) => {
 const getLocalStorageScheme = (): string | null => {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(LOCAL_STORAGE_KEY);
+    return localStorage.getItem(LOCAL_STORAGE_SCHEME_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getLocalStorageMode = (): PortalThemeMode | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const val = localStorage.getItem(LOCAL_STORAGE_MODE_KEY);
+    return val === "light" || val === "dark" ? val : null;
   } catch {
     return null;
   }
 };
 
 const getServerScheme = (): null => null;
+const getServerMode = (): null => null;
 
 interface ThemeContextValue {
   theme: ThemeConfig;
   publicTheme: ThemeScopeConfig;
   portalTheme: ThemeScopeConfig;
   activePortalSchemeId: PortalColorSchemeId;
+  activePortalMode: PortalThemeMode;
   activePortalScheme: PortalColorScheme;
   availablePortalSchemes: PortalColorScheme[];
-  setMemberPortalTheme: (schemeId: PortalColorSchemeId) => Promise<void>;
+  setMemberPortalTheme: (schemeId: PortalColorSchemeId, mode?: PortalThemeMode) => Promise<void>;
+  setMemberPortalMode: (mode: PortalThemeMode) => Promise<void>;
   loading: boolean;
   getScopedStyles: (scope: "public" | "portal") => React.CSSProperties;
 }
@@ -51,9 +66,11 @@ const ThemeContext = createContext<ThemeContextValue>({
   publicTheme: DEFAULT_THEME.public,
   portalTheme: DEFAULT_THEME.portal,
   activePortalSchemeId: "eagleburger-gold",
+  activePortalMode: "dark",
   activePortalScheme: PORTAL_COLOR_SCHEMES[0],
   availablePortalSchemes: PORTAL_COLOR_SCHEMES,
   setMemberPortalTheme: async () => {},
+  setMemberPortalMode: async () => {},
   loading: true,
   getScopedStyles: () => ({}),
 });
@@ -65,6 +82,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // User override state (from immediate UI selection)
   const [overrideSchemeId, setOverrideSchemeId] = useState<PortalColorSchemeId | null>(null);
+  const [overrideMode, setOverrideMode] = useState<PortalThemeMode | null>(null);
 
   // Synchronize localStorage via useSyncExternalStore to prevent SSR hydration mismatch
   const localSavedScheme = useSyncExternalStore(
@@ -73,20 +91,43 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     getServerScheme
   );
 
+  const localSavedMode = useSyncExternalStore(
+    storageSubscribe,
+    getLocalStorageMode,
+    getServerMode
+  );
+
+  const profilePortalThemeSchemeId = profile?.portalThemeSchemeId;
+  const portalConfigSchemeId = theme.portal?.schemeId;
+
   // Derive activePortalSchemeId: override > profile preference > localStorage > ensemble default > fallback
   const activePortalSchemeId: PortalColorSchemeId = useMemo(() => {
     if (overrideSchemeId) return overrideSchemeId;
-    if (profile?.portalThemeSchemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === profile.portalThemeSchemeId)) {
-      return profile.portalThemeSchemeId as PortalColorSchemeId;
+    if (profilePortalThemeSchemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === profilePortalThemeSchemeId)) {
+      return profilePortalThemeSchemeId as PortalColorSchemeId;
     }
     if (localSavedScheme && PORTAL_COLOR_SCHEMES.some((s) => s.id === localSavedScheme)) {
       return localSavedScheme as PortalColorSchemeId;
     }
-    if (theme.portal?.schemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === theme.portal.schemeId)) {
-      return theme.portal.schemeId as PortalColorSchemeId;
+    if (portalConfigSchemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === portalConfigSchemeId)) {
+      return portalConfigSchemeId as PortalColorSchemeId;
     }
     return "eagleburger-gold";
-  }, [overrideSchemeId, profile?.portalThemeSchemeId, localSavedScheme, theme.portal?.schemeId]);
+  }, [overrideSchemeId, profilePortalThemeSchemeId, localSavedScheme, portalConfigSchemeId]);
+
+  const profilePortalThemeMode = profile?.portalThemeMode;
+
+  // Derive activePortalMode: override > profile preference > localStorage > default ("dark")
+  const activePortalMode: PortalThemeMode = useMemo(() => {
+    if (overrideMode) return overrideMode;
+    if (profilePortalThemeMode === "light" || profilePortalThemeMode === "dark") {
+      return profilePortalThemeMode;
+    }
+    if (localSavedMode) {
+      return localSavedMode;
+    }
+    return "dark";
+  }, [overrideMode, profilePortalThemeMode, localSavedMode]);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -113,13 +154,39 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const activePortalScheme = useMemo(() => {
-    return getPortalColorScheme(activePortalSchemeId);
-  }, [activePortalSchemeId]);
+    return getPortalColorScheme(activePortalSchemeId, activePortalMode);
+  }, [activePortalSchemeId, activePortalMode]);
 
-  const setMemberPortalTheme = async (schemeId: PortalColorSchemeId) => {
+  const setMemberPortalTheme = async (schemeId: PortalColorSchemeId, mode?: PortalThemeMode) => {
     setOverrideSchemeId(schemeId);
+    if (mode) setOverrideMode(mode);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, schemeId);
+      localStorage.setItem(LOCAL_STORAGE_SCHEME_KEY, schemeId);
+      if (mode) localStorage.setItem(LOCAL_STORAGE_MODE_KEY, mode);
+    } catch {
+      // ignore
+    }
+
+    if (firebaseUser?.uid) {
+      try {
+        const updatePayload: Record<string, unknown> = {
+          portalThemeSchemeId: schemeId,
+          updatedAt: new Date().toISOString(),
+        };
+        if (mode) {
+          updatePayload.portalThemeMode = mode;
+        }
+        await setDoc(doc(db, "users", firebaseUser.uid), updatePayload, { merge: true });
+      } catch (err) {
+        console.error("Failed to persist theme preference to Firestore:", err);
+      }
+    }
+  };
+
+  const setMemberPortalMode = async (mode: PortalThemeMode) => {
+    setOverrideMode(mode);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_MODE_KEY, mode);
     } catch {
       // ignore
     }
@@ -128,11 +195,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       try {
         await setDoc(
           doc(db, "users", firebaseUser.uid),
-          { portalThemeSchemeId: schemeId, updatedAt: new Date().toISOString() },
+          { portalThemeMode: mode, updatedAt: new Date().toISOString() },
           { merge: true }
         );
       } catch (err) {
-        console.error("Failed to persist theme preference to Firestore:", err);
+        console.error("Failed to persist theme mode preference to Firestore:", err);
       }
     }
   };
@@ -162,6 +229,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       ["--ebb-surface-muted" as string]: isPortal ? activePortalScheme.mutedSurfaceColor : scopeConfig.mutedSurfaceColor || "#1e293b",
       ["--ebb-border" as string]: isPortal ? activePortalScheme.borderColor : scopeConfig.borderColor || "#334155",
       ["--ebb-text" as string]: scopeConfig.textColor,
+      ["--ebb-mode" as string]: isPortal ? activePortalMode : "dark",
     } as React.CSSProperties;
   };
 
@@ -172,9 +240,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         publicTheme: theme.public,
         portalTheme,
         activePortalSchemeId,
+        activePortalMode,
         activePortalScheme,
         availablePortalSchemes: PORTAL_COLOR_SCHEMES,
         setMemberPortalTheme,
+        setMemberPortalMode,
         loading,
         getScopedStyles,
       }}

@@ -1676,6 +1676,7 @@ export default function PortalHelpCenterPage() {
               instruments: Array.isArray(raw.instruments) ? raw.instruments : [],
               favoriteToolIds: [],
               portalThemeSchemeId: "eagleburger-gold",
+              portalThemeMode: "dark",
               status: raw.status === "inactive" || raw.status === "pending" ? raw.status : "active",
               phone: raw.phone || "",
               smsConsent: Boolean(raw.smsConsent),

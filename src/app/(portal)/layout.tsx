@@ -84,7 +84,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
     isEmulating, 
     emulatedRoles 
   } = useAuth();
-  const { theme, getScopedStyles, activePortalScheme } = useTheme();
+  const { theme, getScopedStyles, activePortalScheme, activePortalMode } = useTheme();
   const mounted = useMounted();
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isEmulationModalOpen, setIsEmulationModalOpen] = useState(false);
@@ -192,11 +192,15 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   return (
     <div 
       suppressHydrationWarning
+      data-ebb-mode={activePortalMode}
       style={{
         ...getScopedStyles("portal"),
         backgroundColor: "var(--ebb-background)",
+        color: "var(--ebb-text)",
       }}
-      className="h-screen max-h-screen h-dvh max-h-dvh overflow-hidden text-slate-100 flex flex-col md:flex-row transition-colors duration-300 relative"
+      className={`h-screen max-h-screen h-dvh max-h-dvh overflow-hidden flex flex-col md:flex-row transition-colors duration-300 relative ${
+        activePortalMode === "light" ? "ebb-light text-slate-900" : "ebb-dark text-slate-100"
+      }`}
     >
       {/* Mobile Top App Bar (< md) */}
       <div 

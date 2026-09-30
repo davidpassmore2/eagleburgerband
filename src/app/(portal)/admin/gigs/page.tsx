@@ -11,8 +11,9 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { canManageGigs } from "@/lib/auth/permissions";
+import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { SetlistTuneItem, isReusableSetlistTemplate } from "@/lib/schema/setlist";
 import { 
   Calendar, 
   MapPin, 
@@ -25,16 +26,22 @@ import {
   X, 
   Check,
   Navigation,
-  Edit3
+  Edit3,
+  ListMusic
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
+import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
 
 interface GigItem {
   id: string;
   slug: string;
   date: string;
   status: "confirmed" | "draft" | "completed" | "cancelled";
+  setlistId?: string;
+  setlistName?: string;
+  setlistTitle?: string;
+  setlist?: SetlistTuneItem[] | unknown[];
   publicDetails?: {
     title: string;
     venue: string;
@@ -49,11 +56,28 @@ interface GigItem {
     attire?: string;
     compensation?: number;
     parkingNotes?: string;
+    setlistId?: string;
+    setlistName?: string;
+    setlistTitle?: string;
   };
   rsvpSummary?: {
     attendingCount: number;
     declinedCount: number;
   };
+}
+
+interface SetlistDocData {
+  id: string;
+  name?: string;
+  title?: string;
+  category?: string;
+  isTemplate?: boolean;
+  tunes?: SetlistTuneItem[];
+  items?: SetlistTuneItem[];
+  assignedGigIds?: string[];
+  usageCount?: number;
+  lastUsedDate?: string;
+  [key: string]: unknown;
 }
 
 export default function GigsAdminStudioPage() {
@@ -62,7 +86,11 @@ export default function GigsAdminStudioPage() {
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingGig, setEditingGig] = useState<GigItem | null>(null);
+  const [managingSetlistGig, setManagingSetlistGig] = useState<GigItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [setlistMap, setSetlistMap] = useState<Record<string, { name: string; category: string; tuneCount: number }>>({});
+  const [fullSetlists, setFullSetlists] = useState<Record<string, SetlistDocData>>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -90,6 +118,7 @@ export default function GigsAdminStudioPage() {
     attire: "Eagleburger Yellows & Black",
     compensation: 50,
     description: "",
+    setlistId: "",
   });
 
   useEffect(() => {
@@ -110,7 +139,33 @@ export default function GigsAdminStudioPage() {
       }
     );
 
-    return () => unsub();
+    const unsubSetlists = onSnapshot(
+      collection(db, "setlists"),
+      (snap) => {
+        const map: Record<string, { name: string; category: string; tuneCount: number }> = {};
+        const full: Record<string, SetlistDocData> = {};
+        snap.forEach((d) => {
+          const data = d.data();
+          if (isReusableSetlistTemplate(d.id, data)) {
+            const tunes = data.tunes || data.items || [];
+            map[d.id] = {
+              name: data.name || data.title || "Untitled",
+              category: data.category || "parade",
+              tuneCount: Array.isArray(tunes) ? tunes.length : 0,
+            };
+            full[d.id] = { id: d.id, ...data };
+          }
+        });
+        setSetlistMap(map);
+        setFullSetlists(full);
+      },
+      (err) => console.warn("Notice: setlists fetch note:", err)
+    );
+
+    return () => {
+      unsub();
+      unsubSetlists();
+    };
   }, [authLoading]);
 
   if (authLoading || loading) {
@@ -122,11 +177,11 @@ export default function GigsAdminStudioPage() {
     );
   }
 
-  if (!canManageGigs(profile as unknown as User)) {
+  if (!canManageGigs(profile as unknown as User) && !canManageSetlists(profile as unknown as User)) {
     return (
       <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
         <ShieldAlert className="w-4 h-4" />
-        Manager or Admin privileges required to access the Gig Management Studio.
+        Gig Manager, Setlist Manager, or Admin privileges required to access the Gig Management Studio.
       </div>
     );
   }
@@ -140,11 +195,14 @@ export default function GigsAdminStudioPage() {
       const gigId = `gig_${formData.date}_${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
       const slug = `${formData.date}-${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         id: gigId,
         slug,
         date: formData.date,
         status: formData.status,
+        setlistId: null,
+        setlistName: "",
+        setlistTitle: "",
         publicDetails: {
           title: formData.title.trim(),
           venue: formData.venue.trim(),
@@ -158,6 +216,9 @@ export default function GigsAdminStudioPage() {
           downbeat: formData.downbeat.trim(),
           attire: formData.attire.trim(),
           compensation: Number(formData.compensation) || 0,
+          setlistId: null,
+          setlistName: "",
+          setlistTitle: "",
         },
         rsvpSummary: { attendingCount: 0, declinedCount: 0 },
         setlist: [],
@@ -166,6 +227,23 @@ export default function GigsAdminStudioPage() {
       };
 
       await setDoc(doc(db, "gigs", gigId), payload, { merge: true });
+
+      // Initialize empty live stage view document for the new gig
+      await setDoc(
+        doc(db, "setlists", gigId),
+        {
+          gigId,
+          isTemplate: false,
+          templateId: null,
+          templateName: "",
+          name: "",
+          title: "",
+          tunes: [],
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
       setIsCreating(false);
       setFormData({
         title: "",
@@ -218,6 +296,7 @@ export default function GigsAdminStudioPage() {
       attire: gig.internalLogistics?.attire || "Eagleburger Yellows & Black",
       compensation: gig.internalLogistics?.compensation ?? 50,
       description: gig.publicDetails?.description || "",
+      setlistId: gig.setlistId || gig.internalLogistics?.setlistId || "",
     });
   };
 
@@ -227,29 +306,122 @@ export default function GigsAdminStudioPage() {
 
     setIsSaving(true);
     try {
-      await setDoc(
-        doc(db, "gigs", editingGig.id),
-        {
-          date: editFormData.date,
-          status: editFormData.status,
-          publicDetails: {
-            title: editFormData.title.trim(),
-            venue: editFormData.venue.trim(),
-            venueAddress: editFormData.venueAddress.trim(),
-            description: editFormData.description.trim(),
-            showExternalDirections: editFormData.showExternalDirections,
-          },
-          internalLogistics: {
-            title: editFormData.title.trim(),
-            callTime: editFormData.callTime.trim(),
-            downbeat: editFormData.downbeat.trim(),
-            attire: editFormData.attire.trim(),
-            compensation: Number(editFormData.compensation) || 0,
-          },
-          updatedAt: new Date().toISOString(),
+      const selectedTemplate = editFormData.setlistId ? fullSetlists[editFormData.setlistId] : null;
+      const initialTunes = selectedTemplate
+        ? (selectedTemplate.tunes || selectedTemplate.items || [])
+        : (editingGig.setlist || []);
+
+      const assignedTitle = selectedTemplate
+        ? (selectedTemplate.name || selectedTemplate.title || "")
+        : editFormData.setlistId && setlistMap[editFormData.setlistId]
+          ? setlistMap[editFormData.setlistId].name
+          : editFormData.setlistId
+            ? (editingGig.setlistName || editingGig.setlistTitle || editingGig.internalLogistics?.setlistName || "")
+            : null;
+
+      const updateData: Record<string, unknown> = {
+        date: editFormData.date,
+        status: editFormData.status,
+        setlistId: editFormData.setlistId || null,
+        setlistName: assignedTitle,
+        setlistTitle: assignedTitle,
+        publicDetails: {
+          title: editFormData.title.trim(),
+          venue: editFormData.venue.trim(),
+          venueAddress: editFormData.venueAddress.trim(),
+          description: editFormData.description.trim(),
+          showExternalDirections: editFormData.showExternalDirections,
         },
-        { merge: true }
-      );
+        internalLogistics: {
+          title: editFormData.title.trim(),
+          callTime: editFormData.callTime.trim(),
+          downbeat: editFormData.downbeat.trim(),
+          attire: editFormData.attire.trim(),
+          compensation: Number(editFormData.compensation) || 0,
+          setlistId: editFormData.setlistId || null,
+          setlistName: assignedTitle,
+          setlistTitle: assignedTitle,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (selectedTemplate) {
+        updateData.setlist = initialTunes;
+      } else if (!editFormData.setlistId && (editingGig.setlistId || editingGig.internalLogistics?.setlistId)) {
+        updateData.setlist = [];
+      }
+
+      await setDoc(doc(db, "gigs", editingGig.id), updateData, { merge: true });
+
+      const prevSetlistId = editingGig.setlistId || editingGig.internalLogistics?.setlistId;
+      if (editFormData.setlistId && selectedTemplate && editFormData.setlistId !== prevSetlistId) {
+        // If switching from a previous template, unlink gig from previous template
+        if (prevSetlistId && prevSetlistId !== editFormData.setlistId && fullSetlists[prevSetlistId]) {
+          const currentAssigned = fullSetlists[prevSetlistId].assignedGigIds || [];
+          const updatedAssigned = currentAssigned.filter((gid) => gid !== editingGig.id);
+          await setDoc(
+            doc(db, "setlists", prevSetlistId),
+            { assignedGigIds: updatedAssigned, updatedAt: new Date().toISOString() },
+            { merge: true }
+          );
+        }
+
+        await setDoc(
+          doc(db, "setlists", editingGig.id),
+          {
+            gigId: editingGig.id,
+            isTemplate: false,
+            templateId: editFormData.setlistId,
+            templateName: assignedTitle,
+            name: assignedTitle,
+            title: assignedTitle,
+            tunes: initialTunes,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+
+        const currentAssigned = selectedTemplate.assignedGigIds || [];
+        const updatedAssigned = currentAssigned.includes(editingGig.id) ? currentAssigned : [...currentAssigned, editingGig.id];
+        await setDoc(
+          doc(db, "setlists", editFormData.setlistId),
+          {
+            assignedGigIds: updatedAssigned,
+            usageCount: (selectedTemplate.usageCount || 0) + 1,
+            lastUsedDate: editFormData.date,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } else if (!editFormData.setlistId && prevSetlistId) {
+        // Clear live stage view document
+        await setDoc(
+          doc(db, "setlists", editingGig.id),
+          {
+            gigId: editingGig.id,
+            isTemplate: false,
+            templateId: null,
+            templateName: "",
+            name: "",
+            title: "",
+            tunes: [],
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+
+        // Unlink previous template
+        if (fullSetlists[prevSetlistId]) {
+          const currentAssigned = fullSetlists[prevSetlistId].assignedGigIds || [];
+          const updatedAssigned = currentAssigned.filter((gid) => gid !== editingGig.id);
+          await setDoc(
+            doc(db, "setlists", prevSetlistId),
+            { assignedGigIds: updatedAssigned, updatedAt: new Date().toISOString() },
+            { merge: true }
+          );
+        }
+      }
+
       setEditingGig(null);
     } catch (err) {
       alert("Failed to update gig: " + (err instanceof Error ? err.message : String(err)));
@@ -264,6 +436,66 @@ export default function GigsAdminStudioPage() {
       await deleteDoc(doc(db, "gigs", id));
     } catch (err) {
       alert("Failed to delete gig: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleRemoveGigSetlist = async (gigItem: GigItem) => {
+    const gigTitle = gigItem.publicDetails?.title || gigItem.id;
+    if (!confirm(`Remove the setlist from "${gigTitle}" and start fresh with an empty setlist?`)) {
+      return;
+    }
+
+    try {
+      // 1. Clear setlist in gigs/{gigId}
+      await setDoc(
+        doc(db, "gigs", gigItem.id),
+        {
+          setlistId: null,
+          setlistName: "",
+          setlistTitle: "",
+          setlist: [],
+          internalLogistics: {
+            setlistId: null,
+            setlistName: "",
+            setlistTitle: "",
+          },
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      // 2. Empty live stage view setlist document
+      await setDoc(
+        doc(db, "setlists", gigItem.id),
+        {
+          gigId: gigItem.id,
+          isTemplate: false,
+          templateId: null,
+          templateName: "",
+          name: "",
+          title: "",
+          tunes: [],
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      // 3. Unlink from previous reusable template if assigned
+      const prevTemplateId = gigItem.setlistId || gigItem.internalLogistics?.setlistId;
+      if (prevTemplateId && fullSetlists[prevTemplateId]) {
+        const currentAssigned = fullSetlists[prevTemplateId].assignedGigIds || [];
+        const updatedAssigned = currentAssigned.filter((gid) => gid !== gigItem.id);
+        await setDoc(
+          doc(db, "setlists", prevTemplateId),
+          {
+            assignedGigIds: updatedAssigned,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+    } catch (err) {
+      alert("Failed to remove setlist: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -348,6 +580,14 @@ export default function GigsAdminStudioPage() {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-start gap-2.5">
+            <ListMusic className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-slate-400 leading-relaxed">
+              <span className="text-slate-200 font-semibold block mb-0.5">Empty Setlist on Creation</span>
+              Every new gig starts with an empty setlist. After creating, use the gig card to assign a saved library setlist or build a unique setlist for this gig.
             </div>
           </div>
 
@@ -464,7 +704,7 @@ export default function GigsAdminStudioPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1">Gig Title *</label>
                 <input
@@ -496,6 +736,27 @@ export default function GigsAdminStudioPage() {
                   <option value="confirmed">Confirmed & Dispatched</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Assigned Setlist</label>
+                <select
+                  value={editFormData.setlistId}
+                  onChange={(e) => setEditFormData({ ...editFormData, setlistId: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                >
+                  <option value="">No setlist assigned</option>
+                  {editFormData.setlistId && !setlistMap[editFormData.setlistId] && (
+                    <option value={editFormData.setlistId}>
+                      {editingGig?.setlistName || editingGig?.setlistTitle || editingGig?.internalLogistics?.setlistName || "Currently Assigned Setlist"}
+                    </option>
+                  )}
+                  {Object.entries(setlistMap).map(([id, sl]) => (
+                    <option key={id} value={id}>
+                      {sl.name} ({sl.tuneCount} charts)
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -656,6 +917,129 @@ export default function GigsAdminStudioPage() {
                 ) : null}
               </div>
 
+              {/* Performance Setlist Strip */}
+              {(() => {
+                const effectiveId = g.setlistId || g.internalLogistics?.setlistId;
+                const mappedTemplate = effectiveId && setlistMap[effectiveId] ? setlistMap[effectiveId] : null;
+                const rawTitle =
+                  g.setlistName ||
+                  g.setlistTitle ||
+                  g.internalLogistics?.setlistName ||
+                  g.internalLogistics?.setlistTitle ||
+                  (mappedTemplate ? mappedTemplate.name : "");
+
+                // Check for grouped set name (legacy seed) if rawTitle not found
+                const groupedSetName =
+                  !rawTitle &&
+                  Array.isArray(g.setlist) &&
+                  g.setlist.length > 0 &&
+                  typeof g.setlist[0] === "object" &&
+                  g.setlist[0] !== null &&
+                  "setName" in g.setlist[0]
+                    ? (g.setlist[0] as { setName?: string }).setName
+                    : "";
+
+                const finalTitle = rawTitle || groupedSetName;
+                const tuneCount = mappedTemplate
+                  ? mappedTemplate.tuneCount
+                  : Array.isArray(g.setlist)
+                    ? g.setlist.length > 0 && typeof g.setlist[0] === "object" && g.setlist[0] !== null && "items" in g.setlist[0]
+                      ? (g.setlist as Array<{ items?: unknown[] }>).reduce((acc, grp) => acc + (grp.items?.length || 0), 0)
+                      : g.setlist.length
+                    : 0;
+
+                const hasSetlist = Boolean(finalTitle || tuneCount > 0);
+                const isLibraryTemplate = Boolean(
+                  effectiveId &&
+                  (mappedTemplate || (fullSetlists[effectiveId] && isReusableSetlistTemplate(effectiveId, fullSetlists[effectiveId])))
+                );
+
+                return (
+                  <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <div
+                        className={`p-2 rounded-lg shrink-0 ${
+                          hasSetlist
+                            ? "bg-yellow-400/10 border border-yellow-400/20 text-yellow-400"
+                            : "bg-slate-900 border border-slate-800 text-slate-500"
+                        }`}
+                      >
+                        <ListMusic className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-mono text-slate-500 font-bold block">
+                            Performance Setlist
+                          </span>
+                          {hasSetlist && (
+                            <span
+                              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                isLibraryTemplate
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                  : "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                              }`}
+                            >
+                              {isLibraryTemplate ? "Library Saved" : "Gig-Unique"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs font-bold truncate">
+                          {hasSetlist ? (
+                            <span className="flex items-center gap-1.5 truncate">
+                              <span className="truncate text-yellow-400 font-extrabold text-sm">
+                                {finalTitle || "Unique Gig Setlist"}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                                ({tuneCount} {tuneCount === 1 ? "chart" : "charts"})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 italic font-normal">
+                              Empty setlist (no charts assigned)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {hasSetlist && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGigSetlist(g)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition shrink-0"
+                          title="Remove setlist and start fresh"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setManagingSetlistGig(g)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 border ${
+                          hasSetlist
+                            ? "bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border-yellow-400/20"
+                            : "bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-extrabold border-transparent shadow"
+                        }`}
+                        title={hasSetlist ? "Change or edit setlist" : "Assign saved setlist or build unique setlist"}
+                      >
+                        {hasSetlist ? (
+                          <>
+                            <ListMusic className="w-3.5 h-3.5" />
+                            <span>Manage</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Assign</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 1-Click External Navigation Toggle */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
                 <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
@@ -703,6 +1087,16 @@ export default function GigsAdminStudioPage() {
           </div>
         ))}
       </div>
+
+      {/* Gig Setlist Assignment & Creation Modal */}
+      {managingSetlistGig && (
+        <GigSetlistAssignmentModal
+          gig={managingSetlistGig}
+          isOpen={true}
+          onClose={() => setManagingSetlistGig(null)}
+          onSaved={() => setManagingSetlistGig(null)}
+        />
+      )}
     </div>
   );
 }

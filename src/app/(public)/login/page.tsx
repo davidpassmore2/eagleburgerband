@@ -122,10 +122,11 @@ function LoginContent() {
       }, 500);
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
-      console.error(`${providerName} login failed:`, e);
-      if (e.code === "auth/popup-closed-by-user") {
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        console.warn(`[Auth] ${providerName} login cancelled by user.`);
         setStatusMessage({ type: "info", text: "Sign-in cancelled." });
       } else {
+        console.error(`${providerName} login failed:`, e);
         setStatusMessage({ type: "error", text: e.message || `Failed to sign in with ${providerName}.` });
       }
     } finally {

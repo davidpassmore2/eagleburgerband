@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { PortalColorSchemeIdSchema } from "@/lib/schema/theme";
+import { PortalColorSchemeIdSchema, PortalThemeModeSchema } from "@/lib/schema/theme";
 
 export const RoleEnum = z.enum([
   "admin",
   "web_manager",
   "gig_manager",
   "catalog_manager",
+  "setlist_manager",
   "community_manager",
   "treasurer",
   "section_leader",
@@ -35,6 +36,7 @@ export const UserSchema = z.object({
   roles: z.array(RoleEnum).default(["member"]),
   favoriteToolIds: z.array(z.string()).default([]),
   portalThemeSchemeId: PortalColorSchemeIdSchema.default("eagleburger-gold"),
+  portalThemeMode: PortalThemeModeSchema.default("dark"),
   status: z.enum(["active", "inactive", "pending"]).default("active"),
   phone: z.string().default(""),
   smsConsent: z.boolean().default(false),

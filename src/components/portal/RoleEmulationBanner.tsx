@@ -16,7 +16,8 @@ import {
   UserPlus,
   Package,
   Megaphone,
-  User as UserIcon
+  User as UserIcon,
+  ListMusic
 } from "lucide-react";
 
 interface RoleEmulationBannerProps {
@@ -28,6 +29,7 @@ const PRESET_ROLES: { role: Role; label: string; icon: React.ReactNode }[] = [
   { role: "section_leader", label: "Section Leader", icon: <Users className="w-3.5 h-3.5 text-indigo-400" /> },
   { role: "gig_manager", label: "Gig Operations", icon: <Calendar className="w-3.5 h-3.5 text-sky-400" /> },
   { role: "catalog_manager", label: "Music Librarian", icon: <Music className="w-3.5 h-3.5 text-emerald-400" /> },
+  { role: "setlist_manager", label: "Setlist Manager", icon: <ListMusic className="w-3.5 h-3.5 text-amber-400" /> },
   { role: "treasurer", label: "Treasurer", icon: <DollarSign className="w-3.5 h-3.5 text-emerald-300" /> },
   { role: "web_manager", label: "Web Manager", icon: <Globe className="w-3.5 h-3.5 text-cyan-400" /> },
   { role: "membership_manager", label: "Membership", icon: <UserPlus className="w-3.5 h-3.5 text-pink-400" /> },

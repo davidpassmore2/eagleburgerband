@@ -64,7 +64,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Setlist Studio",
     href: "/admin/setlists",
     icon: ListMusic,
-    requiredRoles: ["admin", "gig_manager", "catalog_manager"],
+    requiredRoles: ["admin", "setlist_manager", "gig_manager", "catalog_manager"],
     category: "Performances & Logistics",
   },
   {
@@ -172,7 +172,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Repertoire Analytics",
     href: "/admin/analytics/catalog",
     icon: BarChart3,
-    requiredRoles: ["admin", "catalog_manager"],
+    requiredRoles: ["admin", "catalog_manager", "setlist_manager"],
     category: "Music & Repertoire",
   },
   {

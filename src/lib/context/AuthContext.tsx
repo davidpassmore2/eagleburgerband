@@ -92,6 +92,7 @@ export const SUPER_ADMIN_ROLES: Role[] = [
   "web_manager",
   "gig_manager", 
   "catalog_manager", 
+  "setlist_manager",
   "community_manager",
   "treasurer", 
   "section_leader",
@@ -176,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sectionId: null,
     instruments: [],
     portalThemeSchemeId: "eagleburger-gold",
+    portalThemeMode: "dark",
     status: "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -187,8 +189,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("signInWithGoogle failed:", err);
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        console.warn("[Auth] Google sign-in cancelled by user.");
+      } else {
+        console.error("signInWithGoogle failed:", err);
+      }
       throw err;
     }
   };
@@ -199,8 +206,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("email");
       provider.addScope("name");
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("signInWithApple failed:", err);
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        console.warn("[Auth] Apple sign-in cancelled by user.");
+      } else {
+        console.error("signInWithApple failed:", err);
+      }
       throw err;
     }
   };
@@ -210,8 +222,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new OAuthProvider("microsoft.com");
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("signInWithMicrosoft failed:", err);
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        console.warn("[Auth] Microsoft sign-in cancelled by user.");
+      } else {
+        console.error("signInWithMicrosoft failed:", err);
+      }
       throw err;
     }
   };
@@ -222,8 +239,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("read:user");
       provider.addScope("user:email");
       await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("signInWithGithub failed:", err);
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
+        console.warn("[Auth] GitHub sign-in cancelled by user.");
+      } else {
+        console.error("signInWithGithub failed:", err);
+      }
       throw err;
     }
   };
@@ -399,6 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sectionId: personaSection,
         instruments: personaSection === "percussion" ? ["Snare Drum"] : [],
         portalThemeSchemeId: "eagleburger-gold",
+        portalThemeMode: "dark",
         status: "active",
         updatedAt: new Date().toISOString(),
       };
@@ -477,6 +500,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 instruments: ["Snare Drum", "Percussion"],
                 phone: "412-555-0101",
                 portalThemeSchemeId: "eagleburger-gold",
+                portalThemeMode: "dark",
                 status: "active",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -504,6 +528,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         sectionId: inv.sectionId || null,
                         instruments: inv.instruments || [],
                         portalThemeSchemeId: "eagleburger-gold",
+                        portalThemeMode: "dark",
                         status: "active",
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),

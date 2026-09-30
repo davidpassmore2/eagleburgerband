@@ -47,3 +47,83 @@ body {
   animation: portal-logo-white-glow 2.2s ease-in-out infinite alternate;
   will-change: filter, transform, opacity;
 }
+
+/* ==========================================================================
+   Musician Portal Dual-Mode Styling & Light Mode Atmospheric Tokens
+   ========================================================================== */
+
+[data-ebb-mode="light"] {
+  color-scheme: light;
+}
+
+/* Light mode text hierarchy overrides */
+[data-ebb-mode="light"] .text-white {
+  color: var(--ebb-text) !important;
+}
+
+[data-ebb-mode="light"] .text-slate-100,
+[data-ebb-mode="light"] .text-slate-200 {
+  color: #1e293b !important;
+}
+
+[data-ebb-mode="light"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+[data-ebb-mode="light"] .text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-ebb-mode="light"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Background & card overrides in portal light mode */
+[data-ebb-mode="light"] aside,
+[data-ebb-mode="light"] main {
+  color: var(--ebb-text);
+}
+
+[data-ebb-mode="light"] .bg-slate-950:not([role="dialog"] *):not(.portal-exempt) {
+  background-color: var(--ebb-background) !important;
+}
+
+[data-ebb-mode="light"] .bg-slate-900:not([role="dialog"] *):not(.portal-exempt) {
+  background-color: var(--ebb-surface) !important;
+}
+
+[data-ebb-mode="light"] .bg-slate-900\/40,
+[data-ebb-mode="light"] .bg-slate-900\/50,
+[data-ebb-mode="light"] .bg-slate-900\/60,
+[data-ebb-mode="light"] .bg-slate-900\/70,
+[data-ebb-mode="light"] .bg-slate-900\/80 {
+  background-color: var(--ebb-surface) !important;
+}
+
+[data-ebb-mode="light"] .bg-slate-800,
+[data-ebb-mode="light"] .bg-slate-800\/40,
+[data-ebb-mode="light"] .bg-slate-800\/50,
+[data-ebb-mode="light"] .bg-slate-800\/60,
+[data-ebb-mode="light"] .bg-slate-800\/80 {
+  background-color: var(--ebb-surface-muted) !important;
+}
+
+[data-ebb-mode="light"] .border-slate-800,
+[data-ebb-mode="light"] .border-slate-800\/40,
+[data-ebb-mode="light"] .border-slate-800\/60,
+[data-ebb-mode="light"] .border-slate-700,
+[data-ebb-mode="light"] .border-slate-700\/40,
+[data-ebb-mode="light"] .border-slate-700\/50,
+[data-ebb-mode="light"] .border-slate-700\/60 {
+  border-color: var(--ebb-border) !important;
+}
+
+/* Form inputs & selects in light mode */
+[data-ebb-mode="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-ebb-mode="light"] select,
+[data-ebb-mode="light"] textarea {
+  background-color: var(--ebb-surface);
+  border-color: var(--ebb-border);
+  color: var(--ebb-text);
+}
+
