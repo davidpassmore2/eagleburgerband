@@ -3,12 +3,12 @@ import {
   Users,
   Layers,
   Calendar,
+  CalendarOff,
   ListMusic,
   Send,
   DollarSign,
   Contact,
   Inbox,
-  Library,
   Lightbulb,
   Palette,
   MessageSquare,
@@ -52,6 +52,22 @@ export interface WorkspaceTool {
 export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   // --- Performances & Logistics ---
   {
+    id: "member-gigs",
+    title: "Performance Calendar & RSVPs",
+    href: "/portal/gigs",
+    icon: Calendar,
+    requiredRoles: ["member", "guest"],
+    category: "Performances & Logistics",
+  },
+  {
+    id: "availability",
+    title: "Musician Availability & Blackouts",
+    href: "/portal/availability",
+    icon: CalendarOff,
+    requiredRoles: ["member", "guest"],
+    category: "Performances & Logistics",
+  },
+  {
     id: "gigs",
     title: "Gig Management Studio",
     href: "/admin/gigs",
@@ -93,6 +109,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   },
 
   // --- Personnel & Attendance ---
+  {
+    id: "directory",
+    title: "Member Directory & Roster",
+    href: "/portal/roster",
+    icon: Contact,
+    requiredRoles: ["member", "guest"],
+    category: "Personnel & Attendance",
+  },
   {
     id: "profile",
     title: "My Profile & SMS Settings",
@@ -144,27 +168,19 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
 
   // --- Music & Repertoire ---
   {
-    id: "tunes",
-    title: "Tunes & Chart Library",
-    href: "/admin/tunes",
-    icon: Music,
-    requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
-    category: "Music & Repertoire",
-  },
-  {
     id: "library",
     title: "Repertoire Catalog",
     href: "/portal/library",
-    icon: ListMusic,
+    icon: Music2,
     requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
     category: "Music & Repertoire",
   },
   {
-    id: "catalog",
-    title: "Catalog Studio",
-    href: "/admin/catalog",
-    icon: Library,
-    requiredRoles: ["admin", "catalog_manager"],
+    id: "vault",
+    title: "Rehearsal Vault",
+    href: "/portal/vault",
+    icon: Music,
+    requiredRoles: ["admin", "catalog_manager", "section_leader", "member"],
     category: "Music & Repertoire",
   },
   {
@@ -173,14 +189,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/analytics/catalog",
     icon: BarChart3,
     requiredRoles: ["admin", "catalog_manager", "setlist_manager"],
-    category: "Music & Repertoire",
-  },
-  {
-    id: "vault",
-    title: "Rehearsal Vault",
-    href: "/portal/vault",
-    icon: Music2,
-    requiredRoles: ["admin", "catalog_manager", "section_leader", "member"],
     category: "Music & Repertoire",
   },
   {
@@ -298,7 +306,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Help & Documentation",
     href: "/portal/help",
     icon: BookOpen,
-    requiredRoles: ["member"],
+    requiredRoles: ["member", "guest"],
     category: "Business & Admin",
   },
 ];

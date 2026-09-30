@@ -58,7 +58,7 @@ export default function SetlistBuilderModal({ gigId, initialSets = [], isOpen, o
     if (!isOpen) return;
 
     const fetchCatalog = async () => {
-      const snap = await getDocs(query(collection(db, "songs"), orderBy("title", "asc")));
+      const snap = await getDocs(query(collection(db, "tunes"), orderBy("title", "asc")));
       const list: LibrarySong[] = [];
       snap.forEach((d) => {
         list.push({ id: d.id, ...d.data() } as LibrarySong);

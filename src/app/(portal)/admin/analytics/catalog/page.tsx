@@ -72,7 +72,7 @@ export default function CatalogAnalyticsPage() {
     if (authLoading) return;
 
     const unsubSongs = onSnapshot(
-      collection(db, "songs"),
+      collection(db, "tunes"),
       (snap) => {
         const list: SongDoc[] = [];
         snap.forEach((d) => {
@@ -82,12 +82,12 @@ export default function CatalogAnalyticsPage() {
             title: data.title || "Untitled Song",
             artist: data.artist || "Unknown",
             genre: data.genre || "Brass / Street",
-            active: data.active !== false,
+            active: data.active !== false && data.status !== "archived",
           });
         });
         setSongs(list);
       },
-      (err) => console.warn("Notice: songs fetch note:", err)
+      (err) => console.warn("Notice: tunes fetch note:", err)
     );
 
     const qGigs = query(collection(db, "gigs"), orderBy("date", "desc"));

@@ -47,6 +47,7 @@ This directory maintains the historical and ongoing documentation of all develop
 | **34** | Portal Workspace Taxonomy Unification & Help Center Knowledge Base Overhaul | `feature/stage-34` | [Plan](./stage-34-implementation.md) | [Walkthrough](./stage-34-walkthrough.md) | Completed |
 | **35** | Integrating Logged Charitable Gifts into Band Finance & Treasury Reporting | `feature/stage-35` | [Plan](./stage-35-implementation.md) | [Walkthrough](./stage-35-walkthrough.md) | Completed |
 | **36** | Portal Dual-Mode Theme, Setlist Manager Role, Reusable Setlists & Usage Analytics | `feature/stage-36` | [Plan](./stage-36-implementation.md) | [Walkthrough](./stage-36-walkthrough.md) | Completed |
+| **37** | Complete Portal Structural Consolidation & Data Architecture Refactor | `feature/stage-37` | [Plan](./stage-37-implementation.md) | [Walkthrough](./stage-37-walkthrough.md) | Completed |
 
 ---
 

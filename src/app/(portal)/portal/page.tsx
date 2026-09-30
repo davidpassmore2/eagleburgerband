@@ -625,7 +625,7 @@ export default function MusicianPortalOverviewPage() {
 
               {canManageGigs(profile) && (
                 <Link
-                  href="/portal/inquiries"
+                  href="/admin/inquiries"
                   className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"
                 >
                   <span className="flex items-center gap-2">
@@ -700,7 +700,7 @@ export default function MusicianPortalOverviewPage() {
               </Link>
 
               <Link
-                href="/admin/tunes"
+                href="/portal/library"
                 className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"
               >
                 <span className="flex items-center gap-2">

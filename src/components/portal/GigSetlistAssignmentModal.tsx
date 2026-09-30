@@ -160,7 +160,7 @@ function GigSetlistAssignmentModalInner({
     );
 
     const unsubCatalog = onSnapshot(
-      collection(db, "songs"),
+      collection(db, "tunes"),
       (snap) => {
         const list: SongItem[] = [];
         snap.forEach((d) => {
@@ -177,7 +177,7 @@ function GigSetlistAssignmentModalInner({
         list.sort((a, b) => a.title.localeCompare(b.title));
         setCatalog(list);
       },
-      (err) => console.warn("Notice: songs fetch note:", err)
+      (err) => console.warn("Notice: tunes fetch note:", err)
     );
 
     return () => {

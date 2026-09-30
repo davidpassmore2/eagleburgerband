@@ -153,7 +153,7 @@ export default function SetlistStudioPage() {
 
     // 2. Fetch song catalog
     const unsubSongs = onSnapshot(
-      collection(db, "songs"),
+      collection(db, "tunes"),
       (snap) => {
         const sList: SongItem[] = [];
         snap.forEach((d) => {
@@ -171,7 +171,7 @@ export default function SetlistStudioPage() {
         sList.sort((a, b) => a.title.localeCompare(b.title));
         setCatalog(sList);
       },
-      (err) => console.error("Error loading songs:", err)
+      (err) => console.error("Error loading tunes:", err)
     );
 
     // 3. Fetch saved reusable setlists

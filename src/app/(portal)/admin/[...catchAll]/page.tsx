@@ -42,7 +42,7 @@ export default function AdminCatchAllNotFound({
     {
       title: "Music & Repertoire",
       description: "Tune catalog, charts, recordings, arrangements, and suggestions.",
-      href: "/admin/catalog",
+      href: "/portal/library",
       icon: Music,
       accent: "text-sky-400 group-hover:border-sky-400/40",
     },

@@ -58,7 +58,7 @@ export default function PortalCatchAllNotFound({
     {
       title: "My Section Dispatch",
       description: "Section leader notes, part distribution, and section roll call.",
-      href: "/portal/section",
+      href: "/admin/attendance",
       icon: UserCheck,
       accent: "text-amber-400 group-hover:border-amber-400/40",
     },

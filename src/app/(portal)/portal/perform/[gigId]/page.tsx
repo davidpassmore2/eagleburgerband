@@ -28,6 +28,19 @@ interface GigDetails {
   date?: string;
 }
 
+// Helper to normalize tune items from stage docs, embedded gig setlists, or master templates
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeTune(t: any): SetlistEntry {
+  return {
+    songId: t.songId || t.tuneId || t.id || "",
+    title: t.title || "Untitled Tune",
+    keySignature: t.keySignature || "TBD",
+    tempoBpm: typeof t.tempoBpm === "number" ? t.tempoBpm : (Number(t.tempoBpm) || 120),
+    notes: t.performanceNotes || t.notes || "",
+    driveLink: t.driveLink || t.sheetMusicUrl || "",
+  };
+}
+
 export default function OnStagePerformancePage({
   params,
 }: {
@@ -42,8 +55,12 @@ export default function OnStagePerformancePage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    let unsubMasterTemplate: (() => void) | null = null;
+
     // 1. Listen to Gig Details
     const unsubGig = onSnapshot(doc(db, "gigs", gigId), (snap) => {
+      if (!isMounted) return;
       if (snap.exists()) {
         const d = snap.data();
         setGig({
@@ -51,21 +68,44 @@ export default function OnStagePerformancePage({
           venue: d.venue || d.publicDetails?.venue || "",
           date: d.date || "",
         });
+
+        // Fallback resolution if stage-view setlist doc does not provide tunes:
+        // Check embedded setlist on gig
+        if (Array.isArray(d.setlist) && d.setlist.length > 0) {
+          setTunes((prev) => (prev.length === 0 ? d.setlist.map(normalizeTune) : prev));
+        } else if (d.setlistId) {
+          // Listen to assigned master template
+          if (unsubMasterTemplate) unsubMasterTemplate();
+          unsubMasterTemplate = onSnapshot(doc(db, "setlists", d.setlistId), (tplSnap) => {
+            if (!isMounted) return;
+            if (tplSnap.exists()) {
+              const tplData = tplSnap.data();
+              if (Array.isArray(tplData.tunes) && tplData.tunes.length > 0) {
+                setTunes((prev) => (prev.length === 0 ? tplData.tunes.map(normalizeTune) : prev));
+              }
+            }
+          });
+        }
       }
     });
 
-    // 2. Listen to Setlist
+    // 2. Listen to Stage Setlist Document (canonical sync target from Setlist Assignment)
     const unsubSetlist = onSnapshot(doc(db, "setlists", gigId), (snap) => {
+      if (!isMounted) return;
       if (snap.exists()) {
         const d = snap.data();
-        setTunes(Array.isArray(d.tunes) ? d.tunes : []);
+        if (Array.isArray(d.tunes) && d.tunes.length > 0) {
+          setTunes(d.tunes.map(normalizeTune));
+        }
       }
       setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       unsubGig();
       unsubSetlist();
+      if (unsubMasterTemplate) unsubMasterTemplate();
     };
   }, [gigId]);
 
@@ -86,8 +126,9 @@ export default function OnStagePerformancePage({
       <div className="border-b border-zinc-800 pb-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/setlists"
+            href={`/portal/gigs/${gigId}`}
             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition"
+            title="Return to Gig Call Sheet"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
