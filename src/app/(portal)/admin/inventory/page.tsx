@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { canManageSections, canManageGigs } from "@/lib/auth/permissions";
+import { canManageAssets } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { 
   Package, 
@@ -136,13 +136,13 @@ export default function InventoryAdminPage() {
   }
 
   const userProfile = profile as unknown as User;
-  const hasAccess = Boolean(userProfile && (canManageSections(userProfile) || canManageGigs(userProfile)));
+  const hasAccess = Boolean(userProfile && canManageAssets(userProfile));
 
   if (!hasAccess) {
     return (
       <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
         <ShieldAlert className="w-4 h-4" />
-        Section Leader or Gig Manager privileges required to view or adjust band equipment.
+        Asset Manager or Admin privileges required to view or adjust band equipment.
       </div>
     );
   }

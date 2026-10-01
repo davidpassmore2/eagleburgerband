@@ -1688,6 +1688,16 @@ export default function PortalHelpCenterPage() {
                 zelleIdentifier: "",
                 notes: "",
               },
+              notificationPreferences: raw.notificationPreferences || {
+                gigAlerts: true,
+                logisticsChanges: true,
+                rehearsalNotices: true,
+                broadcasts: true,
+                suggestionActivity: true,
+                emailDigest: false,
+                smsEmergencyOnly: true,
+                updatedAt: new Date().toISOString(),
+              },
               metadata: {},
               updatedAt: new Date().toISOString(),
             });

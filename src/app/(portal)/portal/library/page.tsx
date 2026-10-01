@@ -367,9 +367,6 @@ export default function UnifiedRepertoireLibraryPage() {
       // 1. Write to canonical 'tunes' collection
       await setDoc(doc(db, "tunes", tuneId), payload, { merge: true });
 
-      // 2. Dual-write mirror to 'songs' collection for backwards compatibility
-      await setDoc(doc(db, "songs", tuneId), payload, { merge: true });
-
       setIsEditorOpen(false);
       setEditingTune(null);
     } catch (err) {
@@ -387,7 +384,6 @@ export default function UnifiedRepertoireLibraryPage() {
 
     try {
       await deleteDoc(doc(db, "tunes", tuneId));
-      await deleteDoc(doc(db, "songs", tuneId));
     } catch (err) {
       alert("Failed to delete chart: " + (err instanceof Error ? err.message : String(err)));
     }

@@ -29,6 +29,8 @@ import {
   UserPlus,
   Star,
   MessageSquareQuote,
+  Bell,
+  CheckCircle2,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -122,6 +124,22 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "My Profile & SMS Settings",
     href: "/portal/profile",
     icon: Smartphone,
+    requiredRoles: ["member", "guest"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "member-notifications",
+    title: "Notifications & Inbox",
+    href: "/portal/notifications",
+    icon: Bell,
+    requiredRoles: ["member", "guest"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "my-attendance",
+    title: "My Attendance & Check-In",
+    href: "/portal/checkin",
+    icon: CheckCircle2,
     requiredRoles: ["member", "guest"],
     category: "Personnel & Attendance",
   },

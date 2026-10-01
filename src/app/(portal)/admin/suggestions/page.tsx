@@ -381,7 +381,6 @@ export default function SuggestionTriagePage() {
         updatedAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, "songs", songId), payload, { merge: true });
       await setDoc(doc(db, "tunes", songId), payload, { merge: true });
 
       await updateDoc(doc(db, "suggestions", sug.id), {

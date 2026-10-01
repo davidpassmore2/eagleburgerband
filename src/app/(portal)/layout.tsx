@@ -21,7 +21,8 @@ import {
   Pin, 
   PinOff, 
   Menu, 
-  X 
+  X,
+  Bell
 } from "lucide-react";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
@@ -221,14 +222,23 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
           </div>
           <span className="font-bold text-xs text-white truncate">{theme.bandName}</span>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 transition cursor-pointer"
-          aria-label={isOpen ? "Close menu" : "Open menu"}
-        >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/portal/notifications"
+            className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 transition cursor-pointer"
+            title="Notifications & Feed"
+          >
+            <Bell className="w-5 h-5 text-yellow-400" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 transition cursor-pointer"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+          >
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Backdrop scrim when unpinned drawer is open on desktop or mobile */}

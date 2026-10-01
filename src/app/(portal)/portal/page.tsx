@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
+  Bell,
   ArrowRight,
   Sparkles,
   Music2,
@@ -751,6 +752,17 @@ export default function MusicianPortalOverviewPage() {
             </div>
 
             <div className="space-y-1.5 pt-2 border-t border-white/5">
+              <Link
+                href="/portal/notifications"
+                className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"
+              >
+                <span className="flex items-center gap-2">
+                  <Bell className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>Notifications &amp; Dispatch Feed</span>
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </Link>
+
               <Link
                 href="/portal/profile"
                 className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"

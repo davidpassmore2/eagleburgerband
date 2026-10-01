@@ -7,6 +7,18 @@ import PublicAnnouncementBanner from "@/components/public/PublicAnnouncementBann
 export const metadata = {
   title: "Eagleburger Band | Pittsburgh Street Brass & Drums",
   description: "Pittsburgh's premier mobile acoustic street brass and drumline powerhouse. Available for parades, festivals, block parties, and celebrations.",
+  openGraph: {
+    title: "Eagleburger Band | Pittsburgh Street Brass & Drums",
+    description: "Pittsburgh's premier mobile acoustic street brass and drumline powerhouse. Available for parades, festivals, block parties, and celebrations.",
+    type: "website",
+    locale: "en_US",
+    siteName: "Eagleburger Band",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Eagleburger Band | Pittsburgh Street Brass & Drums",
+    description: "Pittsburgh's premier mobile acoustic street brass and drumline powerhouse.",
+  },
 };
 
 export default function PublicLayout({

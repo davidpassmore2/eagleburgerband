@@ -87,7 +87,7 @@ npm run seed
 This populates your local Firestore and Auth emulators with:
 - **6 Band Sections:** Drumline/Percussion, Sousaphones, Trombones, Trumpets, Saxophones, Auxiliary.
 - **10 Roster Musician Profiles:** With roles, section assignments, and instruments.
-- **Tunes & Repertoire Catalog:** Active songs, BPMs, arrangement links, and setlist templates.
+- **Tunes & Repertoire Catalog:** Active songs, BPMs, arrangement links, and setlist templates stored in canonical `tunes` collection (legacy `songs` mirror collection decommissioned in Stage 39).
 - **Calendar Gigs & Call Sheets:** Confirmed, draft, and completed shows with call times, musician RSVPs, and dispatch logs.
 - **Client Inquiries & Booking Leads:** Lead pipeline ready for triage.
 - **Charitable Giving & Donations:** Grassroots non-profit contributions.

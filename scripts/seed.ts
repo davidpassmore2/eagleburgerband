@@ -276,7 +276,7 @@ async function runSeed() {
   console.log(`✅ Seeded ${users.length} roster musicians with roles & contact phones.`);
 
   // ==========================================
-  // 3. Tunes & Repertoire (Syncs to both 'songs' and 'tunes')
+  // 3. Tunes & Repertoire (Canonical 'tunes' collection)
   // ==========================================
   const tunes = [
     {
@@ -408,11 +408,10 @@ async function runSeed() {
   ];
 
   for (const t of tunes) {
-    // Write to both 'songs' and 'tunes' to satisfy both catalog collections
-    await setDoc(doc(db, "songs", t.id), t, { merge: true });
+    // Write to canonical 'tunes' collection
     await setDoc(doc(db, "tunes", t.id), t, { merge: true });
   }
-  console.log(`✅ Seeded ${tunes.length} tunes into both 'songs' and 'tunes' collections.`);
+  console.log(`✅ Seeded ${tunes.length} tunes into canonical 'tunes' collection.`);
 
   // ==========================================
   // 4. Contacts Directory (Organizers, Venues, Media, Tech)
@@ -632,6 +631,81 @@ async function runSeed() {
     await setDoc(doc(db, "comments", cm.id), cm, { merge: true });
   }
   console.log(`✅ Seeded ${comments.length} discussion comments.`);
+
+  // ==========================================
+  // 6B. In-App Member Notifications
+  // ==========================================
+  const notifications = [
+    {
+      id: "notif_gig_mattress_factory",
+      recipientUid: "all",
+      title: "Call Times Confirmed: Mattress Factory Garden Party",
+      message: "Call time is set for 1:30 PM at the museum courtyard. Full sound check begins at 1:45 PM sharp.",
+      category: "gig_alert",
+      priority: "normal",
+      readUids: [superAdminUid],
+      actionUrl: "/portal/gigs/gig_mattress_factory_2026",
+      actionLabel: "View Call Sheet",
+      createdByUid: superAdminUid,
+      createdByName: "David Passmore (Gig Manager)",
+      metadata: { gigId: "gig_mattress_factory_2026" },
+      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    },
+    {
+      id: "notif_logistics_st_patricks",
+      recipientUid: "all",
+      title: "Logistics Shift: St. Patrick's Parade Staging Line",
+      message: "Float and marching formation line-up shifted to Division 4 on Liberty Avenue. Sousaphones report to step-off point by 9:15 AM.",
+      category: "logistics_change",
+      priority: "urgent",
+      readUids: [],
+      actionUrl: "/portal/gigs/gig_st_patricks_2026",
+      actionLabel: "Review Staging Map",
+      createdByUid: superAdminUid,
+      createdByName: "Band Dispatch",
+      metadata: { gigId: "gig_st_patricks_2026" },
+      createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    },
+    {
+      id: "notif_rehearsal_brass",
+      recipientUid: "all",
+      title: "Rehearsal Check-In: Bloomfield Parklet Rehearsal",
+      message: "Full ensemble outdoor rehearsal this Thursday at 6:30 PM. Focus on 'Superstition' cadence transitions and street strolling routines.",
+      category: "rehearsal_notice",
+      priority: "normal",
+      readUids: [superAdminUid],
+      actionUrl: "/portal/availability",
+      actionLabel: "Submit Availability",
+      createdByUid: "user_fetkovich_john",
+      createdByName: "John Fetkovich (Section Leader)",
+      metadata: {},
+      createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    },
+    {
+      id: "notif_suggestion_promoted",
+      recipientUid: "all",
+      title: "Chart Added to Repertoire: 'Cissy Strut'",
+      message: "Joelle's proposal for 'Cissy Strut' has been approved and charted by the catalog team! Charts are now active in the Repertoire Studio.",
+      category: "suggestion_activity",
+      priority: "low",
+      readUids: [],
+      actionUrl: "/portal/library",
+      actionLabel: "Open Music Library",
+      createdByUid: superAdminUid,
+      createdByName: "Catalog Manager",
+      metadata: { songId: "song_cissy_strut" },
+      createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+    },
+  ];
+
+  for (const n of notifications) {
+    await setDoc(doc(db, "notifications", n.id), n, { merge: true });
+  }
+  console.log(`✅ Seeded ${notifications.length} in-app member notifications.`);
 
   // ==========================================
   // 7. Theme Configuration Document

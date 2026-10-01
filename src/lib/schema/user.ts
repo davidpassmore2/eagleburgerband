@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PortalColorSchemeIdSchema, PortalThemeModeSchema } from "@/lib/schema/theme";
+import { NotificationPreferencesSchema } from "@/lib/schema/notification";
 
 export const RoleEnum = z.enum([
   "admin",
@@ -47,6 +48,16 @@ export const UserSchema = z.object({
     paypalEmail: "",
     zelleIdentifier: "",
     notes: "",
+  }),
+  notificationPreferences: NotificationPreferencesSchema.default({
+    gigAlerts: true,
+    logisticsChanges: true,
+    rehearsalNotices: true,
+    broadcasts: true,
+    suggestionActivity: true,
+    emailDigest: false,
+    smsEmergencyOnly: true,
+    updatedAt: new Date().toISOString(),
   }),
 
   metadata: z.record(z.string(), z.any()).optional().default({}),
