@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageSections } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Users,
   ShieldAlert,
@@ -195,10 +196,11 @@ export default function SectionsAdminPage() {
       };
 
       await setDoc(doc(db, "sections", targetId), payload, { merge: true });
+      toast.success("Section saved successfully!");
       setEditingId(null);
       setFormData({});
     } catch (err) {
-      alert(
+      toast.error(
         "Failed to save section: " +
           (err instanceof Error ? err.message : String(err))
       );
@@ -211,9 +213,10 @@ export default function SectionsAdminPage() {
     if (!confirm(`Delete section "${name}"? This cannot be undone.`)) return;
     try {
       await deleteDoc(doc(db, "sections", id));
+      toast.success(`Section "${name}" deleted.`);
       if (editingId === id) handleCancel();
     } catch (err) {
-      alert(
+      toast.error(
         "Failed to delete section: " +
           (err instanceof Error ? err.message : String(err))
       );

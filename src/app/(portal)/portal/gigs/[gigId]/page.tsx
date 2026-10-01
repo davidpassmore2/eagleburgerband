@@ -36,6 +36,7 @@ import { User } from "@/lib/schema/user";
 import { SetlistTuneItem } from "@/lib/schema/setlist";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
 import { GigCompensationType } from "@/lib/schema/gig";
+import { toast } from "@/lib/context/ToastContext";
 
 interface SetlistItem {
   id: string;
@@ -294,8 +295,9 @@ export default function MusicianGigDetailPage() {
         },
         { merge: true },
       );
+      toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
-      alert(
+      toast.error(
         "Failed to update RSVP: " +
           (err instanceof Error ? err.message : String(err)),
       );
@@ -318,8 +320,9 @@ export default function MusicianGigDetailPage() {
         },
         { merge: true }
       );
+      toast.success("Navigation setting updated.");
     } catch (err) {
-      alert(
+      toast.error(
         "Failed to update navigation setting: " +
           (err instanceof Error ? err.message : String(err)),
       );

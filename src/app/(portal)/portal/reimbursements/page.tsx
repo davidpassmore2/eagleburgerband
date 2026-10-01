@@ -18,6 +18,7 @@ import {
   ReimbursementSchema,
   ExpenseCategoryEnum,
 } from "@/lib/schema/reimbursement";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Receipt,
   PlusCircle,
@@ -260,8 +261,9 @@ export default function MemberReimbursementsPage() {
         updatedAt: new Date().toISOString(),
       });
       setIsAccountModalOpen(false);
+      toast.success("Payout preferences saved.");
     } catch (err) {
-      alert("Failed to save payout preferences: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save payout preferences: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSavingAccount(false);
     }

@@ -20,6 +20,7 @@ import {
   CheckInRecord,
   CheckInStatus,
 } from "@/lib/schema/attendance";
+import { toast } from "@/lib/context/ToastContext";
 import {
   CheckCircle2,
   Clock,
@@ -202,10 +203,11 @@ export default function MemberSelfCheckInPage() {
       }));
 
       setCheckInSuccess(gig.id);
+      toast.success("Checked in successfully!");
       setTimeout(() => setCheckInSuccess(null), 4000);
     } catch (err) {
       console.error("Failed to submit check-in:", err);
-      alert("Check-in error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Check-in error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setCheckingInId(null);
     }

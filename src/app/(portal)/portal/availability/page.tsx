@@ -11,6 +11,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
+import { BlackoutDateSchema, BlackoutDate } from "@/lib/schema/blackout";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   CalendarOff, 
   Plus, 
@@ -23,17 +25,9 @@ import {
 } from "lucide-react";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 
-interface MusicianBlackout {
-  id: string;
-  startDate: string;
-  endDate: string;
-  reason?: string;
-  createdAt: string;
-}
-
 export default function MusicianAvailabilityPage() {
   const { firebaseUser, profile, loading: authLoading } = useAuth();
-  const [blackouts, setBlackouts] = useState<MusicianBlackout[]>([]);
+  const [blackouts, setBlackouts] = useState<BlackoutDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,16 +44,23 @@ export default function MusicianAvailabilityPage() {
     const unsub = onSnapshot(
       collection(db, "users", firebaseUser.uid, "blackouts"),
       (snap) => {
-        const list: MusicianBlackout[] = [];
+        const list: BlackoutDate[] = [];
         snap.forEach((d) => {
-          const data = d.data();
-          list.push({
-            id: d.id,
-            startDate: data.startDate || "",
-            endDate: data.endDate || data.startDate || "",
-            reason: data.reason || "",
-            createdAt: data.createdAt || "",
-          });
+          const parsed = BlackoutDateSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push(parsed.data);
+          } else {
+            const data = d.data();
+            list.push({
+              id: d.id,
+              uid: firebaseUser.uid,
+              userName: data.userName || "Musician",
+              startDate: data.startDate || "",
+              endDate: data.endDate || data.startDate || "",
+              reason: data.reason || "",
+              createdAt: data.createdAt || "",
+            });
+          }
         });
         list.sort((a, b) => a.startDate.localeCompare(b.startDate));
         setBlackouts(list);
@@ -91,11 +92,13 @@ export default function MusicianAvailabilityPage() {
         createdAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, "users", firebaseUser.uid, "blackouts", blackoutId), payload);
+      const validated = BlackoutDateSchema.parse(payload);
+      await setDoc(doc(db, "users", firebaseUser.uid, "blackouts", blackoutId), validated);
+      toast.success("Blackout period added.");
       setIsAdding(false);
       setFormData({ startDate: "", endDate: "", reason: "" });
     } catch (err) {
-      alert("Failed to save blackout: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save blackout: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -105,8 +108,9 @@ export default function MusicianAvailabilityPage() {
     if (!firebaseUser || !confirm("Remove this blackout period?")) return;
     try {
       await deleteDoc(doc(db, "users", firebaseUser.uid, "blackouts", id));
+      toast.success("Blackout period removed.");
     } catch (err) {
-      alert("Failed to delete blackout: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete blackout: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -25,6 +25,7 @@ import {
   interpolateEmailVariables, 
   TokenValues 
 } from "@/lib/email/templates";
+import { toast } from "@/lib/context/ToastContext";
 import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
 import { 
   Send, 
@@ -484,27 +485,27 @@ function EmailSuiteContent() {
     if (isSending) return;
 
     if (resolvedRecipients.length === 0) {
-      alert("Please specify at least one valid recipient address or phone number.");
+      toast.error("Please specify at least one valid recipient address or phone number.");
       return;
     }
 
     if (selectedChannel === "sms") {
       if (!smsBody.trim()) {
-        alert("Please provide an SMS briefing text message.");
+        toast.error("Please provide an SMS briefing text message.");
         return;
       }
       if (audienceSmsStats.optedIn === 0) {
-        alert("None of the selected recipients have both a valid mobile phone number and active SMS consent. Please enroll members in their profile or select Email channel.");
+        toast.error("None of the selected recipients have both a valid mobile phone number and active SMS consent. Please enroll members in their profile or select Email channel.");
         return;
       }
     } else if (selectedChannel === "email") {
       if (!subject.trim() || !htmlBody.trim()) {
-        alert("Please provide an email subject line and email body.");
+        toast.error("Please provide an email subject line and email body.");
         return;
       }
     } else if (selectedChannel === "both") {
       if (!subject.trim() || !htmlBody.trim() || !smsBody.trim()) {
-        alert("Please provide email subject, email body, and an SMS briefing text message for dual delivery.");
+        toast.error("Please provide email subject, email body, and an SMS briefing text message for dual delivery.");
         return;
       }
     }
@@ -574,12 +575,10 @@ function EmailSuiteContent() {
           ? `${audienceSmsStats.optedIn} SMS mobile devices (${audienceSmsStats.missingPhone + audienceSmsStats.optedOut} opted-out/unverified skipped)`
           : `${resolvedRecipients.length} email recipients`;
 
-      setSendSuccessMessage(
-        `Successfully dispatched ${channelLabel} to ${reachSummary}!`
-      );
+      toast.success(`Successfully dispatched ${channelLabel} to ${reachSummary}!`);
       setTimeout(() => setSendSuccessMessage(null), 7000);
     } catch (err) {
-      alert("Failed to send broadcast: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to send broadcast: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSending(false);
     }

@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { toast } from "@/lib/context/ToastContext";
 import Link from "next/link";
 import { 
   Users2, 
@@ -138,6 +139,7 @@ export default function ContactsCRMAdminPage() {
 
       await setDoc(doc(db, "contacts", contactId), payload, { merge: true });
       setIsCreating(false);
+      toast.success("Contact saved successfully!");
       setFormData({
         name: "",
         organization: "",
@@ -152,7 +154,7 @@ export default function ContactsCRMAdminPage() {
         notes: "",
       });
     } catch (err) {
-      alert("Failed to save contact: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save contact: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -162,8 +164,9 @@ export default function ContactsCRMAdminPage() {
     if (!confirm(`Delete contact card for "${name}"?`)) return;
     try {
       await deleteDoc(doc(db, "contacts", id));
+      toast.success(`Contact "${name}" deleted.`);
     } catch (err) {
-      alert("Failed to delete contact: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete contact: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

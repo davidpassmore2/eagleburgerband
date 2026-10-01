@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { 
   NavLink, 
@@ -25,9 +25,11 @@ export default function PublicFooter() {
   );
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, "site_navigation", "config"),
-      (snap) => {
+    let isMounted = true;
+
+    getDoc(doc(db, "site_navigation", "config"))
+      .then((snap) => {
+        if (!isMounted) return;
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success) {
@@ -45,13 +47,14 @@ export default function PublicFooter() {
             }
           }
         }
-      },
-      (err) => {
-        console.warn("Public footer nav listener error:", err);
-      }
-    );
+      })
+      .catch((err) => {
+        console.warn("Public footer nav fetch error:", err);
+      });
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

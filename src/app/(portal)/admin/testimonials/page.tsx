@@ -16,6 +16,7 @@ import {
   Testimonial,
   TestimonialStatus,
 } from "@/lib/schema/testimonial";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Star,
   Quote,
@@ -95,9 +96,10 @@ export default function TestimonialsAdminStudio() {
         status: newStatus,
         updatedAt: new Date().toISOString(),
       });
+      toast.success(`Updated status to ${newStatus}.`);
     } catch (err) {
       console.error("Error updating testimonial status:", err);
-      alert("Failed to update status. Please try again.");
+      toast.error("Failed to update status. Please try again.");
     } finally {
       setActionInProgress(null);
     }
@@ -110,9 +112,10 @@ export default function TestimonialsAdminStudio() {
     setActionInProgress(id);
     try {
       await deleteDoc(doc(db, "testimonials", id));
+      toast.success("Testimonial deleted.");
     } catch (err) {
       console.error("Error deleting testimonial:", err);
-      alert("Failed to delete testimonial.");
+      toast.error("Failed to delete testimonial.");
     } finally {
       setActionInProgress(null);
     }
@@ -133,10 +136,11 @@ export default function TestimonialsAdminStudio() {
         notes: editingItem.notes || "",
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Testimonial changes saved.");
       setEditingItem(null);
     } catch (err) {
       console.error("Error saving testimonial edits:", err);
-      alert("Failed to save changes.");
+      toast.error("Failed to save changes.");
     } finally {
       setIsSaving(false);
     }

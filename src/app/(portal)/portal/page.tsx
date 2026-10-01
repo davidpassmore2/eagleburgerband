@@ -21,6 +21,7 @@ import PortalMonthCalendar from "@/components/portal/PortalMonthCalendar";
 import MemberAnalyticsCard from "@/components/portal/MemberAnalyticsCard";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Calendar,
   Clock,
@@ -199,9 +200,10 @@ export default function MusicianPortalOverviewPage() {
         },
         { merge: true }
       );
+      toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       console.error("Failed to update RSVP:", err);
-      alert("Could not update RSVP. Please check your connection and try again.");
+      toast.error("Could not update RSVP. Please check your connection and try again.");
     } finally {
       setIsUpdatingRsvp(false);
     }

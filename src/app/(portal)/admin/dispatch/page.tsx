@@ -10,6 +10,8 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { DispatchRecord, DispatchSchema } from "@/lib/schema/dispatch";
+import { toast } from "@/lib/context/ToastContext";
 import Link from "next/link";
 import { 
   Send, 
@@ -42,18 +44,6 @@ interface MusicianRsvp {
   uid: string;
   displayName: string;
   status: string;
-}
-
-interface DispatchRecord {
-  id: string;
-  gigId: string;
-  sentAt: string;
-  sentByName: string;
-  subject: string;
-  uniformBrief: string;
-  callTimeBrief: string;
-  logisticsBrief: string;
-  recipientCount: number;
 }
 
 export default function DispatchStudioPage() {
@@ -135,20 +125,25 @@ export default function DispatchStudioPage() {
       (snap) => {
         const hist: DispatchRecord[] = [];
         snap.forEach((d) => {
-          const data = d.data();
-          hist.push({
-            id: d.id,
-            gigId: selectedGigId,
-            sentAt: data.sentAt || "",
-            sentByName: data.sentByName || "Manager",
-            subject: data.subject || "",
-            uniformBrief: data.uniformBrief || "",
-            callTimeBrief: data.callTimeBrief || "",
-            logisticsBrief: data.logisticsBrief || "",
-            recipientCount: typeof data.recipientCount === "number" ? data.recipientCount : 0,
-          });
+          const parsed = DispatchSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            hist.push(parsed.data);
+          } else {
+            const data = d.data();
+            hist.push({
+              id: d.id,
+              gigId: selectedGigId,
+              sentAt: data.sentAt || "",
+              sentByName: data.sentByName || "Manager",
+              subject: data.subject || "",
+              uniformBrief: data.uniformBrief || "",
+              callTimeBrief: data.callTimeBrief || "",
+              logisticsBrief: data.logisticsBrief || "",
+              recipientCount: typeof data.recipientCount === "number" ? data.recipientCount : 0,
+            });
+          }
         });
-        hist.sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+        hist.sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
         setDispatchHistory(hist);
       },
       (err) => console.warn("Notice: dispatch history fetch:", err)
@@ -208,9 +203,10 @@ Questions or late changes? Contact Band Management.`;
     try {
       await navigator.clipboard.writeText(generatedCallSheet);
       setCopied(true);
+      toast.success("Call sheet copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert("Failed to copy call sheet to clipboard.");
+      toast.error("Failed to copy call sheet to clipboard.");
     }
   };
 
@@ -229,11 +225,13 @@ Questions or late changes? Contact Band Management.`;
         recipientCount: attendingMusicians.length,
       };
 
-      await addDoc(collection(db, "gigs", selectedGigId, "dispatches"), payload);
+      const validated = DispatchSchema.parse(payload);
+      await addDoc(collection(db, "gigs", selectedGigId, "dispatches"), validated);
       setSentSuccess(true);
+      toast.success("Dispatch call sheet recorded successfully!");
       setTimeout(() => setSentSuccess(false), 3000);
     } catch (err) {
-      alert("Failed to record dispatch: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to record dispatch: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSending(false);
     }

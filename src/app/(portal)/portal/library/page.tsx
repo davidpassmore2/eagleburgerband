@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
+import { toast } from "@/lib/context/ToastContext";
 
 export interface UnifiedTune {
   id: string;
@@ -230,7 +231,7 @@ export default function UnifiedRepertoireLibraryPage() {
     if (audioPlayerRef.current) {
       audioPlayerRef.current.src = tune.audioSampleUrl;
       audioPlayerRef.current.play().catch((err) => {
-        alert("Audio playback error: " + err.message);
+        toast.error("Audio playback error: " + err.message);
         setPlayingAudioTuneId(null);
       });
     }
@@ -239,7 +240,7 @@ export default function UnifiedRepertoireLibraryPage() {
   // Upvote / Downvote Reactions
   const handleVote = async (tuneId: string, voteType: "up" | "down") => {
     if (!currentUserId) {
-      alert("Please log in to react to charts.");
+      toast.error("Please log in to react to charts.");
       return;
     }
 
@@ -323,7 +324,7 @@ export default function UnifiedRepertoireLibraryPage() {
   const handleSaveTune = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
-      alert("Chart title is required.");
+      toast.error("Chart title is required.");
       return;
     }
 
@@ -367,10 +368,11 @@ export default function UnifiedRepertoireLibraryPage() {
       // 1. Write to canonical 'tunes' collection
       await setDoc(doc(db, "tunes", tuneId), payload, { merge: true });
 
+      toast.success(`Chart "${formTitle.trim()}" saved.`);
       setIsEditorOpen(false);
       setEditingTune(null);
     } catch (err) {
-      alert("Failed to save chart: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save chart: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -384,8 +386,9 @@ export default function UnifiedRepertoireLibraryPage() {
 
     try {
       await deleteDoc(doc(db, "tunes", tuneId));
+      toast.success(`Chart "${title}" deleted.`);
     } catch (err) {
-      alert("Failed to delete chart: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete chart: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

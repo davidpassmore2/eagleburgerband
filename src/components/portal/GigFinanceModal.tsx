@@ -12,6 +12,7 @@ import {
   Clock, 
   Wallet
 } from "lucide-react";
+import { toast } from "@/lib/context/ToastContext";
 
 export type PerformerPayoutRecord = {
   uid: string;
@@ -180,9 +181,10 @@ export default function GigFinanceModal({
       });
 
       if (onSaved) onSaved();
+      toast.success("Gig financials updated successfully!");
       onClose();
     } catch (err) {
-      alert("Failed to save financials: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save financials: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

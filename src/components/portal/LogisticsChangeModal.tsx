@@ -10,6 +10,7 @@ import {
   Loader2, 
   EyeOff 
 } from "lucide-react";
+import { toast } from "@/lib/context/ToastContext";
 
 type Props = {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export default function LogisticsChangeModal({
       await onConfirm(broadcast);
       onClose();
     } catch (err) {
-      alert("Failed to process update: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to process update: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSubmitting(false);
     }

@@ -16,6 +16,7 @@ import {
   Audition,
   AuditionStatus,
 } from "@/lib/schema/audition";
+import { toast } from "@/lib/context/ToastContext";
 import {
   UserPlus,
   Music,
@@ -99,9 +100,10 @@ export default function AuditionsAdminStudio() {
         status: newStatus,
         updatedAt: new Date().toISOString(),
       });
+      toast.success(`Audition status updated to ${newStatus}.`);
     } catch (err) {
       console.error("Error updating audition status:", err);
-      alert("Failed to update status.");
+      toast.error("Failed to update status.");
     } finally {
       setActionInProgress(null);
     }
@@ -114,10 +116,11 @@ export default function AuditionsAdminStudio() {
         reviewerNotes: noteDraft,
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Reviewer notes saved.");
       setEditingNotesId(null);
     } catch (err) {
       console.error("Error saving reviewer notes:", err);
-      alert("Failed to save reviewer notes.");
+      toast.error("Failed to save reviewer notes.");
     } finally {
       setActionInProgress(null);
     }
@@ -130,9 +133,10 @@ export default function AuditionsAdminStudio() {
     setActionInProgress(id);
     try {
       await deleteDoc(doc(db, "auditions", id));
+      toast.success("Audition record deleted.");
     } catch (err) {
       console.error("Error deleting audition:", err);
-      alert("Failed to delete record.");
+      toast.error("Failed to delete record.");
     } finally {
       setActionInProgress(null);
     }

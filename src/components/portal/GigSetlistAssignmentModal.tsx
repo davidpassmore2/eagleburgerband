@@ -16,6 +16,7 @@ import {
   isReusableSetlistTemplate,
   isDuplicateSetlistTitle
 } from "@/lib/schema/setlist";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   X, 
   ListMusic, 
@@ -279,8 +280,9 @@ function GigSetlistAssignmentModalInner({
       setNewSetlistName(`${gigTitle} Unique Setlist`);
 
       if (onSaved) onSaved();
+      toast.success("Setlist removed from gig.");
     } catch (err) {
-      alert("Failed to remove setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to remove setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -365,9 +367,10 @@ function GigSetlistAssignmentModalInner({
       setAssignedName(title);
 
       if (onSaved) onSaved();
+      toast.success(`Assigned "${title}" to this gig!`);
       onClose();
     } catch (err) {
-      alert("Failed to assign setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to assign setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -438,16 +441,16 @@ function GigSetlistAssignmentModalInner({
   const handleSaveAndAssignNew = async () => {
     const targetTitle = newSetlistName.trim();
     if (!targetTitle) {
-      alert("Please give this setlist a title.");
+      toast.error("Please give this setlist a title.");
       return;
     }
     if (newTunes.length === 0) {
-      alert("Please add at least one chart to the setlist.");
+      toast.error("Please add at least one chart to the setlist.");
       return;
     }
 
     if (saveAsReusable && isDuplicateSetlistTitle(targetTitle, reusableSetlists)) {
-      alert(`A setlist named "${targetTitle}" already exists in the reusable library. Please choose a unique title.`);
+      toast.error(`A setlist named "${targetTitle}" already exists in the reusable library. Please choose a unique title.`);
       return;
     }
 
@@ -536,9 +539,10 @@ function GigSetlistAssignmentModalInner({
       setAssignedName(targetTitle);
 
       if (onSaved) onSaved();
+      toast.success(`Setlist "${targetTitle}" saved & assigned!`);
       onClose();
     } catch (err) {
-      alert("Failed to save and assign setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save and assign setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

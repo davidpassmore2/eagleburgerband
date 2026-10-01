@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { SetlistTuneItem, isReusableSetlistTemplate } from "@/lib/schema/setlist";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   Calendar, 
   MapPin, 
@@ -294,8 +295,9 @@ export default function GigsAdminStudioPage() {
         totalFee: 0,
         description: "",
       });
+      toast.success(`Performance "${formData.title.trim()}" created!`);
     } catch (err) {
-      alert("Failed to create gig: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to create gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -313,8 +315,9 @@ export default function GigsAdminStudioPage() {
         },
         { merge: true }
       );
+      toast.success("Navigation setting updated.");
     } catch (err) {
-      alert("Failed to update navigation setting: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update navigation setting: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -482,8 +485,9 @@ export default function GigsAdminStudioPage() {
       }
 
       setEditingGig(null);
+      toast.success("Performance details updated successfully!");
     } catch (err) {
-      alert("Failed to update gig: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -493,8 +497,9 @@ export default function GigsAdminStudioPage() {
     if (!confirm(`Delete performance "${title}" and all its call sheets?`)) return;
     try {
       await deleteDoc(doc(db, "gigs", id));
+      toast.success(`Performance "${title}" deleted.`);
     } catch (err) {
-      alert("Failed to delete gig: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete gig: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -553,8 +558,10 @@ export default function GigsAdminStudioPage() {
           { merge: true }
         );
       }
+
+      toast.success(`Setlist removed from "${gigTitle}".`);
     } catch (err) {
-      alert("Failed to remove setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to remove setlist: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

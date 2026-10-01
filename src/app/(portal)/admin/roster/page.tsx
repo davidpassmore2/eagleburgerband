@@ -8,6 +8,8 @@ import { canManageRoster } from "@/lib/auth/permissions";
 import Link from "next/link";
 import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
+import { InviteSchema } from "@/lib/schema/invite";
+import { toast } from "@/lib/context/ToastContext";
 import { Users, ShieldAlert, UserPlus, Copy, Mail } from "lucide-react";
 import { z } from "zod";
 
@@ -101,27 +103,35 @@ export default function RosterAdminPage() {
     e.preventDefault();
     if (!inviteEmail.trim() || !inviteName.trim()) return;
 
-    const token = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    await setDoc(doc(db, "invites", token), {
-      token,
-      email: inviteEmail.trim().toLowerCase(),
-      displayName: inviteName.trim(),
-      sectionId: inviteSection || null,
-      roles: inviteRoles,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      const token = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const payload = {
+        token,
+        email: inviteEmail.trim().toLowerCase(),
+        displayName: inviteName.trim(),
+        sectionId: inviteSection || null,
+        roles: inviteRoles,
+        status: "pending" as const,
+        createdAt: new Date().toISOString(),
+      };
 
-    const link = `${window.location.origin}/claim?token=${token}`;
-    setLastCreatedInvite({
-      email: inviteEmail.trim(),
-      name: inviteName.trim(),
-      token,
-      link,
-    });
-    setShowInviteModal(false);
-    setInviteEmail("");
-    setInviteName("");
+      const validated = InviteSchema.parse(payload);
+      await setDoc(doc(db, "invites", token), validated);
+
+      const link = `${window.location.origin}/claim?token=${token}`;
+      setLastCreatedInvite({
+        email: inviteEmail.trim(),
+        name: inviteName.trim(),
+        token,
+        link,
+      });
+      setShowInviteModal(false);
+      setInviteEmail("");
+      setInviteName("");
+      toast.success("Onboarding link generated!");
+    } catch (err) {
+      toast.error("Failed to generate invite: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
   return (
@@ -155,7 +165,7 @@ export default function RosterAdminPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(lastCreatedInvite.link);
-                alert("Copied onboarding link to clipboard!");
+                toast.success("Copied onboarding link to clipboard!");
               }}
               className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg transition"
             >

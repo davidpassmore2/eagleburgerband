@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { AnnouncementBanner, SiteNavigationSchema } from "@/lib/schema/siteConfig";
 import Link from "next/link";
@@ -28,9 +28,11 @@ export default function PublicAnnouncementBanner() {
   const dismissed = userDismissed || sessionDismissed;
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, "site_navigation", "config"),
-      (snap) => {
+    let isMounted = true;
+
+    getDoc(doc(db, "site_navigation", "config"))
+      .then((snap) => {
+        if (!isMounted) return;
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success && parsed.data.announcementBanner.enabled) {
@@ -39,13 +41,14 @@ export default function PublicAnnouncementBanner() {
             setBanner(null);
           }
         }
-      },
-      (err) => {
+      })
+      .catch((err) => {
         console.warn("Announcement banner load notice:", err);
-      }
-    );
+      });
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (!banner || !banner.enabled || !banner.message?.trim() || dismissed) {

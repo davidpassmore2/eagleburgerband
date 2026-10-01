@@ -49,7 +49,8 @@ This directory maintains the historical and ongoing documentation of all develop
 | **36** | Portal Dual-Mode Theme, Setlist Manager Role, Reusable Setlists & Usage Analytics | `feature/stage-36` | [Plan](./stage-36-implementation.md) | [Walkthrough](./stage-36-walkthrough.md) | Completed |
 | **37** | Complete Portal Structural Consolidation & Data Architecture Refactor | `feature/stage-37` | [Plan](./stage-37-implementation.md) | [Walkthrough](./stage-37-walkthrough.md) | Completed |
 | **38** | Gig Compensation Models, Financial Transparency Suite & Suggestions Hardening | `feature/stage-38` | [Plan](./stage-38-implementation.md) | [Walkthrough](./stage-38-walkthrough.md) | Completed |
-| **39** | Member Notifications, Attendance, Catalog Consolidation, Public Site Polish & Arch Review | `feature/stage-39` | [Plan](./stage-39-implementation.md) | [Walkthrough](./stage-39-walkthrough.md) | In Progress |
+| **39** | Member Notifications, Attendance, Catalog Consolidation, Public Site Polish & Arch Review | `feature/stage-39` | [Plan](./stage-39-implementation.md) | [Walkthrough](./stage-39-walkthrough.md) | Completed |
+| **40** | Modern Feedback Suite, Schema Invariance Hardening & Performance Optimization | `feature/stage-40` | [Plan](./stage-40-implementation.md) | [Walkthrough](./stage-40-walkthrough.md) | Completed |
 
 ---
 

@@ -24,6 +24,7 @@ import {
   Users, 
   Radio
 } from "lucide-react";
+import { toast } from "@/lib/context/ToastContext";
 
 export type CheckInStatus = "checked_in" | "late" | "no_show" | "excused";
 
@@ -158,8 +159,9 @@ export default function DayOfCheckInKioskPage({
       };
 
       await setDoc(doc(db, "gigs", gigId, "checkins", targetUid), record, { merge: true });
+      toast.success(`Check-in updated for ${displayName}.`);
     } catch (err) {
-      alert("Failed to update check-in: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update check-in: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

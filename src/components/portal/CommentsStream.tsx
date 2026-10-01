@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageContent, isAdmin } from "@/lib/auth/permissions";
 import { Comment, CommentSchema, CommentTargetTypeEnum } from "@/lib/schema/comment";
 import DOMPurify from "dompurify";
+import { toast } from "@/lib/context/ToastContext";
 import {
   MessageSquare,
   Send,
@@ -213,7 +214,7 @@ export default function CommentsStream({
       setFlaggingComment(null);
     } catch (err) {
       console.error("Failed to report comment:", err);
-      alert("Unable to report comment right now.");
+      toast.error("Unable to report comment right now.");
     } finally {
       setIsFlagSubmitting(false);
     }

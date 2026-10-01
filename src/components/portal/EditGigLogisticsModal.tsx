@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
+import { toast } from "@/lib/context/ToastContext";
 
 type Props = {
   gigId: string;
@@ -131,10 +132,11 @@ export default function EditGigLogisticsModal({
       }
 
       if (onSaved) onSaved();
+      toast.success("Logistics changes saved successfully!");
       setIsDiffModalOpen(false);
       onClose();
     } catch (err) {
-      alert("Failed to save changes: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save changes: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

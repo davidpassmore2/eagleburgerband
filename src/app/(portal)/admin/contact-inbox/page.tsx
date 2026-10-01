@@ -17,6 +17,7 @@ import {
   GeneralInquiry,
   GeneralInquiryStatus,
 } from "@/lib/schema/generalInquiry";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Mail,
   User as UserIcon,
@@ -101,9 +102,10 @@ export default function ContactInboxAdminStudio() {
         status: newStatus,
         updatedAt: new Date().toISOString(),
       });
+      toast.success(`Message status updated to ${newStatus}.`);
     } catch (err) {
       console.error("Error updating message status:", err);
-      alert("Failed to update status.");
+      toast.error("Failed to update status.");
     } finally {
       setActionInProgress(null);
     }
@@ -116,10 +118,11 @@ export default function ContactInboxAdminStudio() {
         internalNotes: noteDraft,
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Internal notes saved.");
       setEditingNotesId(null);
     } catch (err) {
       console.error("Error saving internal notes:", err);
-      alert("Failed to save internal notes.");
+      toast.error("Failed to save internal notes.");
     } finally {
       setActionInProgress(null);
     }
@@ -132,9 +135,10 @@ export default function ContactInboxAdminStudio() {
     setActionInProgress(id);
     try {
       await deleteDoc(doc(db, "contact_messages", id));
+      toast.success("Message deleted.");
     } catch (err) {
       console.error("Error deleting message:", err);
-      alert("Failed to delete message.");
+      toast.error("Failed to delete message.");
     } finally {
       setActionInProgress(null);
     }

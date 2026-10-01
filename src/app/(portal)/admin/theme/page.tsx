@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canManageTheme } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from "@/lib/schema/theme";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   Save, 
   Check, 
@@ -131,9 +132,10 @@ export default function ThemeCustomizerPage() {
       await setDoc(doc(db, "theme", "config"), validated, { merge: true });
 
       setSavedSuccess(true);
+      toast.success("Theme settings saved successfully!");
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
-      alert("Failed to save theme settings: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save theme settings: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }

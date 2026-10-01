@@ -12,9 +12,9 @@ import {
   Clock, 
   MapPin, 
   ArrowRight, 
-  Loader2, 
-  ShieldAlert
+  Loader2
 } from "lucide-react";
+import AccessDenied from "@/components/portal/AccessDenied";
 
 interface GigItem {
   id: string;
@@ -74,10 +74,10 @@ export default function CheckInSelectorPage() {
 
   if (!hasPermission) {
     return (
-      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
-        <ShieldAlert className="w-4 h-4" />
-        Section Leader or Gig Manager permissions required to access day-of roll call.
-      </div>
+      <AccessDenied
+        title="Check-In Access Restricted"
+        message="Section Leader or Gig Manager permissions required to access day-of roll call."
+      />
     );
   }
 

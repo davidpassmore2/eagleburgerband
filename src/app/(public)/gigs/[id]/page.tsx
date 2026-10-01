@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 import AddToCalendarButton from "@/components/public/AddToCalendarButton";
+import { toast } from "@/lib/context/ToastContext";
 
 // Dynamically import Leaflet Map with SSR disabled for Next.js 16 App Router & Turbopack safety
 const EventVenueMap = dynamic(
@@ -87,7 +88,7 @@ export default function PublicGigDetailPage({
         { merge: true }
       );
     } catch (err) {
-      alert("Failed to toggle navigation: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to toggle navigation: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsTogglingDirections(false);
     }

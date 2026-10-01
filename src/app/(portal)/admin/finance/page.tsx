@@ -21,6 +21,7 @@ import { canManageFinances } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { Reimbursement } from "@/lib/schema/reimbursement";
 import { Donation, DonationSchema, DonationCategory } from "@/lib/schema/donation";
+import { toast } from "@/lib/context/ToastContext";
 import {
   DollarSign,
   TrendingUp,
@@ -539,19 +540,20 @@ export default function FinancialLedgerPage() {
       await setDoc(doc(db, "settings", "treasury"), config, { merge: true });
       setTreasuryConfig(config);
       setShowStartingBalanceModal(false);
+      toast.success("Starting balance updated.");
     } catch (err) {
-      alert("Failed to save starting balance: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save starting balance: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleCreateTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txAmount || Number(txAmount) <= 0) {
-      alert("Please provide a valid dollar amount");
+      toast.error("Please provide a valid dollar amount");
       return;
     }
     if (!txDescription.trim()) {
-      alert("Please provide a short description");
+      toast.error("Please provide a short description");
       return;
     }
 
@@ -581,8 +583,9 @@ export default function FinancialLedgerPage() {
       setTxNotes("");
       setTxGigId("");
       setIsAddingTransaction(false);
+      toast.success("Transaction entry recorded.");
     } catch (err) {
-      alert("Failed to record entry: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to record entry: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSubmitting(false);
     }
@@ -654,8 +657,9 @@ export default function FinancialLedgerPage() {
 
       await batch.commit();
       setSettlementGig(null);
+      toast.success("Gig settlement committed to ledger!");
     } catch (err) {
-      alert("Failed to commit settlement: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to commit settlement: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setCommittingSettlement(false);
     }
@@ -665,8 +669,9 @@ export default function FinancialLedgerPage() {
     if (!confirm("Remove this transaction record from the ledger?")) return;
     try {
       await deleteDoc(doc(db, "transactions", id));
+      toast.success("Transaction record removed.");
     } catch (err) {
-      alert("Error deleting record: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error deleting record: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -685,15 +690,16 @@ export default function FinancialLedgerPage() {
         reviewedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Reimbursement claim approved.");
     } catch (err) {
-      alert("Failed to approve claim: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to approve claim: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleConfirmReject = async () => {
     if (!reimbursementToReject) return;
     if (!rejectReason.trim()) {
-      alert("Please provide a reason for rejecting this claim.");
+      toast.error("Please provide a reason for rejecting this claim.");
       return;
     }
     setIsProcessingReimbursement(true);
@@ -708,8 +714,9 @@ export default function FinancialLedgerPage() {
       });
       setReimbursementToReject(null);
       setRejectReason("");
+      toast.success("Reimbursement claim rejected.");
     } catch (err) {
-      alert("Failed to reject claim: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to reject claim: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsProcessingReimbursement(false);
     }
@@ -756,8 +763,9 @@ export default function FinancialLedgerPage() {
       await batch.commit();
       setReimbursementToPay(null);
       setPayoutReference("");
+      toast.success("Reimbursement payout recorded successfully!");
     } catch (err) {
-      alert("Failed to record payout: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to record payout: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsProcessingReimbursement(false);
     }

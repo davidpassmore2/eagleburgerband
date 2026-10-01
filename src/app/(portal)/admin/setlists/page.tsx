@@ -22,6 +22,7 @@ import {
   isReusableSetlistTemplate,
   isDuplicateSetlistTitle
 } from "@/lib/schema/setlist";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   Music, 
   Plus, 
@@ -42,7 +43,6 @@ import {
   Send,
   Layers,
   Clock,
-  CheckCircle2,
   X,
   SlidersHorizontal
 } from "lucide-react";
@@ -92,7 +92,6 @@ export default function SetlistStudioPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Search & Filter
   const [searchLibraryQuery, setSearchLibraryQuery] = useState("");
@@ -116,8 +115,7 @@ export default function SetlistStudioPage() {
   }, [editingTitle, savedSetlists, editingId]);
 
   const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+    toast.success(msg);
   };
 
   // 1. Fetch available gigs
@@ -356,7 +354,7 @@ export default function SetlistStudioPage() {
       await setDoc(doc(db, "setlists", newId), duplicateData);
       showToast(`Duplicated "${copyName}" to library!`);
     } catch (err) {
-      alert("Failed to duplicate: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to duplicate: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -369,20 +367,20 @@ export default function SetlistStudioPage() {
       await deleteDoc(doc(db, "setlists", setlistId));
       showToast(`Deleted "${name}"`);
     } catch (err) {
-      alert("Failed to delete setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete setlist: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   // Handle save from within Setlist Editor modal
   const handleSaveEditor = async () => {
     if (!editingSetlist?.name?.trim()) {
-      alert("Please provide a setlist name.");
+      toast.error("Please provide a setlist name.");
       return;
     }
 
     const trimmedTitle = editingSetlist.name.trim();
     if (isDuplicateSetlistTitle(trimmedTitle, savedSetlists, editingSetlist.id)) {
-      alert(`A setlist named "${trimmedTitle}" already exists in the reusable library. Please choose a unique title.`);
+      toast.error(`A setlist named "${trimmedTitle}" already exists in the reusable library. Please choose a unique title.`);
       return;
     }
 
@@ -405,7 +403,7 @@ export default function SetlistStudioPage() {
       setEditingSetlist(null);
       showToast(`Saved setlist "${payload.name}" to library!`);
     } catch (err) {
-      alert("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -513,7 +511,7 @@ export default function SetlistStudioPage() {
       showToast(`Assigned "${assigningSetlist.name}" to "${gigTitle}"!`);
       setAssigningSetlist(null);
     } catch (err) {
-      alert("Failed to assign setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to assign setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsAssigning(false);
     }
@@ -533,7 +531,7 @@ export default function SetlistStudioPage() {
   // Save current gig sequence as a new Reusable Setlist
   const handleSaveGigAsReusableSetlist = async () => {
     if (gigSetlistTunes.length === 0) {
-      alert("Add at least one tune to save as a reusable setlist.");
+      toast.error("Add at least one tune to save as a reusable setlist.");
       return;
     }
     const selectedGig = gigs.find((g) => g.id === selectedGigId);
@@ -543,7 +541,7 @@ export default function SetlistStudioPage() {
 
     const trimmedName = name.trim();
     if (isDuplicateSetlistTitle(trimmedName, savedSetlists)) {
-      alert(`A setlist named "${trimmedName}" already exists in the reusable library. Please choose a unique title.`);
+      toast.error(`A setlist named "${trimmedName}" already exists in the reusable library. Please choose a unique title.`);
       return;
     }
 
@@ -574,7 +572,7 @@ export default function SetlistStudioPage() {
       await setDoc(doc(db, "setlists", newId), newSetlist);
       showToast(`Saved "${name}" into the Reusable Setlist Library!`);
     } catch (err) {
-      alert("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -605,7 +603,7 @@ export default function SetlistStudioPage() {
       showToast("Saved setlist directly to gig call sheet and stage view!");
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (err) {
-      alert("Failed to save gig setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save gig setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -615,14 +613,6 @@ export default function SetlistStudioPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Toast Notification Banner */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-slate-950 font-bold px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-emerald-400 animate-in slide-in-from-bottom-3 duration-200">
-          <CheckCircle2 className="w-4 h-4" />
-          <span className="text-xs">{toastMessage}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div 
         style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}

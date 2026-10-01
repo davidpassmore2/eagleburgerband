@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canViewRepertoireAnalytics } from "@/lib/auth/permissions";
@@ -70,14 +70,22 @@ export default function CatalogAnalyticsPage() {
 
   useEffect(() => {
     if (authLoading) return;
+    let isMounted = true;
 
-    const unsubSongs = onSnapshot(
-      collection(db, "tunes"),
-      (snap) => {
-        const list: SongDoc[] = [];
-        snap.forEach((d) => {
+    const qGigs = query(collection(db, "gigs"), orderBy("date", "desc"));
+
+    Promise.all([
+      getDocs(collection(db, "tunes")),
+      getDocs(qGigs),
+      getDocs(collection(db, "setlists")),
+    ])
+      .then(([tunesSnap, gigsSnap, setlistsSnap]) => {
+        if (!isMounted) return;
+
+        const songList: SongDoc[] = [];
+        tunesSnap.forEach((d) => {
           const data = d.data();
-          list.push({
+          songList.push({
             id: d.id,
             title: data.title || "Untitled Song",
             artist: data.artist || "Unknown",
@@ -85,19 +93,12 @@ export default function CatalogAnalyticsPage() {
             active: data.active !== false && data.status !== "archived",
           });
         });
-        setSongs(list);
-      },
-      (err) => console.warn("Notice: tunes fetch note:", err)
-    );
+        setSongs(songList);
 
-    const qGigs = query(collection(db, "gigs"), orderBy("date", "desc"));
-    const unsubGigs = onSnapshot(
-      qGigs,
-      (snap) => {
-        const list: GigDoc[] = [];
-        snap.forEach((d) => {
+        const gigList: GigDoc[] = [];
+        gigsSnap.forEach((d) => {
           const data = d.data();
-          list.push({
+          gigList.push({
             id: d.id,
             date: data.date || "",
             status: data.status || "upcoming",
@@ -107,36 +108,27 @@ export default function CatalogAnalyticsPage() {
             setlist: data.setlist,
           });
         });
-        setGigs(list);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Error loading gigs for analytics:", err);
-        setLoading(false);
-      }
-    );
+        setGigs(gigList);
 
-    const unsubSetlists = onSnapshot(
-      collection(db, "setlists"),
-      (snap) => {
-        const list: Setlist[] = [];
+        const setlistList: Setlist[] = [];
         const seenIds = new Set<string>();
-        snap.forEach((d) => {
+        setlistsSnap.forEach((d) => {
           const data = d.data();
           if (isReusableSetlistTemplate(d.id, data) && !seenIds.has(d.id)) {
             seenIds.add(d.id);
-            list.push({ id: d.id, ...data } as Setlist);
+            setlistList.push({ id: d.id, ...data } as Setlist);
           }
         });
-        setSetlists(list);
-      },
-      (err) => console.warn("Notice: setlists fetch note:", err)
-    );
+        setSetlists(setlistList);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading analytics data:", err);
+        if (isMounted) setLoading(false);
+      });
 
     return () => {
-      unsubSongs();
-      unsubGigs();
-      unsubSetlists();
+      isMounted = false;
     };
   }, [authLoading]);
 

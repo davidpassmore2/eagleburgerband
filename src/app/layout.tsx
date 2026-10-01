@@ -33,6 +33,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from "@/lib/context/ToastContext";
+
 export default function RootLayout({
   children,
 }: {
@@ -47,7 +49,7 @@ export default function RootLayout({
         data-enable-grammarly="false"
         suppressHydrationWarning
       >
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

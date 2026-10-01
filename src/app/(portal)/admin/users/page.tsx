@@ -15,6 +15,7 @@ import { isAdmin, Role } from "@/lib/auth/permissions";
 import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { logAdminAction } from "@/lib/logging/adminLogger";
+import { toast } from "@/lib/context/ToastContext";
 import {
   ShieldAlert,
   Check,
@@ -165,9 +166,10 @@ export default function UsersAdminPage() {
           newRoles: updatedRoles,
         },
       });
+      toast.success(`Updated role '${role}' for ${user.displayName || user.email}.`);
     } catch (err) {
       console.error("Failed to update role:", err);
-      alert("Failed to update role: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update role: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActionInProgressId(null);
     }
@@ -249,9 +251,10 @@ export default function UsersAdminPage() {
           newStatus,
         },
       });
+      toast.success(`Updated status to ${newStatus}.`);
     } catch (err) {
       console.error("Failed to update status:", err);
-      alert("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActionInProgressId(null);
     }
@@ -291,9 +294,10 @@ export default function UsersAdminPage() {
 
       setPurgeTarget(null);
       setPurgeConfirmText("");
+      toast.success(`User record for ${targetName} has been permanently purged.`);
     } catch (err) {
       console.error("Failed to purge user:", err);
-      alert("Error purging user record: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error purging user record: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsPurging(false);
     }

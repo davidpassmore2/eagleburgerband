@@ -21,6 +21,7 @@ import {
   SuggestionCategory,
   SuggestionStatus,
 } from "@/lib/schema/suggestion";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   Lightbulb, 
   ThumbsUp, 
@@ -220,7 +221,7 @@ export default function SuggestionTriagePage() {
   // Bi-directional voting handler
   const handleVote = async (sug: SuggestionItem, voteType: "up" | "down") => {
     if (!firebaseUser) {
-      alert("Please sign in to vote on suggestions.");
+      toast.error("Please sign in to vote on suggestions.");
       return;
     }
     const uid = firebaseUser.uid;
@@ -269,14 +270,14 @@ export default function SuggestionTriagePage() {
       }
     } catch (err) {
       console.error("Voting error:", err);
-      alert("Failed to submit vote: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to submit vote: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   // Status Change handler (restricted by category role)
   const handleStatusChange = async (sug: SuggestionItem, nextStatus: SuggestionStatus) => {
     if (!canReviewSuggestion(userProfile, sug.category)) {
-      alert("You do not have administrative permission to triage this category.");
+      toast.error("You do not have administrative permission to triage this category.");
       return;
     }
 
@@ -289,7 +290,7 @@ export default function SuggestionTriagePage() {
         updatedAt: new Date().toISOString(),
       });
     } catch (err) {
-      alert("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -308,8 +309,9 @@ export default function SuggestionTriagePage() {
       });
       setNotesTarget(null);
       setReviewNotesText("");
+      toast.success("Review notes saved.");
     } catch (err) {
-      alert("Failed to save review notes: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save review notes: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSavingNotes(false);
     }
@@ -347,6 +349,7 @@ export default function SuggestionTriagePage() {
       // Write to suggestions collection
       await setDoc(doc(db, "suggestions", sugId), payload);
 
+      toast.success("Suggestion submitted successfully!");
       setIsCreating(false);
       setCreateForm({
         title: "",
@@ -356,7 +359,7 @@ export default function SuggestionTriagePage() {
         referenceUrl: "",
       });
     } catch (err) {
-      alert("Failed to submit suggestion: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to submit suggestion: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -389,9 +392,9 @@ export default function SuggestionTriagePage() {
         updatedAt: new Date().toISOString(),
       });
 
-      alert(`"${sug.title}" is now added to the Repertoire Catalog!`);
+      toast.success(`"${sug.title}" is now added to the Repertoire Catalog!`);
     } catch (err) {
-      alert("Failed to promote suggestion: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to promote suggestion: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setPromotingId(null);
     }
@@ -402,8 +405,9 @@ export default function SuggestionTriagePage() {
     if (!confirm(`Delete proposal for "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, "suggestions", id));
+      toast.success("Proposal deleted.");
     } catch (err) {
-      alert("Failed to delete proposal: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete proposal: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

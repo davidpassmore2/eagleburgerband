@@ -7,6 +7,12 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageCatalog, isAdmin } from "@/lib/auth/permissions";
 import { 
+  VaultTrack, 
+  VaultTrackType, 
+  VaultTrackSchema 
+} from "@/lib/schema/vaultTrack";
+import { toast } from "@/lib/context/ToastContext";
+import { 
   Play, 
   Pause, 
   ArrowLeft, 
@@ -21,19 +27,6 @@ import {
   X,
   Radio
 } from "lucide-react";
-
-export type VaultTrackType = "full_mix" | "brass_stem" | "drum_line" | "reference_recording";
-
-export interface VaultTrack {
-  id: string;
-  songTitle: string;
-  trackType: VaultTrackType;
-  audioUrl: string;
-  tempoBpm?: number;
-  sectionTags: string[];
-  notes?: string;
-  uploadedAt?: string;
-}
 
 const SECTIONS = ["All", "Trumpet", "Trombone", "Saxophone", "Sousaphone", "Percussion"];
 
@@ -75,17 +68,27 @@ export default function MusicianVaultPage() {
       (snap) => {
         const list: VaultTrack[] = [];
         snap.forEach((d) => {
-          const data = d.data();
-          list.push({
-            id: d.id,
-            songTitle: data.songTitle || "Untitled",
-            trackType: (data.trackType as VaultTrackType) || "full_mix",
-            audioUrl: data.audioUrl || "",
-            tempoBpm: typeof data.tempoBpm === "number" ? data.tempoBpm : undefined,
-            sectionTags: Array.isArray(data.sectionTags) ? data.sectionTags : ["All"],
-            notes: data.notes || "",
-            uploadedAt: data.uploadedAt || "",
-          });
+          const parsed = VaultTrackSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push({
+              ...parsed.data,
+              songTitle: parsed.data.songTitle || parsed.data.title || "Untitled",
+              title: parsed.data.title || parsed.data.songTitle || "Untitled",
+            });
+          } else {
+            const data = d.data();
+            list.push({
+              id: d.id,
+              songTitle: data.songTitle || data.title || "Untitled",
+              title: data.title || data.songTitle || "Untitled",
+              trackType: (data.trackType as VaultTrackType) || "full_mix",
+              audioUrl: data.audioUrl || "",
+              tempoBpm: typeof data.tempoBpm === "number" ? data.tempoBpm : 120,
+              sectionTags: Array.isArray(data.sectionTags) ? data.sectionTags : ["All"],
+              notes: data.notes || "",
+              uploadedAt: data.uploadedAt || "",
+            });
+          }
         });
         list.sort((a, b) => a.songTitle.localeCompare(b.songTitle));
         setTracks(list);
@@ -167,7 +170,7 @@ export default function MusicianVaultPage() {
     if (audioRef.current) {
       audioRef.current.src = track.audioUrl;
       audioRef.current.play().catch((err) => {
-        alert("Playback error: " + err.message);
+        toast.error("Playback error: " + err.message);
         setIsPlaying(false);
       });
     }
@@ -194,31 +197,36 @@ export default function MusicianVaultPage() {
   const handleSaveTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!songTitle.trim() || !audioUrl.trim()) {
-      alert("Song title and audio URL are required.");
+      toast.error("Song title and audio URL are required.");
       return;
     }
 
     setSaving(true);
     try {
       const trackId = `vault_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-      await setDoc(doc(db, "vault_tracks", trackId), {
+      const payload = {
         id: trackId,
         songTitle: songTitle.trim(),
+        title: songTitle.trim(),
         trackType,
         audioUrl: audioUrl.trim(),
         tempoBpm: Number(tempoBpm) || 120,
         sectionTags: selectedSectionTags,
         notes: notes.trim(),
         uploadedAt: new Date().toISOString(),
-      });
+      };
 
+      const validated = VaultTrackSchema.parse(payload);
+      await setDoc(doc(db, "vault_tracks", trackId), validated);
+
+      toast.success(`Vault track "${songTitle.trim()}" saved.`);
       setIsAddModalOpen(false);
       setSongTitle("");
       setAudioUrl("");
       setNotes("");
       setSelectedSectionTags(["All"]);
     } catch (err) {
-      alert("Failed to save vault track: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save vault track: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -237,8 +245,9 @@ export default function MusicianVaultPage() {
         setIsPlaying(false);
       }
       await deleteDoc(doc(db, "vault_tracks", trackId));
+      toast.success(`Track "${title}" deleted.`);
     } catch (err) {
-      alert("Failed to delete track: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete track: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

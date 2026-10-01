@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { NavLink, SiteNavigationSchema, DEFAULT_HEADER_LINKS } from "@/lib/schema/siteConfig";
 import { 
@@ -38,9 +38,11 @@ export default function PublicHeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, "site_navigation", "config"),
-      (snap) => {
+    let isMounted = true;
+
+    getDoc(doc(db, "site_navigation", "config"))
+      .then((snap) => {
+        if (!isMounted) return;
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success) {
@@ -50,13 +52,14 @@ export default function PublicHeaderNav() {
             setLinks(activeLinks);
           }
         }
-      },
-      (err) => {
-        console.warn("Public nav listener error:", err);
-      }
-    );
+      })
+      .catch((err) => {
+        console.warn("Public nav fetch error:", err);
+      });
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

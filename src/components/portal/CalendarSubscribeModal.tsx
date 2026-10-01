@@ -16,6 +16,7 @@ import {
   HelpCircle, 
   Loader2 
 } from "lucide-react";
+import { toast } from "@/lib/context/ToastContext";
 
 type Props = {
   isOpen: boolean;
@@ -168,7 +169,7 @@ export default function CalendarSubscribeModal({ isOpen, onClose }: Props) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      alert("Failed to build calendar: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to build calendar: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setDownloading(false);
     }

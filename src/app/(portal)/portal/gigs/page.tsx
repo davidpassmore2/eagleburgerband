@@ -33,6 +33,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { GigCompensationType } from "@/lib/schema/gig";
+import { toast } from "@/lib/context/ToastContext";
 
 type GigItem = MonthCalendarGig & {
   publicDetails?: {
@@ -137,9 +138,10 @@ export default function PortalGigsListPage() {
         },
         { merge: true }
       );
+      toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       console.error("Failed to update RSVP:", err);
-      alert("Could not update RSVP. Please try again.");
+      toast.error("Could not update RSVP. Please try again.");
     } finally {
       setIsUpdatingRsvp(false);
     }

@@ -32,6 +32,7 @@ import {
 import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
 import { SocialIcon } from "@/components/ui/SocialIcon";
+import { toast } from "@/lib/context/ToastContext";
 import {
   Save,
   Eye,
@@ -495,9 +496,10 @@ export default function CMSPagesStudio() {
       });
       await setDoc(doc(db, "site_navigation", "config"), validated);
       setNavSavedSuccess(true);
+      toast.success("Site navigation saved!");
       setTimeout(() => setNavSavedSuccess(false), 3000);
     } catch (err) {
-      alert("Failed to save site navigation: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save site navigation: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSavingNav(false);
     }
@@ -656,9 +658,10 @@ export default function CMSPagesStudio() {
 
       await setDoc(doc(db, "content_pages", activePage.id), validated, { merge: true });
       setSavedSuccess(true);
+      toast.success("Page saved successfully!");
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
-      alert("Failed to save CMS Page: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save CMS Page: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -671,13 +674,13 @@ export default function CMSPagesStudio() {
 
     const slug = (newPageSlug.trim() || newPageTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")).replace(/^-|-$/g, "");
     if (!slug) {
-      alert("Please provide a valid page title or URL slug.");
+      toast.error("Please provide a valid page title or URL slug.");
       return;
     }
     const pageId = slug;
 
     if (pages.some((p) => p.id === pageId || p.slug === slug)) {
-      alert(`A page with slug "/${slug}" already exists. Please choose a different title or slug.`);
+      toast.error(`A page with slug "/${slug}" already exists. Please choose a different title or slug.`);
       return;
     }
 
@@ -807,15 +810,16 @@ export default function CMSPagesStudio() {
       setNewPageKeywords("");
       setNewPageOgImage("");
       setShowNewPageSeoAccordion(false);
+      toast.success(`Page "${newPageTitle}" created!`);
     } catch (err) {
-      alert("Failed to create page: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to create page: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   // Delete Page
   const handleDeletePage = async () => {
     if (activePage.id === "home") {
-      alert("The home page cannot be deleted.");
+      toast.error("The home page cannot be deleted.");
       return;
     }
 
@@ -827,8 +831,9 @@ export default function CMSPagesStudio() {
       await deleteDoc(doc(db, "content_pages", activePage.id));
       setPages((prev) => prev.filter((p) => p.id !== activePage.id));
       setSelectedPageId("home");
+      toast.success(`Page "${activePage.title}" deleted.`);
     } catch (err) {
-      alert("Failed to delete page: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete page: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

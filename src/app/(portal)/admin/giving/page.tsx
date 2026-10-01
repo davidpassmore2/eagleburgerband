@@ -19,6 +19,7 @@ import {
   DonationCategoryEnum,
   DonationSchema,
 } from "@/lib/schema/donation";
+import { toast } from "@/lib/context/ToastContext";
 import {
   HeartHandshake,
   Plus,
@@ -227,8 +228,9 @@ export default function CharitableGivingAdminPage() {
       const validated = DonationSchema.parse(payload);
       await setDoc(doc(db, "donations", id), validated, { merge: true });
       setIsModalOpen(false);
+      toast.success("Donation record saved.");
     } catch (err) {
-      alert("Failed to save donation record: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save donation record: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSubmitting(false);
     }
@@ -240,8 +242,9 @@ export default function CharitableGivingAdminPage() {
         isPublic: !donation.isPublic,
         updatedAt: new Date().toISOString(),
       });
+      toast.success(`Updated visibility for ${donation.organizationName}.`);
     } catch (err) {
-      alert("Failed to update visibility: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update visibility: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -251,8 +254,9 @@ export default function CharitableGivingAdminPage() {
     }
     try {
       await deleteDoc(doc(db, "donations", donation.id));
+      toast.success("Donation record deleted.");
     } catch (err) {
-      alert("Failed to delete record: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete record: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { User } from "@/lib/schema/user";
 import { logAdminAction } from "@/lib/logging/adminLogger";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   User as UserIcon, 
   Phone, 
@@ -88,8 +89,9 @@ function ProfileForm({ profile }: ProfileFormProps) {
       setCurrentStatus("inactive");
       setIsLeaveModalOpen(false);
       setDepartureSuccess(true);
+      toast.success("Membership status updated to inactive.");
     } catch (err) {
-      alert("Failed to deactivate membership: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to deactivate membership: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsLeavingBand(false);
     }

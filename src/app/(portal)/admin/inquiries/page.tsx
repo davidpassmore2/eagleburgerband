@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { toast } from "@/lib/context/ToastContext";
 import { 
   Inbox, 
   Mail, 
@@ -113,8 +114,9 @@ export default function InquiriesAdminPage() {
       } catch {
         // silent fallback if lead does not exist in booking_leads
       }
+      toast.success(`Inquiry status updated to ${status}.`);
     } catch (err) {
-      alert("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -127,8 +129,9 @@ export default function InquiriesAdminPage() {
       } catch {
         // silent fallback
       }
+      toast.success("Inquiry deleted.");
     } catch (err) {
-      alert("Failed to delete inquiry: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete inquiry: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -181,9 +184,9 @@ export default function InquiriesAdminPage() {
         updatedAt: new Date().toISOString(),
       });
 
-      alert(`Draft gig created: ${inq.eventTitle}`);
+      toast.success(`Draft gig created: ${inq.eventTitle}`);
     } catch (err) {
-      alert("Failed to convert into gig: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to convert into gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setConvertingId(null);
     }

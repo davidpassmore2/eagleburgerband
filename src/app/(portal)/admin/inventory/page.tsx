@@ -13,13 +13,20 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageAssets } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import {
+  InventoryItem,
+  AssetCategory,
+  AssetCondition,
+  InventoryItemSchema,
+} from "@/lib/schema/inventory";
+import { toast } from "@/lib/context/ToastContext";
+import AccessDenied from "@/components/portal/AccessDenied";
 import { 
   Package, 
   Plus, 
   Trash2, 
   Search, 
   Loader2, 
-  ShieldAlert, 
   X, 
   Check, 
   UserCheck, 
@@ -29,21 +36,6 @@ import {
   ShieldCheck,
   Tag
 } from "lucide-react";
-
-export type AssetCategory = "instrument" | "harness" | "audio_pa" | "banner_merch" | "hardware";
-export type AssetCondition = "excellent" | "good" | "needs_repair" | "retired";
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: AssetCategory;
-  serialNumber?: string;
-  condition: AssetCondition;
-  assignedToUid?: string;
-  assignedToName?: string;
-  locationNotes?: string;
-  updatedAt: string;
-}
 
 interface MusicianOption {
   uid: string;
@@ -79,18 +71,23 @@ export default function InventoryAdminPage() {
       (snap) => {
         const list: InventoryItem[] = [];
         snap.forEach((d) => {
-          const data = d.data();
-          list.push({
-            id: d.id,
-            name: data.name || "Unnamed Item",
-            category: data.category || "instrument",
-            serialNumber: data.serialNumber || "",
-            condition: data.condition || "good",
-            assignedToUid: data.assignedToUid || "",
-            assignedToName: data.assignedToName || "",
-            locationNotes: data.locationNotes || "",
-            updatedAt: data.updatedAt || "",
-          });
+          const parsed = InventoryItemSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push(parsed.data);
+          } else {
+            const data = d.data();
+            list.push({
+              id: d.id,
+              name: data.name || "Unnamed Item",
+              category: data.category || "instrument",
+              serialNumber: data.serialNumber || "",
+              condition: data.condition || "good",
+              assignedToUid: data.assignedToUid || "",
+              assignedToName: data.assignedToName || "",
+              locationNotes: data.locationNotes || "",
+              updatedAt: data.updatedAt || "",
+            });
+          }
         });
         list.sort((a, b) => a.name.localeCompare(b.name));
         setItems(list);
@@ -140,10 +137,10 @@ export default function InventoryAdminPage() {
 
   if (!hasAccess) {
     return (
-      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
-        <ShieldAlert className="w-4 h-4" />
-        Asset Manager or Admin privileges required to view or adjust band equipment.
-      </div>
+      <AccessDenied
+        title="Asset Management Restricted"
+        message="Asset Manager or Admin privileges required to view or adjust band equipment."
+      />
     );
   }
 
@@ -169,6 +166,7 @@ export default function InventoryAdminPage() {
       };
 
       await setDoc(doc(db, "inventory", itemId), payload, { merge: true });
+      toast.success("Equipment item recorded successfully!");
       setIsCreating(false);
       setFormData({
         name: "",
@@ -179,7 +177,7 @@ export default function InventoryAdminPage() {
         locationNotes: "",
       });
     } catch (err) {
-      alert("Failed to record equipment: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to record equipment: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
     }
@@ -193,8 +191,9 @@ export default function InventoryAdminPage() {
         assignedToName: assignedMusician ? assignedMusician.displayName : "",
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Gear assignment updated.");
     } catch (err) {
-      alert("Failed to update gear assignment: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update gear assignment: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -204,8 +203,9 @@ export default function InventoryAdminPage() {
         condition,
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Item condition updated.");
     } catch (err) {
-      alert("Failed to update item condition: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update item condition: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -213,8 +213,9 @@ export default function InventoryAdminPage() {
     if (!confirm(`Delete asset record for "${name}"?`)) return;
     try {
       await deleteDoc(doc(db, "inventory", id));
+      toast.success("Asset record removed.");
     } catch (err) {
-      alert("Failed to remove item: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to remove item: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -13,6 +13,7 @@ import {
   Flame, 
   Archive 
 } from "lucide-react";
+import { toast } from "@/lib/context/ToastContext";
 
 export type SetItem = {
   id: string;
@@ -118,9 +119,10 @@ export default function SetlistBuilderModal({ gigId, initialSets = [], isOpen, o
         setlist: sets,
         updatedAt: new Date().toISOString(),
       });
+      toast.success("Setlist saved to gig!");
       onClose();
     } catch (err) {
-      alert("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
