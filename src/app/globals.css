@@ -25,6 +25,59 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ==========================================================================
+   Clickable Controls Cursor Standard (Link Cursor / Hand Cursor)
+   Ensures all buttons, links, clickable roles, and interactive form elements
+   display cursor: pointer on hover so users intuitively recognize actionable
+   controls across both the public site and musician portal.
+   ========================================================================== */
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+select:not(:disabled),
+summary,
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="range"]:not(:disabled),
+input[type="file"]::-webkit-file-upload-button,
+input[type="file"]::file-selector-button,
+label:has(input:not(:disabled)),
+label[for],
+[role="tab"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[data-clickable="true"],
+.clickable {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Explicit cursor utility overrides */
+.cursor-default {
+  cursor: default !important;
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+
 @keyframes portal-logo-white-glow {
   0% {
     filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.2));

@@ -37,8 +37,10 @@ import {
   ThumbsDown,
   X,
   Loader2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Lightbulb
 } from "lucide-react";
+import Link from "next/link";
 import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
 
 export interface UnifiedTune {
@@ -474,6 +476,15 @@ export default function UnifiedRepertoireLibraryPage() {
             />
           </div>
 
+          {/* Pitch a Tune — available to all members */}
+          <Link
+            href="/admin/suggestions?category=tune_request"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-700 hover:border-slate-600 shrink-0"
+            title="Suggest a new tune for the band's repertoire"
+          >
+            <Lightbulb className="w-4 h-4 text-yellow-400" /> Pitch a Tune
+          </Link>
+
           {/* Manager Action: Add Chart */}
           {canManage && (
             <button
@@ -485,6 +496,7 @@ export default function UnifiedRepertoireLibraryPage() {
             </button>
           )}
         </div>
+
       </div>
 
       {/* Filter Toolbar */}

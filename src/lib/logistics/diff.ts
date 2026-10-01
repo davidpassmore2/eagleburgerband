@@ -6,6 +6,7 @@ export type LogisticsFields = {
   unloadingAddress?: string;
   parkingNotes?: string;
   compensation?: number;
+  compensationType?: string;
 };
 
 export type FieldDiff = {
@@ -23,6 +24,7 @@ const FIELD_LABELS: Record<keyof LogisticsFields, string> = {
   unloadingAddress: "Unloading Location",
   parkingNotes: "Parking Notes",
   compensation: "Musician Pay",
+  compensationType: "Compensation Model",
 };
 
 export function diffLogistics(

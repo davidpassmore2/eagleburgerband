@@ -28,7 +28,11 @@ import {
   HelpCircle,
   Check,
   Filter,
+  Heart,
+  Landmark,
+  DollarSign,
 } from "lucide-react";
+import { GigCompensationType } from "@/lib/schema/gig";
 
 type GigItem = MonthCalendarGig & {
   publicDetails?: {
@@ -46,6 +50,13 @@ type GigItem = MonthCalendarGig & {
     notes?: string;
     payPerMusician?: number;
     compensation?: number;
+    compensationType?: GigCompensationType;
+  };
+  financials?: {
+    totalFee?: number;
+    compensationType?: GigCompensationType;
+    bandFundCut?: number;
+    fixedPerformerAmount?: number;
   };
   rsvpSummary?: {
     attendingCount: number;
@@ -374,6 +385,32 @@ export default function PortalGigsListPage() {
                           <span className="text-[10px] font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-yellow-400">
                             {g.status}
                           </span>
+                          {(() => {
+                            const compType =
+                              g.internalLogistics?.compensationType ||
+                              g.financials?.compensationType ||
+                              ((Number(g.internalLogistics?.compensation) || 0) > 0 ? "individual" : "community");
+                            if (compType === "community") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                  <Heart className="w-3 h-3" /> Community
+                                </span>
+                              );
+                            }
+                            if (compType === "band_fund") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  <Landmark className="w-3 h-3" /> Band Fund
+                                </span>
+                              );
+                            }
+                            const payout = g.internalLogistics?.compensation || g.financials?.fixedPerformerAmount || 0;
+                            return (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <DollarSign className="w-3 h-3" /> ${payout} / musician
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400">

@@ -27,12 +27,15 @@ import {
   Navigation,
   Plus,
   ExternalLink,
+  Heart,
+  Landmark,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
 import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { SetlistTuneItem } from "@/lib/schema/setlist";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
+import { GigCompensationType } from "@/lib/schema/gig";
 
 interface SetlistItem {
   id: string;
@@ -68,10 +71,20 @@ interface GigDetail {
     unloadingAddress?: string;
     parkingNotes?: string;
     compensation?: number;
+    compensationType?: GigCompensationType;
     description?: string;
     setlistId?: string;
     setlistName?: string;
     setlistTitle?: string;
+  };
+  financials?: {
+    totalFee?: number;
+    compensationType?: GigCompensationType;
+    settlementType?: string;
+    bandFundCut?: number;
+    fixedPerformerAmount?: number;
+    payouts?: Record<string, unknown>;
+    notes?: string;
   };
   setlistId?: string;
   setlistName?: string;
@@ -490,21 +503,94 @@ export default function MusicianGigDetailPage() {
           )}
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-md">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-yellow-400" /> Attire & Payout
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5 shadow-md">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-yellow-400" /> Attire & Compensation
+            </span>
+            {(() => {
+              const compType =
+                gig.internalLogistics?.compensationType ||
+                gig.financials?.compensationType ||
+                ((Number(gig.internalLogistics?.compensation) || 0) > 0 ? "individual" : "community");
+              if (compType === "community") {
+                return (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    <Heart className="w-3 h-3" /> Community
+                  </span>
+                );
+              }
+              if (compType === "band_fund") {
+                return (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <Landmark className="w-3 h-3" /> Band Fund
+                  </span>
+                );
+              }
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <DollarSign className="w-3 h-3" /> Individual Payout
+                </span>
+              );
+            })()}
           </div>
-          <div className="space-y-1.5 text-xs text-slate-300">
+
+          <div className="space-y-2 text-xs text-slate-300">
             <div>
               <strong className="text-white">Attire:</strong>{" "}
               {gig.internalLogistics?.attire || "Yellows & Black"}
             </div>
-            <div>
-              <strong className="text-white">Est. Payout:</strong>{" "}
-              {gig.internalLogistics?.compensation
-                ? `$${gig.internalLogistics.compensation}`
-                : "Volunteer / Band Fund"}
-            </div>
+
+            {(() => {
+              const compType =
+                gig.internalLogistics?.compensationType ||
+                gig.financials?.compensationType ||
+                ((Number(gig.internalLogistics?.compensation) || 0) > 0 ? "individual" : "community");
+
+              if (compType === "community") {
+                return (
+                  <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-start gap-2">
+                    <Heart className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-sky-300 block">Civic / Community Performance</span>
+                      <span className="text-[11px] text-sky-400/90 block">
+                        $0 client intake. Band members volunteer their sound and energy for community festivals and causes ($0 musician payout).
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (compType === "band_fund") {
+                const fee = gig.financials?.totalFee || gig.financials?.bandFundCut || 0;
+                return (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                    <Landmark className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-300 block">100% to Band Fund</span>
+                      <span className="text-[11px] text-amber-400/90 block">
+                        {fee > 0 ? `$${fee} performance fee` : "All performance fee proceeds"} go directly to the band treasury to finance instrument repairs, sheet music, sound equipment, and tour travel ($0 individual payout).
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              const payout = gig.internalLogistics?.compensation || gig.financials?.fixedPerformerAmount || 0;
+              const totalFee = gig.financials?.totalFee || 0;
+              return (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-emerald-300 block">Individual Musician Payout</span>
+                    <span className="text-[11px] text-emerald-400/90 block">
+                      ${payout} estimated payout per participating musician{totalFee > 0 ? ` (out of $${totalFee} total event fee)` : ""}.
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <strong className="text-white">Parking:</strong>{" "}
               {gig.internalLogistics?.parkingNotes || "Street parking"}

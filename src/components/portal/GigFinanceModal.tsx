@@ -24,7 +24,8 @@ export type PerformerPayoutRecord = {
 
 export type GigFinancials = {
   totalFee: number;
-  settlementType: "band_fund" | "equal_split" | "fixed_guarantee";
+  compensationType?: "community" | "band_fund" | "individual";
+  settlementType: "community" | "band_fund" | "equal_split" | "fixed_guarantee";
   bandFundCut: number;
   fixedPerformerAmount?: number;
   payouts: Record<string, PerformerPayoutRecord>;
@@ -56,8 +57,8 @@ export default function GigFinanceModal({
   onSaved,
 }: Props) {
   const [totalFee, setTotalFee] = useState<number>(initialFinancials?.totalFee ?? 0);
-  const [settlementType, setSettlementType] = useState<"band_fund" | "equal_split" | "fixed_guarantee">(
-    initialFinancials?.settlementType ?? "equal_split"
+  const [settlementType, setSettlementType] = useState<"community" | "band_fund" | "equal_split" | "fixed_guarantee">(
+    initialFinancials?.settlementType ?? (initialFinancials?.compensationType === "community" ? "community" : "equal_split")
   );
   const [bandFundCut, setBandFundCut] = useState<number>(initialFinancials?.bandFundCut ?? 0);
   const [fixedAmount, setFixedAmount] = useState<number>(initialFinancials?.fixedPerformerAmount ?? 0);
@@ -73,7 +74,7 @@ export default function GigFinanceModal({
     const count = attendingPerformers.length;
     if (count === 0) return 0;
 
-    if (settlementType === "band_fund") return 0;
+    if (settlementType === "community" || settlementType === "band_fund") return 0;
     if (settlementType === "fixed_guarantee") return fixedAmount;
 
     const distributable = Math.max(0, totalFee - bandFundCut);
@@ -148,10 +149,21 @@ export default function GigFinanceModal({
         };
       });
 
+      const compType: "community" | "band_fund" | "individual" =
+        settlementType === "community"
+          ? "community"
+          : settlementType === "band_fund"
+          ? "band_fund"
+          : "individual";
+
+      const finalTotalFee = settlementType === "community" ? 0 : Number(totalFee) || 0;
+      const finalBandFundCut = settlementType === "band_fund" ? finalTotalFee : (Number(bandFundCut) || 0);
+
       const payload: Record<string, unknown> = {
-        totalFee: Number(totalFee) || 0,
+        totalFee: finalTotalFee,
+        compensationType: compType,
         settlementType,
-        bandFundCut: Number(bandFundCut) || 0,
+        bandFundCut: finalBandFundCut,
         payouts: sanitizedPayouts,
         notes: notes.trim(),
       };
@@ -162,7 +174,8 @@ export default function GigFinanceModal({
 
       await updateDoc(doc(db, "gigs", gigId), {
         financials: payload,
-        "internalLogistics.compensation": settlementType === "band_fund" ? 0 : currentCut,
+        "internalLogistics.compensation": compType === "individual" ? currentCut : 0,
+        "internalLogistics.compensationType": compType,
         updatedAt: new Date().toISOString(),
       });
 
@@ -230,12 +243,13 @@ export default function GigFinanceModal({
               <label className="block text-slate-400 uppercase font-bold mb-1">Settlement Split Model</label>
               <select
                 value={settlementType}
-                onChange={(e) => setSettlementType(e.target.value as "band_fund" | "equal_split" | "fixed_guarantee")}
+                onChange={(e) => setSettlementType(e.target.value as "community" | "band_fund" | "equal_split" | "fixed_guarantee")}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-400 font-semibold"
               >
-                <option value="equal_split">Equal Split (After Band Cut)</option>
-                <option value="band_fund">100% Band Fund Deposit</option>
-                <option value="fixed_guarantee">Fixed Dollar Guarantee</option>
+                <option value="community">🤝 Community / Volunteer ($0 intake, $0 payout)</option>
+                <option value="band_fund">🏛️ 100% Band Fund Deposit</option>
+                <option value="equal_split">💵 Individual: Equal Split (After Band Cut)</option>
+                <option value="fixed_guarantee">💵 Individual: Fixed Dollar Guarantee</option>
               </select>
             </div>
 

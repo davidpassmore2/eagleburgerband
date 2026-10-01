@@ -27,11 +27,14 @@ import {
   Check,
   Navigation,
   Edit3,
-  ListMusic
+  ListMusic,
+  Heart,
+  Landmark
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
+import { GigCompensationType } from "@/lib/schema/gig";
 
 interface GigItem {
   id: string;
@@ -55,10 +58,20 @@ interface GigItem {
     downbeat: string;
     attire?: string;
     compensation?: number;
+    compensationType?: GigCompensationType;
     parkingNotes?: string;
     setlistId?: string;
     setlistName?: string;
     setlistTitle?: string;
+  };
+  financials?: {
+    totalFee?: number;
+    compensationType?: GigCompensationType;
+    settlementType?: string;
+    bandFundCut?: number;
+    fixedPerformerAmount?: number;
+    payouts?: Record<string, unknown>;
+    notes?: string;
   };
   rsvpSummary?: {
     attendingCount: number;
@@ -103,6 +116,8 @@ export default function GigsAdminStudioPage() {
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
     compensation: 50,
+    compensationType: "individual" as GigCompensationType,
+    totalFee: 0,
     description: "",
   });
 
@@ -117,6 +132,8 @@ export default function GigsAdminStudioPage() {
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
     compensation: 50,
+    compensationType: "individual" as GigCompensationType,
+    totalFee: 0,
     description: "",
     setlistId: "",
   });
@@ -195,6 +212,13 @@ export default function GigsAdminStudioPage() {
       const gigId = `gig_${formData.date}_${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
       const slug = `${formData.date}-${formData.title.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
 
+      const finalCompensation = formData.compensationType === "individual" ? (Number(formData.compensation) || 0) : 0;
+      const finalTotalFee = formData.compensationType === "band_fund"
+        ? (Number(formData.totalFee) || 0)
+        : formData.compensationType === "individual"
+        ? (Number(formData.totalFee) || 0)
+        : 0;
+
       const payload: Record<string, unknown> = {
         id: gigId,
         slug,
@@ -215,10 +239,20 @@ export default function GigsAdminStudioPage() {
           callTime: formData.callTime.trim(),
           downbeat: formData.downbeat.trim(),
           attire: formData.attire.trim(),
-          compensation: Number(formData.compensation) || 0,
+          compensation: finalCompensation,
+          compensationType: formData.compensationType,
           setlistId: null,
           setlistName: "",
           setlistTitle: "",
+        },
+        financials: {
+          totalFee: finalTotalFee,
+          compensationType: formData.compensationType,
+          settlementType: formData.compensationType === "individual" ? "equal_split" : formData.compensationType,
+          bandFundCut: formData.compensationType === "band_fund" ? finalTotalFee : 0,
+          fixedPerformerAmount: finalCompensation,
+          payouts: {},
+          notes: "",
         },
         rsvpSummary: { attendingCount: 0, declinedCount: 0 },
         setlist: [],
@@ -256,6 +290,8 @@ export default function GigsAdminStudioPage() {
         downbeat: "6:00 PM",
         attire: "Eagleburger Yellows & Black",
         compensation: 50,
+        compensationType: "individual",
+        totalFee: 0,
         description: "",
       });
     } catch (err) {
@@ -284,6 +320,11 @@ export default function GigsAdminStudioPage() {
 
   const handleOpenEdit = (gig: GigItem) => {
     setEditingGig(gig);
+    const compType: GigCompensationType =
+      gig.internalLogistics?.compensationType ||
+      (gig.financials?.compensationType as GigCompensationType) ||
+      ((Number(gig.internalLogistics?.compensation) || 0) > 0 ? "individual" : "community");
+
     setEditFormData({
       title: gig.publicDetails?.title || gig.id,
       date: gig.date || "",
@@ -294,7 +335,9 @@ export default function GigsAdminStudioPage() {
       callTime: gig.internalLogistics?.callTime || "5:00 PM",
       downbeat: gig.internalLogistics?.downbeat || "6:00 PM",
       attire: gig.internalLogistics?.attire || "Eagleburger Yellows & Black",
-      compensation: gig.internalLogistics?.compensation ?? 50,
+      compensation: gig.internalLogistics?.compensation ?? (compType === "individual" ? 50 : 0),
+      compensationType: compType,
+      totalFee: gig.financials?.totalFee ?? 0,
       description: gig.publicDetails?.description || "",
       setlistId: gig.setlistId || gig.internalLogistics?.setlistId || "",
     });
@@ -319,6 +362,13 @@ export default function GigsAdminStudioPage() {
             ? (editingGig.setlistName || editingGig.setlistTitle || editingGig.internalLogistics?.setlistName || "")
             : null;
 
+      const finalCompensation = editFormData.compensationType === "individual" ? (Number(editFormData.compensation) || 0) : 0;
+      const finalTotalFee = editFormData.compensationType === "band_fund"
+        ? (Number(editFormData.totalFee) || 0)
+        : editFormData.compensationType === "individual"
+        ? (Number(editFormData.totalFee) || 0)
+        : 0;
+
       const updateData: Record<string, unknown> = {
         date: editFormData.date,
         status: editFormData.status,
@@ -337,10 +387,19 @@ export default function GigsAdminStudioPage() {
           callTime: editFormData.callTime.trim(),
           downbeat: editFormData.downbeat.trim(),
           attire: editFormData.attire.trim(),
-          compensation: Number(editFormData.compensation) || 0,
+          compensation: finalCompensation,
+          compensationType: editFormData.compensationType,
           setlistId: editFormData.setlistId || null,
           setlistName: assignedTitle,
           setlistTitle: assignedTitle,
+        },
+        financials: {
+          ...(editingGig.financials || {}),
+          totalFee: finalTotalFee || editingGig.financials?.totalFee || 0,
+          compensationType: editFormData.compensationType,
+          settlementType: editFormData.compensationType === "individual" ? (editingGig.financials?.settlementType || "equal_split") : editFormData.compensationType,
+          bandFundCut: editFormData.compensationType === "band_fund" ? finalTotalFee : (editingGig.financials?.bandFundCut || 0),
+          fixedPerformerAmount: finalCompensation,
         },
         updatedAt: new Date().toISOString(),
       };
@@ -638,7 +697,7 @@ export default function GigsAdminStudioPage() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <TimePicker
                 label="Call Time"
@@ -653,15 +712,114 @@ export default function GigsAdminStudioPage() {
                 onChange={(downbeat) => setFormData({ ...formData, downbeat })}
               />
             </div>
+          </div>
+
+          <div className="space-y-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
             <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">Musician Compensation ($)</label>
-              <input
-                type="number"
-                value={formData.compensation}
-                onChange={(e) => setFormData({ ...formData, compensation: parseInt(e.target.value, 10) || 0 })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-              />
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1.5 uppercase tracking-wider">
+                Compensation Model
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, compensationType: "community", compensation: 0, totalFee: 0 })}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                    formData.compensationType === "community"
+                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-sm"
+                      : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                  }`}
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  <span>Community</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, compensationType: "band_fund", compensation: 0 })}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                    formData.compensationType === "band_fund"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm"
+                      : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                  }`}
+                >
+                  <Landmark className="w-3.5 h-3.5" />
+                  <span>Band Fund</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    compensationType: "individual",
+                    compensation: formData.compensation > 0 ? formData.compensation : 50
+                  })}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                    formData.compensationType === "individual"
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm"
+                      : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                  }`}
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Individual</span>
+                </button>
+              </div>
             </div>
+
+            {formData.compensationType === "community" && (
+              <div className="p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-300 flex items-center gap-2">
+                <Heart className="w-4 h-4 shrink-0 text-sky-400" />
+                <span>
+                  <strong>Community / Volunteer:</strong> $0 client intake, $0 musician payout. Band members volunteer for civic festivals and community celebrations.
+                </span>
+              </div>
+            )}
+
+            {formData.compensationType === "band_fund" && (
+              <div className="space-y-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <div className="text-[11px] text-amber-300 flex items-center gap-2">
+                  <Landmark className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span>
+                    <strong>100% to Band Fund:</strong> All client fee revenue is directed to the band treasury to fund gear, recording, and tours ($0 individual payout).
+                  </span>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Total Client Fee ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1500"
+                    value={formData.totalFee || ""}
+                    onChange={(e) => setFormData({ ...formData, totalFee: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+              </div>
+            )}
+
+            {formData.compensationType === "individual" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Musician Payout ($ per musician)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 50"
+                    value={formData.compensation}
+                    onChange={(e) => setFormData({ ...formData, compensation: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Total Client Fee ($ optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1000"
+                    value={formData.totalFee || ""}
+                    onChange={(e) => setFormData({ ...formData, totalFee: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -809,7 +967,7 @@ export default function GigsAdminStudioPage() {
               </label>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <TimePicker
                   label="Call Time"
@@ -824,15 +982,114 @@ export default function GigsAdminStudioPage() {
                   onChange={(downbeat) => setEditFormData({ ...editFormData, downbeat })}
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
               <div>
-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Musician Compensation ($)</label>
-                <input
-                  type="number"
-                  value={editFormData.compensation}
-                  onChange={(e) => setEditFormData({ ...editFormData, compensation: parseInt(e.target.value, 10) || 0 })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                />
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1.5 uppercase tracking-wider">
+                  Compensation Model
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({ ...editFormData, compensationType: "community", compensation: 0, totalFee: 0 })}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                      editFormData.compensationType === "community"
+                        ? "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-sm"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>Community</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({ ...editFormData, compensationType: "band_fund", compensation: 0 })}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                      editFormData.compensationType === "band_fund"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    <span>Band Fund</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({
+                      ...editFormData,
+                      compensationType: "individual",
+                      compensation: editFormData.compensation > 0 ? editFormData.compensation : 50
+                    })}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition border ${
+                      editFormData.compensationType === "individual"
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Individual</span>
+                  </button>
+                </div>
               </div>
+
+              {editFormData.compensationType === "community" && (
+                <div className="p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-300 flex items-center gap-2">
+                  <Heart className="w-4 h-4 shrink-0 text-sky-400" />
+                  <span>
+                    <strong>Community / Volunteer:</strong> $0 client intake, $0 musician payout. Band members volunteer for civic festivals and community celebrations.
+                  </span>
+                </div>
+              )}
+
+              {editFormData.compensationType === "band_fund" && (
+                <div className="space-y-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <div className="text-[11px] text-amber-300 flex items-center gap-2">
+                    <Landmark className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>
+                      <strong>100% to Band Fund:</strong> All client fee revenue is directed to the band treasury to fund gear, recording, and tours ($0 individual payout).
+                    </span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Total Client Fee ($)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 1500"
+                      value={editFormData.totalFee || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, totalFee: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editFormData.compensationType === "individual" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Musician Payout ($ per musician)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 50"
+                      value={editFormData.compensation}
+                      onChange={(e) => setEditFormData({ ...editFormData, compensation: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Total Client Fee ($ optional)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 1000"
+                      value={editFormData.totalFee || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, totalFee: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
@@ -909,12 +1166,43 @@ export default function GigsAdminStudioPage() {
                     <span className="truncate">{g.publicDetails.venue}</span>
                   </div>
                 )}
-                {g.internalLogistics?.compensation ? (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                    <span>${g.internalLogistics.compensation} per musician</span>
-                  </div>
-                ) : null}
+                {(() => {
+                  const compType =
+                    g.internalLogistics?.compensationType ||
+                    g.financials?.compensationType ||
+                    ((Number(g.internalLogistics?.compensation) || 0) > 0 ? "individual" : "community");
+
+                  if (compType === "community") {
+                    return (
+                      <div className="pt-1">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                          <Heart className="w-3 h-3 text-sky-400" />
+                          <span>Community (Volunteer / $0 intake)</span>
+                        </span>
+                      </div>
+                    );
+                  }
+                  if (compType === "band_fund") {
+                    const fee = g.financials?.totalFee || g.financials?.bandFundCut || 0;
+                    return (
+                      <div className="pt-1">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <Landmark className="w-3 h-3 text-amber-400" />
+                          <span>100% to Band Fund {fee > 0 ? `($${fee} fee)` : ""}</span>
+                        </span>
+                      </div>
+                    );
+                  }
+                  const payout = g.internalLogistics?.compensation || g.financials?.fixedPerformerAmount || 0;
+                  return (
+                    <div className="pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <DollarSign className="w-3 h-3 text-emerald-400" />
+                        <span>Individual (${payout} / musician)</span>
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Performance Setlist Strip */}

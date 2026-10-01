@@ -9,7 +9,10 @@ import {
   Edit3, 
   X, 
   Save, 
-  Loader2 
+  Loader2,
+  Heart,
+  Landmark,
+  DollarSign
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -43,6 +46,12 @@ export default function EditGigLogisticsModal({
   const [unloadingAddress, setUnloadingAddress] = useState<string>(() => initialLogistics?.unloadingAddress || "");
   const [parkingNotes, setParkingNotes] = useState<string>(() => initialLogistics?.parkingNotes || "");
   const [compensation, setCompensation] = useState<number>(() => Number(initialLogistics?.compensation) || 0);
+  const [compensationType, setCompensationType] = useState<"community" | "band_fund" | "individual">(() => {
+    if (initialLogistics?.compensationType) {
+      return initialLogistics.compensationType as "community" | "band_fund" | "individual";
+    }
+    return (Number(initialLogistics?.compensation) || 0) > 0 ? "individual" : "community";
+  });
 
   const [pendingDiffs, setPendingDiffs] = useState<FieldDiff[]>([]);
   const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
@@ -62,7 +71,10 @@ export default function EditGigLogisticsModal({
       unloadingAddress: initialLogistics?.unloadingAddress || "",
       parkingNotes: initialLogistics?.parkingNotes || "",
       compensation: Number(initialLogistics?.compensation) || 0,
+      compensationType: initialLogistics?.compensationType || ((Number(initialLogistics?.compensation) || 0) > 0 ? "individual" : "community"),
     };
+
+    const effectiveComp = compensationType === "individual" ? (Number(compensation) || 0) : 0;
 
     const newValues: LogisticsFields = {
       date: date || "",
@@ -71,7 +83,8 @@ export default function EditGigLogisticsModal({
       attire: attire.trim(),
       unloadingAddress: unloadingAddress.trim(),
       parkingNotes: parkingNotes.trim(),
-      compensation: Number(compensation) || 0,
+      compensation: effectiveComp,
+      compensationType,
     };
 
     const calculatedDiffs = diffLogistics(oldValues, newValues);
@@ -87,6 +100,8 @@ export default function EditGigLogisticsModal({
   const executeSave = async (broadcast: boolean, diffsToBroadcast = pendingDiffs) => {
     setSaving(true);
     try {
+      const effectiveComp = compensationType === "individual" ? (Number(compensation) || 0) : 0;
+
       await updateDoc(doc(db, "gigs", gigId), {
         date,
         "internalLogistics.title": title.trim(),
@@ -95,7 +110,8 @@ export default function EditGigLogisticsModal({
         "internalLogistics.attire": attire.trim(),
         "internalLogistics.unloadingAddress": unloadingAddress.trim(),
         "internalLogistics.parkingNotes": parkingNotes.trim(),
-        "internalLogistics.compensation": Number(compensation) || 0,
+        "internalLogistics.compensation": effectiveComp,
+        "internalLogistics.compensationType": compensationType,
         updatedAt: new Date().toISOString(),
       });
 
@@ -197,16 +213,100 @@ export default function EditGigLogisticsModal({
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase font-bold mb-1">Musician Pay ($)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={compensation}
-                  onChange={(e) => setCompensation(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-yellow-400"
-                />
+                <label className="block text-slate-400 uppercase font-bold mb-1">Compensation Model</label>
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompensationType("community");
+                      setCompensation(0);
+                    }}
+                    className={`py-1.5 px-2 rounded-md text-[11px] font-bold flex flex-col items-center gap-0.5 transition ${
+                      compensationType === "community"
+                        ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>Community</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompensationType("band_fund");
+                      setCompensation(0);
+                    }}
+                    className={`py-1.5 px-2 rounded-md text-[11px] font-bold flex flex-col items-center gap-0.5 transition ${
+                      compensationType === "band_fund"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    <span>Band Fund</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompensationType("individual");
+                      if (compensation === 0) setCompensation(50);
+                    }}
+                    className={`py-1.5 px-2 rounded-md text-[11px] font-bold flex flex-col items-center gap-0.5 transition ${
+                      compensationType === "individual"
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Individual</span>
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Compensation Details based on Model */}
+            {compensationType === "community" && (
+              <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300 flex items-center gap-2">
+                <Heart className="w-4 h-4 shrink-0 text-sky-400" />
+                <span>
+                  <strong>Community / Volunteer:</strong> No client intake. Band members volunteer their time for civic revelry ($0 payout).
+                </span>
+              </div>
+            )}
+
+            {compensationType === "band_fund" && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
+                <Landmark className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>
+                  <strong>100% to Band Fund:</strong> Performance fee builds the band treasury for operations, gear, and travel ($0 individual payout).
+                </span>
+              </div>
+            )}
+
+            {compensationType === "individual" && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs text-emerald-300 flex items-center gap-1.5 font-bold">
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    <span>Musician Payout:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-mono">$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={compensation}
+                      onChange={(e) => setCompensation(Number(e.target.value))}
+                      className="w-24 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-yellow-400"
+                    />
+                    <span className="text-xs text-slate-400 font-mono">per musician</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Client fee is divided among attending/checked-in musicians.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-slate-400 uppercase font-bold mb-1">Unloading Address</label>

@@ -50,7 +50,7 @@ npm run dev
 | :--- | :--- |
 | **[Developer Onboarding](docs/DEVELOPER_ONBOARDING.md)** | Step-by-step setup for Firebase Emulators, Antigravity IDE, seed engine & testing |
 | **[Project Rules (AGENTS.md)](AGENTS.md)** | Mandatory architectural guardrails (Next.js conventions, branch model, schema safety) |
-| **[Stages Index (docs/stages/)](docs/stages/README.md)** | Chronological implementation plans and walkthroughs for Stages 01 through 37 |
+| **[Stages Index (docs/stages/)](docs/stages/README.md)** | Chronological implementation plans and walkthroughs for Stages 01 through 38 |
 | **[Architecture Overview](docs/ARCHITECTURE.md)** | System components, data pipelines, and progressive web app capabilities |
 
 ---
