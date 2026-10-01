@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { ContentPage, ContentPageSchema, ContentSection } from "@/lib/schema/page";
+import { ContentPage, ContentPageSchema, ContentSection, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 import IntakeCardsSection from "@/components/public/IntakeCardsSection";
 
 const DEFAULT_HOME_SECTIONS: ContentSection[] = [
@@ -105,7 +106,7 @@ const DEFAULT_HOME_SECTIONS: ContentSection[] = [
 ];
 
 export default function PublicHomePage() {
-  const [pageData, setPageData] = useState<ContentPage | null>(null);
+  const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.home);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -177,6 +178,15 @@ export default function PublicHomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
+
+      {/* Optional Hero Header Image Banner from CMS Studio */}
+      {pageData?.headerImage?.imageUrl && (
+        <PublicPageHeader
+          headerImage={pageData.headerImage}
+          fallbackTitle={pageData.title}
+          fallbackSubtitle={pageData.description}
+        />
+      )}
 
       {/* Render All Dynamic Sections */}
       {sectionsToRender.map((section) => (

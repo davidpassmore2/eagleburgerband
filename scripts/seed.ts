@@ -13,6 +13,9 @@ import { InventoryItemSchema } from "../src/lib/schema/inventory";
 import { InviteSchema } from "../src/lib/schema/invite";
 import { GigRsvpSchema } from "../src/lib/schema/rsvp";
 import { CheckInSchema } from "../src/lib/schema/checkin";
+import { DEFAULT_SYSTEM_PAGES_LIST } from "../src/lib/schema/page";
+import { ResourceAssetSchema, DEFAULT_RESOURCES } from "../src/lib/schema/resource";
+import { SiteNavigationSchema, DEFAULT_ANNOUNCEMENT_BANNER } from "../src/lib/schema/siteConfig";
 
 const localApp = initializeApp({
   projectId: "eagleburger-band-dev",
@@ -1607,87 +1610,12 @@ async function runSeed() {
   console.log("✅ Seeded theme/config with v2 scoped public & portal themes.");
 
   // ==========================================
-  // 12. Headless CMS Content Pages (Home)
+  // 12. Headless CMS Content Pages & Studio
   // ==========================================
-  const homePage = {
-    id: "home",
-    slug: "home",
-    title: "Home",
-    description: "Official Website of the Eagleburger Band",
-    isPublished: true,
-    schemaVersion: 1,
-    updatedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    sections: [
-      {
-        id: "sec_hero",
-        type: "hero",
-        order: 1,
-        hero: {
-          headline: "Pittsburgh's High-Energy Street Brass & Drum Powerhouse",
-          subheadline: "Unstoppable brass, infectious percussion grooves, and high-stepping street revelry.",
-          ctaText: "Book the Band",
-          ctaHref: "/book",
-          secondaryCtaText: "Upcoming Shows",
-          secondaryCtaHref: "/gigs",
-          badgeText: "Acoustic Brass & Drums",
-          backgroundImageUrl: "",
-        },
-      },
-      {
-        id: "sec_media",
-        type: "media_highlight",
-        order: 2,
-        mediaHighlight: {
-          title: "Live on the March",
-          description: "Watch the Eagleburger Band bring the energy to the streets at the Greenfield Holiday Parade.",
-          mediaType: "youtube",
-          url: "https://www.youtube.com/watch?v=v0x-fut30wE",
-          caption: "Greenfield Holiday Parade Performance — Brass & Battery in Full Stride",
-        },
-      },
-      {
-        id: "sec_features",
-        type: "features",
-        order: 3,
-        features: {
-          title: "Why Event Organizers Choose Eagleburger",
-          subtitle: "100% mobile acoustic performance that electrifies crowds anywhere.",
-          items: [
-            {
-              icon: "Zap",
-              title: "100% Mobile & Acoustic",
-              description: "No stage, cables, generators, or PA systems required. We play while marching, dancing, and mingling directly with crowds.",
-            },
-            {
-              icon: "Music",
-              title: "Massive Brass & Drumline Sound",
-              description: "Sousaphones, trombones, trumpets, saxophones, and marching drums delivering high-decibel acoustic excitement.",
-            },
-            {
-              icon: "Calendar",
-              title: "Parades, Festivals & Celebrations",
-              description: "Civic parades, street festivals, beer gardens, wedding send-offs, and community block parties across Western PA.",
-            },
-          ],
-        },
-      },
-      {
-        id: "sec_gig_feed",
-        type: "gig_feed_preview",
-        order: 4,
-        gigFeedPreview: {
-          title: "Upcoming Performances",
-          maxItems: 3,
-          ctaText: "View Full Performance Schedule",
-          ctaHref: "/gigs",
-        },
-      },
-    ],
-  };
-
-  await setDoc(doc(db, "content_pages", "home"), homePage, { merge: true });
-  console.log("✅ Seeded content_pages/home with Greenfield Holiday Parade media highlight.");
+  for (const sysPage of DEFAULT_SYSTEM_PAGES_LIST) {
+    await setDoc(doc(db, "content_pages", sysPage.id), sysPage, { merge: true });
+    console.log(`✅ Seeded content_pages/${sysPage.id} (${sysPage.title}).`);
+  }
 
   // ==========================================
   // 13. Charitable Donations & Giving
@@ -2520,7 +2448,26 @@ async function runSeed() {
   console.log(`✅ Seeded ${sampleInvites.length} pending onboarding invites into 'invites' collection.`);
 
   // ==========================================
-  // 22. Super Admin Confirmation
+  // 23. Content Resource Assets (Images, Documents, Media)
+  // ==========================================
+  for (const res of DEFAULT_RESOURCES) {
+    const validated = ResourceAssetSchema.parse(res);
+    await setDoc(doc(db, "resources", res.id), validated, { merge: true });
+  }
+  console.log(`✅ Seeded ${DEFAULT_RESOURCES.length} content resource assets into 'resources' collection.`);
+
+  // ==========================================
+  // 24. Site Navigation & Global Announcement
+  // ==========================================
+  const defaultSiteNav = SiteNavigationSchema.parse({
+    id: "config",
+    announcementBanner: DEFAULT_ANNOUNCEMENT_BANNER,
+  });
+  await setDoc(doc(db, "site_navigation", "config"), defaultSiteNav, { merge: true });
+  console.log("✅ Seeded site navigation & active global announcement banner into 'site_navigation/config'.");
+
+  // ==========================================
+  // 25. Super Admin Confirmation
   // ==========================================
   console.log(`ℹ️ Confirmed canonical Super Admin: davidpassmore@gmail.com (UID: ${superAdminUid})`);
 

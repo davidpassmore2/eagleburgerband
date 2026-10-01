@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { 
   Calendar, 
@@ -10,10 +10,13 @@ import {
   ExternalLink, 
   Send, 
   Ticket, 
-  History,
+  History, 
   ArrowRight,
 } from "lucide-react";
 import AddToCalendarButton from "@/components/public/AddToCalendarButton";
+import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
+import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
+import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
 
 interface PublicGig {
   id: string;
@@ -28,11 +31,26 @@ interface PublicGig {
 }
 
 export default function PublicGigsPage() {
+  const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.gigs);
+  const { isBannerActive } = usePageBanner(pageData?.headerImage);
   const [gigs, setGigs] = useState<PublicGig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPast, setShowPast] = useState(false);
 
   useEffect(() => {
+    // Listen to CMS Page configuration
+    const unsubPage = onSnapshot(
+      doc(db, "content_pages", "gigs"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = ContentPageSchema.safeParse(snap.data());
+          if (parsed.success) {
+            setPageData(parsed.data);
+          }
+        }
+      },
+      (err) => console.warn("CMS Gigs page notice:", err)
+    );
     // Query only confirmed public gigs
     const gigsQuery = query(
       collection(db, "gigs"),
@@ -73,7 +91,10 @@ export default function PublicGigsPage() {
       }
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubPage();
+    };
   }, []);
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -82,20 +103,44 @@ export default function PublicGigsPage() {
 
   const displayGigs = showPast ? pastGigs : upcomingGigs;
 
+  const seo = pageData?.seo;
+  const seoTitle = seo?.metaTitle?.trim() || `${pageData?.title || "Live Performances"} | Eagleburger Band`;
+  const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Parades, street rallies, outdoor festivals, and community celebrations across Western PA.";
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-      {/* Page Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
-          <Calendar className="w-3.5 h-3.5" />
-          Live Performance Schedule
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tight">
-          Where to Catch the Band
-        </h1>
-        <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-medium">
-          Parades, street rallies, outdoor festivals, and community celebrations across the Greater Pittsburgh area. All acoustic, high-decibel, and open to the public.
-        </p>
+    <div className="space-y-8 pb-16" suppressHydrationWarning>
+      <title>{seoTitle}</title>
+      <meta name="description" content={seoDesc} />
+      {seo?.keywords && <meta name="keywords" content={seo.keywords} />}
+
+      {/* Hero Header Image Banner from CMS Studio or Global Configuration */}
+      <PublicPageHeader
+        headerImage={pageData?.headerImage}
+        fallbackTitle={pageData?.title}
+        fallbackSubtitle={pageData?.description}
+      />
+
+      {/* Render Any Custom Intro Sections from CMS Studio */}
+      {pageData?.sections?.map((section) => (
+        <PublicSectionRenderer key={section.id} section={section} />
+      ))}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Page Header (rendered if no header image banner is active) */}
+        {!isBannerActive && (
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+              <Calendar className="w-3.5 h-3.5" />
+              Live Performance Schedule
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tight font-arvo">
+              {pageData?.title || "Where to Catch the Band"}
+            </h1>
+            <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-medium">
+              {pageData?.description || "Parades, street rallies, outdoor festivals, and community celebrations across the Greater Pittsburgh area. All acoustic, high-decibel, and open to the public."}
+            </p>
+          </div>
+        )}
 
         {/* Toggle between Upcoming and Past */}
         <div className="pt-2 flex items-center justify-center gap-2">
@@ -148,7 +193,8 @@ export default function PublicGigsPage() {
             {!showPast && (
               <Link
                 href="/book"
-                className="inline-flex items-center gap-2 bg-yellow-400 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider hover:bg-yellow-300 transition shadow-lg"
+                suppressHydrationWarning
+                className="inline-flex items-center gap-2 bg-yellow-400 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider hover:bg-yellow-300 transition shadow-lg font-arvo btn-cta"
               >
                 <Send className="w-4 h-4" />
                 Book the Band for Your Event
@@ -184,7 +230,8 @@ export default function PublicGigsPage() {
                     </span>
                     <Link
                       href={`/gigs/${gig.id}`}
-                      className="text-xl font-black text-white hover:text-yellow-400 uppercase tracking-tight transition-colors block"
+                      suppressHydrationWarning
+                      className="text-xl font-black text-white hover:text-yellow-400 uppercase tracking-tight transition-colors block font-arvo"
                     >
                       {gig.title}
                     </Link>
@@ -225,7 +272,7 @@ export default function PublicGigsPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] font-bold text-yellow-400 hover:underline bg-yellow-400/10 px-2.5 py-1 rounded-lg border border-yellow-400/20"
                       >
-                        Tickets <Ticket className="w-3 h-3" />
+                        Tickets <Ticket className="w-3.5 h-3.5" />
                       </a>
                     )}
 
@@ -243,7 +290,8 @@ export default function PublicGigsPage() {
 
                     <Link
                       href={`/gigs/${gig.id}`}
-                      className="inline-flex items-center gap-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-3 py-1 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm"
+                      suppressHydrationWarning
+                      className="inline-flex items-center gap-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-3 py-1 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm font-arvo btn-cta"
                     >
                       <span>Map & Details</span>
                       <ArrowRight className="w-3 h-3" />
@@ -257,8 +305,11 @@ export default function PublicGigsPage() {
       </div>
 
       {/* Booking CTA Footer Box */}
-      <div className="max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4">
-        <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+      <div 
+        className="max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4"
+        suppressHydrationWarning
+      >
+        <h3 className="text-2xl font-black text-white uppercase tracking-tight font-arvo">
           Want Eagleburger at Your Parade or Festival?
         </h3>
         <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -266,7 +317,8 @@ export default function PublicGigsPage() {
         </p>
         <Link
           href="/book"
-          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20"
+          suppressHydrationWarning
+          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 font-arvo btn-cta"
         >
           <Send className="w-3.5 h-3.5" />
           Request Booking Availability

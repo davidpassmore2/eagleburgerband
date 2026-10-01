@@ -20,6 +20,11 @@ import {
   SectionType,
   PageSeo,
   PageSeoSchema,
+  PageHeaderImage,
+  PageHeaderImageSchema,
+  DEFAULT_SYSTEM_PAGES,
+  DEFAULT_SYSTEM_PAGES_LIST,
+  SYSTEM_PAGE_IDS,
 } from "@/lib/schema/page";
 import {
   SiteNavigation,
@@ -28,11 +33,16 @@ import {
   SocialLink,
   SocialPlatform,
   DEFAULT_SOCIAL_LINKS,
+  GlobalPageBanner,
+  GlobalPageBannerSchema,
 } from "@/lib/schema/siteConfig";
 import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 import { toast } from "@/lib/context/ToastContext";
+import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
+import { ResourceAsset, ResourceCategory } from "@/lib/schema/resource";
 import {
   Save,
   Eye,
@@ -52,9 +62,12 @@ import {
   Calendar,
   Settings,
   X,
+  FolderOpen,
   Globe,
   AlignLeft,
   AlignCenter,
+  AlignRight,
+  Image as ImageIcon,
   Edit3,
   Search,
   Share2,
@@ -72,102 +85,50 @@ import {
   BarChart3,
   Send,
   Star,
+  Sliders,
+  Music2,
+  Type,
 } from "lucide-react";
 
-const DEFAULT_HOME_PAGE: ContentPage = ContentPageSchema.parse({
-  id: "home",
-  slug: "home",
-  title: "Home",
-  description: "Official Website of the Eagleburger Band",
-  isPublished: true,
-  seo: {
-    metaTitle: "Eagleburger Band | High-Energy Mobile Brass & Drums",
-    metaDescription: "The Eagleburger Band brings high-energy acoustic brass and infectious drumline grooves to parades, festivals, and celebrations across Western PA.",
-    keywords: "brass band, pittsburgh street music, mobile brass, parade band, live music pittsburgh",
-    ogImageUrl: "",
-    ogType: "website",
-    canonicalUrl: "",
-    noIndex: false,
-    noFollow: false,
-    structuredDataType: "MusicGroup",
-    structuredDataJson: "",
+export const HEADER_IMAGE_PRESETS = [
+  {
+    name: "Parade Street Revelry",
+    tagline: "Greenfield Holiday Parade route with crowds",
+    url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80",
+    alt: "Eagleburger Band marching parade revelry",
   },
-  sections: [
-    {
-      id: "sec_hero",
-      type: "hero",
-      order: 1,
-      hero: {
-        headline: "Pittsburgh's High-Energy Street Brass & Drum Powerhouse",
-        subheadline: "Unstoppable brass, infectious percussion grooves, and high-stepping street revelry.",
-        ctaText: "Book the Band",
-        ctaHref: "/book",
-        secondaryCtaText: "Upcoming Shows",
-        secondaryCtaHref: "/gigs",
-        badgeText: "Acoustic Brass & Drums",
-        backgroundImageUrl: "",
-      },
-    },
-    {
-      id: "sec_media",
-      type: "media_highlight",
-      order: 2,
-      mediaHighlight: {
-        title: "Live on the March",
-        description: "Watch the Eagleburger Band bring the energy to the streets at the Greenfield Holiday Parade.",
-        mediaType: "youtube",
-        url: "https://www.youtube.com/watch?v=v0x-fut30wE",
-        caption: "Greenfield Holiday Parade Performance — Brass & Battery in Full Stride",
-      },
-    },
-    {
-      id: "sec_features",
-      type: "features",
-      order: 3,
-      features: {
-        title: "Why Event Organizers Choose Eagleburger",
-        subtitle: "100% mobile acoustic performance that electrifies crowds anywhere.",
-        items: [
-          {
-            icon: "Zap",
-            title: "100% Mobile & Acoustic",
-            description: "No stage, cables, generators, or PA systems required. We play while marching, dancing, and mingling directly with crowds.",
-          },
-          {
-            icon: "Music",
-            title: "Massive Brass & Drumline Sound",
-            description: "Sousaphones, trombones, trumpets, saxophones, and marching drums delivering high-decibel acoustic excitement.",
-          },
-          {
-            icon: "Calendar",
-            title: "Parades, Festivals & Celebrations",
-            description: "Civic parades, street festivals, beer gardens, wedding send-offs, and community block parties across Western PA.",
-          },
-        ],
-      },
-    },
-    {
-      id: "sec_gig_feed",
-      type: "gig_feed_preview",
-      order: 4,
-      gigFeedPreview: {
-        title: "Upcoming Performances",
-        maxItems: 3,
-        ctaText: "View Full Performance Schedule",
-        ctaHref: "/gigs",
-      },
-    },
-  ],
-});
+  {
+    name: "Night Festival Stage",
+    tagline: "Vibrant festival stage under dramatic lights",
+    url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80",
+    alt: "Eagleburger Band night festival stage",
+  },
+  {
+    name: "Brass Battery & Horns",
+    tagline: "Polished brass bells and drum battery energy",
+    url: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=1600&q=80",
+    alt: "Eagleburger Band brass instruments and horn line",
+  },
+  {
+    name: "Acoustic Street Celebration",
+    tagline: "Community block party & street dancing",
+    url: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1600&q=80",
+    alt: "Eagleburger Band acoustic street celebration",
+  },
+];
+
 
 export default function CMSPagesStudio() {
   const { profile, loading: authLoading } = useAuth();
-  const [pages, setPages] = useState<ContentPage[]>([DEFAULT_HOME_PAGE]);
+  const [pages, setPages] = useState<ContentPage[]>(DEFAULT_SYSTEM_PAGES_LIST);
   const [selectedPageId, setSelectedPageId] = useState<string>("home");
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<"builder" | "preview" | "seo" | "settings" | "navigation">("builder");
+  const [studioScope, setStudioScope] = useState<"pages" | "global">("pages");
+  const [globalNavTab, setGlobalNavTab] = useState<"header_nav" | "page_banner" | "announcement" | "footer_social">("header_nav");
+  const [simulatedActiveRoute, setSimulatedActiveRoute] = useState<string>("/gigs");
+  const [activeTab, setActiveTab] = useState<"builder" | "banner" | "preview" | "seo" | "settings">("builder");
 
   // Site Navigation & Announcement Banner State
   const [siteNav, setSiteNav] = useState<SiteNavigation>(() => SiteNavigationSchema.parse({}));
@@ -192,6 +153,13 @@ export default function CMSPagesStudio() {
   // Add Section Dropdown State
   const [showAddSectionMenu, setShowAddSectionMenu] = useState(false);
 
+  // Resource Asset Picker Modal State
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<
+    "header" | "globalBanner" | { sectionId: string; field: "heroBg" | "mediaUrl" } | "browse"
+  >("browse");
+  const [pickerFilterCategory, setPickerFilterCategory] = useState<ResourceCategory | "all">("all");
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -206,15 +174,21 @@ export default function CMSPagesStudio() {
           }
         });
 
-        // Ensure DEFAULT_HOME_PAGE is present if no "home" page exists in Firestore
-        if (!pageMap.has("home")) {
-          pageMap.set("home", DEFAULT_HOME_PAGE);
-        }
+        // Ensure all DEFAULT_SYSTEM_PAGES_LIST are present if not yet saved in Firestore
+        DEFAULT_SYSTEM_PAGES_LIST.forEach((sysPage) => {
+          if (!pageMap.has(sysPage.id)) {
+            pageMap.set(sysPage.id, sysPage);
+          }
+        });
 
         const loadedPages = Array.from(pageMap.values());
+        const SYSTEM_ORDER = ["home", "gigs", "book", "join", "testimonials", "giving", "contact"];
         loadedPages.sort((a, b) => {
-          if (a.id === "home") return -1;
-          if (b.id === "home") return 1;
+          const idxA = SYSTEM_ORDER.indexOf(a.id);
+          const idxB = SYSTEM_ORDER.indexOf(b.id);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
           return a.title.localeCompare(b.title);
         });
 
@@ -256,7 +230,7 @@ export default function CMSPagesStudio() {
   }, [pages]);
 
   const activePage = useMemo(() => {
-    return uniquePages.find((p) => p.id === selectedPageId) || uniquePages[0] || DEFAULT_HOME_PAGE;
+    return uniquePages.find((p) => p.id === selectedPageId) || uniquePages[0] || DEFAULT_SYSTEM_PAGES.home;
   }, [uniquePages, selectedPageId]);
 
   const updateActivePage = (updater: (prev: ContentPage) => ContentPage) => {
@@ -645,6 +619,70 @@ export default function CMSPagesStudio() {
     }));
   };
 
+  // Update Header Banner
+  const updateHeaderImage = (updates: Partial<PageHeaderImage>) => {
+    updateActivePage((prev) => {
+      const current = prev.headerImage || PageHeaderImageSchema.parse({});
+      return {
+        ...prev,
+        headerImage: {
+          ...current,
+          ...updates,
+        },
+      };
+    });
+  };
+
+  // Update Global Public Site Page Banner
+  const updateGlobalBanner = (updates: Partial<GlobalPageBanner>) => {
+    setSiteNav((prev) => ({
+      ...prev,
+      globalPageBanner: {
+        ...(prev.globalPageBanner || GlobalPageBannerSchema.parse({})),
+        ...updates,
+      },
+    }));
+  };
+
+  // Resource Asset Selection Handler
+  const handleSelectAsset = (asset: ResourceAsset) => {
+    if (pickerTarget === "globalBanner") {
+      setSiteNav((prev) => ({
+        ...prev,
+        globalPageBanner: {
+          ...(prev.globalPageBanner || GlobalPageBannerSchema.parse({})),
+          imageUrl: asset.url,
+          altText: asset.altText || asset.name,
+        },
+      }));
+      toast.success(`Selected "${asset.name}" as Global Page Banner.`);
+    } else if (pickerTarget === "header") {
+      updateHeaderImage({
+        imageUrl: asset.url,
+        altText: asset.altText || asset.name,
+      });
+      toast.success(`Selected "${asset.name}" as page header banner.`);
+    } else if (typeof pickerTarget === "object" && pickerTarget !== null) {
+      if (pickerTarget.field === "heroBg") {
+        const targetSec = activePage.sections?.find((s) => s.id === pickerTarget.sectionId);
+        if (targetSec && targetSec.hero) {
+          handleUpdateSection(pickerTarget.sectionId, {
+            hero: { ...targetSec.hero, backgroundImageUrl: asset.url },
+          });
+          toast.success(`Set hero background to "${asset.name}".`);
+        }
+      } else if (pickerTarget.field === "mediaUrl") {
+        const targetSec = activePage.sections?.find((s) => s.id === pickerTarget.sectionId);
+        if (targetSec && targetSec.mediaHighlight) {
+          handleUpdateSection(pickerTarget.sectionId, {
+            mediaHighlight: { ...targetSec.mediaHighlight, url: asset.url },
+          });
+          toast.success(`Set media highlight URL to "${asset.name}".`);
+        }
+      }
+    }
+  };
+
   // Save Page
   const handleSavePage = async () => {
     setIsSaving(true);
@@ -768,6 +806,7 @@ export default function CMSPagesStudio() {
       title: newPageTitle.trim(),
       description: newPageDesc.trim() || `${newPageTitle} — Eagleburger Band`,
       isPublished: true,
+      headerImage: PageHeaderImageSchema.parse({}),
       seo: {
         metaTitle: seoMetaTitle,
         metaDescription: seoMetaDesc,
@@ -818,8 +857,8 @@ export default function CMSPagesStudio() {
 
   // Delete Page
   const handleDeletePage = async () => {
-    if (activePage.id === "home") {
-      toast.error("The home page cannot be deleted.");
+    if ((SYSTEM_PAGE_IDS as readonly string[]).includes(activePage.id)) {
+      toast.error(`The "${activePage.title}" page is a core site page and cannot be deleted.`);
       return;
     }
 
@@ -886,139 +925,256 @@ export default function CMSPagesStudio() {
 
           <button
             type="button"
-            onClick={activeTab === "navigation" ? handleSaveNavigation : handleSavePage}
-            disabled={activeTab === "navigation" ? isSavingNav : isSaving}
+            onClick={studioScope === "global" ? handleSaveNavigation : handleSavePage}
+            disabled={studioScope === "global" ? isSavingNav : isSaving}
             className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 disabled:opacity-50"
           >
-            {(activeTab === "navigation" ? isSavingNav : isSaving) ? (
+            {(studioScope === "global" ? isSavingNav : isSaving) ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (activeTab === "navigation" ? navSavedSuccess : savedSuccess) ? (
+            ) : (studioScope === "global" ? navSavedSuccess : savedSuccess) ? (
               <Check className="w-4 h-4 text-emerald-950" />
             ) : (
               <Save className="w-4 h-4" />
             )}
             <span>
-              {activeTab === "navigation"
+              {studioScope === "global"
                 ? navSavedSuccess
-                  ? "Nav Saved!"
-                  : "Save Navigation"
+                  ? "Global Config Saved!"
+                  : "Save Global Nav & Banners"
                 : savedSuccess
-                ? "Saved!"
-                : "Save Changes"}
+                ? "Page Saved!"
+                : `Save Page: ${activePage.title}`}
             </span>
           </button>
         </div>
       </div>
 
-      {/* Page Selector & Toolbar Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow">
-        {/* Page Switcher Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          {uniquePages.map((p) => {
-            const isSelected = p.id === selectedPageId;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  setSelectedPageId(p.id);
-                  setActiveTab("builder");
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 border ${
-                  isSelected
-                    ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow"
-                    : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{p.title}</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    p.isPublished ? "bg-emerald-500" : "bg-slate-600"
-                  }`}
-                  title={p.isPublished ? "Published" : "Draft"}
-                />
-              </button>
-            );
-          })}
+      {/* Primary Scope Switcher: Page Content vs Global Site Header & Banners */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex items-center justify-between flex-wrap gap-3 shadow-md">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setStudioScope("pages")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              studioScope === "pages"
+                ? "bg-yellow-400 text-slate-950 font-black shadow-md shadow-yellow-400/20 ring-2 ring-yellow-400/40"
+                : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Page Content Studio</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 font-mono">
+              Individual Pages
+            </span>
+          </button>
 
           <button
             type="button"
-            onClick={() => setIsNewPageModalOpen(true)}
-            className="px-3 py-2 rounded-xl text-xs font-bold text-yellow-400 hover:text-yellow-300 border border-dashed border-yellow-400/40 hover:border-yellow-400 bg-yellow-400/5 transition flex items-center gap-1 shrink-0"
+            onClick={() => setStudioScope("global")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              studioScope === "global"
+                ? "bg-yellow-400 text-slate-950 font-black shadow-md shadow-yellow-400/20 ring-2 ring-yellow-400/40"
+                : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Page</span>
+            <Globe className="w-4 h-4" />
+            <span>Global Public Site Nav &amp; Banners</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-yellow-400 font-mono font-bold">
+              Global Header, Banner &amp; Alerts
+            </span>
           </button>
         </div>
 
-        {/* View Mode Tabs (Builder vs Preview vs Page Settings vs Navigation) */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab("builder")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              activeTab === "builder"
-                ? "bg-yellow-400 text-slate-950 shadow"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            Section Builder ({activePage.sections?.length || 0})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("preview")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-              activeTab === "preview"
-                ? "bg-yellow-400 text-slate-950 shadow"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Simulator</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("seo")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-              activeTab === "seo"
-                ? "bg-yellow-400 text-slate-950 shadow"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>SEO Studio</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("settings")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-              activeTab === "settings"
-                ? "bg-yellow-400 text-slate-950 shadow"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Settings</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("navigation")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
-              activeTab === "navigation"
-                ? "bg-yellow-400 text-slate-950 shadow"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Navigation & Banner</span>
-          </button>
+        <div className="text-xs text-slate-400 font-mono px-2 hidden lg:block">
+          {studioScope === "pages"
+            ? `Editing Page: ${activePage.title} (/${activePage.slug === "home" ? "" : activePage.slug})`
+            : "Global Public Site: Header Nav, Page Banner, Announcement Alert"}
         </div>
       </div>
+
+      {studioScope === "pages" && (
+        <>
+          {/* 1. DISTINCT SECTION: PAGE SELECTOR */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-md">
+            <div className="flex items-center justify-between flex-wrap gap-2.5 pb-2.5 border-b border-slate-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400">
+                  Page Selector
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                  {uniquePages.length} Pages Available
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsNewPageModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-yellow-400 hover:text-slate-950 hover:bg-yellow-400 border border-yellow-400/40 hover:border-yellow-400 bg-yellow-400/10 transition flex items-center gap-1.5 shrink-0 shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Custom Page</span>
+              </button>
+            </div>
+
+            {/* Page Selection Buttons (Wrapping) */}
+            <div className="flex flex-wrap items-center gap-2">
+              {uniquePages.map((p) => {
+                const isSelected = p.id === selectedPageId;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPageId(p.id);
+                    }}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2.5 shrink-0 border ${
+                      isSelected
+                        ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow-md shadow-yellow-400/20 ring-2 ring-yellow-400/40 font-black"
+                        : "bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800/80 hover:text-white"
+                    }`}
+                  >
+                    <FileText className={`w-3.5 h-3.5 ${isSelected ? "text-slate-950" : "text-yellow-400"}`} />
+                    <span className="tracking-wide">{p.title}</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        p.isPublished ? "bg-emerald-500" : "bg-slate-500"
+                      }`}
+                      title={p.isPublished ? "Published" : "Draft"}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. DISTINCT SECTION: PAGE FUNCTION & TOOL SELECTOR */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-md">
+            {/* Section Header with Active Page context */}
+            <div className="flex items-center justify-between flex-wrap gap-2.5 pb-2.5 border-b border-slate-800/80">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400">
+                  Function Selector
+                </h2>
+                <span className="text-slate-600 font-mono text-xs hidden sm:inline">•</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">
+                    Active Page:
+                  </span>
+                  <span className="text-white font-extrabold text-sm tracking-tight">
+                    {activePage.title}
+                  </span>
+                  <span className="text-slate-500 font-mono text-xs">
+                    (/{activePage.slug === "home" ? "" : activePage.slug})
+                  </span>
+                </div>
+              </div>
+
+              {/* Active Page Status Badge */}
+              <span
+                className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full uppercase font-bold border shrink-0 ${
+                  activePage.isPublished
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                }`}
+              >
+                {activePage.isPublished ? "● Published" : "○ Draft"}
+              </span>
+            </div>
+
+            {/* Function Ribbon (Wrapping) */}
+            <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setActiveTab("builder")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                  activeTab === "builder"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Section Builder ({activePage.sections?.length || 0})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("banner")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
+                  activeTab === "banner"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Page Banner {activePage.headerImage?.imageUrl ? "● Set" : ""}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("seo")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
+                  activeTab === "seo"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>SEO Studio</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("settings")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
+                  activeTab === "settings"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Page Settings</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("preview")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
+                  activeTab === "preview"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Simulator</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerTarget("browse");
+                  setPickerFilterCategory("all");
+                  setIsAssetPickerOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-lg text-xs font-bold text-yellow-400 hover:text-slate-950 hover:bg-yellow-400 border border-yellow-400/30 hover:border-yellow-400 bg-yellow-400/10 transition flex items-center gap-1.5 shrink-0 shadow-sm"
+                title="Browse all images, documents, and media resources"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Resource Library</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStudioScope("global")}
+                className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-yellow-400 border border-slate-700 hover:border-yellow-400 bg-slate-900 transition flex items-center gap-1.5 shrink-0 ml-auto"
+                title="Switch to Global Navigation & Banners Studio"
+              >
+                <Globe className="w-3.5 h-3.5 text-yellow-400" />
+                <span>Global Nav &amp; Banners &rarr;</span>
+              </button>
+            </div>
+          </div>
 
       {/* Main Studio Body */}
       {activeTab === "builder" && (
@@ -1369,6 +1525,38 @@ export default function CMSPagesStudio() {
                           className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                         />
                       </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          Hero Background Image URL (Optional)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={section.hero.backgroundImageUrl || ""}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                hero: { ...section.hero!, backgroundImageUrl: e.target.value },
+                              })
+                            }
+                            placeholder="e.g. https://... or select from Resource Library"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickerTarget({ sectionId: section.id, field: "heroBg" });
+                              setPickerFilterCategory("hero");
+                              setIsAssetPickerOpen(true);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            title="Browse Resource Library"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Browse Library</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1467,18 +1655,33 @@ export default function CMSPagesStudio() {
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">YouTube Video URL</label>
-                        <input
-                          type="text"
-                          value={section.mediaHighlight.url}
-                          onChange={(e) =>
-                            handleUpdateSection(section.id, {
-                              mediaHighlight: { ...section.mediaHighlight!, url: e.target.value },
-                            })
-                          }
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                        />
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">YouTube Video / Media URL</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={section.mediaHighlight.url}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                mediaHighlight: { ...section.mediaHighlight!, url: e.target.value },
+                              })
+                            }
+                            placeholder="https://www.youtube.com/watch?v=... or media URL"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickerTarget({ sectionId: section.id, field: "mediaUrl" });
+                              setPickerFilterCategory("all");
+                              setIsAssetPickerOpen(true);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            title="Browse Resource Library"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Browse</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="sm:col-span-2">
@@ -2674,6 +2877,341 @@ export default function CMSPagesStudio() {
         </div>
       )}
 
+      {/* Page Banner Image Studio */}
+      {activeTab === "banner" && (() => {
+        const header = activePage.headerImage || PageHeaderImageSchema.parse({});
+        const hasImage = Boolean(header.imageUrl && header.imageUrl.trim());
+
+        return (
+          <div className="space-y-6">
+            {/* Header Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+              <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-yellow-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-yellow-400/20">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <span>Page Banner Image</span>
+                      <span className="text-xs font-mono text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 px-2 py-0.5 rounded-full">
+                        /{activePage.slug === "home" ? "" : activePage.slug} ({activePage.title})
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Configure the specific hero banner image, opacity, dimensions, and typography for this page using Resource Library assets.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerTarget("header");
+                      setPickerFilterCategory("header");
+                      setIsAssetPickerOpen(true);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-yellow-400/20"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Choose from Resource Library</span>
+                  </button>
+
+                  {hasImage && (
+                    <button
+                      type="button"
+                      onClick={() => updateHeaderImage({ imageUrl: "" })}
+                      className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 hover:border-rose-500/40 text-xs font-semibold transition flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Banner</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Preset Library */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                    Quick-Select Presets
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Curated high-res Eagleburger Band photography
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {HEADER_IMAGE_PRESETS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        updateHeaderImage({
+                          imageUrl: preset.url,
+                          altText: preset.alt,
+                        })
+                      }
+                      className={`group relative text-left p-3 rounded-xl border transition overflow-hidden flex flex-col justify-between space-y-3 ${
+                        header.imageUrl === preset.url
+                          ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/10"
+                          : "border-slate-800 hover:border-slate-700 bg-slate-950"
+                      }`}
+                    >
+                      <div className="h-24 w-full rounded-lg overflow-hidden relative bg-slate-900 border border-slate-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preset.url}
+                          alt={preset.alt}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30" />
+                        {header.imageUrl === preset.url && (
+                          <div className="absolute top-1.5 right-1.5 bg-yellow-400 text-slate-950 p-1 rounded-full shadow">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-yellow-400 transition">
+                          {preset.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                          {preset.tagline}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Two-Column Configuration Options */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                {/* Left Column: Image Source & Dimensions */}
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2 border-b border-slate-800/80 pb-2">
+                    <Sliders className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>Image Source &amp; Dimensions</span>
+                  </h4>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                        Image URL (Resource Asset or Direct URL)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={header.imageUrl || ""}
+                          onChange={(e) => updateHeaderImage({ imageUrl: e.target.value })}
+                          placeholder="https://... or pick from Resource Library"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickerTarget("header");
+                            setPickerFilterCategory("header");
+                            setIsAssetPickerOpen(true);
+                          }}
+                          className="px-3 py-2 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0"
+                          title="Open Resource Library"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span>Resources</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                        Image Alt Text (Accessibility &amp; SEO)
+                      </label>
+                      <input
+                        type="text"
+                        value={header.altText || ""}
+                        onChange={(e) => updateHeaderImage({ altText: e.target.value })}
+                        placeholder="e.g. Eagleburger Band marching in parade"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    {/* Height Preset */}
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                        Height Preset
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: "compact", label: "Compact", px: "280px" },
+                          { id: "standard", label: "Standard", px: "380px" },
+                          { id: "cinematic", label: "Cinematic", px: "540px" },
+                        ].map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() =>
+                              updateHeaderImage({
+                                heightPreset: preset.id as "compact" | "standard" | "cinematic",
+                              })
+                            }
+                            className={`p-2.5 rounded-xl border text-center transition ${
+                              (header.heightPreset || "standard") === preset.id
+                                ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
+                                : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            <div className="text-xs font-bold">{preset.label}</div>
+                            <div className="text-[10px] font-mono opacity-60">{preset.px}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Overlay Opacity */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                          Dark Overlay Opacity
+                        </label>
+                        <span className="text-xs font-mono text-yellow-400 font-bold">
+                          {header.overlayOpacity ?? 50}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={header.overlayOpacity ?? 50}
+                        onChange={(e) =>
+                          updateHeaderImage({ overlayOpacity: parseInt(e.target.value, 10) })
+                        }
+                        className="w-full accent-yellow-400 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono">
+                        <span>0% (Raw Image)</span>
+                        <span>50% (Balanced)</span>
+                        <span>100% (Dark)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Typography & Text Alignment */}
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2 border-b border-slate-800/80 pb-2">
+                    <Type className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>Overlay Typography &amp; Content</span>
+                  </h4>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                        Hero Badge Text (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={header.badgeText || ""}
+                        onChange={(e) => updateHeaderImage({ badgeText: e.target.value })}
+                        placeholder="e.g. Acoustic Brass & Percussion"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 uppercase font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                        Custom Headline (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={header.customTitle || ""}
+                        onChange={(e) => updateHeaderImage({ customTitle: e.target.value })}
+                        placeholder={`Leave blank to use page title ("${activePage.title}")`}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                        Custom Subheadline (Optional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={header.customSubtitle || ""}
+                        onChange={(e) => updateHeaderImage({ customSubtitle: e.target.value })}
+                        placeholder="Leave blank to use page description"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    {/* Headline Alignment */}
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                        Headline Alignment
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(["left", "center", "right"] as const).map((align) => (
+                          <button
+                            key={align}
+                            type="button"
+                            onClick={() => updateHeaderImage({ headlineAlignment: align })}
+                            className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize transition flex items-center justify-center gap-1.5 ${
+                              (header.headlineAlignment || "center") === align
+                                ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
+                                : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {align === "left" && <AlignLeft className="w-3.5 h-3.5" />}
+                            {align === "center" && <AlignCenter className="w-3.5 h-3.5" />}
+                            {align === "right" && <AlignRight className="w-3.5 h-3.5" />}
+                            <span>{align}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Banner Preview */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                      Live Page Banner Preview ({activePage.title})
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    Renders at top of /{activePage.slug === "home" ? "" : activePage.slug}
+                  </span>
+                </div>
+
+                {hasImage ? (
+                  <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                    <PublicPageHeader
+                      headerImage={header}
+                      fallbackTitle={activePage.title}
+                      fallbackSubtitle={activePage.description}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-8 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 text-slate-500 space-y-2">
+                    <ImageIcon className="w-8 h-8 mx-auto text-slate-700" />
+                    <p className="text-xs font-semibold">No banner image set for &quot;{activePage.title}&quot;.</p>
+                    <p className="text-[11px]">
+                      Click &quot;Choose from Resource Library&quot; or select a preset above to configure a specific banner for this page.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Simulator / Live Preview Mode */}
       {activeTab === "preview" && (
         <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-12 shadow-2xl">
@@ -2684,6 +3222,16 @@ export default function CMSPagesStudio() {
             <span className="font-mono text-emerald-400">Universal Section Engine Active</span>
           </div>
 
+          {activePage.headerImage?.imageUrl && (
+            <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-xl mb-6">
+              <PublicPageHeader
+                headerImage={activePage.headerImage}
+                fallbackTitle={activePage.title}
+                fallbackSubtitle={activePage.description}
+              />
+            </div>
+          )}
+
           <div className="space-y-12">
             {activePage.sections?.map((section) => (
               <PublicSectionRenderer key={section.id} section={section} />
@@ -2691,8 +3239,6 @@ export default function CMSPagesStudio() {
           </div>
         </div>
       )}
-
-      {/* SEO Studio Mode */}
       {activeTab === "seo" && (() => {
         const seo = activePage.seo || {
           metaTitle: "",
@@ -3242,10 +3788,722 @@ export default function CMSPagesStudio() {
         </div>
       )}
 
-      {/* Navigation & Announcement Banner Mode */}
-      {activeTab === "navigation" && (
-        <div className="space-y-8">
-          {/* Site Announcement Banner Card */}
+        </>
+      )}
+
+      {/* 2. GLOBAL PUBLIC SITE STUDIO (Nav, Page Banner, Announcements, Footer) */}
+      {studioScope === "global" && (
+        <div className="space-y-6">
+          {/* Global Studio Section Header & Tab Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-md">
+            <div className="flex items-center justify-between flex-wrap gap-2.5 pb-2.5 border-b border-slate-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400">
+                  Global Public Site Configuration
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                  Applied across all public site routes
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStudioScope("pages")}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 bg-slate-950 transition flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>&larr; Switch to Page Content Studio</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Global Tabs Ribbon */}
+            <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setGlobalNavTab("header_nav")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                  globalNavTab === "header_nav"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Header Navigation &amp; Active Route ({siteNav.headerLinks.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGlobalNavTab("page_banner")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                  globalNavTab === "page_banner"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Global Page Banner</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGlobalNavTab("announcement")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                  globalNavTab === "announcement"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Announcement Alert {siteNav.announcementBanner?.enabled ? "● Active" : ""}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGlobalNavTab("footer_social")}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                  globalNavTab === "footer_social"
+                    ? "bg-yellow-400 text-slate-950 shadow font-black"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Footer &amp; Social Links</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TAB 1: HEADER NAVIGATION & ACTIVE ROUTE SIMULATOR */}
+          {globalNavTab === "header_nav" && (
+            <div className="space-y-6">
+              {/* Header Navigation Management Card */}
+              {/* Header Navigation Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Compass className="w-5 h-5 text-yellow-400" />
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Header Navigation Links</h3>
+                  <p className="text-xs text-slate-400">
+                    Configure the top navigation bar. Reorder, toggle visibility, or designate CTA action buttons.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleAddHeaderLink("New Link", "/")}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Header Link</span>
+              </button>
+            </div>
+
+            {/* Quick Add from CMS Pages */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2 text-xs">
+              <span className="text-slate-400 font-mono text-[11px]">Quick-add published page:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {uniquePages.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleAddHeaderLink(p.title, p.slug === "home" ? "/" : `/${p.slug}`)}
+                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-yellow-400/40 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium transition"
+                  >
+                    + {p.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Header Links List */}
+            <div className="space-y-3">
+              {siteNav.headerLinks.map((link, idx) => (
+                <div
+                  key={link.id}
+                  className={`bg-slate-950 border rounded-xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 transition ${
+                    link.isVisible ? "border-slate-800" : "border-slate-800/50 opacity-60 bg-slate-950/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-[10px] font-mono font-bold bg-slate-900 text-slate-400 px-2 py-1 rounded border border-slate-800 shrink-0">
+                      #{idx + 1}
+                    </span>
+
+                    <input
+                      type="text"
+                      value={link.label}
+                      placeholder="Link Label"
+                      onChange={(e) => handleUpdateHeaderLink(idx, { label: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-yellow-400 w-36"
+                    />
+
+                    <input
+                      type="text"
+                      value={link.href}
+                      placeholder="/path or https://"
+                      onChange={(e) => handleUpdateHeaderLink(idx, { href: e.target.value })}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-yellow-400 flex-1"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Button Style Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateHeaderLink(idx, { isButton: !link.isButton })}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold transition border ${
+                        link.isButton
+                          ? "bg-yellow-400 text-slate-950 border-yellow-400"
+                          : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                      }`}
+                      title="Render as CTA Button in Header"
+                    >
+                      {link.isButton ? "CTA Button" : "Text Link"}
+                    </button>
+
+                    {/* Visibility Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleHeaderLinkVisibility(idx)}
+                      className={`p-1.5 rounded-lg border transition ${
+                        link.isVisible
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                          : "bg-slate-900 text-slate-500 border-slate-800 line-through"
+                      }`}
+                      title={link.isVisible ? "Link is visible" : "Link is hidden"}
+                    >
+                      {link.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveHeaderLink(idx, "up")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={idx === siteNav.headerLinks.length - 1}
+                      onClick={() => handleMoveHeaderLink(idx, "down")}
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHeaderLink(idx)}
+                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-900"
+                      title="Delete Link"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+              {/* Active Route Simulator Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-yellow-400" />
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">Live Active Route Simulator</h3>
+                      <p className="text-xs text-slate-400">
+                        Select a public route to preview how the navigation header dynamically highlights the active link.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-mono text-yellow-400 bg-yellow-400/10 px-2.5 py-1 rounded-lg border border-yellow-400/30 font-bold">
+                    Active: {simulatedActiveRoute}
+                  </span>
+                </div>
+
+                {/* Route Selector Pills */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-semibold text-slate-400 mr-1">Simulate Route:</span>
+                  {[
+                    { label: "Home (/)", path: "/" },
+                    { label: "Performances (/gigs)", path: "/gigs" },
+                    { label: "Book the Band (/book)", path: "/book" },
+                    { label: "Community Giving (/giving)", path: "/giving" },
+                    { label: "Join the Band (/join)", path: "/join" },
+                    { label: "Testimonials (/testimonials)", path: "/testimonials" },
+                    { label: "Contact Us (/contact)", path: "/contact" },
+                  ].map((rt) => (
+                    <button
+                      key={rt.path}
+                      type="button"
+                      onClick={() => setSimulatedActiveRoute(rt.path)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-mono transition ${
+                        simulatedActiveRoute === rt.path
+                          ? "bg-yellow-400 text-slate-950 font-bold shadow-md shadow-yellow-400/20"
+                          : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                      }`}
+                    >
+                      {rt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Simulated Header Viewport */}
+                <div className="rounded-2xl border border-slate-800 overflow-hidden shadow-2xl bg-slate-950">
+                  <div className="bg-slate-900/80 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                      <span className="font-mono text-[11px] text-slate-500 ml-2">
+                        https://eagleburgerband.com{simulatedActiveRoute}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                      Header Active State Preview
+                    </span>
+                  </div>
+
+                  <div className="p-4 sm:p-6 bg-slate-950/90 flex items-center justify-between border-b border-slate-800/80">
+                    {/* Brand */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-yellow-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-yellow-400/20">
+                        <Music2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-base font-bold tracking-tight text-white uppercase font-arvo">
+                          EAGLEBURGER BAND
+                        </span>
+                        <span className="block text-[10px] font-semibold text-yellow-400 tracking-wider uppercase font-arvo">
+                          Pittsburgh Brass &amp; Battery
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Nav Links Preview */}
+                    <div className="hidden md:flex items-center gap-1.5">
+                      {siteNav.headerLinks
+                        .filter((l) => l.isVisible !== false)
+                        .map((link) => {
+                          const isActive =
+                            link.href === "/"
+                              ? simulatedActiveRoute === "/"
+                              : simulatedActiveRoute === link.href || simulatedActiveRoute.startsWith(link.href + "/");
+
+                          if (link.isButton) {
+                            return (
+                              <span
+                                key={link.id}
+                                className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-poppins uppercase tracking-wider bg-yellow-400 text-slate-950 shadow-sm"
+                              >
+                                {link.label}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <span
+                              key={link.id}
+                              className={`text-xs px-3 py-1.5 rounded-xl font-poppins uppercase tracking-wider transition flex items-center gap-1.5 ${
+                                isActive
+                                  ? "bg-yellow-400/15 text-yellow-400 border border-yellow-400/40 font-bold shadow-sm shadow-yellow-400/10 ring-1 ring-yellow-400/20"
+                                  : "text-slate-300 hover:text-yellow-400 font-semibold"
+                              }`}
+                            >
+                              <span>{link.label}</span>
+                              {isActive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                              )}
+                            </span>
+                          );
+                        })}
+                    </div>
+
+                    {/* CTA Simulation */}
+                    <div className="flex items-center gap-2">
+                      <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold font-poppins uppercase tracking-wider bg-yellow-400 text-slate-950 shadow">
+                        Book the Band
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-950 text-slate-500 text-xs flex items-center justify-between">
+                    <span>
+                      Active link receives high-contrast yellow accent, border glow, and pulse indicator.
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      Synchronized via usePathname()
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: GLOBAL PUBLIC PAGE BANNER */}
+          {globalNavTab === "page_banner" && (() => {
+            const banner = siteNav.globalPageBanner || GlobalPageBannerSchema.parse({});
+            const isEnabled = banner.enabled !== false;
+
+            return (
+              <div className="space-y-6">
+                {/* Banner Status Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Global Page Banner</span>
+                      </span>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                          isEnabled && banner.imageUrl
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : "bg-slate-800 text-slate-400 border-slate-700"
+                        }`}
+                      >
+                        {isEnabled && banner.imageUrl ? "● Banner Active Globally" : "○ Banner Disabled"}
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-black text-white mt-1">
+                      Global Public Subpage Banner &amp; Hero Styling
+                    </h2>
+                    <p className="text-xs text-slate-400 max-w-xl">
+                      Configure the hero image, height, overlay tint, and typography displayed across all public subpages
+                      (/gigs, /book, /giving, /contact, /join, /testimonials, and custom CMS pages).
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={(e) => updateGlobalBanner({ enabled: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                      <span className="ml-2.5 text-xs font-bold text-slate-300">
+                        {isEnabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveNavigation}
+                      disabled={isSavingNav}
+                      className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+                    >
+                      {isSavingNav ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      <span>Save Global Banner</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Presets Grid */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-yellow-400" />
+                        <span>Curated Band Photography Presets</span>
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Select a high-energy Pittsburgh street performance or stage visual with 1 click.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPickerTarget("globalBanner");
+                        setPickerFilterCategory("header");
+                        setIsAssetPickerOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      <span>Choose from Resource Library</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {HEADER_IMAGE_PRESETS.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() =>
+                          updateGlobalBanner({
+                            imageUrl: preset.url,
+                            altText: preset.alt,
+                          })
+                        }
+                        className={`group relative text-left p-3 rounded-xl border transition overflow-hidden flex flex-col justify-between space-y-3 ${
+                          banner.imageUrl === preset.url
+                            ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/10"
+                            : "border-slate-800 hover:border-slate-700 bg-slate-950"
+                        }`}
+                      >
+                        <div className="h-24 w-full rounded-lg overflow-hidden relative bg-slate-900 border border-slate-800">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={preset.url}
+                            alt={preset.alt}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/30" />
+                          {banner.imageUrl === preset.url && (
+                            <div className="absolute top-1.5 right-1.5 bg-yellow-400 text-slate-950 p-1 rounded-full shadow">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white group-hover:text-yellow-400 transition">
+                            {preset.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                            {preset.tagline}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Configuration & Layout Options */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column: Image Source & Dimensions */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                      <Sliders className="w-4 h-4 text-yellow-400" />
+                      <span>Image Source &amp; Dimensions</span>
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                          Image URL (Custom or Preset)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={banner.imageUrl || ""}
+                            onChange={(e) => updateGlobalBanner({ imageUrl: e.target.value })}
+                            placeholder="e.g. https://... or select from Resource Library"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickerTarget("globalBanner");
+                              setPickerFilterCategory("header");
+                              setIsAssetPickerOpen(true);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                            title="Browse Resource Library"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Library</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                          Image Alt Text (Accessibility &amp; SEO)
+                        </label>
+                        <input
+                          type="text"
+                          value={banner.altText || ""}
+                          onChange={(e) => updateGlobalBanner({ altText: e.target.value })}
+                          placeholder="e.g. Eagleburger Band marching brass and drum battery in Pittsburgh"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+
+                      {/* Height Preset */}
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                          Banner Height Preset
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(["compact", "standard", "cinematic"] as const).map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => updateGlobalBanner({ heightPreset: preset })}
+                              className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize transition ${
+                                (banner.heightPreset || "standard") === preset
+                                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
+                                  : "border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {preset}
+                              <span className="block text-[10px] font-normal text-slate-500">
+                                {preset === "compact" ? "260px" : preset === "standard" ? "340px" : "480px"}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Overlay Opacity Slider */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                            Darkness Overlay Opacity
+                          </label>
+                          <span className="text-xs font-mono text-yellow-400 font-bold">
+                            {banner.overlayOpacity ?? 60}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={banner.overlayOpacity ?? 60}
+                          onChange={(e) => updateGlobalBanner({ overlayOpacity: parseInt(e.target.value, 10) })}
+                          className="w-full accent-yellow-400 cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono">
+                          <span>0% (Raw Image)</span>
+                          <span>60% (Default)</span>
+                          <span>100% (Ultra Dark)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Typography & Text Alignment */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                      <Type className="w-4 h-4 text-yellow-400" />
+                      <span>Typography &amp; Hero Content</span>
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                          Hero Badge Text (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={banner.badgeText || ""}
+                          onChange={(e) => updateGlobalBanner({ badgeText: e.target.value })}
+                          placeholder="e.g. Eagleburger Band"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 uppercase font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                          Custom Global Title Fallback
+                        </label>
+                        <input
+                          type="text"
+                          value={banner.customTitle || ""}
+                          onChange={(e) => updateGlobalBanner({ customTitle: e.target.value })}
+                          placeholder="Leave blank to use each page's specific title (e.g. 'Performances', 'Book the Band')"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                        />
+                        <span className="text-[10px] text-slate-500 mt-1 block">
+                          When blank, each public page automatically renders its own title.
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                          Custom Global Subtitle Fallback
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={banner.customSubtitle || ""}
+                          onChange={(e) => updateGlobalBanner({ customSubtitle: e.target.value })}
+                          placeholder="Leave blank to use each page's specific description/lead text"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+
+                      {/* Headline Alignment */}
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                          Text Alignment
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(["left", "center", "right"] as const).map((align) => (
+                            <button
+                              key={align}
+                              type="button"
+                              onClick={() => updateGlobalBanner({ headlineAlignment: align })}
+                              className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize transition flex items-center justify-center gap-1.5 ${
+                                (banner.headlineAlignment || "center") === align
+                                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
+                                  : "border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {align === "left" && <AlignLeft className="w-3.5 h-3.5" />}
+                              {align === "center" && <AlignCenter className="w-3.5 h-3.5" />}
+                              {align === "right" && <AlignRight className="w-3.5 h-3.5" />}
+                              <span>{align}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Responsive Header Preview */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-yellow-400" />
+                      <h3 className="text-sm font-bold text-white">Live Global Banner Preview</h3>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      Renders at top of /gigs, /book, /giving, /contact, /join, /testimonials
+                    </span>
+                  </div>
+
+                  {banner.imageUrl && banner.enabled !== false ? (
+                    <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                      <PublicPageHeader
+                        headerImage={banner}
+                        fallbackTitle="Performances &amp; Gigs"
+                        fallbackSubtitle="High-energy brass, street choreography, and unhinged revelry across Western PA."
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 text-slate-500 space-y-2">
+                      <ImageIcon className="w-8 h-8 mx-auto text-slate-700" />
+                      <p className="text-xs font-semibold">Global banner is currently disabled or has no image.</p>
+                      <p className="text-[11px]">Select a preset above or enter an image URL to activate the global banner preview.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* TAB 3: ANNOUNCEMENT ALERT BANNER */}
+          {globalNavTab === "announcement" && (
+            <div className="space-y-6">
+              {/* Site Announcement Banner Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
             <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -3393,146 +4651,13 @@ export default function CMSPagesStudio() {
               </div>
             </div>
           </div>
-
-          {/* Header Navigation Management */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
-            <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Compass className="w-5 h-5 text-yellow-400" />
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Header Navigation Links</h3>
-                  <p className="text-xs text-slate-400">
-                    Configure the top navigation bar. Reorder, toggle visibility, or designate CTA action buttons.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleAddHeaderLink("New Link", "/")}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Header Link</span>
-              </button>
             </div>
+          )}
 
-            {/* Quick Add from CMS Pages */}
-            <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2 text-xs">
-              <span className="text-slate-400 font-mono text-[11px]">Quick-add published page:</span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {uniquePages.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleAddHeaderLink(p.title, p.slug === "home" ? "/" : `/${p.slug}`)}
-                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-yellow-400/40 text-slate-300 hover:text-white rounded-lg text-[11px] font-medium transition"
-                  >
-                    + {p.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Header Links List */}
-            <div className="space-y-3">
-              {siteNav.headerLinks.map((link, idx) => (
-                <div
-                  key={link.id}
-                  className={`bg-slate-950 border rounded-xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 transition ${
-                    link.isVisible ? "border-slate-800" : "border-slate-800/50 opacity-60 bg-slate-950/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="text-[10px] font-mono font-bold bg-slate-900 text-slate-400 px-2 py-1 rounded border border-slate-800 shrink-0">
-                      #{idx + 1}
-                    </span>
-
-                    <input
-                      type="text"
-                      value={link.label}
-                      placeholder="Link Label"
-                      onChange={(e) => handleUpdateHeaderLink(idx, { label: e.target.value })}
-                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-yellow-400 w-36"
-                    />
-
-                    <input
-                      type="text"
-                      value={link.href}
-                      placeholder="/path or https://"
-                      onChange={(e) => handleUpdateHeaderLink(idx, { href: e.target.value })}
-                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-yellow-400 flex-1"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Button Style Toggle */}
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateHeaderLink(idx, { isButton: !link.isButton })}
-                      className={`px-2 py-1 rounded-lg text-[11px] font-mono font-bold transition border ${
-                        link.isButton
-                          ? "bg-yellow-400 text-slate-950 border-yellow-400"
-                          : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
-                      }`}
-                      title="Render as CTA Button in Header"
-                    >
-                      {link.isButton ? "CTA Button" : "Text Link"}
-                    </button>
-
-                    {/* Visibility Toggle */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleHeaderLinkVisibility(idx)}
-                      className={`p-1.5 rounded-lg border transition ${
-                        link.isVisible
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                          : "bg-slate-900 text-slate-500 border-slate-800 line-through"
-                      }`}
-                      title={link.isVisible ? "Link is visible" : "Link is hidden"}
-                    >
-                      {link.isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                    </button>
-
-                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
-
-                    <button
-                      type="button"
-                      disabled={idx === 0}
-                      onClick={() => handleMoveHeaderLink(idx, "up")}
-                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
-                      title="Move Up"
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={idx === siteNav.headerLinks.length - 1}
-                      onClick={() => handleMoveHeaderLink(idx, "down")}
-                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 rounded hover:bg-slate-900"
-                      title="Move Down"
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </button>
-
-                    <div className="w-[1px] h-4 bg-slate-800 mx-1" />
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveHeaderLink(idx)}
-                      className="p-1 text-slate-500 hover:text-rose-400 rounded hover:bg-slate-900"
-                      title="Delete Link"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer Navigation Management */}
+          {/* TAB 4: FOOTER LINKS & SOCIAL MEDIA */}
+          {globalNavTab === "footer_social" && (
+            <div className="space-y-6">
+              {/* Footer Navigation Management */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
             <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3638,8 +4763,7 @@ export default function CMSPagesStudio() {
               ))}
             </div>
           </div>
-
-          {/* Footer Social Media Channels Management */}
+              {/* Footer Social Media Channels Management */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
             <div className="border-b border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -3803,8 +4927,11 @@ export default function CMSPagesStudio() {
               )}
             </div>
           </div>
+            </div>
+          )}
         </div>
       )}
+
 
       {/* New Page Modal */}
       {isNewPageModalOpen && (
@@ -3974,6 +5101,21 @@ export default function CMSPagesStudio() {
           </div>
         </div>
       )}
+
+      {/* Resource Asset Picker Modal */}
+      <ResourceAssetPickerModal
+        isOpen={isAssetPickerOpen}
+        onClose={() => setIsAssetPickerOpen(false)}
+        onSelectAsset={handleSelectAsset}
+        filterCategory={pickerFilterCategory}
+        title={
+          pickerTarget === "header"
+            ? "Choose Page Header Banner"
+            : pickerTarget === "browse"
+            ? "Media & Resource Library"
+            : "Choose Section Media"
+        }
+      />
     </div>
   );
 }

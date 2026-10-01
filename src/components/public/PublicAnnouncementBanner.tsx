@@ -1,23 +1,55 @@
 "use client";
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { AnnouncementBanner, SiteNavigationSchema } from "@/lib/schema/siteConfig";
+import { 
+  AnnouncementBanner, 
+  SiteNavigationSchema, 
+  DEFAULT_ANNOUNCEMENT_BANNER 
+} from "@/lib/schema/siteConfig";
 import Link from "next/link";
 import { Sparkles, Info, AlertTriangle, X, ArrowRight } from "lucide-react";
 
 const emptySubscribe = () => () => {};
 
 export default function PublicAnnouncementBanner() {
-  const [banner, setBanner] = useState<AnnouncementBanner | null>(null);
+  const [banner, setBanner] = useState<AnnouncementBanner | null>(DEFAULT_ANNOUNCEMENT_BANNER);
   const [userDismissed, setUserDismissed] = useState(false);
 
-  const sessionDismissed = useSyncExternalStore(
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "site_navigation", "config"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = SiteNavigationSchema.safeParse(snap.data());
+          if (parsed.success && parsed.data.announcementBanner) {
+            setBanner(parsed.data.announcementBanner);
+            return;
+          }
+        }
+        setBanner(DEFAULT_ANNOUNCEMENT_BANNER);
+      },
+      (err) => {
+        console.warn("Announcement banner subscription notice:", err);
+        setBanner(DEFAULT_ANNOUNCEMENT_BANNER);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  const messageKey = banner?.message?.trim() || "";
+
+  const isSessionDismissed = useSyncExternalStore(
     emptySubscribe,
     () => {
       try {
-        return typeof window !== "undefined" && sessionStorage.getItem("ebb_announcement_dismissed") === "true";
+        return Boolean(
+          typeof window !== "undefined" &&
+          messageKey &&
+          sessionStorage.getItem(`ebb_announcement_dismissed_${messageKey}`) === "true"
+        );
       } catch {
         return false;
       }
@@ -25,40 +57,14 @@ export default function PublicAnnouncementBanner() {
     () => false
   );
 
-  const dismissed = userDismissed || sessionDismissed;
-
-  useEffect(() => {
-    let isMounted = true;
-
-    getDoc(doc(db, "site_navigation", "config"))
-      .then((snap) => {
-        if (!isMounted) return;
-        if (snap.exists()) {
-          const parsed = SiteNavigationSchema.safeParse(snap.data());
-          if (parsed.success && parsed.data.announcementBanner.enabled) {
-            setBanner(parsed.data.announcementBanner);
-          } else {
-            setBanner(null);
-          }
-        }
-      })
-      .catch((err) => {
-        console.warn("Announcement banner load notice:", err);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (!banner || !banner.enabled || !banner.message?.trim() || dismissed) {
+  if (!banner || !banner.enabled || !banner.message?.trim() || userDismissed || isSessionDismissed) {
     return null;
   }
 
   const handleDismiss = () => {
     setUserDismissed(true);
     try {
-      sessionStorage.setItem("ebb_announcement_dismissed", "true");
+      sessionStorage.setItem(`ebb_announcement_dismissed_${messageKey}`, "true");
     } catch {
       // Ignore
     }

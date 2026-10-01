@@ -10,6 +10,71 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-arvo: var(--font-arvo), serif;
+  --font-poppins: var(--font-poppins), sans-serif;
+}
+
+.font-arvo {
+  font-family: var(--font-arvo), serif;
+}
+
+.font-poppins {
+  font-family: var(--font-poppins), sans-serif;
+}
+
+/* Public Site Typography: Poppins for body text, Arvo for titles and CTAs */
+.public-site {
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.public-site input,
+.public-site textarea,
+.public-site select,
+.public-site button:not(.btn-cta):not([type="submit"]) {
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.public-site h1,
+.public-site h2,
+.public-site h3,
+.public-site h4,
+.public-title,
+.font-arvo-title {
+  font-family: var(--font-arvo), serif;
+  font-weight: 700;
+}
+
+.font-arvo-bold {
+  font-family: var(--font-arvo), serif;
+  font-weight: 700;
+}
+
+/* Body marketing CTAs use Arvo font */
+.public-site main .btn-cta,
+.public-site main .public-cta,
+.public-site main .font-arvo-cta,
+.public-site main a[class*="bg-yellow-400"],
+.public-site main button[class*="bg-yellow-400"],
+.public-site main a[href*="/book"],
+.public-site main button[type="submit"] {
+  font-family: var(--font-arvo), serif;
+  font-weight: 700;
+}
+
+/* ALL Nav Header Links (Text links, Highlighted/Active links, CTA buttons, and Action links) strictly use Poppins font and uppercase */
+.public-site header a,
+.public-site header button,
+.public-site header nav a,
+.public-site header nav button {
+  font-family: var(--font-poppins), sans-serif !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ALL Public Footer Links strictly use Poppins font */
+.public-site footer a,
+.public-site footer button {
+  font-family: var(--font-poppins), sans-serif !important;
 }
 
 @media (prefers-color-scheme: dark) {

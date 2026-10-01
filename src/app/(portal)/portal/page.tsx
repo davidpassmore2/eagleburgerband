@@ -6,6 +6,8 @@ import {
   collection,
   query,
   orderBy,
+  where,
+  limit,
   onSnapshot,
   getDocs,
   doc,
@@ -22,6 +24,8 @@ import MemberAnalyticsCard from "@/components/portal/MemberAnalyticsCard";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { toast } from "@/lib/context/ToastContext";
+import { NotificationSchema, AppNotification } from "@/lib/schema/notification";
+import { GigRsvpSchema } from "@/lib/schema/rsvp";
 import {
   Calendar,
   Clock,
@@ -48,6 +52,8 @@ import {
   ChevronRight,
   Receipt,
   UserMinus,
+  DollarSign,
+  Megaphone,
 } from "lucide-react";
 
 type Gig = {
@@ -99,6 +105,11 @@ export default function MusicianPortalOverviewPage() {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState<AppNotification[]>([]);
+  const [personalReimbursements, setPersonalReimbursements] = useState<{ pending: number; paid: number }>({
+    pending: 0,
+    paid: 0,
+  });
 
   useEffect(() => {
     const q = query(collection(db, "gigs"), orderBy("date", "asc"));
@@ -150,6 +161,66 @@ export default function MusicianPortalOverviewPage() {
     };
   }, []);
 
+  // Listen to personal reimbursements and notifications
+  useEffect(() => {
+    if (!profile?.uid) return;
+
+    // Listen to personal reimbursements
+    const qReimburse = query(
+      collection(db, "reimbursements"),
+      where("applicantUid", "==", profile.uid)
+    );
+    const unsubReimburse = onSnapshot(
+      qReimburse,
+      (snapshot) => {
+        let pending = 0;
+        let paid = 0;
+        snapshot.forEach((d) => {
+          const data = d.data();
+          const amt = Number(data.amount) || 0;
+          if (data.status === "paid") {
+            paid += amt;
+          } else if (data.status === "submitted" || data.status === "approved") {
+            pending += amt;
+          }
+        });
+        setPersonalReimbursements({ pending, paid });
+      },
+      (err) => console.warn("Notice: reimbursements subscriber note:", err)
+    );
+
+    // Listen to dispatches & notifications
+    const qNotifs = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(25));
+    const unsubNotifs = onSnapshot(
+      qNotifs,
+      (snapshot) => {
+        const unread: AppNotification[] = [];
+        snapshot.forEach((d) => {
+          const parsed = NotificationSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            const n = parsed.data;
+            const isForMe =
+              n.recipientUid === "all" ||
+              n.recipientUid === profile.uid ||
+              (profile.sectionId && n.recipientUid === `section:${profile.sectionId}`) ||
+              (profile.roles && profile.roles.some((r) => n.recipientUid === `role:${r}`));
+            const isRead = (n.readUids || []).includes(profile.uid);
+            if (isForMe && !isRead) {
+              unread.push(n);
+            }
+          }
+        });
+        setUnreadNotifications(unread);
+      },
+      (err) => console.warn("Notice: notifications subscriber note:", err)
+    );
+
+    return () => {
+      unsubReimburse();
+      unsubNotifs();
+    };
+  }, [profile?.uid, profile?.sectionId, profile?.roles]);
+
   useEffect(() => {
     if (!profile) return;
 
@@ -187,19 +258,18 @@ export default function MusicianPortalOverviewPage() {
     setUserRsvps((prev) => ({ ...prev, [gigId]: status }));
 
     try {
+      const validated = GigRsvpSchema.parse({
+        gigId,
+        uid: profile.uid,
+        displayName: profile.displayName || "Musician",
+        sectionId: profile.sectionId || "",
+        status,
+        notes: "",
+        updatedAt: new Date().toISOString(),
+      });
+
       const rsvpRef = doc(db, "gigs", gigId, "rsvps", profile.uid);
-      await setDoc(
-        rsvpRef,
-        {
-          uid: profile.uid,
-          displayName: profile.displayName || "Musician",
-          email: profile.email,
-          sectionId: profile.sectionId || "unassigned",
-          status,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+      await setDoc(rsvpRef, validated, { merge: true });
       toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       console.error("Failed to update RSVP:", err);
@@ -255,6 +325,50 @@ export default function MusicianPortalOverviewPage() {
   }, [upcomingGigs, userRsvps]);
 
   const nextGig = upcomingGigs.length > 0 ? upcomingGigs[0] : null;
+
+  const countdownText = useMemo(() => {
+    if (!nextGig) return null;
+    const gigDate = nextGig.date; // "YYYY-MM-DD"
+    const callTime = nextGig.internalLogistics?.callTime || "18:00";
+    const [year, month, day] = gigDate.split("-").map(Number);
+    if (!year || !month || !day) return null;
+
+    let hours = 18;
+    let minutes = 0;
+    const timeMatch = callTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10);
+      const m = parseInt(timeMatch[2], 10);
+      const meridian = timeMatch[3]?.toUpperCase();
+      if (meridian === "PM" && h < 12) h += 12;
+      if (meridian === "AM" && h === 12) h = 0;
+      hours = h;
+      minutes = m;
+    }
+
+    const targetDate = new Date(year, month - 1, day, hours, minutes);
+    const now = new Date();
+    const diffMs = targetDate.getTime() - now.getTime();
+
+    if (diffMs <= 0 && diffMs > -4 * 3600 * 1000) {
+      return "Live Today / On Call Now!";
+    }
+    if (diffMs <= -4 * 3600 * 1000) {
+      return "Gig in Progress";
+    }
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+
+    if (diffDays === 0) {
+      return `Today: Call in ${diffHours}h ${Math.floor((diffMs / (1000 * 60)) % 60)}m`;
+    }
+    if (diffDays === 1) {
+      return `Tomorrow: Call in ${diffHours}h`;
+    }
+    return `${diffDays} Days, ${remainingHours} Hours`;
+  }, [nextGig]);
 
   if (authLoading || loadingGigs) {
     return (
@@ -342,6 +456,142 @@ export default function MusicianPortalOverviewPage() {
 
       {/* Musician PWA Status & Installation Card */}
       <PortalPwaCard />
+
+      {/* Musician Standing & Financial Status Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Metric 1: Performance Attendance Standing */}
+        <div
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition-colors"
+        >
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400">
+              Season Commitment
+            </span>
+            <div className="text-sm font-black text-white flex items-center gap-1.5">
+              <span>{confirmedCount} / {upcomingGigs.length} Confirmed</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {unansweredGigs.length > 0 ? (
+                <span className="text-amber-400 font-bold">{unansweredGigs.length} RSVP(s) pending</span>
+              ) : (
+                <span className="text-emerald-400 font-semibold">100% responded</span>
+              )}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+        </div>
+
+        {/* Metric 2: Gig Distributions & Payouts */}
+        <Link
+          href="/portal/gigs"
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition hover:border-yellow-400/50 group"
+        >
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+              <span>Gig Earnings</span>
+              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-yellow-400 transition" />
+            </span>
+            <div className="text-sm font-black text-white flex items-center gap-1.5">
+              <span className="text-emerald-400">${personalEarnings.paid.toFixed(2)}</span>
+              <span className="text-xs text-slate-400 font-normal">paid</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {personalEarnings.unpaid > 0 ? (
+                <span className="text-yellow-400 font-bold">${personalEarnings.unpaid.toFixed(2)} pending</span>
+              ) : (
+                "All distributions settled"
+              )}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 flex items-center justify-center shrink-0">
+            <DollarSign className="w-4 h-4" />
+          </div>
+        </Link>
+
+        {/* Metric 3: Expense Reimbursements */}
+        <Link
+          href="/portal/reimbursements"
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition hover:border-emerald-500/50 group"
+        >
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
+              <span>Reimbursements</span>
+              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition" />
+            </span>
+            <div className="text-sm font-black text-white flex items-center gap-1.5">
+              <span className="text-emerald-400">${personalReimbursements.paid.toFixed(2)}</span>
+              <span className="text-xs text-slate-400 font-normal">reimbursed</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {personalReimbursements.pending > 0 ? (
+                <span className="text-amber-400 font-bold">${personalReimbursements.pending.toFixed(2)} in review</span>
+              ) : (
+                "No pending claims"
+              )}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <Receipt className="w-4 h-4" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Unread Broadcast Alert */}
+      {unreadNotifications.length > 0 && (
+        <div
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface-muted)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md bg-purple-950/20 animate-fadeIn"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+              <Megaphone className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                <span>
+                  Band Broadcast: {unreadNotifications.length} Unread {unreadNotifications.length === 1 ? "Notice" : "Notices"}
+                </span>
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                  Dispatch
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                Latest: <strong>{unreadNotifications[0].title}</strong> &mdash; {unreadNotifications[0].message}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/portal/notifications"
+              className="bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1 transition shadow"
+            >
+              <span>View Dispatches</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Inactive Member Notice */}
       {profile?.status === "inactive" && (
@@ -442,6 +692,12 @@ export default function MusicianPortalOverviewPage() {
                 <span className="text-xs font-mono text-slate-300 font-bold">
                   {nextGig.date}
                 </span>
+                {countdownText && (
+                  <span className="text-xs font-mono font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <Clock className="w-3 h-3 text-yellow-400" />
+                    <span>{countdownText}</span>
+                  </span>
+                )}
               </div>
 
               <h2 className="text-xl sm:text-2xl font-black text-white">

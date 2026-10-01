@@ -6,6 +6,7 @@ interface PortalLoadingOverlayProps {
   show?: boolean;
   imageSrc?: string;
   label?: string;
+  fallbackBadge?: string;
   delayMs?: number;       // Debounce threshold before showing (default 150ms)
   minDurationMs?: number; // Minimum hold time once shown (default 400ms)
 }
@@ -14,6 +15,7 @@ export function PortalLoadingOverlay({
   show = true,
   imageSrc = "/images/portal-loading-logo.png",
   label = "Loading...",
+  fallbackBadge = "PORTAL",
   delayMs = 150,
   minDurationMs = 400,
 }: PortalLoadingOverlayProps) {
@@ -110,7 +112,7 @@ export function PortalLoadingOverlay({
               EBB
             </span>
             <span className="text-[9px] uppercase tracking-widest text-slate-300 font-bold mt-1">
-              PORTAL
+              {fallbackBadge}
             </span>
           </div>
         )}

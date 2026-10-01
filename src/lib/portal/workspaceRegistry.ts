@@ -31,6 +31,7 @@ import {
   MessageSquareQuote,
   Bell,
   CheckCircle2,
+  FolderOpen,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -224,6 +225,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "CMS Page Studio",
     href: "/admin/pages",
     icon: LayoutTemplate,
+    requiredRoles: ["admin", "web_manager"],
+    category: "Website & Intake",
+  },
+  {
+    id: "resources",
+    title: "Media & Resource Library",
+    href: "/admin/resources",
+    icon: FolderOpen,
     requiredRoles: ["admin", "web_manager"],
     category: "Website & Intake",
   },

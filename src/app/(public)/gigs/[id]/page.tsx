@@ -176,7 +176,8 @@ export default function PublicGigDetailPage({
         </div>
         <Link
           href="/gigs"
-          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg"
+          suppressHydrationWarning
+          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg font-arvo btn-cta"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Live Performance Schedule
@@ -192,18 +193,19 @@ export default function PublicGigDetailPage({
   const weekdayStr = dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "long" }) : "";
   const yearStr = dateObj ? dateObj.getFullYear() : "";
 
-  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const pageUrl = `https://eagleburgerband.com/gigs/${gigId}`;
   const shareTitle = encodeURIComponent(`${publicDetails.title} with the Eagleburger Band`);
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
   const blueskyShareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(`${publicDetails.title} with the Eagleburger Band: ${pageUrl}`)}`;
   const emailShareUrl = `mailto:?subject=${shareTitle}&body=Check out this upcoming appearance with the Eagleburger Band: ${encodeURIComponent(pageUrl)}`;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12" suppressHydrationWarning>
       {/* Top Navigation Breadcrumb */}
       <div>
         <Link
           href="/gigs"
+          suppressHydrationWarning
           className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-yellow-400 transition"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -450,8 +452,11 @@ export default function PublicGigDetailPage({
       </div>
 
       {/* Booking CTA Card */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-4">
-        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+      <div 
+        className="bg-slate-900/40 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-4"
+        suppressHydrationWarning
+      >
+        <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight font-arvo">
           Want Eagleburger at Your Parade or Festival?
         </h3>
         <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -459,7 +464,8 @@ export default function PublicGigDetailPage({
         </p>
         <Link
           href="/book"
-          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20"
+          suppressHydrationWarning
+          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 font-arvo btn-cta"
         >
           <Send className="w-3.5 h-3.5" />
           Request Booking Availability

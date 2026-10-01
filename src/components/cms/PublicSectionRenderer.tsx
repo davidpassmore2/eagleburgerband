@@ -66,11 +66,24 @@ function getEmbedUrl(url: string) {
 
 export default function PublicSectionRenderer({
   section,
+  sections,
 }: {
-  section: ContentSection;
+  section?: ContentSection;
+  sections?: ContentSection[];
 }) {
+  if (sections && Array.isArray(sections)) {
+    const sorted = [...sections].sort((a, b) => a.order - b.order);
+    return (
+      <>
+        {sorted.map((s) => (
+          <PublicSectionRenderer key={s.id} section={s} />
+        ))}
+      </>
+    );
+  }
+
   // Visibility guard
-  if (section.isVisible === false) {
+  if (!section || section.isVisible === false) {
     return null;
   }
 
@@ -103,7 +116,7 @@ export default function PublicSectionRenderer({
             </div>
           )}
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white uppercase tracking-tight leading-[1.08]">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-arvo font-bold text-white uppercase tracking-tight leading-[1.08]">
             {section.hero.headline}
           </h1>
 
@@ -119,7 +132,7 @@ export default function PublicSectionRenderer({
                 <Link
                   href={section.hero.ctaHref || "/book"}
                   suppressHydrationWarning
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-8 py-4 rounded-xl text-sm uppercase tracking-wider transition-all shadow-xl shadow-yellow-400/20 hover:scale-105 active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-arvo font-bold px-8 py-4 rounded-xl text-sm uppercase tracking-wider transition-all shadow-xl shadow-yellow-400/20 hover:scale-105 active:scale-95 btn-cta"
                 >
                   <Send className="w-4 h-4" />
                   {section.hero.ctaText}
@@ -129,7 +142,7 @@ export default function PublicSectionRenderer({
                 <Link
                   href={section.hero.secondaryCtaHref || "/gigs"}
                   suppressHydrationWarning
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-yellow-400/50 text-white font-bold px-8 py-4 rounded-xl text-sm transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-yellow-400/50 text-white font-arvo font-bold px-8 py-4 rounded-xl text-sm transition-all"
                 >
                   <Calendar className="w-4 h-4 text-yellow-400" />
                   {section.hero.secondaryCtaText}
@@ -149,15 +162,15 @@ export default function PublicSectionRenderer({
             }`}
           >
             {section.richText.title && (
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white uppercase tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-arvo font-bold text-white uppercase tracking-tight">
                 {section.richText.title}
               </h2>
             )}
 
             <div
               className="prose prose-invert prose-yellow max-w-none text-xs sm:text-sm text-slate-300 leading-relaxed
-                [&>h2]:text-xl [&>h2]:font-extrabold [&>h2]:text-white [&>h2]:mt-6 [&>h2]:mb-3
-                [&>h3]:text-base [&>h3]:font-bold [&>h3]:text-yellow-400 [&>h3]:mt-4 [&>h3]:mb-2
+                [&>h2]:text-xl [&>h2]:font-arvo [&>h2]:font-bold [&>h2]:text-white [&>h2]:mt-6 [&>h2]:mb-3
+                [&>h3]:text-base [&>h3]:font-arvo [&>h3]:font-bold [&>h3]:text-yellow-400 [&>h3]:mt-4 [&>h3]:mb-2
                 [&>p]:mb-4 [&>p]:leading-relaxed
                 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ul>li]:mb-1
                 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&>ol>li]:mb-1
@@ -178,7 +191,7 @@ export default function PublicSectionRenderer({
                 <span className="text-xs font-extrabold uppercase text-yellow-400 tracking-widest block mb-1">
                   Live Performance Feature
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-arvo font-bold text-white uppercase tracking-tight">
                   {section.mediaHighlight.title}
                 </h2>
               </div>
@@ -212,7 +225,7 @@ export default function PublicSectionRenderer({
       {section.type === "features" && section.features && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center space-y-3">
-            <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-arvo font-bold text-white uppercase tracking-tight">
               {section.features.title}
             </h2>
             {section.features.subtitle && (
@@ -231,7 +244,7 @@ export default function PublicSectionRenderer({
                 <div className="w-12 h-12 rounded-2xl bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
                   {ICON_MAP[item.icon] || <Zap className="w-6 h-6 text-yellow-400" />}
                 </div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wide">
+                <h3 className="text-lg font-arvo font-bold text-white uppercase tracking-wide">
                   {item.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
@@ -266,7 +279,7 @@ export default function PublicSectionRenderer({
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full border border-yellow-400/20">
               Community Voices
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-arvo font-bold text-white uppercase tracking-tight">
               {section.testimonials.title}
             </h2>
             {section.testimonials.subtitle && (
@@ -361,7 +374,7 @@ export default function PublicSectionRenderer({
               </div>
             )}
 
-            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-5xl font-arvo font-bold uppercase tracking-tight leading-tight">
               {section.ctaBanner.headline}
             </h2>
 
@@ -381,7 +394,7 @@ export default function PublicSectionRenderer({
               <Link
                 href={section.ctaBanner.buttonHref || "/book"}
                 suppressHydrationWarning
-                className={`px-8 py-4 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 ${
+                className={`px-8 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 btn-cta ${
                   section.ctaBanner.buttonStyle === "white"
                     ? "bg-white text-slate-950 hover:bg-slate-100 shadow-xl"
                     : section.ctaBanner.buttonStyle === "outline"
@@ -398,7 +411,7 @@ export default function PublicSectionRenderer({
                 <Link
                   href={section.ctaBanner.secondaryButtonHref || "/gigs"}
                   suppressHydrationWarning
-                  className={`px-6 py-4 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition ${
+                  className={`px-6 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition ${
                     section.ctaBanner.secondaryButtonStyle === "white"
                       ? "bg-white text-slate-950 hover:bg-slate-100 shadow-lg"
                       : section.ctaBanner.secondaryButtonStyle === "solid-yellow"
@@ -420,7 +433,7 @@ export default function PublicSectionRenderer({
       {section.type === "stats_counter" && section.statsCounter && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-arvo font-bold text-white uppercase tracking-tight">
               {section.statsCounter.title}
             </h2>
             {section.statsCounter.subtitle && (
@@ -522,7 +535,7 @@ function GigFeedSectionComponent({
           <span className="text-xs font-mono font-bold uppercase text-yellow-400 tracking-wider">
             Public Shows & Appearances
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-arvo font-bold text-white uppercase tracking-tight">
             {config.title || "Upcoming Performances"}
           </h2>
           {config.subtitle && (
@@ -535,7 +548,7 @@ function GigFeedSectionComponent({
         <Link
           href={config.ctaHref || "/gigs"}
           suppressHydrationWarning
-          className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition self-start sm:self-end"
+          className="text-xs font-arvo font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition self-start sm:self-end"
         >
           <span>{config.ctaText || "View Full Performance Schedule"}</span>
           <ArrowRight className="w-4 h-4" />
@@ -565,7 +578,7 @@ function GigFeedSectionComponent({
                   </span>
                   <span className="text-slate-500">{gig.admission}</span>
                 </div>
-                <h3 className="text-base font-bold text-white group-hover:text-yellow-400 transition-colors">
+                <h3 className="text-base font-arvo font-bold text-white group-hover:text-yellow-400 transition-colors">
                   {gig.title}
                 </h3>
               </div>
@@ -606,7 +619,7 @@ function FaqSectionComponent({
           <HelpCircle className="w-3.5 h-3.5" />
           <span>Event Coordination</span>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+        <h2 className="text-2xl sm:text-4xl font-arvo font-bold text-white uppercase tracking-tight">
           {config.title}
         </h2>
         {config.subtitle && (

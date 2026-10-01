@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { collection, onSnapshot, addDoc, query, where } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, query, where, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
+import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
+import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
 import {
   Testimonial,
   TestimonialInputSchema,
@@ -29,9 +32,25 @@ function cleanString(val: string): string {
 }
 
 export default function TestimonialsPublicPage() {
+  const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.testimonials);
+  const { isBannerActive } = usePageBanner(pageData?.headerImage);
   const mountTimeRef = useRef<number>(0);
+
   useEffect(() => {
     mountTimeRef.current = Date.now();
+    const unsub = onSnapshot(
+      doc(db, "content_pages", "testimonials"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = ContentPageSchema.safeParse(snap.data());
+          if (parsed.success) {
+            setPageData(parsed.data);
+          }
+        }
+      },
+      (err) => console.warn("CMS Testimonials page notice:", err)
+    );
+    return () => unsub();
   }, []);
 
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -214,36 +233,68 @@ export default function TestimonialsPublicPage() {
   const tags = ["all", "Festival", "Parade", "Community Event", "Wedding", "Private Event"];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-800">
-        <div className="space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
-            <MessageSquareHeart className="w-3.5 h-3.5" />
-            <span>Audience & Client Reviews</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight">
-            What People Say
-          </h1>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            From thunderous street parades to festival stages and private parties, here is what event organizers and spectators have to say about the Eagleburger Band.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12" suppressHydrationWarning>
+      {/* Dynamic SEO Meta */}
+      <title>{pageData?.seo?.metaTitle || pageData?.title || "Testimonials & Reviews | Eagleburger Band"}</title>
+      <meta name="description" content={pageData?.seo?.metaDescription || pageData?.description || "Audience and client reviews for the Eagleburger Band."} />
+      {pageData?.seo?.keywords && <meta name="keywords" content={pageData.seo.keywords} />}
 
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSubmitted(false);
-              setShowFormModal(true);
-            }}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-yellow-400/20"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Leave a Review</span>
-          </button>
+      {/* Header Banner */}
+      {isBannerActive ? (
+        <div className="space-y-6">
+          <PublicPageHeader
+            headerImage={pageData?.headerImage}
+            fallbackTitle={pageData?.title || "What People Say"}
+            fallbackSubtitle={
+              pageData?.description ||
+              "From thunderous street parades to festival stages and private parties, here is what event organizers and spectators have to say about the Eagleburger Band."
+            }
+          />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSubmitted(false);
+                setShowFormModal(true);
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-yellow-400/20"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Leave a Review</span>
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-800">
+          <div className="space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
+              <MessageSquareHeart className="w-3.5 h-3.5" />
+              <span>Audience & Client Reviews</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight font-arvo">
+              {pageData?.title || "What People Say"}
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+              {pageData?.description ||
+                "From thunderous street parades to festival stages and private parties, here is what event organizers and spectators have to say about the Eagleburger Band."}
+            </p>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSubmitted(false);
+                setShowFormModal(true);
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-lg shadow-yellow-400/20"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Leave a Review</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tag Filters */}
       <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -346,6 +397,13 @@ export default function TestimonialsPublicPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Dynamic CMS Sections */}
+      {pageData?.sections && pageData.sections.length > 0 && (
+        <div className="space-y-12">
+          <PublicSectionRenderer sections={pageData.sections} />
         </div>
       )}
 

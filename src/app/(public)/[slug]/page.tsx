@@ -4,12 +4,13 @@ import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { ContentPage, ContentPageSchema } from "@/lib/schema/page";
 import {
   Loader2,
   FileQuestion,
 } from "lucide-react";
+import { ContentPage, ContentPageSchema } from "@/lib/schema/page";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 function getStructuredDataJson(page: ContentPage): string | null {
   const seo = page.seo;
@@ -188,6 +189,13 @@ export default function DynamicPublicCmsPage({
           dangerouslySetInnerHTML={{ __html: jsonLd }}
         />
       )}
+
+      {/* Hero Header Image Banner from CMS Studio or Global Configuration */}
+      <PublicPageHeader
+        headerImage={page.headerImage}
+        fallbackTitle={page.title}
+        fallbackSubtitle={page.description}
+      />
 
       {sortedSections.map((section) => (
         <PublicSectionRenderer key={section.id} section={section} />

@@ -208,12 +208,24 @@ export const PageSeoSchema = z.object({
   structuredDataJson: z.string().default(""),
 });
 
+export const PageHeaderImageSchema = z.object({
+  imageUrl: z.string().default(""),
+  altText: z.string().default(""),
+  overlayOpacity: z.number().min(0).max(100).default(50),
+  headlineAlignment: z.enum(["left", "center", "right"]).default("center"),
+  heightPreset: z.enum(["compact", "standard", "cinematic"]).default("standard"),
+  badgeText: z.string().default(""),
+  customTitle: z.string().default(""),
+  customSubtitle: z.string().default(""),
+});
+
 export const ContentPageSchema = z.object({
   id: z.string().default("home"),
   slug: z.string().default("home"),
   title: z.string().default("Home"),
   description: z.string().default("The Official Website of the Eagleburger Band"),
   isPublished: z.boolean().default(true),
+  headerImage: PageHeaderImageSchema.default(() => PageHeaderImageSchema.parse({})),
   seo: PageSeoSchema.default(() => PageSeoSchema.parse({})),
   sections: z.array(ContentSectionSchema).default(() => []),
   schemaVersion: z.number().default(1),
@@ -224,4 +236,265 @@ export const ContentPageSchema = z.object({
 export type SectionType = z.infer<typeof SectionTypeEnum>;
 export type ContentSection = z.infer<typeof ContentSectionSchema>;
 export type PageSeo = z.infer<typeof PageSeoSchema>;
+export type PageHeaderImage = z.infer<typeof PageHeaderImageSchema>;
 export type ContentPage = z.infer<typeof ContentPageSchema>;
+
+export const SYSTEM_PAGE_IDS = [
+  "home",
+  "gigs",
+  "book",
+  "join",
+  "testimonials",
+  "giving",
+  "contact",
+] as const;
+
+export type SystemPageId = (typeof SYSTEM_PAGE_IDS)[number];
+
+export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
+  home: ContentPageSchema.parse({
+    id: "home",
+    slug: "home",
+    title: "Home",
+    description: "The Eagleburger Band brings high-energy acoustic street brass and drum powerhouse excitement to parades, festivals, and celebrations across Western PA.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80",
+      altText: "Eagleburger Band marching parade revelry",
+      overlayOpacity: 55,
+      headlineAlignment: "center",
+      heightPreset: "cinematic",
+      badgeText: "Acoustic Brass & Percussion Battery",
+      customTitle: "EAGLEBURGER BAND",
+      customSubtitle: "Pittsburgh's High-Energy Mobile Brass & Drum Powerhouse",
+    },
+    seo: {
+      metaTitle: "Eagleburger Band | Pittsburgh High-Energy Street Brass",
+      metaDescription: "The Eagleburger Band brings high-energy acoustic street brass and drum powerhouse excitement to parades, festivals, and celebrations across Western PA.",
+      keywords: "brass band, pittsburgh street music, mobile brass, parade band, live music pittsburgh",
+      structuredDataType: "MusicGroup",
+    },
+    sections: [
+      {
+        id: "sec_hero",
+        type: "hero",
+        order: 1,
+        hero: {
+          headline: "Pittsburgh's High-Energy Street Brass & Drum Powerhouse",
+          subheadline: "Unstoppable brass fanfares, infectious street percussion, and high-stepping street revelry across Western Pennsylvania.",
+          ctaText: "Book the Band",
+          ctaHref: "/book",
+          secondaryCtaText: "Upcoming Shows",
+          secondaryCtaHref: "/gigs",
+          badgeText: "Acoustic Brass & Drums",
+          backgroundImageUrl: "",
+        },
+      },
+      {
+        id: "sec_media",
+        type: "media_highlight",
+        order: 2,
+        mediaHighlight: {
+          title: "Live on the March",
+          description: "Watch the Eagleburger Band bring the energy to the streets at the Greenfield Holiday Parade.",
+          mediaType: "youtube",
+          url: "https://www.youtube.com/watch?v=v0x-fut30wE",
+          caption: "Greenfield Holiday Parade Performance — Brass & Battery in Full Stride",
+        },
+      },
+      {
+        id: "sec_features",
+        type: "features",
+        order: 3,
+        features: {
+          title: "Why Book the Eagleburger Band?",
+          subtitle: "Mobile, acoustic, and always electrifying.",
+          items: [
+            {
+              icon: "Zap",
+              title: "100% Mobile & Acoustic",
+              description: "No stage, cables, generators, or PA systems required. We play while marching, dancing, and mingling directly with crowds.",
+            },
+            {
+              icon: "Music",
+              title: "Massive Brass & Drumline Sound",
+              description: "Sousaphones, trombones, trumpets, saxophones, and marching drums delivering high-decibel acoustic excitement.",
+            },
+            {
+              icon: "Calendar",
+              title: "Parades, Festivals & Celebrations",
+              description: "Civic parades, street festivals, beer gardens, wedding send-offs, and community block parties across Western PA.",
+            },
+          ],
+        },
+      },
+      {
+        id: "sec_gig_feed",
+        type: "gig_feed_preview",
+        order: 4,
+        gigFeedPreview: {
+          title: "Upcoming Performances",
+          subtitle: "Catch the Eagleburger Band live on the streets and stages of Pittsburgh",
+          maxItems: 3,
+          showVenueAddress: true,
+          showTicketLinks: true,
+          ctaText: "View Full Performance Schedule",
+          ctaHref: "/gigs",
+        },
+      },
+    ],
+  }),
+
+  gigs: ContentPageSchema.parse({
+    id: "gigs",
+    slug: "gigs",
+    title: "Performances",
+    description: "Parades, street rallies, outdoor festivals, and community celebrations across the Greater Pittsburgh area. All acoustic, high-decibel, and open to the public.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80",
+      altText: "Eagleburger Band performance festival schedule",
+      overlayOpacity: 60,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Live Performance Schedule",
+      customTitle: "Where to Catch the Band",
+      customSubtitle: "Parades, street rallies, outdoor festivals, and community celebrations across Greater Pittsburgh.",
+    },
+    seo: {
+      metaTitle: "Live Performances & Shows | Eagleburger Band Pittsburgh",
+      metaDescription: "Find upcoming parade appearances, street festivals, and civic performances with the Eagleburger Band across Western Pennsylvania.",
+      keywords: "eagleburger shows, brass band schedule, pittsburgh parade band, live outdoor music",
+      structuredDataType: "Event",
+    },
+    sections: [],
+  }),
+
+  book: ContentPageSchema.parse({
+    id: "book",
+    slug: "book",
+    title: "Book the Band",
+    description: "Bring mobile acoustic brass and high-energy drumline grooves to your festival, parade, or celebration. Inquire directly with band management.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=1600&q=80",
+      altText: "Polished brass instruments and horn line",
+      overlayOpacity: 65,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Direct Event Booking",
+      customTitle: "Book the Eagleburger Band",
+      customSubtitle: "Tell us about your event. We will check band availability, outline performance options, and follow up promptly.",
+    },
+    seo: {
+      metaTitle: "Book the Band | Eagleburger Band Pittsburgh Event Inquiries",
+      metaDescription: "Inquire about booking the Eagleburger Band for parades, festivals, block parties, weddings, and celebrations across Western Pennsylvania.",
+      keywords: "hire brass band, parade entertainment booking, mobile drumline, event band pittsburgh",
+      structuredDataType: "WebPage",
+    },
+    sections: [],
+  }),
+
+  join: ContentPageSchema.parse({
+    id: "join",
+    slug: "join",
+    title: "Join the Band",
+    description: "Do you play brass or battery percussion? We are always looking for passionate, energetic musicians to blow the roof off Pittsburgh's streets, parades, and festivals.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?auto=format&fit=crop&w=1600&q=80",
+      altText: "Marching brass and battery percussionists in performance",
+      overlayOpacity: 60,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Musician Recruitment & Auditions",
+      customTitle: "Join the Eagleburger Band",
+      customSubtitle: "March, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery.",
+    },
+    seo: {
+      metaTitle: "Join the Band / Auditions | Eagleburger Band Pittsburgh",
+      metaDescription: "Audition and musician recruitment for the Eagleburger Band. Looking for sousaphones, trombones, trumpets, saxophones, and battery percussionists.",
+      keywords: "join brass band, marching auditions pittsburgh, drumline auditions, brass players wanted",
+      structuredDataType: "WebPage",
+    },
+    sections: [],
+  }),
+
+  testimonials: ContentPageSchema.parse({
+    id: "testimonials",
+    slug: "testimonials",
+    title: "Testimonials",
+    description: "From thunderous street parades to festival stages and private parties, here is what event organizers and spectators have to say about the Eagleburger Band.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=80",
+      altText: "Crowd cheering and dancing at street performance",
+      overlayOpacity: 60,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Audience & Client Reviews",
+      customTitle: "What People Say",
+      customSubtitle: "From thunderous street parades to festival stages and private parties, here is what event organizers have to say.",
+    },
+    seo: {
+      metaTitle: "Testimonials & Reviews | Eagleburger Band Pittsburgh",
+      metaDescription: "Read real client reviews and audience feedback from parade coordinators, festival directors, and party hosts who booked the Eagleburger Band.",
+      keywords: "eagleburger band reviews, parade band testimonials, event entertainment reviews",
+      structuredDataType: "WebPage",
+    },
+    sections: [],
+  }),
+
+  giving: ContentPageSchema.parse({
+    id: "giving",
+    slug: "giving",
+    title: "Community Giving",
+    description: "A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb7?auto=format&fit=crop&w=1600&q=80",
+      altText: "Community partnership and support",
+      overlayOpacity: 60,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Philanthropy & Regional Support",
+      customTitle: "Music on the Streets, Support in the Community",
+      customSubtitle: "A portion of our performance proceeds is donated to grassroots organizations across Western Pennsylvania.",
+    },
+    seo: {
+      metaTitle: "Community Giving & Philanthropy | Eagleburger Band",
+      metaDescription: "Learn about the Eagleburger Band's charitable contributions and community giving initiatives supporting regional causes in Pittsburgh.",
+      keywords: "community giving, charity band, music philanthropy, grassroots pittsburgh support",
+      structuredDataType: "WebPage",
+    },
+    sections: [],
+  }),
+
+  contact: ContentPageSchema.parse({
+    id: "contact",
+    slug: "contact",
+    title: "Contact Us",
+    description: "Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you.",
+    isPublished: true,
+    headerImage: {
+      imageUrl: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?auto=format&fit=crop&w=1600&q=80",
+      altText: "Live outdoor performance celebration",
+      overlayOpacity: 60,
+      headlineAlignment: "center",
+      heightPreset: "standard",
+      badgeText: "Get in Touch",
+      customTitle: "Contact the Eagleburger Band",
+      customSubtitle: "Have questions about appearances, press inquiries, merchandise, or general feedback? Reach out directly.",
+    },
+    seo: {
+      metaTitle: "Contact the Band | Eagleburger Band Pittsburgh",
+      metaDescription: "Contact the Eagleburger Band management for press inquiries, general questions, media requests, or community collaborations.",
+      keywords: "contact eagleburger band, pittsburgh brass band contact, band management email",
+      structuredDataType: "WebPage",
+    },
+    sections: [],
+  }),
+};
+
+export const DEFAULT_SYSTEM_PAGES_LIST: ContentPage[] = Object.values(DEFAULT_SYSTEM_PAGES);
+

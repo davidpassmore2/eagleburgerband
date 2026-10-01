@@ -69,8 +69,8 @@ export default function PublicFooter() {
             <div className="w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center text-slate-950 font-black">
               <Music2 className="w-5 h-5" />
             </div>
-            <span className="text-lg font-black text-white uppercase tracking-wider">
-              Eagleburger Band
+            <span className="text-lg font-bold text-white uppercase tracking-wider font-arvo">
+              EAGLEBURGER BAND
             </span>
           </div>
           <p className="text-xs text-slate-400 max-w-md leading-relaxed">
@@ -109,7 +109,7 @@ export default function PublicFooter() {
         {/* Col 2: Dynamic Navigation */}
         <div>
           <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Explore</h4>
-          <ul className="space-y-2 text-xs" suppressHydrationWarning>
+          <ul className="space-y-2 text-xs font-poppins" suppressHydrationWarning>
             {links.map((link) => {
               const isPortalLink = link.href === "/portal" || link.href === "/login";
               const targetHref = isPortalLink ? (firebaseUser ? "/portal" : "/login") : link.href;
@@ -123,7 +123,7 @@ export default function PublicFooter() {
                       target={link.openInNewTab ? "_blank" : undefined}
                       rel={link.openInNewTab ? "noopener noreferrer" : undefined}
                       suppressHydrationWarning
-                      className="hover:text-yellow-400 transition-colors inline-flex items-center gap-1"
+                      className="font-poppins hover:text-yellow-400 transition-colors inline-flex items-center gap-1"
                     >
                       <span>{displayLabel}</span>
                       <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
@@ -132,7 +132,7 @@ export default function PublicFooter() {
                     <Link 
                       href={targetHref} 
                       suppressHydrationWarning 
-                      className="hover:text-yellow-400 transition-colors"
+                      className="font-poppins hover:text-yellow-400 transition-colors"
                     >
                       {displayLabel}
                     </Link>
@@ -153,18 +153,18 @@ export default function PublicFooter() {
             <Link
               href="/book"
               suppressHydrationWarning
-              className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-yellow-400 font-bold px-3 py-1.5 rounded-lg text-xs transition"
+              className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-yellow-400 font-bold px-3 py-1.5 rounded-lg text-xs font-poppins transition"
             >
               Event Inquiry &rarr;
             </Link>
           </div>
           <div className="pt-2 border-t border-slate-900">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Get Involved</h4>
-            <div className="flex flex-col gap-1.5 text-xs" suppressHydrationWarning>
+            <div className="flex flex-col gap-1.5 text-xs font-poppins" suppressHydrationWarning>
               <Link 
                 href="/join" 
                 suppressHydrationWarning 
-                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+                className="font-poppins text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
               >
                 <span aria-hidden="true">&bull;</span>
                 <span>Join the Band / Auditions</span>
@@ -172,7 +172,7 @@ export default function PublicFooter() {
               <Link 
                 href="/testimonials" 
                 suppressHydrationWarning 
-                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+                className="font-poppins text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
               >
                 <span aria-hidden="true">&bull;</span>
                 <span>Testimonials & Reviews</span>
@@ -180,7 +180,7 @@ export default function PublicFooter() {
               <Link 
                 href="/contact" 
                 suppressHydrationWarning 
-                className="text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
+                className="font-poppins text-slate-400 hover:text-yellow-400 transition-colors inline-flex items-center gap-1.5"
               >
                 <span aria-hidden="true">&bull;</span>
                 <span>General Contact & Press</span>
@@ -191,13 +191,13 @@ export default function PublicFooter() {
       </div>
 
       <div className="max-w-7xl mx-auto border-t border-slate-900 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4" suppressHydrationWarning>
-        <p>&copy; {new Date().getFullYear()} Eagleburger Band. Pittsburgh, PA. All rights reserved.</p>
+        <p className="font-arvo font-bold">&copy; {new Date().getFullYear()} EAGLEBURGER BAND. Pittsburgh, PA. All rights reserved.</p>
         <div className="flex items-center gap-4">
           <span>Acoustic &bull; Mobile &bull; Electric</span>
           <Link 
             href={firebaseUser ? "/portal" : "/login"} 
             suppressHydrationWarning 
-            className="text-slate-500 hover:text-yellow-400 transition-colors"
+            className="font-poppins text-slate-500 hover:text-yellow-400 transition-colors"
           >
             {firebaseUser ? "Musician Portal" : "Member Sign In"}
           </Link>

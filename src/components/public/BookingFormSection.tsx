@@ -270,7 +270,7 @@ export default function BookingFormSection({
             <span>{badgeText}</span>
           </div>
         )}
-        <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
+        <h2 className="text-2xl sm:text-4xl font-bold text-white uppercase tracking-tight font-arvo">
           {headline}
         </h2>
         {subheadline && (
@@ -567,7 +567,7 @@ export default function BookingFormSection({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-8 py-3.5 rounded-2xl text-xs sm:text-sm uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+              className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-8 py-3.5 rounded-2xl text-xs sm:text-sm uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95 font-arvo btn-cta"
             >
               {isSubmitting ? (
                 <>

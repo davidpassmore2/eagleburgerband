@@ -1,6 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Arvo, Poppins } from "next/font/google";
 import "./globals.css";
 import { bandConfig } from "@/band.config";
+
+const arvo = Arvo({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-arvo",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   themeColor: bandConfig.pwa.backgroundColor,
@@ -43,7 +58,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className="min-h-screen bg-slate-950 text-slate-100 antialiased"
+        className={`${arvo.variable} ${poppins.variable} min-h-screen bg-slate-950 text-slate-100 antialiased`}
         data-gramm="false"
         data-gramm_editor="false"
         data-enable-grammarly="false"

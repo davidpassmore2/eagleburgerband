@@ -13,11 +13,19 @@ export const NavLinkSchema = z.object({
   openInNewTab: z.boolean().default(false),
 });
 
+export const DEFAULT_ANNOUNCEMENT_BANNER = {
+  enabled: true,
+  message: "🎺 Next Stop: Lawrenceville Festival — Catch the Band Live Saturday at 2:00 PM!",
+  linkText: "View Schedule",
+  linkHref: "/gigs",
+  bannerType: "highlight" as const,
+};
+
 export const AnnouncementBannerSchema = z.object({
-  enabled: z.boolean().default(false),
-  message: z.string().default(""),
-  linkText: z.string().default(""),
-  linkHref: z.string().default(""),
+  enabled: z.boolean().default(true),
+  message: z.string().default(DEFAULT_ANNOUNCEMENT_BANNER.message),
+  linkText: z.string().default(DEFAULT_ANNOUNCEMENT_BANNER.linkText),
+  linkHref: z.string().default(DEFAULT_ANNOUNCEMENT_BANNER.linkHref),
   bannerType: z.enum(["highlight", "info", "alert"]).default("highlight"),
 });
 
@@ -67,12 +75,25 @@ export const DEFAULT_SOCIAL_LINKS = [
   { id: "soc_tiktok", platform: "tiktok" as const, label: "TikTok", href: "https://www.tiktok.com/@eagleburgerband", isVisible: false, order: 5 },
 ];
 
+export const GlobalPageBannerSchema = z.object({
+  enabled: z.boolean().default(true),
+  imageUrl: z.string().default("https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80"),
+  altText: z.string().default("Eagleburger Band marching brass and drum battery in Pittsburgh"),
+  badgeText: z.string().default("Eagleburger Band"),
+  customTitle: z.string().default(""),
+  customSubtitle: z.string().default(""),
+  overlayOpacity: z.number().min(0).max(100).default(60),
+  heightPreset: z.enum(["compact", "standard", "cinematic"]).default("standard"),
+  headlineAlignment: z.enum(["left", "center", "right"]).default("center"),
+});
+
 export const SiteNavigationSchema = z.object({
   id: z.string().default("main_nav"),
   headerLinks: z.array(NavLinkSchema).default(() => DEFAULT_HEADER_LINKS.map((l) => NavLinkSchema.parse(l))),
   footerLinks: z.array(NavLinkSchema).default(() => DEFAULT_FOOTER_LINKS.map((l) => NavLinkSchema.parse(l))),
   socialLinks: z.array(SocialLinkSchema).default(() => DEFAULT_SOCIAL_LINKS.map((s) => SocialLinkSchema.parse(s))),
   announcementBanner: AnnouncementBannerSchema.default(() => AnnouncementBannerSchema.parse({})),
+  globalPageBanner: GlobalPageBannerSchema.default(() => GlobalPageBannerSchema.parse({})),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
 
@@ -80,5 +101,7 @@ export type NavLink = z.infer<typeof NavLinkSchema>;
 export type SocialPlatform = z.infer<typeof SocialPlatformEnum>;
 export type SocialLink = z.infer<typeof SocialLinkSchema>;
 export type AnnouncementBanner = z.infer<typeof AnnouncementBannerSchema>;
+export type GlobalPageBanner = z.infer<typeof GlobalPageBannerSchema>;
 export type SiteNavigation = z.infer<typeof SiteNavigationSchema>;
+
 

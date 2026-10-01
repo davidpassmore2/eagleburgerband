@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
+import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
+import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
 import {
   DonationCategory,
   DonationCategoryEnum,
@@ -90,10 +93,28 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
 ];
 
 export default function PublicGivingPage() {
+  const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.giving);
+  const { isBannerActive } = usePageBanner(pageData?.headerImage);
   const [beneficiaries, setBeneficiaries] = useState<PublicBeneficiary[]>(FALLBACK_BENEFICIARIES);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "content_pages", "giving"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = ContentPageSchema.safeParse(snap.data());
+          if (parsed.success) {
+            setPageData(parsed.data);
+          }
+        }
+      },
+      (err) => console.warn("CMS Giving page notice:", err)
+    );
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -139,38 +160,62 @@ export default function PublicGivingPage() {
 
   return (
     <div className="space-y-16 pb-20" suppressHydrationWarning>
+      {/* Dynamic SEO Meta */}
+      <title>{pageData?.seo?.metaTitle || pageData?.title || "Community Giving & Impact | Eagleburger Band"}</title>
+      <meta name="description" content={pageData?.seo?.metaDescription || pageData?.description || "The Eagleburger Band community philanthropy and giving initiatives."} />
+      {pageData?.seo?.keywords && <meta name="keywords" content={pageData.seo.keywords} />}
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-16 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-mono font-bold uppercase tracking-wider">
-            <HeartHandshake className="w-4 h-4" /> Community Giving & Philanthropy
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-black text-white uppercase tracking-tight max-w-4xl mx-auto">
-            Music on the Streets, <br />
-            <span className="text-yellow-400">Support in the Community</span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            The Eagleburger Band believes brass and drumline groove should uplift our region in every way.
-            A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone.
-          </p>
-
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Grassroots Causes
-            </span>
-            <span>&bull;</span>
-            <span className="flex items-center gap-1.5">
-              <Music2 className="w-4 h-4 text-yellow-400" /> Youth Music Access
-            </span>
-            <span>&bull;</span>
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-blue-400" /> Direct Community Aid
-            </span>
-          </div>
+      {isBannerActive ? (
+        <div className="w-full">
+          <PublicPageHeader
+            headerImage={pageData?.headerImage}
+            defaultTitle={pageData?.title || "Community Giving & Philanthropy"}
+            defaultDescription={
+              pageData?.description ||
+              "The Eagleburger Band believes brass and drumline groove should uplift our region in every way. A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone."
+            }
+          />
         </div>
-      </section>
+      ) : (
+        <section className="relative overflow-hidden pt-12 pb-16 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-mono font-bold uppercase tracking-wider">
+              <HeartHandshake className="w-4 h-4" /> Community Giving & Philanthropy
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl font-black text-white uppercase tracking-tight max-w-4xl mx-auto font-arvo">
+              {pageData?.title ? (
+                pageData.title
+              ) : (
+                <>
+                  Music on the Streets, <br />
+                  <span className="text-yellow-400">Support in the Community</span>
+                </>
+              )}
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
+              {pageData?.description ||
+                "The Eagleburger Band believes brass and drumline groove should uplift our region in every way. A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone."}
+            </p>
+
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Grassroots Causes
+              </span>
+              <span>&bull;</span>
+              <span className="flex items-center gap-1.5">
+                <Music2 className="w-4 h-4 text-yellow-400" /> Youth Music Access
+              </span>
+              <span>&bull;</span>
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-400" /> Direct Community Aid
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Call to Join in Support */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -351,6 +396,13 @@ export default function PublicGivingPage() {
           </div>
         </div>
       </section>
+
+      {/* Dynamic CMS Sections */}
+      {pageData?.sections && pageData.sections.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <PublicSectionRenderer sections={pageData.sections} />
+        </section>
+      )}
     </div>
   );
 }
