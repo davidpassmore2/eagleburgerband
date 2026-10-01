@@ -29,15 +29,21 @@ interface GigDetails {
 }
 
 // Helper to normalize tune items from stage docs, embedded gig setlists, or master templates
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeTune(t: any): SetlistEntry {
+function normalizeTune(t: Record<string, unknown>): SetlistEntry {
+  const songId = typeof t.songId === "string" ? t.songId : typeof t.tuneId === "string" ? t.tuneId : typeof t.id === "string" ? t.id : "";
+  const title = typeof t.title === "string" && t.title ? t.title : "Untitled Tune";
+  const keySignature = typeof t.keySignature === "string" ? t.keySignature : "TBD";
+  const tempoBpm = typeof t.tempoBpm === "number" ? t.tempoBpm : Number(t.tempoBpm) || 120;
+  const notes = typeof t.performanceNotes === "string" ? t.performanceNotes : typeof t.notes === "string" ? t.notes : "";
+  const driveLink = typeof t.driveLink === "string" ? t.driveLink : typeof t.sheetMusicUrl === "string" ? t.sheetMusicUrl : "";
+
   return {
-    songId: t.songId || t.tuneId || t.id || "",
-    title: t.title || "Untitled Tune",
-    keySignature: t.keySignature || "TBD",
-    tempoBpm: typeof t.tempoBpm === "number" ? t.tempoBpm : (Number(t.tempoBpm) || 120),
-    notes: t.performanceNotes || t.notes || "",
-    driveLink: t.driveLink || t.sheetMusicUrl || "",
+    songId,
+    title,
+    keySignature,
+    tempoBpm,
+    notes,
+    driveLink,
   };
 }
 

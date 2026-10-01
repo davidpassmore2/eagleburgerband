@@ -11,11 +11,12 @@ import {
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageSections } from "@/lib/auth/permissions";
-import { User } from "@/lib/schema/user";
+import { User, UserSchema } from "@/lib/schema/user";
+import { SectionSchema } from "@/lib/schema/section";
 import { toast } from "@/lib/context/ToastContext";
+import AccessDenied from "@/components/portal/AccessDenied";
 import {
   Users,
-  ShieldAlert,
   Loader2,
   Plus,
   Trash2,
@@ -76,7 +77,19 @@ export default function SectionsAdminPage() {
       (snap) => {
         const list: SectionData[] = [];
         snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as SectionData);
+          const parsed = SectionSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push({
+              id: parsed.data.id,
+              name: parsed.data.name,
+              order: parsed.data.order,
+              minRecommended: parsed.data.minRecommended,
+              leaderUid: parsed.data.leaderUid,
+              leaderName: parsed.data.leaderName,
+              leaderUids: parsed.data.leaderUids,
+              notes: parsed.data.notes,
+            });
+          }
         });
         list.sort((a, b) => (a.order || 0) - (b.order || 0));
         setSections(list);
@@ -93,7 +106,10 @@ export default function SectionsAdminPage() {
       (snap) => {
         const uList: User[] = [];
         snap.forEach((d) => {
-          uList.push({ uid: d.id, ...d.data() } as unknown as User);
+          const parsed = UserSchema.safeParse({ uid: d.id, ...d.data() });
+          if (parsed.success) {
+            uList.push(parsed.data);
+          }
         });
         setRawUsers(uList);
       },
@@ -119,10 +135,10 @@ export default function SectionsAdminPage() {
 
   if (!canManageSections(profile)) {
     return (
-      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
-        <ShieldAlert className="w-4 h-4" />
-        Administrator privileges required to manage band sections.
-      </div>
+      <AccessDenied
+        title="Section Management Restricted"
+        message="Administrator, Section Leader, or Membership Manager privileges required to manage band sections."
+      />
     );
   }
 

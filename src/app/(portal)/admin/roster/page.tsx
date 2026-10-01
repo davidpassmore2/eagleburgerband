@@ -10,7 +10,8 @@ import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { InviteSchema } from "@/lib/schema/invite";
 import { toast } from "@/lib/context/ToastContext";
-import { Users, ShieldAlert, UserPlus, Copy, Mail } from "lucide-react";
+import { Users, UserPlus, Copy, Mail } from "lucide-react";
+import AccessDenied from "@/components/portal/AccessDenied";
 import { z } from "zod";
 
 type Role = z.infer<typeof RoleEnum>;
@@ -50,7 +51,7 @@ export default function RosterAdminPage() {
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
       const list: User[] = [];
       snap.forEach((d) => {
-        const parsed = UserSchema.safeParse(d.data());
+        const parsed = UserSchema.safeParse({ uid: d.id, ...d.data() });
         if (parsed.success) list.push(parsed.data);
       });
       setUsers(list);
@@ -59,7 +60,7 @@ export default function RosterAdminPage() {
     const unsubSections = onSnapshot(collection(db, "sections"), (snap) => {
       const list: Section[] = [];
       snap.forEach((d) => {
-        const parsed = SectionSchema.safeParse(d.data());
+        const parsed = SectionSchema.safeParse({ id: d.id, ...d.data() });
         if (parsed.success) list.push(parsed.data);
       });
       setSections(list);
@@ -74,10 +75,10 @@ export default function RosterAdminPage() {
   if (authLoading) return <div className="p-8 text-slate-400">Verifying credentials...</div>;
   if (!canManageRoster(profile)) {
     return (
-      <div className="p-8 text-amber-400 flex items-center gap-3">
-        <ShieldAlert className="w-6 h-6" />
-        <span>Administrator clearance required to manage band roster and invitations.</span>
-      </div>
+      <AccessDenied
+        title="Roster Clearance Required"
+        message="Administrator or Membership Manager clearance required to manage band roster and invitations."
+      />
     );
   }
 

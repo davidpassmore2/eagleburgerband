@@ -51,6 +51,7 @@ This directory maintains the historical and ongoing documentation of all develop
 | **38** | Gig Compensation Models, Financial Transparency Suite & Suggestions Hardening | `feature/stage-38` | [Plan](./stage-38-implementation.md) | [Walkthrough](./stage-38-walkthrough.md) | Completed |
 | **39** | Member Notifications, Attendance, Catalog Consolidation, Public Site Polish & Arch Review | `feature/stage-39` | [Plan](./stage-39-implementation.md) | [Walkthrough](./stage-39-walkthrough.md) | Completed |
 | **40** | Modern Feedback Suite, Schema Invariance Hardening & Performance Optimization | `feature/stage-40` | [Plan](./stage-40-implementation.md) | [Walkthrough](./stage-40-walkthrough.md) | Completed |
+| **41** | Full Architectural Sweep: RBAC Alignment, Subcollection Schemas & Type Safety Hardening | `feature/stage-41` | [Plan](./stage-41-implementation.md) | [Walkthrough](./stage-41-walkthrough.md) | Completed |
 
 ---
 

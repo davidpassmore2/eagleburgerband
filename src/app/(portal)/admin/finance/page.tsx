@@ -18,10 +18,12 @@ import {
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageFinances } from "@/lib/auth/permissions";
-import { User } from "@/lib/schema/user";
-import { Reimbursement } from "@/lib/schema/reimbursement";
+import { Reimbursement, ReimbursementSchema } from "@/lib/schema/reimbursement";
+import { TransactionSchema } from "@/lib/schema/transaction";
+import { TreasuryConfigSchema } from "@/lib/schema/treasury";
 import { Donation, DonationSchema, DonationCategory } from "@/lib/schema/donation";
 import { toast } from "@/lib/context/ToastContext";
+import AccessDenied from "@/components/portal/AccessDenied";
 import {
   DollarSign,
   TrendingUp,
@@ -36,7 +38,6 @@ import {
   Layers,
   Calendar,
   Loader2,
-  ShieldAlert,
   Trash2,
   Sliders,
   CheckCircle2,
@@ -227,10 +228,12 @@ export default function FinancialLedgerPage() {
         const docRef = doc(db, "settings", "treasury");
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-          const data = snap.data() as TreasuryConfig;
-          setTreasuryConfig(data);
-          setTempStartingBalance(data.startingBalance || 0);
-          setTempStartingDate(data.startingDate || new Date().toISOString().split("T")[0]);
+          const parsed = TreasuryConfigSchema.safeParse(snap.data());
+          if (parsed.success) {
+            setTreasuryConfig(parsed.data);
+            setTempStartingBalance(parsed.data.startingBalance || 0);
+            setTempStartingDate(parsed.data.startingDate || new Date().toISOString().split("T")[0]);
+          }
         }
       } catch (err) {
         console.error("Failed fetching treasury settings:", err);
@@ -245,7 +248,10 @@ export default function FinancialLedgerPage() {
       (snap) => {
         const list: TransactionRecord[] = [];
         snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as TransactionRecord);
+          const parsed = TransactionSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push(parsed.data as TransactionRecord);
+          }
         });
         setTransactions(list);
         setLoading(false);
@@ -280,7 +286,10 @@ export default function FinancialLedgerPage() {
       (snap) => {
         const list: Reimbursement[] = [];
         snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as Reimbursement);
+          const parsed = ReimbursementSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push(parsed.data);
+          }
         });
         setReimbursements(list);
       },
@@ -782,13 +791,12 @@ export default function FinancialLedgerPage() {
     );
   }
 
-  const userProfile = profile as unknown as User;
-  if (!userProfile || !canManageFinances(userProfile)) {
+  if (!profile || !canManageFinances(profile)) {
     return (
-      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
-        <ShieldAlert className="w-4 h-4" />
-        Treasurer or Admin credentials required to access the Financial Ledger.
-      </div>
+      <AccessDenied
+        title="Financial Access Restricted"
+        message="Treasurer or Administrator credentials required to access the Financial Ledger."
+      />
     );
   }
 

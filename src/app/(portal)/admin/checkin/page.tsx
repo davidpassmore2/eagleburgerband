@@ -6,7 +6,7 @@ import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs, canManageSections } from "@/lib/auth/permissions";
-import { User } from "@/lib/schema/user";
+import { GigSchema } from "@/lib/schema/gig";
 import { 
   UserCheck, 
   Clock, 
@@ -46,7 +46,16 @@ export default function CheckInSelectorPage() {
       (snap) => {
         const list: GigItem[] = [];
         snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as GigItem);
+          const parsed = GigSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push({
+              id: parsed.data.id || d.id,
+              date: parsed.data.date,
+              status: parsed.data.status,
+              publicDetails: parsed.data.publicDetails,
+              internalLogistics: parsed.data.internalLogistics,
+            });
+          }
         });
         setGigs(list);
         setLoading(false);
@@ -69,8 +78,7 @@ export default function CheckInSelectorPage() {
     );
   }
 
-  const userProfile = profile as unknown as User;
-  const hasPermission = Boolean(userProfile && (canManageGigs(userProfile) || canManageSections(userProfile)));
+  const hasPermission = Boolean(profile && (canManageGigs(profile) || canManageSections(profile)));
 
   if (!hasPermission) {
     return (

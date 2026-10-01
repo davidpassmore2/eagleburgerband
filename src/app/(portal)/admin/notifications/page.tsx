@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canDispatchBroadcasts } from "@/lib/auth/permissions";
 import { 
   EmailLog, 
+  EmailLogSchema,
   EmailTemplateType, 
   EmailRecipient,
   BroadcastChannel
@@ -27,12 +28,12 @@ import {
 } from "@/lib/email/templates";
 import { toast } from "@/lib/context/ToastContext";
 import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
+import AccessDenied from "@/components/portal/AccessDenied";
 import { 
   Send, 
   Users, 
   CheckCircle2, 
   Loader2, 
-  ShieldAlert, 
   History,
   Sparkles,
   Smartphone,
@@ -209,7 +210,10 @@ function EmailSuiteContent() {
       (snap) => {
         const list: EmailLog[] = [];
         snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as EmailLog);
+          const parsed = EmailLogSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) {
+            list.push(parsed.data);
+          }
         });
         setEmailLogs(list);
       },
@@ -611,10 +615,10 @@ function EmailSuiteContent() {
 
   if (!profile || !canDispatchBroadcasts(profile)) {
     return (
-      <div className="p-8 text-amber-400 flex items-center gap-3">
-        <ShieldAlert className="w-6 h-6 shrink-0" />
-        <span>Executive, Operations, or Section Leader clearance required to dispatch email broadcasts.</span>
-      </div>
+      <AccessDenied
+        title="Broadcast Clearance Required"
+        message="Executive, Operations, or Section Leader clearance required to dispatch broadcasts."
+      />
     );
   }
 

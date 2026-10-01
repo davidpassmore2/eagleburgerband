@@ -9,7 +9,7 @@ import {
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs, canManageSections } from "@/lib/auth/permissions";
-import { User } from "@/lib/schema/user";
+import { GigRsvpSchema, type GigRsvp } from "@/lib/schema/rsvp";
 import { 
   Users, 
   CheckCircle2, 
@@ -18,9 +18,9 @@ import {
   Calendar, 
   ArrowRight, 
   Loader2, 
-  ShieldAlert, 
   Music
 } from "lucide-react";
+import AccessDenied from "@/components/portal/AccessDenied";
 
 interface BandSection {
   id: string;
@@ -38,13 +38,7 @@ interface GigSummary {
   venue: string;
 }
 
-interface MusicianRsvp {
-  gigId: string;
-  uid: string;
-  displayName: string;
-  sectionId?: string;
-  status: "attending" | "declined" | "tentative";
-}
+type MusicianRsvp = GigRsvp;
 
 export default function SectionAttendanceAdminPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -118,7 +112,10 @@ export default function SectionAttendanceAdminPage() {
       (snap) => {
         const rList: MusicianRsvp[] = [];
         snap.forEach((d) => {
-          rList.push({ gigId: selectedGigId, ...d.data() } as MusicianRsvp);
+          const parsed = GigRsvpSchema.safeParse({ gigId: selectedGigId, uid: d.id, ...d.data() });
+          if (parsed.success) {
+            rList.push(parsed.data);
+          }
         });
         setAllRsvps(rList);
         setLoading(false);
@@ -180,19 +177,14 @@ export default function SectionAttendanceAdminPage() {
   }
 
   // Type-safe permission check
-  const userProfile = profile as unknown as User;
-  const hasAccess = 
-    Boolean(userProfile) && (
-      canManageGigs(userProfile) || 
-      canManageSections(userProfile)
-    );
+  const hasAccess = Boolean(profile) && (canManageGigs(profile) || canManageSections(profile));
 
   if (!hasAccess) {
     return (
-      <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2">
-        <ShieldAlert className="w-4 h-4" />
-        Musician leadership privileges required to view section attendance analytics.
-      </div>
+      <AccessDenied 
+        title="Leadership Access Required"
+        message="Musician leadership privileges (Administrator, Section Leader, Gig Manager, or Membership Manager) required to view section attendance analytics." 
+      />
     );
   }
 

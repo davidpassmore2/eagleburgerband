@@ -36,6 +36,7 @@ import { User } from "@/lib/schema/user";
 import { SetlistTuneItem } from "@/lib/schema/setlist";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
 import { GigCompensationType } from "@/lib/schema/gig";
+import { GigRsvpSchema, type GigRsvp } from "@/lib/schema/rsvp";
 import { toast } from "@/lib/context/ToastContext";
 
 interface SetlistItem {
@@ -93,13 +94,7 @@ interface GigDetail {
   setlist?: (SetGroup | SetlistTuneItem)[];
 }
 
-interface MusicianRsvp {
-  uid: string;
-  displayName: string;
-  sectionId?: string;
-  status: "attending" | "declined" | "tentative";
-  notes?: string;
-}
+type MusicianRsvp = GigRsvp;
 
 export default function MusicianGigDetailPage() {
   const router = useRouter();
@@ -182,7 +177,12 @@ export default function MusicianGigDetailPage() {
       (snap) => {
         if (isMounted) {
           const list: MusicianRsvp[] = [];
-          snap.forEach((d) => list.push(d.data() as MusicianRsvp));
+          snap.forEach((d) => {
+            const parsed = GigRsvpSchema.safeParse({ gigId, uid: d.id, ...d.data() });
+            if (parsed.success) {
+              list.push(parsed.data);
+            }
+          });
           setRsvps(list);
         }
       },
@@ -282,19 +282,16 @@ export default function MusicianGigDetailPage() {
 
     try {
       const rsvpRef = doc(db, "gigs", gigId, "rsvps", firebaseUser.uid);
-      await setDoc(
-        rsvpRef,
-        {
-          uid: firebaseUser.uid,
-          displayName:
-            profile?.displayName || firebaseUser.displayName || "Musician",
-          email: firebaseUser.email,
-          sectionId: profile?.sectionId || "unassigned",
-          status,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
+      const payload = GigRsvpSchema.parse({
+        gigId,
+        uid: firebaseUser.uid,
+        displayName:
+          profile?.displayName || firebaseUser.displayName || "Musician",
+        sectionId: profile?.sectionId || "unassigned",
+        status,
+        updatedAt: new Date().toISOString(),
+      });
+      await setDoc(rsvpRef, payload, { merge: true });
       toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       toast.error(

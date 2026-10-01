@@ -8,7 +8,6 @@ import { canManageContent } from "@/lib/auth/permissions";
 import { Comment, CommentSchema } from "@/lib/schema/comment";
 import { 
   MessageSquareQuote, 
-  ShieldAlert, 
   Pin, 
   Flag, 
   Trash2, 
@@ -21,6 +20,7 @@ import {
   Radio
 } from "lucide-react";
 import Link from "next/link";
+import AccessDenied from "@/components/portal/AccessDenied";
 
 export default function CommentsAdminPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -44,12 +44,7 @@ export default function CommentsAdminPage() {
 
   if (authLoading) return <div className="p-8 text-slate-400">Verifying access...</div>;
   if (!canManageContent(profile)) {
-    return (
-      <div className="p-8 text-amber-400 flex items-center gap-3">
-        <ShieldAlert className="w-6 h-6 shrink-0" />
-        <span>Community Manager or Administrator permissions required.</span>
-      </div>
-    );
+    return <AccessDenied message="Community Manager, Web Manager, or Administrator permissions required to moderate public comments." />;
   }
 
   const handleTogglePin = async (comment: Comment) => {

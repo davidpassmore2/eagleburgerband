@@ -25,19 +25,13 @@ import {
   Radio
 } from "lucide-react";
 import { toast } from "@/lib/context/ToastContext";
+import { 
+  CheckInSchema, 
+  type CheckInRecord, 
+  type CheckInStatus 
+} from "@/lib/schema/checkin";
 
-export type CheckInStatus = "checked_in" | "late" | "no_show" | "excused";
-
-interface CheckInDoc {
-  uid: string;
-  displayName: string;
-  section: string;
-  status: CheckInStatus;
-  checkInTime?: string;
-  isSub: boolean;
-  subbingFor?: string;
-  notes?: string;
-}
+type CheckInDoc = CheckInRecord;
 
 interface MusicianProfile {
   uid: string;
@@ -121,7 +115,10 @@ export default function DayOfCheckInKioskPage({
       (snap) => {
         const map: Record<string, CheckInDoc> = {};
         snap.forEach((d) => {
-          map[d.id] = d.data() as CheckInDoc;
+          const parsed = CheckInSchema.safeParse({ id: d.id, gigId, ...d.data() });
+          if (parsed.success) {
+            map[d.id] = parsed.data;
+          }
         });
         setCheckins(map);
         setLoading(false);

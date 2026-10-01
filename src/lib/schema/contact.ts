@@ -21,8 +21,8 @@ export const ContactSchema = z.object({
     totalCompensation: 0,
   }),
   metadata: z.record(z.string(), z.any()).optional().default({}),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  createdAt: z.string().default(() => new Date().toISOString()),
+  updatedAt: z.string().default(() => new Date().toISOString()),
 });
 
 export type Contact = z.infer<typeof ContactSchema>;

@@ -164,7 +164,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Section Attendance",
     href: "/admin/attendance",
     icon: CheckSquare,
-    requiredRoles: ["admin", "section_leader"],
+    requiredRoles: ["admin", "section_leader", "gig_manager", "membership_manager"],
     category: "Personnel & Attendance",
   },
   {
@@ -308,7 +308,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Comment Moderation",
     href: "/admin/comments",
     icon: MessageSquare,
-    requiredRoles: ["admin"],
+    requiredRoles: ["admin", "community_manager", "web_manager"],
     category: "Business & Admin",
   },
   {

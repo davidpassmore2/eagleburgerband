@@ -8,6 +8,11 @@ import {
   getDocs,
   collection 
 } from "firebase/firestore";
+import { VaultTrackSchema } from "../src/lib/schema/vaultTrack";
+import { InventoryItemSchema } from "../src/lib/schema/inventory";
+import { InviteSchema } from "../src/lib/schema/invite";
+import { GigRsvpSchema } from "../src/lib/schema/rsvp";
+import { CheckInSchema } from "../src/lib/schema/checkin";
 
 const localApp = initializeApp({
   projectId: "eagleburger-band-dev",
@@ -1417,20 +1422,32 @@ async function runSeed() {
       if (i === 7 && g.status !== "completed") rsvpStatus = "tentative";
 
       const rsvpDocRef = doc(db, "gigs", g.id, "rsvps", musician.uid);
-      await setDoc(
-        rsvpDocRef,
-        {
+      const rsvpPayload = GigRsvpSchema.parse({
+        gigId: g.id,
+        uid: musician.uid,
+        displayName: musician.displayName,
+        sectionId: musician.sectionId,
+        status: rsvpStatus,
+        notes: rsvpStatus === "declined" ? "Gig conflict" : "",
+        updatedAt: new Date().toISOString(),
+      });
+      await setDoc(rsvpDocRef, rsvpPayload, { merge: true });
+
+      // Seed day-of checkin for attending musicians on active or recent gigs
+      if (rsvpStatus === "attending" && (g.status === "confirmed" || g.status === "completed")) {
+        const checkinPayload = CheckInSchema.parse({
           uid: musician.uid,
+          gigId: g.id,
           displayName: musician.displayName,
-          email: musician.email,
-          sectionId: musician.sectionId,
-          instruments: musician.instruments,
-          status: rsvpStatus,
-          notes: rsvpStatus === "declined" ? "Gig conflict" : "",
+          section: musician.sectionId || "General",
+          status: "checked_in",
+          checkInMethod: "self_kiosk",
+          checkInTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          notes: "Seeded rehearsal/gig check-in",
           updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+        });
+        await setDoc(doc(db, "gigs", g.id, "checkins", musician.uid), checkinPayload, { merge: true });
+      }
     }
 
     const auditRef = doc(collection(db, "gigs", g.id, "dispatch_history"));
@@ -2348,7 +2365,162 @@ async function runSeed() {
   console.log(`✅ Seeded ${sampleContactMessages.length} contact messages into 'contact_messages' collection.`);
 
   // ==========================================
-  // 19. Super Admin Confirmation
+  // 19. Rehearsal Vault Audio Tracks
+  // ==========================================
+  const vaultTracks = [
+    {
+      id: "vt_bloomfield_rehearsal",
+      title: "Bloomfield Bounce (Full Ensemble Take 2)",
+      composer: "Eagleburger Band",
+      arranger: "David Passmore",
+      audioUrl: "https://storage.googleapis.com/eagleburgerband-media/vault/bloomfield_take2.mp3",
+      fileType: "rehearsal" as const,
+      durationSeconds: 242,
+      recordedDate: "2026-09-18",
+      tuneId: "song_bloomfield_bounce",
+      tags: ["Rehearsal", "Take 2", "Street Beat"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "vt_renegade_stadium",
+      title: "Renegade (Live at Polish Hill Park)",
+      composer: "Styx",
+      arranger: "David Passmore",
+      audioUrl: "https://storage.googleapis.com/eagleburgerband-media/vault/renegade_polish_hill.mp3",
+      fileType: "recording" as const,
+      durationSeconds: 308,
+      recordedDate: "2026-08-22",
+      tuneId: "song_renegade",
+      tags: ["Live", "Outdoor", "Crowd Reaction"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "vt_iron_city_stems",
+      title: "Iron City Funk (Drumline + Sousaphone Stem)",
+      composer: "Traditional",
+      arranger: "Eagleburger Percussion",
+      audioUrl: "https://storage.googleapis.com/eagleburgerband-media/vault/iron_city_rhythm_stem.mp3",
+      fileType: "stem" as const,
+      durationSeconds: 260,
+      recordedDate: "2026-09-10",
+      tuneId: "song_iron_city",
+      tags: ["Rhythm Section", "Practice Track", "Stem"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const vt of vaultTracks) {
+    const validated = VaultTrackSchema.parse(vt);
+    await setDoc(doc(db, "vault_tracks", vt.id), validated, { merge: true });
+  }
+  console.log(`✅ Seeded ${vaultTracks.length} tracks into 'vault_tracks' collection.`);
+
+  // ==========================================
+  // 20. Band Equipment & Inventory
+  // ==========================================
+  const inventoryItems = [
+    {
+      id: "asset_sousa_conn",
+      name: "Conn 20K Brass Sousaphone",
+      category: "instrument" as const,
+      condition: "good" as const,
+      serialNumber: "CN-20K-88129",
+      assignedToUid: users[0]?.uid || "",
+      assignedToName: users[0]?.displayName || "Section Leader",
+      locationNotes: "Lawrenceville Band Locker #1 - Heavy-gauge brass body. New valve felt installed Sept 2026.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "asset_snare_pearl",
+      name: "Pearl Championship Carbon Marching Snare (14x12)",
+      category: "instrument" as const,
+      condition: "excellent" as const,
+      serialNumber: "PRL-CS-4401",
+      assignedToUid: users[1]?.uid || "",
+      assignedToName: users[1]?.displayName || "Drummer",
+      locationNotes: "Mobile Equipment Trailer - High-tension Kevlar head, yellow & black glitter wrap.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "asset_parade_banner",
+      name: "Official Eagleburger Street Banner (8ft Weatherproof)",
+      category: "banner_merch" as const,
+      condition: "good" as const,
+      serialNumber: "EBB-BAN-01",
+      assignedToUid: "",
+      assignedToName: "Unassigned",
+      locationNotes: "Trailer Front Storage - Includes 2 aluminum parade carry poles with brass finials.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "asset_pa_system",
+      name: "Bose S1 Pro Portable Street PA + Wireless Mic Kit",
+      category: "audio_pa" as const,
+      condition: "excellent" as const,
+      serialNumber: "BSE-S1-9021",
+      assignedToUid: superAdminUid,
+      assignedToName: "David Passmore",
+      locationNotes: "Sound Tech Gear Bag - Battery-powered mobile megaphone / announcement rig.",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "asset_drum_harness",
+      name: "Randall May Ergonomic Bass Drum Harness",
+      category: "harness" as const,
+      condition: "good" as const,
+      serialNumber: "RM-BH-104",
+      assignedToUid: "",
+      assignedToName: "Unassigned",
+      locationNotes: "Trailer Hardware Bin - Padded shoulder support with safety latch.",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  for (const item of inventoryItems) {
+    const validated = InventoryItemSchema.parse(item);
+    await setDoc(doc(db, "inventory", item.id), validated, { merge: true });
+  }
+  console.log(`✅ Seeded ${inventoryItems.length} equipment items into 'inventory' collection.`);
+
+  // ==========================================
+  // 21. Pending Member Invites
+  // ==========================================
+  const sampleInvites = [
+    {
+      token: "inv_tbone_audition_2026",
+      email: "guest_trombonist@yahoo.com",
+      name: "Jordan Vance",
+      section: "Trombone",
+      roles: ["member" as const],
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+      createdByUid: superAdminUid,
+    },
+    {
+      token: "inv_trumpet_lead_2026",
+      email: "lead_trumpet_pgh@gmail.com",
+      name: "Taylor Ross",
+      section: "Trumpet",
+      roles: ["member" as const],
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(),
+      createdByUid: superAdminUid,
+    },
+  ];
+
+  for (const inv of sampleInvites) {
+    const validated = InviteSchema.parse(inv);
+    await setDoc(doc(db, "invites", inv.token), validated, { merge: true });
+  }
+  console.log(`✅ Seeded ${sampleInvites.length} pending onboarding invites into 'invites' collection.`);
+
+  // ==========================================
+  // 22. Super Admin Confirmation
   // ==========================================
   console.log(`ℹ️ Confirmed canonical Super Admin: davidpassmore@gmail.com (UID: ${superAdminUid})`);
 
