@@ -385,7 +385,7 @@ export default function TestimonialsPublicPage() {
                   <h4 className="font-bold text-white text-xs">{t.authorName}</h4>
                   {(t.roleOrEvent || t.organization) && (
                     <p className="text-[11px] text-slate-400">
-                      {[t.roleOrEvent, t.organization].filter(Boolean).join(" &bull; ")}
+                      {[t.roleOrEvent, t.organization].filter(Boolean).join(" • ")}
                     </p>
                   )}
                 </div>
