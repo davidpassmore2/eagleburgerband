@@ -3942,34 +3942,97 @@ export default function CMSPagesStudio() {
           {/* TAB 1: HEADER NAVIGATION & ACTIVE ROUTE SIMULATOR */}
           {globalNavTab === "header_nav" && (
             <div className="space-y-6">
-              {/* Brand Tagline Card */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+              {/* Brand Tagline & Header Appearance Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-yellow-400" />
                     <div>
-                      <h3 className="text-base font-extrabold text-white">Brand Tagline</h3>
+                      <h3 className="text-base font-extrabold text-white">Brand Tagline &amp; Header Styling</h3>
                       <p className="text-xs text-slate-400">
-                        Unified tagline rendered directly below the band name in the public header and in the site footer.
+                        Manage the public header tagline, faint drop shadow, and background opacity overlay across all public pages.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="max-w-xl space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
-                    Public Header &amp; Footer Tagline
-                  </label>
-                  <input
-                    type="text"
-                    value={siteNav.brandTagline || ""}
-                    onChange={(e) => setSiteNav((prev) => ({ ...prev, brandTagline: e.target.value }))}
-                    placeholder="e.g. Pittsburgh Brass & Battery"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-yellow-400"
-                  />
-                  <p className="text-[11px] text-slate-500">
-                    Displayed across the sticky public header and beside the musician portal link in the footer.
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Brand Tagline */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
+                      Public Header &amp; Footer Tagline
+                    </label>
+                    <input
+                      type="text"
+                      value={siteNav.brandTagline || ""}
+                      onChange={(e) => setSiteNav((prev) => ({ ...prev, brandTagline: e.target.value }))}
+                      placeholder="e.g. Pittsburgh Brass & Battery"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-yellow-400"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                      Displayed across the sticky public header and beside the musician portal link in the footer.
+                    </p>
+                  </div>
+
+                  {/* Header Background Opacity */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                        Header Background Opacity
+                      </label>
+                      <span className="text-xs font-mono font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">
+                        {siteNav.headerOpacity ?? 90}%
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={siteNav.headerOpacity ?? 90}
+                      onChange={(e) =>
+                        setSiteNav((prev) => ({
+                          ...prev,
+                          headerOpacity: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-yellow-400 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                    />
+
+                    {/* Quick Opacity Presets */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      {[
+                        { label: "Transparent (0%)", val: 0 },
+                        { label: "Glass (50%)", val: 50 },
+                        { label: "Frosted (75%)", val: 75 },
+                        { label: "Standard (90%)", val: 90 },
+                        { label: "Solid (100%)", val: 100 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() =>
+                            setSiteNav((prev) => ({
+                              ...prev,
+                              headerOpacity: preset.val,
+                            }))
+                          }
+                          className={`px-2 py-1 rounded text-[10px] font-mono transition cursor-pointer ${
+                            (siteNav.headerOpacity ?? 90) === preset.val
+                              ? "bg-yellow-400 text-slate-950 font-bold"
+                              : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <p className="text-[11px] text-slate-500">
+                      Controls the background translucency over scrolled page hero banners. Supported by backdrop blur and faint drop shadow.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -4172,7 +4235,12 @@ export default function CMSPagesStudio() {
                     </span>
                   </div>
 
-                  <div className="p-4 sm:p-6 bg-slate-950/90 flex items-center justify-between border-b border-slate-800/80">
+                  <div 
+                    className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-150"
+                    style={{
+                      backgroundColor: `rgba(2, 6, 23, ${(Math.max(0, Math.min(100, siteNav.headerOpacity ?? 90))) / 100})`,
+                    }}
+                  >
                     {/* Brand */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex items-center justify-center shrink-0">

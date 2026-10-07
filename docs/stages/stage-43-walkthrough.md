@@ -153,6 +153,15 @@ Replaced placeholder icons and text badges across the application with the offic
   - Date sort toggle: 1-click toggle between **Date Asc (Soonest)** and **Date Desc (Newest)**.
   - Styled empty state card with "Reset Filters" action button.
 
+### 17. Public Header Drop Shadow & Configurable Opacity (CMS Studio)
+- **Files:** [`src/lib/schema/siteConfig.ts`](file:///c:/repos/eagleburgerband/src/lib/schema/siteConfig.ts), [`src/components/public/PublicHeaderNav.tsx`](file:///c:/repos/eagleburgerband/src/components/public/PublicHeaderNav.tsx), [`src/app/(portal)/admin/pages/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/pages/page.tsx)
+- **Zod Schema Invariance:** Added `headerOpacity: z.number().min(0).max(100).default(90)` to `SiteNavigationSchema` with safe `.default(90)` fallback.
+- **Header Drop Shadow & Dynamic Background:**
+  - `PublicHeaderNav.tsx` now applies a faint, soft drop shadow (`shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]`) and dynamic RGBA background overlay `rgba(2, 6, 23, ${headerOpacity / 100})` coupled with backdrop blur (`backdrop-blur-md`).
+- **CMS Studio Global Controls ([`/admin/pages`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/pages/page.tsx)):**
+  - Added an interactive **Header Background Opacity** slider (0% to 100%) and quick presets (`Transparent (0%)`, `Glass (50%)`, `Frosted (75%)`, `Standard (90%)`, `Solid (100%)`) under Global Public Site Nav & Alerts -> Header Navigation.
+  - Live **Active Route Simulator** header preview dynamically renders the active `siteNav.headerOpacity` and faint drop shadow in real time.
+
 ## Quality Gates & Verification
 - **TypeScript:** `npx tsc --noEmit` passed with 0 errors.
 - **ESLint:** `npm run lint` passed with 0 errors and 0 warnings.

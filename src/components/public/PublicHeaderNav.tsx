@@ -21,6 +21,7 @@ export default function PublicHeaderNav() {
     DEFAULT_HEADER_LINKS.map((l) => ({ ...l, isExternal: false, isButton: false, openInNewTab: false }))
   );
   const [brandTagline, setBrandTagline] = useState("Pittsburgh Brass & Battery");
+  const [headerOpacity, setHeaderOpacity] = useState(90);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isRouteActive = (href: string) => {
@@ -43,6 +44,9 @@ export default function PublicHeaderNav() {
             if (parsed.data.brandTagline) {
               setBrandTagline(parsed.data.brandTagline);
             }
+            if (typeof parsed.data.headerOpacity === "number") {
+              setHeaderOpacity(parsed.data.headerOpacity);
+            }
             const activeLinks = parsed.data.headerLinks
               .filter((l) => l.isVisible !== false)
               .sort((a, b) => a.order - b.order);
@@ -59,9 +63,14 @@ export default function PublicHeaderNav() {
     };
   }, []);
 
+  const opacityDecimal = Math.max(0, Math.min(100, headerOpacity)) / 100;
+
   return (
     <header 
-      className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800"
+      className="sticky top-0 z-40 backdrop-blur-md border-b border-slate-800 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-150"
+      style={{
+        backgroundColor: `rgba(2, 6, 23, ${opacityDecimal})`,
+      }}
       suppressHydrationWarning
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">

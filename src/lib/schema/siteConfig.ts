@@ -90,6 +90,7 @@ export const GlobalPageBannerSchema = z.object({
 export const SiteNavigationSchema = z.object({
   id: z.string().default("main_nav"),
   brandTagline: z.string().default("Pittsburgh Brass & Battery"),
+  headerOpacity: z.number().min(0).max(100).default(90),
   headerLinks: z.array(NavLinkSchema).default(() => DEFAULT_HEADER_LINKS.map((l) => NavLinkSchema.parse(l))),
   footerLinks: z.array(NavLinkSchema).default(() => DEFAULT_FOOTER_LINKS.map((l) => NavLinkSchema.parse(l))),
   socialLinks: z.array(SocialLinkSchema).default(() => DEFAULT_SOCIAL_LINKS.map((s) => SocialLinkSchema.parse(s))),
