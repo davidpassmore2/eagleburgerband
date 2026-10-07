@@ -124,11 +124,41 @@ Replaced placeholder icons and text badges across the application with the offic
     - Bloomfield Halloween Zombie March 2028 (2028-11-05, Lead)
   - Updated Setlist Studio library templates (`template_parade_short`, `template_festival_long`, `template_beer_garden`, `template_ceremonial_fanfare`) with expanded usage counts and assigned gig relationships.
 
+### 14. Public Gig Visibility Toggles & Past Performances Feed
+- **Files:** [`src/app/(portal)/admin/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/gigs/page.tsx), [`src/app/(public)/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(public)/gigs/page.tsx), [`src/lib/schema/gig.ts`](file:///c:/repos/eagleburgerband/src/lib/schema/gig.ts)
+- **Gig Studio Quick Toggles:** Added a one-click public visibility pill directly to every gig card on the Gig Studio list, allowing managers to toggle between `PUBLIC` (sky badge) and `PRIVATE` (rose badge) without opening the full edit modal.
+- **Default Privacy on Creation:** Updated `PublicDetailsSchema` and Gig Studio creation workflows so new gigs (and inquiries converted to gigs) default to `isPublic: false` (private draft).
+- **Public Past Performances Feed:** Ensured that gigs in `completed` status with `isPublic !== false` are surfaced under the "Past Shows" tab on the public website.
+
+### 15. External Event Link, Date Badge Stack & Admission Chip Removal
+- **Files:** [`src/lib/schema/gig.ts`](file:///c:/repos/eagleburgerband/src/lib/schema/gig.ts), [`src/app/(portal)/admin/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/gigs/page.tsx), [`src/app/(public)/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(public)/gigs/page.tsx), [`src/app/(public)/gigs/[id]/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(public)/gigs/[id]/page.tsx), [`src/components/cms/PublicSectionRenderer.tsx`](file:///c:/repos/eagleburgerband/src/components/cms/PublicSectionRenderer.tsx)
+- **Event Link (External URL):** Added `eventUrl` to `PublicDetailsSchema` with safe defaults (`""`). Added input field to both the Create Gig form and Edit modal in Gig Studio.
+- **Conditional Public Event Link:** The "Event Link" button on both `/gigs` listing and `/gigs/[id]` detail view only displays when `eventUrl` (or legacy `facebookEventUrl`) is populated.
+- **Date Badge 3-Tier Stack:** Reorganized public gig listing date badge into a 3-tier vertical stack:
+  - Month: Small uppercase (`text-[10px] sm:text-[11px] font-black uppercase`)
+  - Day: Large prominent number (`text-xl sm:text-2xl font-black`)
+  - Year: Small bold (`text-[9px] sm:text-[10px] font-bold text-slate-800`)
+- **Admission Chip Removal:** Removed admission badges across `/gigs`, `/gigs/[id]`, and homepage preview cards.
+
+### 16. Search, Filter & Sort Ribbons in Gig Studio & Portal Calendar
+- **Files:** [`src/app/(portal)/admin/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/gigs/page.tsx), [`src/app/(portal)/portal/gigs/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/gigs/page.tsx)
+- **Gig Studio Ribbon ([`/admin/gigs`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/gigs/page.tsx)):**
+  - Instant search input matching Title, Venue, Address, Date, and Assigned Setlist with clear button (`✕`).
+  - Status filter pills: `All ({counts.all})`, `Upcoming ({counts.upcoming})`, `Completed ({counts.completed})`.
+  - Date sort toggle: 1-click toggle between **Date Desc (Newest)** and **Date Asc (Oldest)** with dynamic `ArrowDown` / `ArrowUp` indicators.
+  - Interactive empty state with a "Reset Filters" button when no gigs match.
+- **Performance Calendar & RSVPs Ribbon ([`/portal/gigs`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/gigs/page.tsx)):**
+  - Instant search input matching Title, Venue, Call Time, Downbeat, Attire, and Notes.
+  - Status filter pills: `Upcoming ({counts.upcoming})`, `All ({counts.all})`, `Past ({counts.past})`.
+  - Date sort toggle: 1-click toggle between **Date Asc (Soonest)** and **Date Desc (Newest)**.
+  - Styled empty state card with "Reset Filters" action button.
+
 ## Quality Gates & Verification
 - **TypeScript:** `npx tsc --noEmit` passed with 0 errors.
 - **ESLint:** `npm run lint` passed with 0 errors and 0 warnings.
 - **Production Build:** `npm run build` compiled all 63 routes successfully without warnings or hydration mismatches.
 - **Seed Engine:** `npm run seed` executed cleanly in ~8s, seeding all 22 gigs, 6 band sections, 10 musicians, 9 tunes, 4 setlists, 7 clean pages, and all associated portal collections.
+
 
 
 
