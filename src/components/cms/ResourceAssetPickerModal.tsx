@@ -23,7 +23,15 @@ import {
   Sparkles,
   Loader2,
   FolderOpen,
+  Cloud,
 } from "lucide-react";
+import {
+  openCloudinaryUploadWidget,
+  isCloudinaryConfigured,
+  formatBytes,
+  CloudinaryUploadResultInfo,
+} from "@/lib/cloudinary/widget";
+import CloudinaryConfigModal from "@/components/cms/CloudinaryConfigModal";
 
 interface ResourceAssetPickerModalProps {
   isOpen: boolean;
@@ -49,6 +57,8 @@ export default function ResourceAssetPickerModal({
   const [userSelectedType, setUserSelectedType] = useState<string | null>(null);
   const [userSelectedCategory, setUserSelectedCategory] = useState<string | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isUploadingCloudinary, setIsUploadingCloudinary] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Derive active filters from user selection or props
@@ -117,6 +127,65 @@ export default function ResourceAssetPickerModal({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleUploadCloudinary = async () => {
+    if (!isCloudinaryConfigured()) {
+      setIsConfigModalOpen(true);
+      toast.info("Please configure Cloudinary credentials to upload media directly.");
+      return;
+    }
+
+    try {
+      setIsUploadingCloudinary(true);
+      await openCloudinaryUploadWidget({
+        onSuccess: async (info: CloudinaryUploadResultInfo) => {
+          const guessedType: ResourceType =
+            info.resource_type === "video"
+              ? "video"
+              : info.resource_type === "raw" || (info.format && /pdf|doc|docx/i.test(info.format))
+              ? "document"
+              : "image";
+
+          const readableSize = formatBytes(info.bytes);
+          const rawName = info.original_filename || info.public_id.split("/").pop() || "Uploaded Asset";
+          const cleanName = rawName.replace(/[-_]+/g, " ");
+          const generatedId = `res_${Date.now()}`;
+
+          const payload: ResourceAsset = ResourceAssetSchema.parse({
+            id: generatedId,
+            name: cleanName,
+            type: guessedType,
+            category: filterCategory !== "all" ? filterCategory : "header",
+            url: info.secure_url,
+            storageProvider: "cloudinary",
+            cloudPublicId: info.public_id,
+            fileSize: readableSize,
+            format: info.format || "",
+            thumbnailUrl: info.thumbnail_url || info.secure_url,
+            dimensions: info.width && info.height ? { width: info.width, height: info.height } : undefined,
+            altText: cleanName,
+            description: "",
+            tags: info.tags || [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+
+          await setDoc(doc(db, "resources", generatedId), payload, { merge: true });
+          setResources((prev) => [payload, ...prev]);
+          toast.success(`Uploaded and selected "${payload.name}"!`);
+          onSelectAsset(payload);
+          onClose();
+        },
+        onError: (err) => {
+          toast.error("Upload failed: " + (err instanceof Error ? err.message : String(err)));
+        },
+      });
+    } catch (err) {
+      toast.error("Failed to open upload widget: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsUploadingCloudinary(false);
+    }
+  };
+
   const handleSaveNewResource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl.trim() || !newName.trim()) {
@@ -138,6 +207,7 @@ export default function ResourceAssetPickerModal({
         type: newType,
         category: newCategory,
         url: newUrl.trim(),
+        storageProvider: "external",
         altText: newAltText.trim() || newName.trim(),
         description: newDescription.trim(),
         tags: parsedTags,
@@ -231,6 +301,21 @@ export default function ResourceAssetPickerModal({
                 </button>
               ))}
             </div>
+
+            {/* Upload Media via Cloudinary Button */}
+            <button
+              type="button"
+              onClick={handleUploadCloudinary}
+              disabled={isUploadingCloudinary}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md shadow-sky-500/20"
+            >
+              {isUploadingCloudinary ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5" />
+              )}
+              <span>Upload Media</span>
+            </button>
 
             {/* Add New Button Toggle */}
             <button
@@ -480,10 +565,18 @@ export default function ResourceAssetPickerModal({
                         </div>
                       )}
 
-                      {/* Category Badge */}
-                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-slate-950/80 backdrop-blur-sm border border-slate-800 text-[10px] font-semibold text-yellow-400 rounded-md uppercase tracking-wider">
-                        {res.category}
-                      </span>
+                      {/* Badges */}
+                      <div className="absolute top-2 left-2 flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-slate-950/80 backdrop-blur-sm border border-slate-800 text-[10px] font-semibold text-yellow-400 rounded-md uppercase tracking-wider">
+                          {res.category}
+                        </span>
+                        {res.storageProvider === "cloudinary" && (
+                          <span className="px-1.5 py-0.5 bg-sky-500/90 text-slate-950 text-[9px] font-mono font-bold rounded flex items-center gap-0.5 shadow">
+                            <Cloud className="w-2.5 h-2.5" />
+                            <span>Cloud</span>
+                          </span>
+                        )}
+                      </div>
 
                       {/* Quick Action Overlay */}
                       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -554,6 +647,12 @@ export default function ResourceAssetPickerModal({
           </button>
         </div>
       </div>
+
+      {/* Cloudinary Configuration Modal */}
+      <CloudinaryConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+      />
     </div>
   );
 }

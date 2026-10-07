@@ -11,6 +11,7 @@ import {
   ResourceAssetSchema,
   ResourceType,
   ResourceCategory,
+  StorageProvider,
   DEFAULT_RESOURCES,
 } from "@/lib/schema/resource";
 import { toast } from "@/lib/context/ToastContext";
@@ -32,7 +33,17 @@ import {
   X,
   Grid,
   List,
+  Cloud,
+  Settings,
+  Link2,
 } from "lucide-react";
+import {
+  openCloudinaryUploadWidget,
+  isCloudinaryConfigured,
+  formatBytes,
+  CloudinaryUploadResultInfo,
+} from "@/lib/cloudinary/widget";
+import CloudinaryConfigModal from "@/components/cms/CloudinaryConfigModal";
 
 export default function MediaResourcesStudioPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -47,6 +58,9 @@ export default function MediaResourcesStudioPage() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"url" | "cloudinary">("cloudinary");
+  const [isUploadingCloudinary, setIsUploadingCloudinary] = useState(false);
   const [editingAsset, setEditingAsset] = useState<ResourceAsset | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +71,12 @@ export default function MediaResourcesStudioPage() {
     url: "",
     type: "image" as ResourceType,
     category: "header" as ResourceCategory,
+    storageProvider: "external" as StorageProvider,
+    cloudPublicId: "",
+    fileSize: "",
+    format: "",
+    thumbnailUrl: "",
+    dimensions: undefined as { width?: number; height?: number } | undefined,
     altText: "",
     description: "",
     tags: "",
@@ -125,13 +145,73 @@ export default function MediaResourcesStudioPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleOpenAddModal = () => {
+  const handleTriggerCloudinaryUpload = async () => {
+    if (!isCloudinaryConfigured()) {
+      setIsConfigModalOpen(true);
+      toast.info("Please configure Cloudinary credentials to enable direct uploads.");
+      return;
+    }
+
+    try {
+      setIsUploadingCloudinary(true);
+      await openCloudinaryUploadWidget({
+        onSuccess: (info: CloudinaryUploadResultInfo) => {
+          const guessedType: ResourceType =
+            info.resource_type === "video"
+              ? "video"
+              : info.resource_type === "raw" || (info.format && /pdf|doc|docx/i.test(info.format))
+              ? "document"
+              : "image";
+
+          const readableSize = formatBytes(info.bytes);
+          const rawName = info.original_filename || info.public_id.split("/").pop() || "Uploaded Asset";
+          const cleanName = rawName.replace(/[-_]+/g, " ");
+
+          setFormData({
+            name: cleanName,
+            url: info.secure_url,
+            type: guessedType,
+            category: "header",
+            storageProvider: "cloudinary",
+            cloudPublicId: info.public_id,
+            fileSize: readableSize,
+            format: info.format || "",
+            thumbnailUrl: info.thumbnail_url || info.secure_url,
+            dimensions: info.width && info.height ? { width: info.width, height: info.height } : undefined,
+            altText: cleanName,
+            description: "",
+            tags: info.tags?.join(", ") || "",
+          });
+          setEditingAsset(null);
+          setUploadMode("cloudinary");
+          setIsModalOpen(true);
+          toast.success("File uploaded to Cloudinary! Please verify metadata and save.");
+        },
+        onError: (err) => {
+          toast.error("Upload error: " + (err instanceof Error ? err.message : String(err)));
+        },
+      });
+    } catch (err) {
+      toast.error("Failed to open upload widget: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsUploadingCloudinary(false);
+    }
+  };
+
+  const handleOpenAddModal = (mode: "url" | "cloudinary" = "url") => {
     setEditingAsset(null);
+    setUploadMode(mode);
     setFormData({
       name: "",
       url: "",
       type: "image",
       category: "header",
+      storageProvider: mode === "cloudinary" ? "cloudinary" : "external",
+      cloudPublicId: "",
+      fileSize: "",
+      format: "",
+      thumbnailUrl: "",
+      dimensions: undefined,
       altText: "",
       description: "",
       tags: "",
@@ -141,11 +221,18 @@ export default function MediaResourcesStudioPage() {
 
   const handleOpenEditModal = (asset: ResourceAsset) => {
     setEditingAsset(asset);
+    setUploadMode(asset.storageProvider === "cloudinary" ? "cloudinary" : "url");
     setFormData({
       name: asset.name,
       url: asset.url,
       type: asset.type,
       category: asset.category,
+      storageProvider: asset.storageProvider || "external",
+      cloudPublicId: asset.cloudPublicId || "",
+      fileSize: asset.fileSize || "",
+      format: asset.format || "",
+      thumbnailUrl: asset.thumbnailUrl || "",
+      dimensions: asset.dimensions,
       altText: asset.altText || "",
       description: asset.description || "",
       tags: asset.tags?.join(", ") || "",
@@ -189,6 +276,12 @@ export default function MediaResourcesStudioPage() {
         url: formData.url.trim(),
         type: formData.type,
         category: formData.category,
+        storageProvider: formData.storageProvider || "external",
+        cloudPublicId: formData.cloudPublicId || "",
+        format: formData.format || "",
+        fileSize: formData.fileSize || "",
+        thumbnailUrl: formData.thumbnailUrl || "",
+        dimensions: formData.dimensions,
         altText: formData.altText.trim() || formData.name.trim(),
         description: formData.description.trim(),
         tags: tagsArray,
@@ -259,10 +352,10 @@ export default function MediaResourcesStudioPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Link
             href="/admin/pages"
-            className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 shadow"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 shadow"
           >
             <LayoutTemplate className="w-4 h-4 text-yellow-400" />
             <span>CMS Page Studio</span>
@@ -270,11 +363,34 @@ export default function MediaResourcesStudioPage() {
 
           <button
             type="button"
-            onClick={handleOpenAddModal}
-            className="px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-yellow-400/20"
+            onClick={() => setIsConfigModalOpen(true)}
+            className="p-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition shadow"
+            title="Cloudinary Upload Widget Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTriggerCloudinaryUpload}
+            disabled={isUploadingCloudinary}
+            className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-sky-500/20"
+          >
+            {isUploadingCloudinary ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Cloud className="w-4 h-4" />
+            )}
+            <span>Upload via Cloudinary</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAddModal("url")}
+            className="px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg shadow-yellow-400/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Resource by URL</span>
+            <span>Add External URL</span>
           </button>
         </div>
       </div>
@@ -400,7 +516,7 @@ export default function MediaResourcesStudioPage() {
           </p>
           <button
             type="button"
-            onClick={handleOpenAddModal}
+            onClick={() => handleOpenAddModal("url")}
             className="px-4 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-bold inline-flex items-center gap-1.5 transition shadow"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -445,9 +561,26 @@ export default function MediaResourcesStudioPage() {
                     </div>
                   )}
 
-                  {/* Badge */}
+                  {/* Badges */}
                   <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-sm border border-slate-700 text-[10px] font-mono font-bold text-yellow-400 uppercase">
                     {asset.category}
+                  </div>
+
+                  <div className="absolute top-2 right-2">
+                    {asset.storageProvider === "cloudinary" ? (
+                      <span className="px-1.5 py-0.5 rounded-md bg-sky-500/90 text-slate-950 text-[9px] font-mono font-black uppercase tracking-wider flex items-center gap-1 shadow">
+                        <Cloud className="w-2.5 h-2.5" />
+                        <span>Cloudinary</span>
+                      </span>
+                    ) : asset.storageProvider === "firebase" ? (
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/90 text-slate-950 text-[9px] font-mono font-black uppercase tracking-wider shadow">
+                        Firebase
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded-md bg-slate-950/90 border border-slate-800 text-slate-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+                        External
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -460,6 +593,19 @@ export default function MediaResourcesStudioPage() {
                     <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                       {asset.description}
                     </p>
+                  )}
+                  {(asset.dimensions || asset.fileSize || asset.format) && (
+                    <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5 pt-0.5">
+                      {asset.dimensions && (
+                        <span>{asset.dimensions.width}&times;{asset.dimensions.height}</span>
+                      )}
+                      {asset.format && (
+                        <span>&bull; {asset.format.toUpperCase()}</span>
+                      )}
+                      {asset.fileSize && (
+                        <span>&bull; {asset.fileSize}</span>
+                      )}
+                    </div>
                   )}
                   {asset.tags && asset.tags.length > 0 && (
                     <div className="flex items-center gap-1 flex-wrap pt-1">
@@ -538,6 +684,7 @@ export default function MediaResourcesStudioPage() {
                   <th className="py-3 px-4">Preview</th>
                   <th className="py-3 px-4">Name &amp; Description</th>
                   <th className="py-3 px-4">Category</th>
+                  <th className="py-3 px-4">Provider</th>
                   <th className="py-3 px-4">Type</th>
                   <th className="py-3 px-4">Tags</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -566,6 +713,22 @@ export default function MediaResourcesStudioPage() {
                     </td>
                     <td className="py-3 px-4 font-mono uppercase text-[10px] text-yellow-400 font-bold">
                       {asset.category}
+                    </td>
+                    <td className="py-3 px-4">
+                      {asset.storageProvider === "cloudinary" ? (
+                        <span className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono text-[10px] font-bold inline-flex items-center gap-1">
+                          <Cloud className="w-2.5 h-2.5" />
+                          <span>Cloudinary</span>
+                        </span>
+                      ) : asset.storageProvider === "firebase" ? (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono text-[10px] font-bold">
+                          Firebase
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800 font-mono text-[10px]">
+                          External
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 capitalize text-slate-300">{asset.type}</td>
                     <td className="py-3 px-4">
@@ -644,18 +807,105 @@ export default function MediaResourcesStudioPage() {
             <form onSubmit={handleSaveResource} className="space-y-4">
               <div className="space-y-1">
                 <span className="text-[11px] font-mono uppercase font-bold text-yellow-400">
-                  {editingAsset ? "Edit Metadata" : "Track New Resource"}
+                  {editingAsset ? "Edit Metadata" : "Add Resource"}
                 </span>
                 <h3 className="text-xl font-bold text-white font-arvo">
-                  {editingAsset ? `Edit "${editingAsset.name}"` : "Add Resource by URL"}
+                  {editingAsset ? `Edit "${editingAsset.name}"` : "Track Resource Asset"}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Reference an external image, header visual, or document PDF via URL.
+                  Upload directly via Cloudinary or link an external media URL.
                 </p>
               </div>
 
+              {/* Source Mode Switcher */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode("cloudinary");
+                    setFormData((prev) => ({ ...prev, storageProvider: "cloudinary" }));
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    uploadMode === "cloudinary"
+                      ? "bg-sky-500 text-slate-950 shadow"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>Upload via Cloudinary</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode("url");
+                    setFormData((prev) => ({ ...prev, storageProvider: "external" }));
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    uploadMode === "url"
+                      ? "bg-yellow-400 text-slate-950 shadow"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Link External URL</span>
+                </button>
+              </div>
+
               <div className="space-y-3 pt-2">
-                <div className="space-y-1">
+                {/* Cloudinary Upload Box or URL Input */}
+                {uploadMode === "cloudinary" ? (
+                <div className="space-y-2 pt-1">
+                  {formData.url ? (
+                    <div className="p-3 bg-slate-950 border border-sky-500/30 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shrink-0 flex items-center justify-center">
+                          {formData.type === "image" ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={formData.thumbnailUrl || formData.url}
+                              alt={formData.name || "Preview"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <FileText className="w-6 h-6 text-yellow-400" />
+                          )}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                          <span className="text-xs font-bold text-white block truncate">
+                            {formData.name || "Uploaded Asset"}
+                          </span>
+                          <span className="text-[10px] font-mono text-sky-400 block truncate">
+                            {[formData.format ? formData.format.toUpperCase() : null, formData.fileSize, formData.dimensions ? `${formData.dimensions.width}x${formData.dimensions.height}` : null].filter(Boolean).join(" • ") || formData.url}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleTriggerCloudinaryUpload}
+                        className="px-3 py-1.5 rounded-xl border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 text-xs font-bold transition shrink-0"
+                      >
+                        Re-upload
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={handleTriggerCloudinaryUpload}
+                      className="cursor-pointer border-2 border-dashed border-sky-500/30 hover:border-sky-400 bg-sky-500/5 hover:bg-sky-500/10 rounded-2xl p-6 text-center space-y-2 transition group"
+                    >
+                      <Cloud className="w-8 h-8 text-sky-400 mx-auto group-hover:scale-110 transition-transform" />
+                      <div>
+                        <span className="text-xs font-bold text-white block">
+                          Click to Launch Cloudinary Upload Widget
+                        </span>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">
+                          Drag &amp; drop files, browse local disk, or import from camera &amp; web
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1 pt-1">
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Asset URL *</label>
                   <input
                     type="url"
@@ -673,6 +923,7 @@ export default function MediaResourcesStudioPage() {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
                   />
                 </div>
+              )}
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Asset Name *</label>
@@ -786,6 +1037,12 @@ export default function MediaResourcesStudioPage() {
           </div>
         </div>
       )}
+
+      {/* Cloudinary Configuration Modal */}
+      <CloudinaryConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+      />
     </div>
   );
 }

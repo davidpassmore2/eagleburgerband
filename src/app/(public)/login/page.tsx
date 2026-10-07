@@ -245,6 +245,7 @@ function LoginContent() {
       <div className="w-full max-w-md mb-6">
         <Link
           href="/"
+          suppressHydrationWarning
           className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-yellow-400 transition"
         >
           <ArrowLeft className="w-4 h-4" />

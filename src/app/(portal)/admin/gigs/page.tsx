@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { 
   collection, 
@@ -30,7 +30,12 @@ import {
   Edit3,
   ListMusic,
   Heart,
-  Landmark
+  Landmark,
+  Globe,
+  EyeOff,
+  Search,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -52,6 +57,9 @@ interface GigItem {
     venueAddress?: string;
     description?: string;
     showExternalDirections?: boolean;
+    isPublic?: boolean;
+    eventUrl?: string;
+    facebookEventUrl?: string;
   };
   internalLogistics?: {
     title: string;
@@ -106,6 +114,11 @@ export default function GigsAdminStudioPage() {
   const [setlistMap, setSetlistMap] = useState<Record<string, { name: string; category: string; tuneCount: number }>>({});
   const [fullSetlists, setFullSetlists] = useState<Record<string, SetlistDocData>>({});
 
+  // Search, Status Filter & Sorting
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
+  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
+
   const [formData, setFormData] = useState({
     title: "",
     date: "",
@@ -113,6 +126,8 @@ export default function GigsAdminStudioPage() {
     venue: "",
     venueAddress: "",
     showExternalDirections: true,
+    isPublic: false,
+    eventUrl: "",
     callTime: "5:00 PM",
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
@@ -129,6 +144,8 @@ export default function GigsAdminStudioPage() {
     venue: "",
     venueAddress: "",
     showExternalDirections: true,
+    isPublic: true,
+    eventUrl: "",
     callTime: "5:00 PM",
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
@@ -186,6 +203,78 @@ export default function GigsAdminStudioPage() {
     };
   }, [authLoading]);
 
+  // Derived filtered & sorted gigs
+  const { filteredGigs, counts } = useMemo(() => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const q = searchQuery.trim().toLowerCase();
+
+    // Calculate base counts across all gigs
+    let upcomingCount = 0;
+    let completedCount = 0;
+
+    for (const g of gigs) {
+      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (isCompleted) {
+        completedCount++;
+      } else {
+        upcomingCount++;
+      }
+    }
+
+    const filtered = gigs.filter((g) => {
+      // 1. Status Filter
+      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (statusFilter === "upcoming" && isCompleted) return false;
+      if (statusFilter === "completed" && !isCompleted) return false;
+
+      // 2. Search Query (Title, Venue, City, Address, Setlist, Date)
+      if (q) {
+        const title = (g.publicDetails?.title || g.internalLogistics?.title || "").toLowerCase();
+        const venue = (g.publicDetails?.venue || "").toLowerCase();
+        const venueAddr = (g.publicDetails?.venueAddress || "").toLowerCase();
+        const date = (g.date || "").toLowerCase();
+        const setlistName = (
+          g.setlistName ||
+          g.setlistTitle ||
+          g.internalLogistics?.setlistName ||
+          g.internalLogistics?.setlistTitle ||
+          (g.setlistId && setlistMap[g.setlistId]?.name) ||
+          ""
+        ).toLowerCase();
+
+        const match =
+          title.includes(q) ||
+          venue.includes(q) ||
+          venueAddr.includes(q) ||
+          date.includes(q) ||
+          setlistName.includes(q);
+
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    // 3. Date Sorting
+    filtered.sort((a, b) => {
+      const dateA = a.date || "";
+      const dateB = b.date || "";
+      if (sortDirection === "asc") {
+        return dateA.localeCompare(dateB);
+      }
+      return dateB.localeCompare(dateA);
+    });
+
+    return {
+      filteredGigs: filtered,
+      counts: {
+        all: gigs.length,
+        upcoming: upcomingCount,
+        completed: completedCount,
+      },
+    };
+  }, [gigs, searchQuery, statusFilter, sortDirection, setlistMap]);
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
@@ -234,6 +323,8 @@ export default function GigsAdminStudioPage() {
           venueAddress: formData.venueAddress.trim(),
           description: formData.description.trim(),
           showExternalDirections: formData.showExternalDirections,
+          isPublic: formData.isPublic,
+          eventUrl: formData.eventUrl.trim(),
         },
         internalLogistics: {
           title: formData.title.trim(),
@@ -287,6 +378,8 @@ export default function GigsAdminStudioPage() {
         venue: "",
         venueAddress: "",
         showExternalDirections: true,
+        isPublic: false,
+        eventUrl: "",
         callTime: "5:00 PM",
         downbeat: "6:00 PM",
         attire: "Eagleburger Yellows & Black",
@@ -321,6 +414,26 @@ export default function GigsAdminStudioPage() {
     }
   };
 
+  const handleTogglePublicVisibility = async (gigId: string, currentVal: boolean | undefined) => {
+    try {
+      const gigRef = doc(db, "gigs", gigId);
+      const isCurrentlyPublic = currentVal !== false;
+      const nextVal = !isCurrentlyPublic;
+      await setDoc(
+        gigRef,
+        {
+          publicDetails: {
+            isPublic: nextVal,
+          },
+        },
+        { merge: true }
+      );
+      toast.success(nextVal ? "Gig published to public site." : "Gig marked private (hidden from public site).");
+    } catch (err) {
+      toast.error("Failed to update gig visibility: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleOpenEdit = (gig: GigItem) => {
     setEditingGig(gig);
     const compType: GigCompensationType =
@@ -335,6 +448,8 @@ export default function GigsAdminStudioPage() {
       venue: gig.publicDetails?.venue || "",
       venueAddress: gig.publicDetails?.venueAddress || "",
       showExternalDirections: gig.publicDetails?.showExternalDirections !== false,
+      isPublic: gig.publicDetails?.isPublic !== false,
+      eventUrl: gig.publicDetails?.eventUrl || gig.publicDetails?.facebookEventUrl || "",
       callTime: gig.internalLogistics?.callTime || "5:00 PM",
       downbeat: gig.internalLogistics?.downbeat || "6:00 PM",
       attire: gig.internalLogistics?.attire || "Eagleburger Yellows & Black",
@@ -379,11 +494,15 @@ export default function GigsAdminStudioPage() {
         setlistName: assignedTitle,
         setlistTitle: assignedTitle,
         publicDetails: {
+          ...(editingGig.publicDetails || {}),
           title: editFormData.title.trim(),
           venue: editFormData.venue.trim(),
           venueAddress: editFormData.venueAddress.trim(),
           description: editFormData.description.trim(),
           showExternalDirections: editFormData.showExternalDirections,
+          isPublic: editFormData.isPublic,
+          eventUrl: editFormData.eventUrl.trim(),
+          facebookEventUrl: editFormData.eventUrl.trim(),
         },
         internalLogistics: {
           title: editFormData.title.trim(),
@@ -681,27 +800,70 @@ export default function GigsAdminStudioPage() {
             </div>
           </div>
 
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Navigation className="w-4 h-4 text-yellow-400 shrink-0" />
-              <div>
-                <span className="text-xs font-semibold text-slate-200 block">
-                  1-Click External Navigation
-                </span>
-                <span className="text-[11px] text-slate-400 block">
-                  Show &quot;Open in Google Maps&quot; and &quot;Open in Apple Maps&quot; buttons on the public event page map
-                </span>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                checked={formData.showExternalDirections}
-                onChange={(e) => setFormData({ ...formData, showExternalDirections: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400"></div>
+          <div>
+            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+              Event Link (External URL)
             </label>
+            <input
+              type="url"
+              placeholder="e.g. https://facebook.com/events/... or https://eventbrite.com/..."
+              value={formData.eventUrl}
+              onChange={(e) => setFormData({ ...formData, eventUrl: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+            />
+            <span className="text-[10px] text-slate-500 mt-1 block">
+              Optional external page for the event. If left empty, no event link button is displayed on the public site.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Public Site Visibility Toggle */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Globe className="w-4 h-4 text-sky-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Public Site Visibility
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Display on public schedule (/gigs) & calendar
+                  </span>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+              </label>
+            </div>
+
+            {/* 1-Click External Navigation */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Navigation className="w-4 h-4 text-yellow-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    1-Click Navigation
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Show Google/Apple Maps buttons on event map
+                  </span>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={formData.showExternalDirections}
+                  onChange={(e) => setFormData({ ...formData, showExternalDirections: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400"></div>
+              </label>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -950,6 +1112,47 @@ export default function GigsAdminStudioPage() {
               </div>
             </div>
 
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Event Link (External URL)
+              </label>
+              <input
+                type="url"
+                placeholder="e.g. https://facebook.com/events/... or https://eventbrite.com/..."
+                value={editFormData.eventUrl}
+                onChange={(e) => setEditFormData({ ...editFormData, eventUrl: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+              />
+              <span className="text-[10px] text-slate-500 mt-1 block">
+                Optional external page for the event. If left empty, no event link button is displayed on the public site.
+              </span>
+            </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Public Site Visibility Toggle */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Globe className="w-4 h-4 text-sky-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Public Site Visibility
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Display on public schedule (/gigs) & calendar
+                  </span>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={editFormData.isPublic}
+                  onChange={(e) => setEditFormData({ ...editFormData, isPublic: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+              </label>
+            </div>
+
             {/* 1-Click Navigation Toggle in Edit Modal */}
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -959,7 +1162,7 @@ export default function GigsAdminStudioPage() {
                     1-Click External Navigation
                   </span>
                   <span className="text-[11px] text-slate-400 block">
-                    Show &quot;Open in Google Maps&quot; and &quot;Open in Apple Maps&quot; buttons on the public event page map
+                    Show Google/Apple Maps buttons on event map
                   </span>
                 </div>
               </div>
@@ -973,6 +1176,7 @@ export default function GigsAdminStudioPage() {
                 <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400"></div>
               </label>
             </div>
+          </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -1120,24 +1324,164 @@ export default function GigsAdminStudioPage() {
         </div>
       )}
 
-      {/* Gig Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {gigs.map((g) => (
+      {/* Search, Filter & Sort Ribbon */}
+      <div 
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md"
+      >
+        {/* Search Input */}
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            placeholder="Search gigs, venues, setlists, dates..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+            className="w-full border rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Filters and Sort Controls */}
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                statusFilter === "all"
+                  ? "bg-yellow-400 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-white bg-slate-800/50"
+              }`}
+            >
+              All ({counts.all})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("upcoming")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                statusFilter === "upcoming"
+                  ? "bg-yellow-400 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-white bg-slate-800/50"
+              }`}
+            >
+              Upcoming ({counts.upcoming})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("completed")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                statusFilter === "completed"
+                  ? "bg-yellow-400 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-white bg-slate-800/50"
+              }`}
+            >
+              Completed ({counts.completed})
+            </button>
+          </div>
+
+          {/* Date Sort Toggle Button */}
+          <div className="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+            <button
+              type="button"
+              onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
+              title={`Sorting by date ${sortDirection === "desc" ? "Descending (Newest first)" : "Ascending (Oldest first)"}. Click to toggle.`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/70 hover:bg-slate-700 border border-slate-700/80 transition cursor-pointer"
+            >
+              {sortDirection === "desc" ? (
+                <ArrowDown className="w-3.5 h-3.5 text-yellow-400" />
+              ) : (
+                <ArrowUp className="w-3.5 h-3.5 text-yellow-400" />
+              )}
+              <span>Date {sortDirection === "desc" ? "Desc (Newest)" : "Asc (Oldest)"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Gig Grid or Empty State */}
+      {filteredGigs.length === 0 ? (
+        <div 
+          style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-3xl p-12 text-center space-y-3"
+        >
+          <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
+          <h3 className="text-base font-bold text-white">No performances found</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {searchQuery || statusFilter !== "all"
+              ? "No gigs match your current search or status filter. Try clearing filters or altering search keywords."
+              : "No performances exist yet. Create a new gig call sheet to get started."}
+          </p>
+          {(searchQuery || statusFilter !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold px-3.5 py-1.5 rounded-xl transition border border-slate-700 cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredGigs.map((g) => (
           <div
             key={g.id}
             className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 shadow transition flex flex-col justify-between"
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                  g.status === "confirmed"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                    : g.status === "completed"
-                    ? "bg-slate-800 text-slate-400 border-slate-700"
-                    : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
-                }`}>
-                  {g.status}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    g.status === "confirmed"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : g.status === "completed"
+                      ? "bg-slate-800 text-slate-400 border-slate-700"
+                      : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+                  }`}>
+                    {g.status}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePublicVisibility(g.id, g.publicDetails?.isPublic)}
+                    title={
+                      g.publicDetails?.isPublic !== false
+                        ? "Publicly visible on eagleburgerband.com. Click to make private."
+                        : "Private internal-only gig. Click to make publicly visible."
+                    }
+                    className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border transition flex items-center gap-1 ${
+                      g.publicDetails?.isPublic !== false
+                        ? "bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20"
+                        : "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
+                    }`}
+                  >
+                    {g.publicDetails?.isPublic !== false ? (
+                      <>
+                        <Globe className="w-3 h-3 text-sky-400" />
+                        <span>Public</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-3 h-3 text-rose-400" />
+                        <span>Private</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -1335,42 +1679,78 @@ export default function GigsAdminStudioPage() {
                 );
               })()}
 
-              {/* 1-Click External Navigation Toggle */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
-                <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Navigation className="w-3 h-3 text-yellow-400 shrink-0" />
-                  1-Click Navigation:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleToggleNavigation(g.id, g.publicDetails?.showExternalDirections)}
-                  title={
-                    g.publicDetails?.showExternalDirections !== false
-                      ? "Directions buttons visible on public map. Click to toggle OFF."
-                      : "Directions buttons hidden on public map. Click to toggle ON."
-                  }
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 ${
-                    g.publicDetails?.showExternalDirections !== false
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                      : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${g.publicDetails?.showExternalDirections !== false ? "bg-emerald-400" : "bg-slate-500"}`}></span>
-                  {g.publicDetails?.showExternalDirections !== false ? "ENABLED" : "DISABLED"}
-                </button>
+              {/* Quick Toggles: Public Visibility & 1-Click Navigation */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-sky-400 shrink-0" />
+                    Public Visibility:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePublicVisibility(g.id, g.publicDetails?.isPublic)}
+                    title={
+                      g.publicDetails?.isPublic !== false
+                        ? "Gig is published to public site schedule. Click to hide (make private)."
+                        : "Gig is hidden from public site schedule. Click to publish."
+                    }
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 ${
+                      g.publicDetails?.isPublic !== false
+                        ? "bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20"
+                        : "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${g.publicDetails?.isPublic !== false ? "bg-sky-400" : "bg-rose-400"}`}></span>
+                    {g.publicDetails?.isPublic !== false ? "PUBLIC" : "PRIVATE"}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <Navigation className="w-3 h-3 text-yellow-400 shrink-0" />
+                    1-Click Navigation:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleNavigation(g.id, g.publicDetails?.showExternalDirections)}
+                    title={
+                      g.publicDetails?.showExternalDirections !== false
+                        ? "Directions buttons visible on public map. Click to toggle OFF."
+                        : "Directions buttons hidden on public map. Click to toggle ON."
+                    }
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 ${
+                      g.publicDetails?.showExternalDirections !== false
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                        : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${g.publicDetails?.showExternalDirections !== false ? "bg-emerald-400" : "bg-slate-500"}`}></span>
+                    {g.publicDetails?.showExternalDirections !== false ? "ENABLED" : "DISABLED"}
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-              <Link
-                href={`/gigs/${g.id}`}
-                target="_blank"
-                className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1 transition"
-                title="View public event landing page"
-              >
-                <span>Public Page</span>
-                <ExternalLink className="w-3 h-3 text-slate-500" />
-              </Link>
+              {g.publicDetails?.isPublic !== false ? (
+                <Link
+                  href={`/gigs/${g.id}`}
+                  target="_blank"
+                  className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1 transition"
+                  title="View public event landing page"
+                >
+                  <span>Public Page</span>
+                  <ExternalLink className="w-3 h-3 text-slate-500" />
+                </Link>
+              ) : (
+                <span
+                  className="text-xs font-medium text-slate-500 flex items-center gap-1"
+                  title="Gig is marked private - not published on public site"
+                >
+                  <EyeOff className="w-3 h-3 text-rose-400/70" />
+                  <span>Private Gig</span>
+                </span>
+              )}
               <Link
                 href={`/portal/gigs/${g.id}`}
                 className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
@@ -1381,7 +1761,8 @@ export default function GigsAdminStudioPage() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Gig Setlist Assignment & Creation Modal */}
       {managingSetlistGig && (

@@ -39,6 +39,24 @@ Stage 42 delivered three major operational workstreams across the musician porta
    - **Public Page Header Component (`src/components/public/PublicPageHeader.tsx`):** Responsive hero banner with configurable background image, darkness overlay, gradient vignette, alignment, typography, and gold accent styling.
    - **Dynamic Public Integration:** Dynamic rendering in `src/app/(public)/[slug]/page.tsx` whenever `page.headerImage.imageUrl` is populated.
 
+4. **Workstream 4: Content Resource Assets Tracking & Library (`/admin/resources` & Picker Modal)**
+   - **Schema Invariance:** Added `ResourceAssetSchema` with safe defaults (`id`, `name`, `category`, `url`, `altText`, `caption`, `fileType`, `fileSizeBytes`, `tags`, `isPublic`, `order`, timestamps) in `src/lib/schema/resource.ts`.
+   - **Resource Management Workspace:** Built `/admin/resources` studio allowing cataloging, tagging, filtering by category (headers, images, docs, audio, video, links), and public/internal tracking.
+   - **Resource Asset Picker Modal:** Created reusable `ResourceAssetPickerModal.tsx` and integrated it across CMS Page Studio:
+     - Header banner image selection (`pickerTarget = "header"`)
+     - Hero section background image (`pickerTarget = { field: "heroBg" }`)
+     - Media highlight section URL (`pickerTarget = { field: "mediaUrl" }`)
+   - **Seeded Assets:** Populated 12 curated photography, brand assets, charts, and demo media into Firestore via `scripts/seed.ts`.
+
+5. **Workstream 5: Global Site Navigation, Real-Time Announcement Banner & Typography Polish**
+   - **Global Announcement Alert Banner:** Real-time synchronization via `onSnapshot` from `site_navigation/config`, per-message session dismissal via `useSyncExternalStore`, and selectable color variants (`highlight`, `info`, `alert`).
+   - **Per-Page Specific Banner Management:** Dedicated **"Page Banner"** tab (`activeTab === "banner"`) in CMS Page Studio allowing each individual page to select specific high-res photos from the Resource Library, configure opacity/height/alignment, or remove the banner for clean layouts.
+   - **Header Navigation Typography Enforced:**
+     - All nav header links (text links, active highlighted routes, CTA buttons like "Contact Us", and action CTAs like "Book The Band" and "David's Portal") strictly use the **Poppins** font (`font-poppins`) and **ALL CAPS (UPPERCASE)** (`uppercase tracking-wider`) with `text-xs`.
+     - Completely removed Lucide icons from text links and CTA buttons for an ultra-clean, modern brand aesthetic.
+     - Scoped marketing CTA styling in `globals.css` to prevent accidental serif font bleed into navigation elements.
+   - **Footer Links Typography:** Standardized all footer navigation links, community links, and copyright links to use `font-poppins`.
+
 ---
 
 ### Verification & Quality Gates
@@ -46,7 +64,7 @@ Stage 42 delivered three major operational workstreams across the musician porta
 | Gate | Status | Command / Log |
 |---|---|---|
 | **Gate 1: TypeScript** | ✅ Passed | `npx tsc --noEmit` (0 errors) |
-| **Gate 2: ESLint** | ✅ Passed | `npm run lint` (0 errors) |
-| **Gate 3: Build** | ✅ Passed | `npm run build` (Next.js Turbopack App Router build successful) |
-| **Gate 4: Seed** | ✅ Passed | `npm run seed` (Seeded collections with `content_pages/home` headerImage) |
+| **Gate 2: ESLint** | ✅ Passed | `npm run lint` (0 errors, 0 warnings) |
+| **Gate 3: Build** | ✅ Passed | `npm run build` (All 63 static & dynamic routes compiled cleanly) |
+| **Gate 4: Seed** | ✅ Passed | `npm run seed` (Seeded collections with `content_pages`, `resources`, `site_navigation/config`) |
 

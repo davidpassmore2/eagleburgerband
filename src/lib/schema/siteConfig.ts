@@ -76,9 +76,9 @@ export const DEFAULT_SOCIAL_LINKS = [
 ];
 
 export const GlobalPageBannerSchema = z.object({
-  enabled: z.boolean().default(true),
-  imageUrl: z.string().default("https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80"),
-  altText: z.string().default("Eagleburger Band marching brass and drum battery in Pittsburgh"),
+  enabled: z.boolean().default(false),
+  imageUrl: z.string().default(""),
+  altText: z.string().default(""),
   badgeText: z.string().default("Eagleburger Band"),
   customTitle: z.string().default(""),
   customSubtitle: z.string().default(""),
@@ -89,6 +89,7 @@ export const GlobalPageBannerSchema = z.object({
 
 export const SiteNavigationSchema = z.object({
   id: z.string().default("main_nav"),
+  brandTagline: z.string().default("Pittsburgh Brass & Battery"),
   headerLinks: z.array(NavLinkSchema).default(() => DEFAULT_HEADER_LINKS.map((l) => NavLinkSchema.parse(l))),
   footerLinks: z.array(NavLinkSchema).default(() => DEFAULT_FOOTER_LINKS.map((l) => NavLinkSchema.parse(l))),
   socialLinks: z.array(SocialLinkSchema).default(() => DEFAULT_SOCIAL_LINKS.map((s) => SocialLinkSchema.parse(s))),

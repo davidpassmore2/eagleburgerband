@@ -180,13 +180,11 @@ export default function PublicHomePage() {
       />
 
       {/* Optional Hero Header Image Banner from CMS Studio */}
-      {pageData?.headerImage?.imageUrl && (
-        <PublicPageHeader
-          headerImage={pageData.headerImage}
-          fallbackTitle={pageData.title}
-          fallbackSubtitle={pageData.description}
-        />
-      )}
+      <PublicPageHeader
+        headerImage={pageData?.headerImage}
+        fallbackTitle={pageData?.title}
+        fallbackSubtitle={pageData?.description}
+      />
 
       {/* Render All Dynamic Sections */}
       {sectionsToRender.map((section) => (

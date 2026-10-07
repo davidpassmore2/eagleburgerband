@@ -7,7 +7,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { NavLink, SiteNavigationSchema, DEFAULT_HEADER_LINKS } from "@/lib/schema/siteConfig";
 import { 
-  Music2, 
   Shield, 
   Menu, 
   X,
@@ -21,6 +20,7 @@ export default function PublicHeaderNav() {
   const [links, setLinks] = useState<NavLink[]>(
     DEFAULT_HEADER_LINKS.map((l) => ({ ...l, isExternal: false, isButton: false, openInNewTab: false }))
   );
+  const [brandTagline, setBrandTagline] = useState("Pittsburgh Brass & Battery");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isRouteActive = (href: string) => {
@@ -40,6 +40,9 @@ export default function PublicHeaderNav() {
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success) {
+            if (parsed.data.brandTagline) {
+              setBrandTagline(parsed.data.brandTagline);
+            }
             const activeLinks = parsed.data.headerLinks
               .filter((l) => l.isVisible !== false)
               .sort((a, b) => a.order - b.order);
@@ -64,15 +67,21 @@ export default function PublicHeaderNav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-3 group" suppressHydrationWarning>
-          <div className="w-11 h-11 rounded-xl bg-yellow-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-yellow-400/20 group-hover:scale-105 transition-transform">
-            <Music2 className="w-6 h-6" />
+          <div className="w-11 h-11 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/images/eagleburger-logo.png" 
+              alt="Eagleburger Band Logo" 
+              className="w-full h-full object-contain"
+              suppressHydrationWarning
+            />
           </div>
           <div>
             <span className="text-xl font-bold tracking-tight text-white group-hover:text-yellow-400 transition-colors uppercase font-arvo">
               EAGLEBURGER BAND
             </span>
             <span className="block text-[11px] font-semibold text-yellow-400/90 tracking-wider uppercase font-arvo">
-              Pittsburgh Brass &amp; Battery
+              {brandTagline}
             </span>
           </div>
         </Link>

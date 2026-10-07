@@ -55,7 +55,6 @@
 .public-site main .font-arvo-cta,
 .public-site main a[class*="bg-yellow-400"],
 .public-site main button[class*="bg-yellow-400"],
-.public-site main a[href*="/book"],
 .public-site main button[type="submit"] {
   font-family: var(--font-arvo), serif;
   font-weight: 700;

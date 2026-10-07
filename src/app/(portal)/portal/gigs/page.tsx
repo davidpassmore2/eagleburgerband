@@ -27,10 +27,13 @@ import {
   XCircle,
   HelpCircle,
   Check,
-  Filter,
   Heart,
   Landmark,
   DollarSign,
+  Search,
+  X,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { GigCompensationType } from "@/lib/schema/gig";
 import { toast } from "@/lib/context/ToastContext";
@@ -72,6 +75,8 @@ export default function PortalGigsListPage() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [filterType, setFilterType] = useState<"all" | "upcoming" | "past">("upcoming");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
@@ -155,16 +160,76 @@ export default function PortalGigsListPage() {
     return `${y}-${m}-${d}`;
   }, []);
 
-  // Filtered gigs for list view
-  const filteredGigs = useMemo(() => {
-    if (filterType === "upcoming") {
-      return gigs.filter((g) => g.status !== "cancelled" && g.date >= todayStr);
+  // Filtered & sorted gigs for list view
+  const { filteredGigs, counts } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    // Baseline counts across all gigs
+    let upcomingCount = 0;
+    let pastCount = 0;
+
+    for (const g of gigs) {
+      const isPast = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (isPast) {
+        pastCount++;
+      } else if (g.status !== "cancelled") {
+        upcomingCount++;
+      }
     }
-    if (filterType === "past") {
-      return gigs.filter((g) => g.status === "completed" || g.date < todayStr);
-    }
-    return gigs;
-  }, [gigs, filterType, todayStr]);
+
+    const filtered = gigs.filter((g) => {
+      // 1. Status Filter
+      const isPast = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (filterType === "upcoming") {
+        if (g.status === "cancelled" || isPast) return false;
+      } else if (filterType === "past") {
+        if (!isPast) return false;
+      }
+
+      // 2. Search Query (Title, Venue, Call Time, Downbeat, Attire, Date, Notes)
+      if (q) {
+        const title = (g.internalLogistics?.title || g.publicDetails?.title || "").toLowerCase();
+        const venue = (g.publicDetails?.venue || g.internalLogistics?.unloadingAddress || "").toLowerCase();
+        const date = (g.date || "").toLowerCase();
+        const callTime = (g.internalLogistics?.callTime || "").toLowerCase();
+        const downbeat = (g.internalLogistics?.downbeat || "").toLowerCase();
+        const attire = (g.internalLogistics?.attire || "").toLowerCase();
+        const notes = (g.internalLogistics?.notes || g.publicDetails?.description || "").toLowerCase();
+
+        const match =
+          title.includes(q) ||
+          venue.includes(q) ||
+          date.includes(q) ||
+          callTime.includes(q) ||
+          downbeat.includes(q) ||
+          attire.includes(q) ||
+          notes.includes(q);
+
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    // 3. Date Sorting
+    filtered.sort((a, b) => {
+      const dateA = a.date || "";
+      const dateB = b.date || "";
+      if (sortDirection === "desc") {
+        return dateB.localeCompare(dateA);
+      }
+      return dateA.localeCompare(dateB);
+    });
+
+    return {
+      filteredGigs: filtered,
+      counts: {
+        all: gigs.length,
+        upcoming: upcomingCount,
+        past: pastCount,
+      },
+    };
+  }, [gigs, filterType, searchQuery, sortDirection, todayStr]);
 
   if (loading) {
     return (
@@ -287,50 +352,91 @@ export default function PortalGigsListPage() {
       ) : (
         // List View Tab
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* List Sub-filter bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-            <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-slate-500" />
-              <div className="flex items-center gap-1">
+          {/* Search, Filter & Sort Ribbon */}
+          <div 
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+            className="border rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md"
+          >
+            {/* Search Input */}
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search gigs, venues, downbeat, attire, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                className="w-full border rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Pills and Sort Controls */}
+            <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setFilterType("upcoming")}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                     filterType === "upcoming"
-                      ? "bg-white/10 text-white font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-yellow-400 text-slate-950 shadow-sm"
+                      : "text-slate-400 hover:text-white bg-slate-800/50"
                   }`}
                 >
-                  Upcoming Gigs
+                  Upcoming ({counts.upcoming})
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterType("all")}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                     filterType === "all"
-                      ? "bg-white/10 text-white font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-yellow-400 text-slate-950 shadow-sm"
+                      : "text-slate-400 hover:text-white bg-slate-800/50"
                   }`}
                 >
-                  All Gigs ({gigs.length})
+                  All ({counts.all})
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterType("past")}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                     filterType === "past"
-                      ? "bg-white/10 text-white font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-yellow-400 text-slate-950 shadow-sm"
+                      : "text-slate-400 hover:text-white bg-slate-800/50"
                   }`}
                 >
-                  Past Shows
+                  Past ({counts.past})
+                </button>
+              </div>
+
+              {/* Date Sort Toggle Button */}
+              <div className="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+                <button
+                  type="button"
+                  onClick={() => setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))}
+                  title={`Sorting by date ${sortDirection === "asc" ? "Ascending (Soonest/Oldest first)" : "Descending (Latest/Newest first)"}. Click to toggle.`}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/70 hover:bg-slate-700 border border-slate-700/80 transition cursor-pointer"
+                >
+                  {sortDirection === "asc" ? (
+                    <ArrowUp className="w-3.5 h-3.5 text-yellow-400" />
+                  ) : (
+                    <ArrowDown className="w-3.5 h-3.5 text-yellow-400" />
+                  )}
+                  <span>Date {sortDirection === "asc" ? "Asc (Soonest)" : "Desc (Newest)"}</span>
                 </button>
               </div>
             </div>
-
-            <span className="text-xs font-mono text-slate-500">
-              Showing {filteredGigs.length} {filteredGigs.length === 1 ? "performance" : "performances"}
-            </span>
           </div>
 
           {/* Gigs List */}
@@ -342,9 +448,27 @@ export default function PortalGigsListPage() {
                   backgroundColor: "var(--ebb-surface)",
                   borderColor: "var(--ebb-border)",
                 }}
-                className="border rounded-2xl p-8 text-center text-slate-400 text-xs shadow"
+                className="border rounded-3xl p-12 text-center space-y-3 shadow"
               >
-                No performances match the selected filter.
+                <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
+                <h3 className="text-base font-bold text-white">No performances found</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {searchQuery || filterType !== "upcoming"
+                    ? "No performances match your current search query or filter. Try clearing filters or altering search keywords."
+                    : "No upcoming performances are currently scheduled on the calendar."}
+                </p>
+                {(searchQuery || filterType !== "upcoming") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilterType("upcoming");
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold px-3.5 py-1.5 rounded-xl transition border border-slate-700 cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                )}
               </div>
             ) : (
               filteredGigs.map((g) => {

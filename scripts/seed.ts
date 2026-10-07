@@ -13,9 +13,11 @@ import { InventoryItemSchema } from "../src/lib/schema/inventory";
 import { InviteSchema } from "../src/lib/schema/invite";
 import { GigRsvpSchema } from "../src/lib/schema/rsvp";
 import { CheckInSchema } from "../src/lib/schema/checkin";
-import { DEFAULT_SYSTEM_PAGES_LIST } from "../src/lib/schema/page";
+import { ContentPageSchema, DEFAULT_SYSTEM_PAGES_LIST } from "../src/lib/schema/page";
 import { ResourceAssetSchema, DEFAULT_RESOURCES } from "../src/lib/schema/resource";
 import { SiteNavigationSchema, DEFAULT_ANNOUNCEMENT_BANNER } from "../src/lib/schema/siteConfig";
+import { GigSchema, PerformerPayoutRecord } from "../src/lib/schema/gig";
+import { generateGigSlug } from "../src/lib/utils/slug";
 
 const localApp = initializeApp({
   projectId: "eagleburger-band-dev",
@@ -734,7 +736,7 @@ async function runSeed() {
       isTemplate: true,
       usageCount: 2,
       lastUsedDate: "2026-10-10",
-      assignedGigIds: ["gig_st_patricks_2026", "gig_millvale_days_2026"],
+      assignedGigIds: ["gig_holiday_parade_2025", "gig_st_patricks_2026", "gig_pittsburgh_pride_2026", "gig_millvale_days_2026", "gig_pgh_10_miler_2026", "gig_greenfield_parade_2026", "gig_st_patricks_2027"],
       tags: ["Parade", "Street Beat", "Compact", "High Energy"],
       tunes: [
         {
@@ -799,7 +801,7 @@ async function runSeed() {
       isTemplate: true,
       usageCount: 1,
       lastUsedDate: "2026-06-06",
-      assignedGigIds: ["gig_three_rivers_arts_2026"],
+      assignedGigIds: ["gig_first_night_2025", "gig_three_rivers_arts_2026", "gig_deutschtown_music_fest_2026", "gig_strip_district_nye_2026"],
       tags: ["Festival", "Stage", "Extended", "Showcase"],
       tunes: [
         {
@@ -1029,41 +1031,530 @@ async function runSeed() {
 
   // ==========================================
   // 9. Gigs, Call Sheets, RSVPs & Dispatch History
-  // (Features a mix of Saved Setlists, Unique Setlists, and Empty Defaults)
+  // (Utilizes schema validation, automatic slug generation, and attendance helpers)
   // ==========================================
   const paradeTemplateTunes = setlistTemplates[0].tunes;
   const festivalTemplateTunes = setlistTemplates[1].tunes;
+  const beerGardenTemplateTunes = setlistTemplates[2].tunes;
+  const ceremonialTemplateTunes = setlistTemplates[3].tunes;
 
-  const gigs = [
-    {
-      id: "gig_mattress_factory_2026",
-      slug: "2026-09-25-mattress-factory-garden-party",
-      date: "2026-09-25",
-      status: "confirmed",
-      setlistId: null,
-      setlistName: "Garden Party Double-Bill Unique Set",
-      setlistTitle: "Garden Party Double-Bill Unique Set",
+  interface SeedGigInput {
+    id: string;
+    date: string;
+    status: "lead" | "tentative" | "confirmed" | "completed" | "cancelled" | "archived";
+    title: string;
+    venue: string;
+    venueAddress: string;
+    coordinates?: { lat: number; lng: number };
+    city?: string;
+    description: string;
+    admission?: string;
+    callTime?: string;
+    downbeat?: string;
+    attire?: string;
+    unloadingAddress?: string;
+    parkingNotes?: string;
+    compensation?: number;
+    compensationType?: "community" | "band_fund" | "individual";
+    totalFee?: number;
+    setlistId?: string | null;
+    setlistName?: string;
+    setlistTitle?: string;
+    setlist?: Array<{
+      id: string;
+      tuneId: string;
+      songId: string;
+      title: string;
+      artist: string;
+      keySignature: string;
+      tempoBpm: number;
+      durationSeconds: number;
+      performanceNote: string;
+      segueIntoNext: boolean;
+    }>;
+    createdAt?: string;
+    updatedAt?: string;
+  }
+
+  async function seedGigWithAttendance(
+    gigInput: SeedGigInput,
+    rosterUsers: typeof users
+  ) {
+    const slug = generateGigSlug(gigInput.date, gigInput.title);
+    const compType = gigInput.compensationType || "community";
+    const compAmount = gigInput.compensation || 0;
+    const totalFee = gigInput.totalFee ?? (compType === "individual" ? compAmount * rosterUsers.length : compAmount);
+
+    const payouts: Record<string, PerformerPayoutRecord> = {};
+    if (compType === "individual" && compAmount > 0) {
+      rosterUsers.forEach((m, idx) => {
+        if (idx < 8) {
+          payouts[m.uid] = {
+            uid: m.uid,
+            displayName: m.displayName,
+            amount: compAmount,
+            paymentStatus: gigInput.status === "completed" ? "paid" : "unpaid",
+            paymentMethod: idx % 2 === 0 ? "venmo" : "bank_transfer",
+            paidAt: gigInput.status === "completed" ? `${gigInput.date}T22:30:00.000Z` : null,
+          };
+        }
+      });
+    }
+
+    const gigPayload = GigSchema.parse({
+      id: gigInput.id,
+      date: gigInput.date,
+      status: gigInput.status,
+      setlistId: gigInput.setlistId || "",
+      setlistName: gigInput.setlistName || "",
+      setlistTitle: gigInput.setlistTitle || gigInput.setlistName || "",
       publicDetails: {
-        title: "Mattress Factory Garden Party",
-        venue: "Mattress Factory Museum Garden",
-        venueAddress: "500 Sampsonia Way, Pittsburgh, PA 15212",
-        description: "Special double-bill outdoor performance featuring Eagleburger Band and The Honk Committee from Buffalo.",
+        title: gigInput.title,
+        venue: gigInput.venue,
+        address: gigInput.venueAddress,
+        venueAddress: gigInput.venueAddress,
+        coordinates: gigInput.coordinates || { lat: 40.4406, lng: -79.9959 },
+        city: gigInput.city || "Pittsburgh, PA",
+        description: gigInput.description,
+        admission: gigInput.admission || "Free",
+        eventUrl: `https://facebook.com/events/${gigInput.id}`,
+        facebookEventUrl: `https://facebook.com/events/${gigInput.id}`,
+        ticketUrl: "",
+        isPublic: gigInput.status !== "lead" && gigInput.status !== "archived",
+        showExternalDirections: true,
       },
       internalLogistics: {
-        title: "Mattress Factory Garden Party",
-        callTime: "5:45 PM",
-        downbeat: "6:45 PM",
-        attire: "Eagleburger Yellows & Festive Black",
-        unloadingAddress: "500 Sampsonia Way (Rear Alley Gate), Pittsburgh, PA",
-        parkingNotes: "Band vehicle parking permits provided for Monterey St lot.",
-        compensation: 65,
-        compensationType: "individual",
-        description: "Co-billing with The Honk Committee. 45 min alternating sets in courtyard.",
-        setlistId: null,
-        setlistName: "Garden Party Double-Bill Unique Set",
-        setlistTitle: "Garden Party Double-Bill Unique Set",
+        title: gigInput.title,
+        callTime: gigInput.callTime || "18:00",
+        downbeat: gigInput.downbeat || "19:00",
+        unloadingAddress: gigInput.unloadingAddress || gigInput.venueAddress,
+        parkingInstructions: gigInput.parkingNotes || "Street and band vehicle parking available nearby.",
+        parkingNotes: gigInput.parkingNotes || "Street and band vehicle parking available nearby.",
+        attire: gigInput.attire || "Eagleburger Yellows & Festive Black",
+        payPerMusician: compType === "individual" ? compAmount : 0,
+        compensation: compAmount,
+        compensationType: compType,
+        setlistId: gigInput.setlistId || "",
+        setlistName: gigInput.setlistName || "",
+        setlistTitle: gigInput.setlistTitle || gigInput.setlistName || "",
+        description: gigInput.description,
       },
-      // Unique gig-specific sequence
+      financials: {
+        totalFee: totalFee,
+        compensationType: compType,
+        settlementType: compType,
+        bandFundCut: compType === "band_fund" ? compAmount : 0,
+        fixedPerformerAmount: compType === "individual" ? compAmount : 0,
+        payouts: payouts,
+        notes:
+          compType === "community"
+            ? "Community civic/volunteer performance."
+            : compType === "band_fund"
+            ? "Proceeds deposited directly to band treasury fund."
+            : "Performance fee distributed among participating roster members.",
+      },
+      schemaVersion: 1,
+      createdAt: gigInput.createdAt || "2026-01-01T12:00:00.000Z",
+      updatedAt: gigInput.updatedAt || new Date().toISOString(),
+    });
+
+    await setDoc(
+      doc(db, "gigs", gigInput.id),
+      {
+        ...gigPayload,
+        slug,
+        setlistId: gigInput.setlistId || null,
+        rsvpSummary: {
+          attendingCount: gigInput.status === "completed" ? 8 : gigInput.status === "confirmed" ? 8 : 4,
+          declinedCount: gigInput.status === "completed" ? 1 : 1,
+        },
+      },
+      { merge: true }
+    );
+
+    await setDoc(
+      doc(db, "setlists", gigInput.id),
+      {
+        gigId: gigInput.id,
+        isTemplate: false,
+        templateId: gigInput.setlistId || null,
+        templateName: gigInput.setlistName || "",
+        name: gigInput.setlistName || gigInput.title,
+        title: gigInput.setlistTitle || gigInput.setlistName || gigInput.title,
+        tunes: gigInput.setlist || [],
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    for (let i = 0; i < rosterUsers.length; i++) {
+      const musician = rosterUsers[i];
+      let rsvpStatus: "attending" | "declined" | "tentative" = "attending";
+      if (gigInput.status === "lead") {
+        rsvpStatus = i < 4 ? "attending" : "tentative";
+      } else {
+        if (i === 6) rsvpStatus = "declined";
+        if (i === 7 && gigInput.status !== "completed") rsvpStatus = "tentative";
+      }
+
+      const rsvpDocRef = doc(db, "gigs", gigInput.id, "rsvps", musician.uid);
+      const rsvpPayload = GigRsvpSchema.parse({
+        gigId: gigInput.id,
+        uid: musician.uid,
+        displayName: musician.displayName,
+        sectionId: musician.sectionId || "",
+        status: rsvpStatus,
+        notes: rsvpStatus === "declined" ? "Schedule conflict with other band/work" : "",
+        updatedAt: new Date().toISOString(),
+      });
+      await setDoc(rsvpDocRef, rsvpPayload, { merge: true });
+
+      if (rsvpStatus === "attending" && (gigInput.status === "confirmed" || gigInput.status === "completed")) {
+        const checkinStatus = i === 5 ? "late" : "checked_in";
+        const checkinPayload = CheckInSchema.parse({
+          uid: musician.uid,
+          gigId: gigInput.id,
+          displayName: musician.displayName,
+          section: musician.sectionId || "General",
+          status: checkinStatus,
+          checkInMethod: "self_kiosk",
+          checkInTime: gigInput.callTime || "17:45",
+          notes: checkinStatus === "late" ? "Arrived 10 minutes past call time" : "Checked in on time via self kiosk",
+          updatedAt: new Date().toISOString(),
+        });
+        await setDoc(doc(db, "gigs", gigInput.id, "checkins", musician.uid), checkinPayload, { merge: true });
+      }
+    }
+
+    const auditRef = doc(collection(db, "gigs", gigInput.id, "dispatch_history"));
+    await setDoc(auditRef, {
+      type: "logistics_init",
+      message: `Call sheet initialized for ${gigInput.title}.`,
+      initiatedBy: "System Seed",
+      dispatchedAt: gigInput.createdAt || new Date().toISOString(),
+    });
+  }
+
+  const gigs: SeedGigInput[] = [
+    // --- PAST GIGS (Completed) ---
+    {
+      id: "gig_bloomfield_halloween_2025",
+      date: "2025-10-25",
+      status: "completed",
+      title: "Bloomfield Halloween Spooky Promenade",
+      venue: "Liberty Avenue Business District",
+      venueAddress: "4700 Liberty Ave, Pittsburgh, PA 15224",
+      coordinates: { lat: 40.4619, lng: -79.9489 },
+      city: "Pittsburgh, PA (Bloomfield)",
+      description: "Annual costumed night march down Liberty Ave playing Ghostbusters and spooky second-line street grooves.",
+      callTime: "6:00 PM",
+      downbeat: "7:00 PM",
+      attire: "Costumes or Festive Spooky Yellow/Black",
+      unloadingAddress: "4700 Liberty Ave (behind church parking lot)",
+      parkingNotes: "Free street parking along Cedarville and Friendship Ave.",
+      compensation: 0,
+      compensationType: "community",
+      totalFee: 0,
+      setlist: [
+        {
+          id: "bf-hallow-1",
+          tuneId: "song_ghostbusters",
+          songId: "song_ghostbusters",
+          title: "Ghostbusters Theme",
+          artist: "Ray Parker Jr.",
+          keySignature: "B Minor",
+          tempoBpm: 116,
+          durationSeconds: 260,
+          performanceNote: "Crowd call-and-response opener.",
+          segueIntoNext: false,
+        },
+        {
+          id: "bf-hallow-2",
+          tuneId: "song_ghost_town",
+          songId: "song_ghost_town",
+          title: "Ghost Town Ska",
+          artist: "The Specials",
+          keySignature: "C Minor",
+          tempoBpm: 126,
+          durationSeconds: 280,
+          performanceNote: "Skank groove along trolley tracks.",
+          segueIntoNext: true,
+        },
+        {
+          id: "bf-hallow-3",
+          tuneId: "song_bloomfield_bounce",
+          songId: "song_bloomfield_bounce",
+          title: "Bloomfield Bounce",
+          artist: "Eagleburger Band",
+          keySignature: "Bb Major",
+          tempoBpm: 140,
+          durationSeconds: 240,
+          performanceNote: "High speed hometown march.",
+          segueIntoNext: false,
+        },
+        {
+          id: "bf-hallow-4",
+          tuneId: "song_renegade",
+          songId: "song_renegade",
+          title: "Renegade",
+          artist: "Styx",
+          keySignature: "G Minor",
+          tempoBpm: 128,
+          durationSeconds: 300,
+          performanceNote: "Massive singalong finale at Liberty & Gross St.",
+          segueIntoNext: false,
+        },
+      ],
+      createdAt: "2025-09-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_holiday_parade_2025",
+      date: "2025-11-29",
+      status: "completed",
+      title: "Greenfield Holiday Parade 2025",
+      venue: "Beechwood Boulevard & Murray Ave",
+      venueAddress: "Murray Ave & Beechwood Blvd, Pittsburgh, PA 15217",
+      coordinates: { lat: 40.4262, lng: -79.9328 },
+      city: "Pittsburgh, PA (Greenfield)",
+      description: "Historic winter marching parade through Greenfield neighborhood. High crowd density and brass excitement in freezing temperatures.",
+      callTime: "1:00 PM",
+      downbeat: "2:00 PM",
+      attire: "Winter Layered Band Yellows & Beanies",
+      unloadingAddress: "Beechwood Blvd assembly area",
+      parkingNotes: "Greenfield School lower lot parking pass.",
+      compensation: 450,
+      compensationType: "band_fund",
+      totalFee: 450,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2025-10-10T12:00:00.000Z",
+    },
+    {
+      id: "gig_first_night_2025",
+      date: "2025-12-31",
+      status: "completed",
+      title: "Highmark First Night Pittsburgh 2025",
+      venue: "Cultural District Outdoor Plaza",
+      venueAddress: "7th St & Penn Ave, Pittsburgh, PA 15222",
+      coordinates: { lat: 40.4433, lng: -80.0007 },
+      city: "Pittsburgh, PA (Downtown)",
+      description: "New Year's Eve street celebration in the heart of the Cultural District. Outdoor fire pit performances leading to midnight ball rise.",
+      callTime: "8:30 PM",
+      downbeat: "9:30 PM",
+      attire: "Formal Black & Gold with Thermal Undershirts",
+      unloadingAddress: "Penn Ave & 7th St (Stage loading zone)",
+      parkingNotes: "Theater Square Garage reserved band parking.",
+      compensation: 120,
+      compensationType: "individual",
+      totalFee: 1200,
+      setlistId: "template_festival_long",
+      setlistName: "90-Minute Festival Showcase",
+      setlist: festivalTemplateTunes,
+      createdAt: "2025-11-01T12:00:00.000Z",
+    },
+    {
+      id: "gig_mardi_gras_2026",
+      date: "2026-02-17",
+      status: "completed",
+      title: "South Side Fat Tuesday Brass Crawl",
+      venue: "East Carson Street Corridor",
+      venueAddress: "1500 E Carson St, Pittsburgh, PA 15203",
+      coordinates: { lat: 40.4287, lng: -79.9839 },
+      city: "Pittsburgh, PA (South Side)",
+      description: "Acoustic second-line march through participating venues on East Carson. Throwing beads and blowing unamplified brass funk.",
+      callTime: "6:30 PM",
+      downbeat: "7:30 PM",
+      attire: "Mardi Gras Purple, Green & Eagleburger Yellow",
+      unloadingAddress: "1500 E Carson St (South Side Works lot)",
+      parkingNotes: "Municipal parking lot at 18th & Carson.",
+      compensation: 80,
+      compensationType: "individual",
+      totalFee: 800,
+      setlistId: "template_beer_garden",
+      setlistName: "Beer Garden & Porchfest Set",
+      setlist: beerGardenTemplateTunes,
+      createdAt: "2026-01-10T12:00:00.000Z",
+    },
+    {
+      id: "gig_st_patricks_2026",
+      date: "2026-03-14",
+      status: "completed",
+      title: "Pittsburgh St. Patrick's Day Parade 2026",
+      venue: "Downtown Pittsburgh Parade Route",
+      venueAddress: "Grant St & Boulevard of the Allies, Pittsburgh, PA 15219",
+      coordinates: { lat: 40.4374, lng: -79.9984 },
+      city: "Pittsburgh, PA (Downtown)",
+      description: "One of the nation's largest St. Patrick's Day parades. 1.4 mile marching route performing for over 200,000 spectators along Grant St.",
+      callTime: "8:45 AM",
+      downbeat: "10:00 AM",
+      attire: "Parade Yellows with Green Accents",
+      unloadingAddress: "Liberty Ave staging zone (Division 3)",
+      parkingNotes: "Greyhound station garage validation.",
+      compensation: 600,
+      compensationType: "band_fund",
+      totalFee: 600,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2026-01-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_bloomfield_mayfest_2026",
+      date: "2026-05-02",
+      status: "completed",
+      title: "Bloomfield Mayfest Street Fair",
+      venue: "Liberty Green & 44th Street",
+      venueAddress: "4400 Liberty Ave, Pittsburgh, PA 15224",
+      coordinates: { lat: 40.4635, lng: -79.9515 },
+      city: "Pittsburgh, PA (Bloomfield)",
+      description: "Spring neighborhood festival with food trucks, artisan booths, and roving street brass pop-ups.",
+      callTime: "12:15 PM",
+      downbeat: "1:00 PM",
+      attire: "Casual Eagleburger Yellow T-Shirts",
+      unloadingAddress: "4400 Liberty Ave (festival check-in)",
+      parkingNotes: "West Penn Hospital parking garage passes provided.",
+      compensation: 500,
+      compensationType: "band_fund",
+      totalFee: 500,
+      setlistId: "template_beer_garden",
+      setlistName: "Beer Garden & Porchfest Set",
+      setlist: beerGardenTemplateTunes,
+      createdAt: "2026-03-01T12:00:00.000Z",
+    },
+    {
+      id: "gig_lawrenceville_porchfest_2026",
+      date: "2026-05-16",
+      status: "completed",
+      title: "Lawrenceville Porchfest 2026",
+      venue: "44th Street & Butler St Community Porch",
+      venueAddress: "220 44th St, Pittsburgh, PA 15201",
+      coordinates: { lat: 40.4704, lng: -79.9577 },
+      city: "Pittsburgh, PA (Lawrenceville)",
+      description: "Acoustic neighborhood porch set. Over 300 spectators packed into front yard and sidewalk for high-energy unamplified funk.",
+      callTime: "1:15 PM",
+      downbeat: "2:00 PM",
+      attire: "Eagleburger Casual / Band Polos",
+      unloadingAddress: "44th St between Butler and Plummer",
+      parkingNotes: "Street parking on Plummer St or 43rd St.",
+      compensation: 0,
+      compensationType: "community",
+      totalFee: 0,
+      setlistId: "template_beer_garden",
+      setlistName: "Beer Garden & Porchfest Set",
+      setlist: beerGardenTemplateTunes,
+      createdAt: "2026-03-10T12:00:00.000Z",
+    },
+    {
+      id: "gig_three_rivers_arts_2026",
+      date: "2026-06-06",
+      status: "completed",
+      title: "Dollar Bank Three Rivers Arts Festival",
+      venue: "Point State Park / Stanwix Stage",
+      venueAddress: "Point State Park, Pittsburgh, PA 15222",
+      coordinates: { lat: 40.4417, lng: -80.0076 },
+      city: "Pittsburgh, PA (Downtown)",
+      description: "90-minute headline outdoor evening set under the fountain at the Point for the annual 10-day regional arts festival.",
+      callTime: "6:00 PM",
+      downbeat: "7:00 PM",
+      attire: "Sharp Eagleburger Yellow Tops & Dark Slacks",
+      unloadingAddress: "Commonwealth Place artist entrance gate",
+      parkingNotes: "Gateway Center Garage band passes.",
+      compensation: 150,
+      compensationType: "individual",
+      totalFee: 1500,
+      setlistId: "template_festival_long",
+      setlistName: "90-Minute Festival Showcase",
+      setlist: festivalTemplateTunes,
+      createdAt: "2026-04-01T12:00:00.000Z",
+    },
+    {
+      id: "gig_pittsburgh_pride_2026",
+      date: "2026-06-27",
+      status: "completed",
+      title: "Pittsburgh Pride Revolution Parade & Concert",
+      venue: "Andy Warhol Bridge to North Shore",
+      venueAddress: "7th St Bridge, Pittsburgh, PA 15212",
+      coordinates: { lat: 40.4475, lng: -80.0022 },
+      city: "Pittsburgh, PA (North Shore)",
+      description: "Marching across the Andy Warhol 7th St Bridge leading the parade procession into the North Shore riverfront festival.",
+      callTime: "11:00 AM",
+      downbeat: "12:00 PM",
+      attire: "Rainbow Accents & Festive Band Yellows",
+      unloadingAddress: "Downtown assembly on Fort Duquesne Blvd",
+      parkingNotes: "North Shore Gold Lot 1A passes.",
+      compensation: 750,
+      compensationType: "band_fund",
+      totalFee: 750,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2026-04-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_deutschtown_music_fest_2026",
+      date: "2026-07-11",
+      status: "completed",
+      title: "Deutschtown Music Festival Mainstage",
+      venue: "East Ohio Street & Middle St Stage",
+      venueAddress: "500 E Ohio St, Pittsburgh, PA 15212",
+      coordinates: { lat: 40.4533, lng: -80.0004 },
+      city: "Pittsburgh, PA (Historic Deutschtown)",
+      description: "Peak Saturday festival performance at Western PA's premier grassroots music festival. Crowd sing-alongs on Renegade and Superstition.",
+      callTime: "4:30 PM",
+      downbeat: "5:30 PM",
+      attire: "Summer Band Yellows",
+      unloadingAddress: "Middle St artist load-in behind main stage",
+      parkingNotes: "Allegheny Center garage parking passes.",
+      compensation: 90,
+      compensationType: "individual",
+      totalFee: 900,
+      setlistId: "template_festival_long",
+      setlistName: "90-Minute Festival Showcase",
+      setlist: festivalTemplateTunes,
+      createdAt: "2026-05-01T12:00:00.000Z",
+    },
+    {
+      id: "gig_shadyside_arts_2026",
+      date: "2026-08-22",
+      status: "completed",
+      title: "The Art Festival on Walnut Street",
+      venue: "Walnut Street Pedestrian Mall",
+      venueAddress: "5500 Walnut St, Pittsburgh, PA 15232",
+      coordinates: { lat: 40.4514, lng: -79.9332 },
+      city: "Pittsburgh, PA (Shadyside)",
+      description: "Mobile street marching sets weaving through art galleries, craft stalls, and sidewalk cafes on Walnut Street.",
+      callTime: "1:30 PM",
+      downbeat: "2:30 PM",
+      attire: "Band Polos & Khakis",
+      unloadingAddress: "Bellefonte & Walnut St intersection",
+      parkingNotes: "Ivy Street Garage reserved artist passes.",
+      compensation: 650,
+      compensationType: "band_fund",
+      totalFee: 650,
+      setlistId: "template_beer_garden",
+      setlistName: "Beer Garden & Porchfest Set",
+      setlist: beerGardenTemplateTunes,
+      createdAt: "2026-06-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_mattress_factory_2026",
+      date: "2026-09-25",
+      status: "completed",
+      title: "Mattress Factory Garden Party",
+      venue: "Mattress Factory Museum Garden",
+      venueAddress: "500 Sampsonia Way, Pittsburgh, PA 15212",
+      coordinates: { lat: 40.4571, lng: -80.0125 },
+      city: "Pittsburgh, PA (North Side)",
+      description: "Special double-bill outdoor performance featuring Eagleburger Band and The Honk Committee from Buffalo in the museum courtyard.",
+      callTime: "5:45 PM",
+      downbeat: "6:45 PM",
+      attire: "Eagleburger Yellows & Festive Black",
+      unloadingAddress: "500 Sampsonia Way (Rear Alley Gate)",
+      parkingNotes: "Monterey St lot permits provided.",
+      compensation: 65,
+      compensationType: "individual",
+      totalFee: 650,
       setlist: [
         {
           id: "mf-tune-1",
@@ -1073,9 +1564,9 @@ async function runSeed() {
           artist: "Traditional",
           keySignature: "Eb Major",
           tempoBpm: 122,
-          durationSeconds: 280,
-          performanceNote: "Opener with visiting Honk Committee horns joining the unisons.",
-          segueIntoNext: true,
+          durationSeconds: 260,
+          performanceNote: "Opener with horn section fanfares.",
+          segueIntoNext: false,
         },
         {
           id: "mf-tune-2",
@@ -1085,21 +1576,21 @@ async function runSeed() {
           artist: "Stevie Wonder",
           keySignature: "Eb Minor",
           tempoBpm: 100,
-          durationSeconds: 310,
-          performanceNote: "Heavy sousaphone clavinet groove; trading trombone and trumpet solos.",
+          durationSeconds: 290,
+          performanceNote: "Heavy clavinet sousaphone groove.",
           segueIntoNext: false,
         },
         {
           id: "mf-tune-3",
-          tuneId: "song_ghostbusters",
-          songId: "song_ghostbusters",
-          title: "Ghostbusters Theme",
-          artist: "Ray Parker Jr.",
-          keySignature: "B Minor",
+          tuneId: "song_river_groove",
+          songId: "song_river_groove",
+          title: "Clarion River Walk",
+          artist: "Traditional",
+          keySignature: "F Major",
           tempoBpm: 116,
-          durationSeconds: 260,
-          performanceNote: "Courtyard crowd call-and-response horn punches.",
-          segueIntoNext: false,
+          durationSeconds: 320,
+          performanceNote: "Sousaphone solo feature.",
+          segueIntoNext: true,
         },
         {
           id: "mf-tune-4",
@@ -1109,175 +1600,83 @@ async function runSeed() {
           artist: "Eagleburger Band",
           keySignature: "Bb Major",
           tempoBpm: 140,
-          durationSeconds: 250,
-          performanceNote: "Courtyard second-line dance party finale.",
+          durationSeconds: 270,
+          performanceNote: "Fast transition into dance cadence.",
+          segueIntoNext: false,
+        },
+        {
+          id: "mf-tune-5",
+          tuneId: "song_renegade",
+          songId: "song_renegade",
+          title: "Renegade",
+          artist: "Styx",
+          keySignature: "G Minor",
+          tempoBpm: 128,
+          durationSeconds: 360,
+          performanceNote: "Encore closer with crowd singing.",
           segueIntoNext: false,
         },
       ],
-      financials: {
-        totalFee: 1400,
-        compensationType: "individual",
-        settlementType: "equal_split",
-        bandFundCut: 200,
-        fixedPerformerAmount: 65,
-        payouts: {},
-        notes: "Joint fee with visiting band; sound system supplied by venue.",
-      },
-      rsvpSummary: {
-        attendingCount: 8,
-        declinedCount: 1,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: "2026-07-20T12:00:00.000Z",
     },
+
+    // --- FUTURE GIGS (Upcoming & Scheduled) ---
     {
-      id: "gig_bloomfield_2028",
-      slug: "2028-11-05-bloomfield-street-carnival",
-      date: "2028-11-05",
-      status: "draft",
-      setlistId: null,
-      setlistName: "",
-      setlistTitle: "",
-      publicDetails: {
-        title: "Bloomfield Street Carnival",
-        venue: "Liberty & 45th",
-        venueAddress: "Penn & 45th, Pittsburgh, PA 15224",
-        description: "Annual neighborhood street festival and parade performance.",
-      },
-      internalLogistics: {
-        title: "Bloomfield Street Carnival",
-        callTime: "5:30 PM",
-        downbeat: "6:30 PM",
-        attire: "Eagleburger Yellows & Black",
-        unloadingAddress: "Penn & 45th, Pittsburgh, PA 15224",
-        parkingNotes: "Street parking on adjacent residential avenues.",
-        compensation: 0,
-        compensationType: "community",
-        description: "Official marching block & open plaza jam.",
-        setlistId: null,
-        setlistName: "",
-        setlistTitle: "",
-      },
-      // Newly created empty setlist default
-      setlist: [],
-      financials: {
-        totalFee: 0,
-        compensationType: "community",
-        settlementType: "community",
-        bandFundCut: 0,
-        fixedPerformerAmount: 0,
-        payouts: {},
-        notes: "Bloomfield neighborhood civic carnival - volunteer community participation ($0 intake).",
-      },
-      rsvpSummary: {
-        attendingCount: 7,
-        declinedCount: 0,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "gig_st_patricks_2026",
-      slug: "2026-03-14-st-patricks-parade-downtown",
-      date: "2026-03-14",
-      status: "completed",
+      id: "gig_millvale_days_2026",
+      date: "2026-10-10",
+      status: "confirmed",
+      title: "Millvale Days Community Parade & Concert",
+      venue: "Grant Ave Street Stage",
+      venueAddress: "216 Grant Ave, Millvale, PA 15209",
+      coordinates: { lat: 40.4788, lng: -79.9749 },
+      city: "Millvale, PA",
+      description: "Headline evening street parade and courtyard concert for the 85th annual Millvale Days celebration.",
+      callTime: "4:30 PM",
+      downbeat: "5:30 PM",
+      attire: "Full Band Yellow Uniforms",
+      unloadingAddress: "Sedgwick St & Grant Ave staging area",
+      parkingNotes: "Millvale Borough municipal lot parking passes.",
+      compensation: 500,
+      compensationType: "band_fund",
+      totalFee: 500,
       setlistId: "template_parade_short",
       setlistName: "30-Minute Street Parade Block",
-      setlistTitle: "30-Minute Street Parade Block",
-      publicDetails: {
-        title: "Downtown Pittsburgh St. Patrick's Parade",
-        venue: "Downtown Pittsburgh / Grant St & Boulevard of the Allies",
-        venueAddress: "Grant St & Liberty Ave, Pittsburgh, PA 15219",
-        description: "Annual Pittsburgh St. Patrick's Parade march down Grant Street and Boulevard of the Allies.",
-      },
-      internalLogistics: {
-        title: "Downtown Pittsburgh St. Patrick's Parade",
-        callTime: "8:30 AM",
-        downbeat: "10:00 AM",
-        attire: "Eagleburger Greens, Yellows & Black Layers",
-        unloadingAddress: "10th St & Penn Ave (Staging Division 3), Pittsburgh, PA",
-        parkingNotes: "Subsidized parking at Grant Street Transportation Center garage.",
-        compensation: 200,
-        compensationType: "individual",
-        description: "Official Division 3 street lead unit. Continuous mobile street cadence.",
-        setlistId: "template_parade_short",
-        setlistName: "30-Minute Street Parade Block",
-        setlistTitle: "30-Minute Street Parade Block",
-      },
-      // Uses Saved Setlist from Library
       setlist: paradeTemplateTunes,
-      financials: {
-        totalFee: 3500,
-        compensationType: "individual",
-        settlementType: "equal_split",
-        bandFundCut: 500,
-        fixedPerformerAmount: 200,
-        payouts: {},
-        notes: "Parade committee check settled and disbursed to 8 participating musicians.",
-      },
-      rsvpSummary: {
-        attendingCount: 8,
-        declinedCount: 0,
-      },
-      createdAt: "2026-02-01T12:00:00.000Z",
-      updatedAt: "2026-03-15T10:00:00.000Z",
+      createdAt: "2026-05-10T12:00:00.000Z",
     },
     {
-      id: "gig_lawrenceville_porchfest_2026",
-      slug: "2026-05-16-lawrenceville-porchfest",
-      date: "2026-05-16",
-      status: "completed",
-      setlistId: null,
-      setlistName: "Lawrenceville Porch Crawl Acoustic Set",
-      setlistTitle: "Lawrenceville Porch Crawl Acoustic Set",
-      publicDetails: {
-        title: "Lawrenceville Porchfest Stomp",
-        venue: "Arsenal Park & Butler St Porches",
-        venueAddress: "40th & Butler St, Pittsburgh, PA 15201",
-        description: "Acoustic street tour jumping between neighborhood porch stoops and finishing in Arsenal Park.",
-      },
-      internalLogistics: {
-        title: "Lawrenceville Porchfest Stomp",
-        callTime: "1:00 PM",
-        downbeat: "2:00 PM",
-        attire: "Casual Eagleburger Merch / Yellow T-Shirts",
-        unloadingAddress: "40th & Penn Ave, Pittsburgh, PA",
-        parkingNotes: "Neighborhood street parking; carpool recommended.",
-        compensation: 0,
-        compensationType: "community",
-        description: "Mobile acoustic sets. Audience following the brass parade down 43rd St.",
-        setlistId: null,
-        setlistName: "Lawrenceville Porch Crawl Acoustic Set",
-        setlistTitle: "Lawrenceville Porch Crawl Acoustic Set",
-      },
-      // Unique gig-specific sequence
+      id: "gig_southside_zombie_walk_2026",
+      date: "2026-10-24",
+      status: "confirmed",
+      title: "South Side Halloween Spooky Brass Promenade",
+      venue: "18th & East Carson Street Plaza",
+      venueAddress: "1800 E Carson St, Pittsburgh, PA 15203",
+      coordinates: { lat: 40.4287, lng: -79.9806 },
+      city: "Pittsburgh, PA (South Side)",
+      description: "High-stepping costumed street brass march through South Side entertainment district. Ghostbusters theme and scary brass riffs.",
+      callTime: "6:00 PM",
+      downbeat: "7:00 PM",
+      attire: "Costumes or Festive Spooky Yellow/Black",
+      unloadingAddress: "1800 E Carson St (behind municipal lot)",
+      parkingNotes: "18th St municipal lot parking vouchers.",
+      compensation: 70,
+      compensationType: "individual",
+      totalFee: 700,
       setlist: [
         {
-          id: "lpf-tune-1",
-          tuneId: "song_river_groove",
-          songId: "song_river_groove",
-          title: "Clarion River Walk",
-          artist: "Traditional",
-          keySignature: "F Major",
+          id: "ss-spooky-1",
+          tuneId: "song_ghostbusters",
+          songId: "song_ghostbusters",
+          title: "Ghostbusters Theme",
+          artist: "Ray Parker Jr.",
+          keySignature: "B Minor",
           tempoBpm: 116,
-          durationSeconds: 270,
-          performanceNote: "Mellow street stride jumping from porch to porch.",
+          durationSeconds: 260,
+          performanceNote: "Crowd anthem opener on Carson St.",
           segueIntoNext: false,
         },
         {
-          id: "lpf-tune-2",
-          tuneId: "song_foxburg_reel",
-          songId: "song_foxburg_reel",
-          title: "Foxburg River Reel",
-          artist: "Traditional",
-          keySignature: "G Major",
-          tempoBpm: 136,
-          durationSeconds: 240,
-          performanceNote: "Acoustic woodwind and brass counterpoint feature.",
-          segueIntoNext: true,
-        },
-        {
-          id: "lpf-tune-3",
+          id: "ss-spooky-2",
           tuneId: "song_ghost_town",
           songId: "song_ghost_town",
           title: "Ghost Town Ska",
@@ -1285,183 +1684,224 @@ async function runSeed() {
           keySignature: "C Minor",
           tempoBpm: 126,
           durationSeconds: 280,
-          performanceNote: "Stoop jam acoustic finale in Arsenal Park.",
+          performanceNote: "Ska rhythm for street dance.",
+          segueIntoNext: true,
+        },
+        {
+          id: "ss-spooky-3",
+          tuneId: "song_bloomfield_bounce",
+          songId: "song_bloomfield_bounce",
+          title: "Bloomfield Bounce",
+          artist: "Eagleburger Band",
+          keySignature: "Bb Major",
+          tempoBpm: 140,
+          durationSeconds: 240,
+          performanceNote: "March cadence pickup.",
+          segueIntoNext: false,
+        },
+        {
+          id: "ss-spooky-4",
+          tuneId: "song_renegade",
+          songId: "song_renegade",
+          title: "Renegade",
+          artist: "Styx",
+          keySignature: "G Minor",
+          tempoBpm: 128,
+          durationSeconds: 300,
+          performanceNote: "Big brass finish.",
           segueIntoNext: false,
         },
       ],
-      financials: {
-        totalFee: 0,
-        compensationType: "community",
-        settlementType: "community",
-        bandFundCut: 0,
-        fixedPerformerAmount: 0,
-        payouts: {},
-        notes: "Porchfest community civic celebration - volunteer acoustic street jam for the neighborhood.",
-      },
-      rsvpSummary: {
-        attendingCount: 8,
-        declinedCount: 0,
-      },
-      createdAt: "2026-04-01T12:00:00.000Z",
-      updatedAt: "2026-05-17T09:00:00.000Z",
+      createdAt: "2026-08-01T12:00:00.000Z",
     },
     {
-      id: "gig_three_rivers_arts_2026",
-      slug: "2026-06-06-three-rivers-arts-festival",
-      date: "2026-06-06",
+      id: "gig_pgh_10_miler_2026",
+      date: "2026-11-01",
       status: "confirmed",
-      setlistId: "template_festival_long",
-      setlistName: "90-Minute Festival Showcase",
-      setlistTitle: "90-Minute Festival Showcase",
-      publicDetails: {
-        title: "Three Rivers Arts Festival Pop-Up Showcase",
-        venue: "Point State Park Lawn & Stanwix Plaza",
-        venueAddress: "601 Commonwealth Pl, Pittsburgh, PA 15222",
-        description: "High-decibel acoustic brass fanfare navigating the artisan market pathways and lawn lawns.",
-      },
-      internalLogistics: {
-        title: "Three Rivers Arts Festival Pop-Up Showcase",
-        callTime: "3:30 PM",
-        downbeat: "4:30 PM",
-        attire: "Eagleburger Black & Yellows",
-        unloadingAddress: "Commonwealth Pl Loading Zone, Pittsburgh, PA",
-        parkingNotes: "Vendor load pass provided for Stanwix Street staging area.",
-        compensation: 0,
-        compensationType: "band_fund",
-        description: "Two 40-minute mobile pop-up sets across the festival footprint.",
-        setlistId: "template_festival_long",
-        setlistName: "90-Minute Festival Showcase",
-        setlistTitle: "90-Minute Festival Showcase",
-      },
-      // Uses Saved Setlist from Library
-      setlist: festivalTemplateTunes,
-      financials: {
-        totalFee: 2200,
-        compensationType: "band_fund",
-        settlementType: "band_fund",
-        bandFundCut: 2200,
-        fixedPerformerAmount: 0,
-        payouts: {},
-        notes: "Pittsburgh Cultural Trust festival contract confirmed - 100% of proceeds fund the brass band touring treasury ($0 individual payout).",
-      },
-      rsvpSummary: {
-        attendingCount: 8,
-        declinedCount: 0,
-      },
-      createdAt: "2026-04-15T12:00:00.000Z",
-      updatedAt: "2026-05-01T12:00:00.000Z",
-    },
-    {
-      id: "gig_millvale_days_2026",
-      slug: "2026-10-10-millvale-days-street-parade",
-      date: "2026-10-10",
-      status: "confirmed",
+      title: "EQT Pittsburgh 10 Miler Brass Cheer Station",
+      venue: "West End Overlook Runner Course",
+      venueAddress: "Marlow St & Fairview Ave, Pittsburgh, PA 15220",
+      coordinates: { lat: 40.4468, lng: -80.0354 },
+      city: "Pittsburgh, PA (West End)",
+      description: "High-energy acoustic cheer station powering runners up the steep climb through the West End.",
+      callTime: "7:15 AM",
+      downbeat: "8:00 AM",
+      attire: "Warm Layers, Band Jackets & Yellow Beanies",
+      unloadingAddress: "Elliott West End Overlook pavilion area",
+      parkingNotes: "Overlook park lot passes provided by P3R.",
+      compensation: 350,
+      compensationType: "band_fund",
+      totalFee: 350,
       setlistId: "template_parade_short",
       setlistName: "30-Minute Street Parade Block",
-      setlistTitle: "30-Minute Street Parade Block",
-      publicDetails: {
-        title: "Millvale Days Grand Street Parade",
-        venue: "Grant Avenue Historic District",
-        venueAddress: "Grant Ave & North Ave, Millvale, PA 15209",
-        description: "Headlining the annual Millvale Days parade and post-parade street party.",
-      },
-      internalLogistics: {
-        title: "Millvale Days Grand Street Parade",
-        callTime: "10:00 AM",
-        downbeat: "11:00 AM",
-        attire: "Eagleburger Yellows & Festive Street Attire",
-        unloadingAddress: "Sedgwick St staging zone, Millvale, PA",
-        parkingNotes: "Permit zone in municipal lot off Lincoln Ave.",
-        compensation: 85,
-        compensationType: "individual",
-        description: "1.2 mile street parade followed by 20-minute standing plaza blowout.",
-        setlistId: "template_parade_short",
-        setlistName: "30-Minute Street Parade Block",
-        setlistTitle: "30-Minute Street Parade Block",
-      },
-      // Uses Saved Setlist from Library
       setlist: paradeTemplateTunes,
-      financials: {
-        totalFee: 1500,
-        compensationType: "individual",
-        settlementType: "equal_split",
-        bandFundCut: 250,
-        fixedPerformerAmount: 85,
-        payouts: {},
-        notes: "Millvale Community Association grant contract.",
-      },
-      rsvpSummary: {
-        attendingCount: 8,
-        declinedCount: 0,
-      },
-      createdAt: "2026-05-10T12:00:00.000Z",
-      updatedAt: "2026-05-20T12:00:00.000Z",
+      createdAt: "2026-08-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_greenfield_parade_2026",
+      date: "2026-11-28",
+      status: "confirmed",
+      title: "Greenfield Holiday Parade 2026",
+      venue: "Murray Ave & Beechwood Blvd",
+      venueAddress: "Murray Ave & Beechwood Blvd, Pittsburgh, PA 15217",
+      coordinates: { lat: 40.4262, lng: -79.9328 },
+      city: "Pittsburgh, PA (Greenfield)",
+      description: "Our beloved annual holiday tradition! Leading the parade unit down Murray Avenue to Greenfield school grounds.",
+      callTime: "1:00 PM",
+      downbeat: "2:00 PM",
+      attire: "Winter Layered Band Yellows, Santa Hats & Beanies",
+      unloadingAddress: "Beechwood Blvd staging area",
+      parkingNotes: "Greenfield School lower lot parking pass.",
+      compensation: 500,
+      compensationType: "band_fund",
+      totalFee: 500,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2026-09-01T12:00:00.000Z",
+    },
+    {
+      id: "gig_strip_district_nye_2026",
+      date: "2026-12-31",
+      status: "confirmed",
+      title: "Strip District NYE Brass & Brewery Bash",
+      venue: "24th Street Warehouse Brewery",
+      venueAddress: "2400 Smallman St, Pittsburgh, PA 15222",
+      coordinates: { lat: 40.4532, lng: -79.9829 },
+      city: "Pittsburgh, PA (Strip District)",
+      description: "Ticketed New Year's Eve warehouse party. Two high-octane 45-minute sets leading into the midnight toast.",
+      callTime: "9:00 PM",
+      downbeat: "10:15 PM",
+      attire: "Formal Black with Gold Bowties & Band Yellow",
+      unloadingAddress: "2400 Smallman St (brewery bay door)",
+      parkingNotes: "Reserved parking in brewery rear compound.",
+      compensation: 160,
+      compensationType: "individual",
+      totalFee: 1600,
+      setlistId: "template_festival_long",
+      setlistName: "90-Minute Festival Showcase",
+      setlist: festivalTemplateTunes,
+      createdAt: "2026-09-10T12:00:00.000Z",
+    },
+    {
+      id: "gig_mardi_gras_carson_2027",
+      date: "2027-02-09",
+      status: "confirmed",
+      title: "South Side Fat Tuesday 2027 Brass Crawl",
+      venue: "East Carson Street Corridor",
+      venueAddress: "1600 E Carson St, Pittsburgh, PA 15203",
+      coordinates: { lat: 40.4287, lng: -79.9825 },
+      city: "Pittsburgh, PA (South Side)",
+      description: "Second line procession celebrating Fat Tuesday 2027 across South Side music pubs and restaurants.",
+      callTime: "6:30 PM",
+      downbeat: "7:30 PM",
+      attire: "Mardi Gras Beads & Eagleburger Yellow",
+      unloadingAddress: "1600 E Carson St (municipal lot)",
+      parkingNotes: "Municipal parking lot at 18th & Carson.",
+      compensation: 90,
+      compensationType: "individual",
+      totalFee: 900,
+      setlistId: "template_beer_garden",
+      setlistName: "Beer Garden & Porchfest Set",
+      setlist: beerGardenTemplateTunes,
+      createdAt: "2026-09-15T12:00:00.000Z",
+    },
+    {
+      id: "gig_st_patricks_2027",
+      date: "2027-03-13",
+      status: "confirmed",
+      title: "Pittsburgh St. Patrick's Day Parade 2027",
+      venue: "Grant St & Boulevard of the Allies",
+      venueAddress: "Grant St & Blvd of the Allies, Pittsburgh, PA 15219",
+      coordinates: { lat: 40.4374, lng: -79.9984 },
+      city: "Pittsburgh, PA (Downtown)",
+      description: "Annual St. Patrick's Day parade marching appearance through downtown Pittsburgh.",
+      callTime: "8:45 AM",
+      downbeat: "10:00 AM",
+      attire: "Parade Yellows with Green Accents",
+      unloadingAddress: "Liberty Ave staging zone (Division 3)",
+      parkingNotes: "Greyhound station garage validation.",
+      compensation: 650,
+      compensationType: "band_fund",
+      totalFee: 650,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2026-09-20T12:00:00.000Z",
+    },
+    {
+      id: "gig_pittsburgh_marathon_2027",
+      date: "2027-05-02",
+      status: "tentative",
+      title: "DICK'S Pittsburgh Marathon Mile 11 Rock Station",
+      venue: "Birmingham Bridge / South Side Works",
+      venueAddress: "2700 E Carson St, Pittsburgh, PA 15203",
+      coordinates: { lat: 40.4281, lng: -79.9672 },
+      city: "Pittsburgh, PA (South Side)",
+      description: "Acoustic brass cheer band powering runners through mile 11 as they cross under the Birmingham Bridge.",
+      callTime: "7:30 AM",
+      downbeat: "8:15 AM",
+      attire: "Athletic Band Gear & Yellow T-Shirts",
+      unloadingAddress: "2700 E Carson St (South Side Works garage)",
+      parkingNotes: "South Side Works parking pass provided by P3R.",
+      compensation: 400,
+      compensationType: "band_fund",
+      totalFee: 400,
+      setlistId: "template_parade_short",
+      setlistName: "30-Minute Street Parade Block",
+      setlist: paradeTemplateTunes,
+      createdAt: "2026-09-25T12:00:00.000Z",
+    },
+    {
+      id: "gig_three_rivers_regatta_2027",
+      date: "2027-07-03",
+      status: "lead",
+      title: "Three Rivers Regatta Fourth of July Fanfare",
+      venue: "Point State Park Great Lawn",
+      venueAddress: "101 Commonwealth Pl, Pittsburgh, PA 15222",
+      coordinates: { lat: 40.4419, lng: -80.0071 },
+      city: "Pittsburgh, PA (Downtown)",
+      description: "Inquiry from Three Rivers Regatta committee for holiday weekend riverfront fanfare and roving brass sets.",
+      callTime: "2:00 PM",
+      downbeat: "3:00 PM",
+      attire: "Patriotic Yellows & Summer Whites",
+      unloadingAddress: "Point State Park service entrance",
+      parkingNotes: "State park permits.",
+      compensation: 120,
+      compensationType: "individual",
+      totalFee: 1200,
+      setlistId: "template_ceremonial_fanfare",
+      setlistName: "Ceremonial Brass Fanfare & Civic March",
+      setlist: ceremonialTemplateTunes,
+      createdAt: "2026-09-30T12:00:00.000Z",
+    },
+    {
+      id: "gig_bloomfield_2028",
+      date: "2028-11-05",
+      status: "lead",
+      title: "Bloomfield Halloween Zombie March 2028",
+      venue: "Liberty Avenue",
+      venueAddress: "4700 Liberty Ave, Pittsburgh, PA 15224",
+      coordinates: { lat: 40.4619, lng: -79.9489 },
+      city: "Pittsburgh, PA (Bloomfield)",
+      description: "Long-range planned future zombie street parade through Little Italy.",
+      callTime: "6:30 PM",
+      downbeat: "7:30 PM",
+      attire: "Zombie Brass Costumes",
+      unloadingAddress: "4700 Liberty Ave",
+      parkingNotes: "Street parking.",
+      compensation: 0,
+      compensationType: "community",
+      totalFee: 0,
+      setlist: [],
+      createdAt: "2026-08-01T12:00:00.000Z",
     },
   ];
 
   for (const g of gigs) {
-    await setDoc(doc(db, "gigs", g.id), g, { merge: true });
-
-    // Synchronize live stage view document at setlists/{gigId}
-    await setDoc(
-      doc(db, "setlists", g.id),
-      {
-        gigId: g.id,
-        isTemplate: false,
-        templateId: g.setlistId || null,
-        templateName: g.setlistName || "",
-        name: g.setlistName || "",
-        title: g.setlistTitle || g.setlistName || "",
-        tunes: g.setlist || [],
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
-
-    for (let i = 0; i < users.length; i++) {
-      const musician = users[i];
-      let rsvpStatus: "attending" | "declined" | "tentative" = "attending";
-      if (i === 6) rsvpStatus = "declined";
-      if (i === 7 && g.status !== "completed") rsvpStatus = "tentative";
-
-      const rsvpDocRef = doc(db, "gigs", g.id, "rsvps", musician.uid);
-      const rsvpPayload = GigRsvpSchema.parse({
-        gigId: g.id,
-        uid: musician.uid,
-        displayName: musician.displayName,
-        sectionId: musician.sectionId,
-        status: rsvpStatus,
-        notes: rsvpStatus === "declined" ? "Gig conflict" : "",
-        updatedAt: new Date().toISOString(),
-      });
-      await setDoc(rsvpDocRef, rsvpPayload, { merge: true });
-
-      // Seed day-of checkin for attending musicians on active or recent gigs
-      if (rsvpStatus === "attending" && (g.status === "confirmed" || g.status === "completed")) {
-        const checkinPayload = CheckInSchema.parse({
-          uid: musician.uid,
-          gigId: g.id,
-          displayName: musician.displayName,
-          section: musician.sectionId || "General",
-          status: "checked_in",
-          checkInMethod: "self_kiosk",
-          checkInTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          notes: "Seeded rehearsal/gig check-in",
-          updatedAt: new Date().toISOString(),
-        });
-        await setDoc(doc(db, "gigs", g.id, "checkins", musician.uid), checkinPayload, { merge: true });
-      }
-    }
-
-    const auditRef = doc(collection(db, "gigs", g.id, "dispatch_history"));
-    await setDoc(auditRef, {
-      type: "logistics_init",
-      message: `Call sheet initialized for ${g.publicDetails.title}.`,
-      initiatedBy: "System Seed",
-      dispatchedAt: new Date().toISOString(),
-    });
+    await seedGigWithAttendance(g, users);
   }
-  console.log(`✅ Seeded ${gigs.length} gigs across calendar with RSVPs and dispatch logs.`);
+  console.log(`✅ Seeded ${gigs.length} gigs across calendar with RSVPs, check-ins, payouts, and dispatch logs.`);
 
   // ==========================================
   // 10. Client Booking Inquiries
@@ -1613,7 +2053,8 @@ async function runSeed() {
   // 12. Headless CMS Content Pages & Studio
   // ==========================================
   for (const sysPage of DEFAULT_SYSTEM_PAGES_LIST) {
-    await setDoc(doc(db, "content_pages", sysPage.id), sysPage, { merge: true });
+    const validatedPage = ContentPageSchema.parse(sysPage);
+    await setDoc(doc(db, "content_pages", validatedPage.id), validatedPage, { merge: true });
     console.log(`✅ Seeded content_pages/${sysPage.id} (${sysPage.title}).`);
   }
 

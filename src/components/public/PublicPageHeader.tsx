@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import React from "react";
 import { PageHeaderImage } from "@/lib/schema/page";
-import { GlobalPageBanner, SiteNavigationSchema } from "@/lib/schema/siteConfig";
 import { Sparkles } from "lucide-react";
 
 interface PublicPageHeaderProps {
@@ -16,38 +13,10 @@ interface PublicPageHeaderProps {
 }
 
 export function usePageBanner(headerImage?: PageHeaderImage | null) {
-  const [globalBanner, setGlobalBanner] = useState<GlobalPageBanner | null>(null);
+  const isBannerActive = Boolean(headerImage && headerImage.imageUrl && headerImage.imageUrl.trim());
+  const activeBanner = isBannerActive ? headerImage : null;
 
-  useEffect(() => {
-    let isMounted = true;
-    getDoc(doc(db, "site_navigation", "config"))
-      .then((snap) => {
-        if (!isMounted) return;
-        if (snap.exists()) {
-          const parsed = SiteNavigationSchema.safeParse(snap.data());
-          if (parsed.success && parsed.data.globalPageBanner) {
-            setGlobalBanner(parsed.data.globalPageBanner);
-          }
-        }
-      })
-      .catch((err) => console.warn("Public page banner load error:", err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const hasPageImage = Boolean(headerImage && headerImage.imageUrl && headerImage.imageUrl.trim());
-  // Individual pages set specific banner images using resource assets.
-  // If a page specifies headerImage, respect it directly.
-  const activeBanner = hasPageImage
-    ? headerImage
-    : headerImage === undefined && globalBanner?.enabled && globalBanner.imageUrl
-    ? globalBanner
-    : null;
-  const isBannerActive = Boolean(activeBanner && activeBanner.imageUrl && activeBanner.imageUrl.trim());
-
-  return { isBannerActive, activeBanner, globalBanner };
+  return { isBannerActive, activeBanner };
 }
 
 export default function PublicPageHeader({
@@ -69,6 +38,7 @@ export default function PublicPageHeader({
     overlayOpacity = 60,
     headlineAlignment = "center",
     heightPreset = "standard",
+    verticalPosition = 50,
     badgeText,
   } = activeBanner;
 
@@ -105,7 +75,8 @@ export default function PublicPageHeader({
         <img
           src={imageUrl}
           alt={altText || title || "Eagleburger Band Header"}
-          className="w-full h-full object-cover object-center select-none"
+          className="w-full h-full object-cover select-none transition-[object-position] duration-150"
+          style={{ objectPosition: `center ${verticalPosition}%` }}
           loading="eager"
         />
       </div>

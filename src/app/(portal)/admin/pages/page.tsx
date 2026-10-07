@@ -33,8 +33,6 @@ import {
   SocialLink,
   SocialPlatform,
   DEFAULT_SOCIAL_LINKS,
-  GlobalPageBanner,
-  GlobalPageBannerSchema,
 } from "@/lib/schema/siteConfig";
 import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
@@ -58,6 +56,7 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
+  MoveVertical,
   FileText,
   Calendar,
   Settings,
@@ -86,37 +85,8 @@ import {
   Send,
   Star,
   Sliders,
-  Music2,
   Type,
 } from "lucide-react";
-
-export const HEADER_IMAGE_PRESETS = [
-  {
-    name: "Parade Street Revelry",
-    tagline: "Greenfield Holiday Parade route with crowds",
-    url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1600&q=80",
-    alt: "Eagleburger Band marching parade revelry",
-  },
-  {
-    name: "Night Festival Stage",
-    tagline: "Vibrant festival stage under dramatic lights",
-    url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1600&q=80",
-    alt: "Eagleburger Band night festival stage",
-  },
-  {
-    name: "Brass Battery & Horns",
-    tagline: "Polished brass bells and drum battery energy",
-    url: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=1600&q=80",
-    alt: "Eagleburger Band brass instruments and horn line",
-  },
-  {
-    name: "Acoustic Street Celebration",
-    tagline: "Community block party & street dancing",
-    url: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1600&q=80",
-    alt: "Eagleburger Band acoustic street celebration",
-  },
-];
-
 
 export default function CMSPagesStudio() {
   const { profile, loading: authLoading } = useAuth();
@@ -126,7 +96,7 @@ export default function CMSPagesStudio() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [studioScope, setStudioScope] = useState<"pages" | "global">("pages");
-  const [globalNavTab, setGlobalNavTab] = useState<"header_nav" | "page_banner" | "announcement" | "footer_social">("header_nav");
+  const [globalNavTab, setGlobalNavTab] = useState<"header_nav" | "announcement" | "footer_social">("header_nav");
   const [simulatedActiveRoute, setSimulatedActiveRoute] = useState<string>("/gigs");
   const [activeTab, setActiveTab] = useState<"builder" | "banner" | "preview" | "seo" | "settings">("builder");
 
@@ -156,7 +126,7 @@ export default function CMSPagesStudio() {
   // Resource Asset Picker Modal State
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<
-    "header" | "globalBanner" | { sectionId: string; field: "heroBg" | "mediaUrl" } | "browse"
+    "header" | { sectionId: string; field: "heroBg" | "mediaUrl" } | "browse"
   >("browse");
   const [pickerFilterCategory, setPickerFilterCategory] = useState<ResourceCategory | "all">("all");
 
@@ -633,30 +603,66 @@ export default function CMSPagesStudio() {
     });
   };
 
-  // Update Global Public Site Page Banner
-  const updateGlobalBanner = (updates: Partial<GlobalPageBanner>) => {
-    setSiteNav((prev) => ({
-      ...prev,
-      globalPageBanner: {
-        ...(prev.globalPageBanner || GlobalPageBannerSchema.parse({})),
-        ...updates,
-      },
-    }));
+  // Banner Image Drag-to-Reposition State & Handlers
+  const isDraggingBannerRef = React.useRef(false);
+  const dragStartYRef = React.useRef(0);
+  const dragStartPosRef = React.useRef(50);
+
+  const handleBannerDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    isDraggingBannerRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartPosRef.current = activePage.headerImage?.verticalPosition ?? 50;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDraggingBannerRef.current) return;
+      const deltaY = moveEvent.clientY - dragStartYRef.current;
+      // Dragging down (deltaY > 0) pulls image down, showing top (decreases verticalPosition)
+      // Dragging up (deltaY < 0) pushes image up, showing bottom (increases verticalPosition)
+      const deltaPercent = (deltaY / 120) * 100;
+      const newPos = Math.max(0, Math.min(100, Math.round(dragStartPosRef.current - deltaPercent)));
+      updateHeaderImage({ verticalPosition: newPos });
+    };
+
+    const handleMouseUp = () => {
+      isDraggingBannerRef.current = false;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleBannerTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    isDraggingBannerRef.current = true;
+    dragStartYRef.current = touch.clientY;
+    dragStartPosRef.current = activePage.headerImage?.verticalPosition ?? 50;
+
+    const handleTouchMove = (moveEvent: TouchEvent) => {
+      if (!isDraggingBannerRef.current || moveEvent.touches.length !== 1) return;
+      const moveTouch = moveEvent.touches[0];
+      const deltaY = moveTouch.clientY - dragStartYRef.current;
+      const deltaPercent = (deltaY / 120) * 100;
+      const newPos = Math.max(0, Math.min(100, Math.round(dragStartPosRef.current - deltaPercent)));
+      updateHeaderImage({ verticalPosition: newPos });
+    };
+
+    const handleTouchEnd = () => {
+      isDraggingBannerRef.current = false;
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleTouchEnd);
   };
 
   // Resource Asset Selection Handler
   const handleSelectAsset = (asset: ResourceAsset) => {
-    if (pickerTarget === "globalBanner") {
-      setSiteNav((prev) => ({
-        ...prev,
-        globalPageBanner: {
-          ...(prev.globalPageBanner || GlobalPageBannerSchema.parse({})),
-          imageUrl: asset.url,
-          altText: asset.altText || asset.name,
-        },
-      }));
-      toast.success(`Selected "${asset.name}" as Global Page Banner.`);
-    } else if (pickerTarget === "header") {
+    if (pickerTarget === "header") {
       updateHeaderImage({
         imageUrl: asset.url,
         altText: asset.altText || asset.name,
@@ -940,7 +946,7 @@ export default function CMSPagesStudio() {
               {studioScope === "global"
                 ? navSavedSuccess
                   ? "Global Config Saved!"
-                  : "Save Global Nav & Banners"
+                  : "Save Global Nav & Alerts"
                 : savedSuccess
                 ? "Page Saved!"
                 : `Save Page: ${activePage.title}`}
@@ -949,7 +955,7 @@ export default function CMSPagesStudio() {
         </div>
       </div>
 
-      {/* Primary Scope Switcher: Page Content vs Global Site Header & Banners */}
+      {/* Primary Scope Switcher: Page Content vs Global Site Header & Alerts */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex items-center justify-between flex-wrap gap-3 shadow-md">
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -978,9 +984,9 @@ export default function CMSPagesStudio() {
             }`}
           >
             <Globe className="w-4 h-4" />
-            <span>Global Public Site Nav &amp; Banners</span>
+            <span>Global Public Site Nav &amp; Alerts</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-yellow-400 font-mono font-bold">
-              Global Header, Banner &amp; Alerts
+              Global Header &amp; Alerts
             </span>
           </button>
         </div>
@@ -988,7 +994,7 @@ export default function CMSPagesStudio() {
         <div className="text-xs text-slate-400 font-mono px-2 hidden lg:block">
           {studioScope === "pages"
             ? `Editing Page: ${activePage.title} (/${activePage.slug === "home" ? "" : activePage.slug})`
-            : "Global Public Site: Header Nav, Page Banner, Announcement Alert"}
+            : "Global Public Site: Header Nav, Announcement Alert, Footer & Social Links"}
         </div>
       </div>
 
@@ -2931,61 +2937,6 @@ export default function CMSPagesStudio() {
                 </div>
               </div>
 
-              {/* Quick Preset Library */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
-                    Quick-Select Presets
-                  </span>
-                  <span className="text-[11px] text-slate-500">
-                    Curated high-res Eagleburger Band photography
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {HEADER_IMAGE_PRESETS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() =>
-                        updateHeaderImage({
-                          imageUrl: preset.url,
-                          altText: preset.alt,
-                        })
-                      }
-                      className={`group relative text-left p-3 rounded-xl border transition overflow-hidden flex flex-col justify-between space-y-3 ${
-                        header.imageUrl === preset.url
-                          ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/10"
-                          : "border-slate-800 hover:border-slate-700 bg-slate-950"
-                      }`}
-                    >
-                      <div className="h-24 w-full rounded-lg overflow-hidden relative bg-slate-900 border border-slate-800">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={preset.url}
-                          alt={preset.alt}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/30" />
-                        {header.imageUrl === preset.url && (
-                          <div className="absolute top-1.5 right-1.5 bg-yellow-400 text-slate-950 p-1 rounded-full shadow">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white group-hover:text-yellow-400 transition">
-                          {preset.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                          {preset.tagline}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Two-Column Configuration Options */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
                 {/* Left Column: Image Source & Dimensions */}
@@ -3096,6 +3047,123 @@ export default function CMSPagesStudio() {
                         <span>100% (Dark)</span>
                       </div>
                     </div>
+
+                    {/* Vertical Image Placement & Focal Point */}
+                    <div className="space-y-3 pt-3 border-t border-slate-900">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
+                            Vertical Image Placement
+                          </label>
+                          <span className="text-[10px] text-slate-500">
+                            Reposition focal point via dragging or alignment buttons
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">
+                          {header.verticalPosition === 0
+                            ? "Top (0%)"
+                            : header.verticalPosition === 50 || header.verticalPosition === undefined
+                            ? "Middle (50%)"
+                            : header.verticalPosition === 100
+                            ? "Bottom (100%)"
+                            : `${header.verticalPosition}%`}
+                        </span>
+                      </div>
+
+                      {/* Fixed Alignment Buttons */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Top", pos: 0, icon: ArrowUp },
+                          { label: "Middle", pos: 50, icon: MoveVertical },
+                          { label: "Bottom", pos: 100, icon: ArrowDown },
+                        ].map((btn) => {
+                          const isActive = (header.verticalPosition ?? 50) === btn.pos;
+                          return (
+                            <button
+                              key={btn.label}
+                              type="button"
+                              onClick={() => updateHeaderImage({ verticalPosition: btn.pos })}
+                              className={`py-2 px-3 rounded-xl border text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                                isActive
+                                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold shadow-sm"
+                                  : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              <btn.icon className="w-3.5 h-3.5" />
+                              <span>{btn.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Interactive Drag Reposition Viewport */}
+                      {hasImage && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <MoveVertical className="w-3 h-3 text-yellow-400" />
+                              <span>Custom Drag Viewport:</span>
+                            </span>
+                            <span className="text-slate-500">Click &amp; drag vertically</span>
+                          </div>
+
+                          <div
+                            onMouseDown={handleBannerDragStart}
+                            onTouchStart={handleBannerTouchStart}
+                            className="relative h-28 w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-900 cursor-grab active:cursor-grabbing select-none group shadow-inner"
+                            title="Click and drag up or down to adjust image vertical focal point"
+                          >
+                            {/* Live Background Image with Object Position */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={header.imageUrl}
+                              alt="Reposition Preview"
+                              className="w-full h-full object-cover pointer-events-none select-none transition-[object-position] duration-75"
+                              style={{ objectPosition: `center ${header.verticalPosition ?? 50}%` }}
+                            />
+
+                            {/* Guideline Overlay */}
+                            <div
+                              className="absolute inset-x-0 border-t-2 border-yellow-400/80 pointer-events-none transition-all duration-75 shadow-sm"
+                              style={{ top: `${header.verticalPosition ?? 50}%` }}
+                            >
+                              <span className="absolute right-2 -top-4 text-[9px] font-mono font-bold bg-slate-950/90 text-yellow-400 px-1.5 py-0.2 rounded border border-yellow-400/30">
+                                {header.verticalPosition ?? 50}%
+                              </span>
+                            </div>
+
+                            {/* Subtle dark gradient overlay */}
+                            <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/10 transition pointer-events-none" />
+
+                            {/* Drag Prompt Pill */}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-950/85 backdrop-blur-sm border border-slate-700/80 rounded-full px-2.5 py-0.5 text-[10px] font-mono text-slate-300 pointer-events-none flex items-center gap-1 group-hover:border-yellow-400/50 group-hover:text-yellow-300 transition">
+                              <MoveVertical className="w-3 h-3" />
+                              <span>Drag Image Up / Down</span>
+                            </div>
+                          </div>
+
+                          {/* Precision Slider */}
+                          <div className="pt-1">
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={header.verticalPosition ?? 50}
+                              onChange={(e) =>
+                                updateHeaderImage({ verticalPosition: parseInt(e.target.value, 10) })
+                              }
+                              className="w-full accent-yellow-400 cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
+                              <span>0% (Top)</span>
+                              <span>50% (Middle)</span>
+                              <span>100% (Bottom)</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -3190,12 +3258,21 @@ export default function CMSPagesStudio() {
                 </div>
 
                 {hasImage ? (
-                  <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                  <div
+                    onMouseDown={handleBannerDragStart}
+                    onTouchStart={handleBannerTouchStart}
+                    className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative cursor-grab active:cursor-grabbing group"
+                    title="Click and drag vertically to adjust banner focal point"
+                  >
                     <PublicPageHeader
                       headerImage={header}
                       fallbackTitle={activePage.title}
                       fallbackSubtitle={activePage.description}
                     />
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700 text-[10px] font-mono text-yellow-300 flex items-center gap-1 shadow-lg">
+                      <MoveVertical className="w-3 h-3" />
+                      <span>Drag to Reposition ({header.verticalPosition ?? 50}%)</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-8 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 text-slate-500 space-y-2">
@@ -3836,19 +3913,6 @@ export default function CMSPagesStudio() {
 
               <button
                 type="button"
-                onClick={() => setGlobalNavTab("page_banner")}
-                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
-                  globalNavTab === "page_banner"
-                    ? "bg-yellow-400 text-slate-950 shadow font-black"
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Global Page Banner</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setGlobalNavTab("announcement")}
                 className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
                   globalNavTab === "announcement"
@@ -3878,6 +3942,37 @@ export default function CMSPagesStudio() {
           {/* TAB 1: HEADER NAVIGATION & ACTIVE ROUTE SIMULATOR */}
           {globalNavTab === "header_nav" && (
             <div className="space-y-6">
+              {/* Brand Tagline Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">Brand Tagline</h3>
+                      <p className="text-xs text-slate-400">
+                        Unified tagline rendered directly below the band name in the public header and in the site footer.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-w-xl space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
+                    Public Header &amp; Footer Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={siteNav.brandTagline || ""}
+                    onChange={(e) => setSiteNav((prev) => ({ ...prev, brandTagline: e.target.value }))}
+                    placeholder="e.g. Pittsburgh Brass & Battery"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-yellow-400"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Displayed across the sticky public header and beside the musician portal link in the footer.
+                  </p>
+                </div>
+              </div>
+
               {/* Header Navigation Management Card */}
               {/* Header Navigation Management */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
@@ -4080,15 +4175,21 @@ export default function CMSPagesStudio() {
                   <div className="p-4 sm:p-6 bg-slate-950/90 flex items-center justify-between border-b border-slate-800/80">
                     {/* Brand */}
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-yellow-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-yellow-400/20">
-                        <Music2 className="w-5 h-5" />
+                      <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          src="/images/eagleburger-logo.png" 
+                          alt="Eagleburger Band Logo" 
+                          className="w-full h-full object-contain"
+                          suppressHydrationWarning
+                        />
                       </div>
                       <div>
                         <span className="text-base font-bold tracking-tight text-white uppercase font-arvo">
                           EAGLEBURGER BAND
                         </span>
                         <span className="block text-[10px] font-semibold text-yellow-400 tracking-wider uppercase font-arvo">
-                          Pittsburgh Brass &amp; Battery
+                          {siteNav.brandTagline || "Pittsburgh Brass & Battery"}
                         </span>
                       </div>
                     </div>
@@ -4153,354 +4254,7 @@ export default function CMSPagesStudio() {
             </div>
           )}
 
-          {/* TAB 2: GLOBAL PUBLIC PAGE BANNER */}
-          {globalNavTab === "page_banner" && (() => {
-            const banner = siteNav.globalPageBanner || GlobalPageBannerSchema.parse({});
-            const isEnabled = banner.enabled !== false;
-
-            return (
-              <div className="space-y-6">
-                {/* Banner Status Card */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800 flex items-center gap-1.5">
-                        <ImageIcon className="w-3.5 h-3.5" />
-                        <span>Global Page Banner</span>
-                      </span>
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                          isEnabled && banner.imageUrl
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            : "bg-slate-800 text-slate-400 border-slate-700"
-                        }`}
-                      >
-                        {isEnabled && banner.imageUrl ? "● Banner Active Globally" : "○ Banner Disabled"}
-                      </span>
-                    </div>
-                    <h2 className="text-lg font-black text-white mt-1">
-                      Global Public Subpage Banner &amp; Hero Styling
-                    </h2>
-                    <p className="text-xs text-slate-400 max-w-xl">
-                      Configure the hero image, height, overlay tint, and typography displayed across all public subpages
-                      (/gigs, /book, /giving, /contact, /join, /testimonials, and custom CMS pages).
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isEnabled}
-                        onChange={(e) => updateGlobalBanner({ enabled: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
-                      <span className="ml-2.5 text-xs font-bold text-slate-300">
-                        {isEnabled ? "Enabled" : "Disabled"}
-                      </span>
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={handleSaveNavigation}
-                      disabled={isSavingNav}
-                      className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
-                    >
-                      {isSavingNav ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      <span>Save Global Banner</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Presets Grid */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-yellow-400" />
-                        <span>Curated Band Photography Presets</span>
-                      </h3>
-                      <p className="text-xs text-slate-400">
-                        Select a high-energy Pittsburgh street performance or stage visual with 1 click.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPickerTarget("globalBanner");
-                        setPickerFilterCategory("header");
-                        setIsAssetPickerOpen(true);
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow"
-                    >
-                      <FolderOpen className="w-3.5 h-3.5" />
-                      <span>Choose from Resource Library</span>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {HEADER_IMAGE_PRESETS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() =>
-                          updateGlobalBanner({
-                            imageUrl: preset.url,
-                            altText: preset.alt,
-                          })
-                        }
-                        className={`group relative text-left p-3 rounded-xl border transition overflow-hidden flex flex-col justify-between space-y-3 ${
-                          banner.imageUrl === preset.url
-                            ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/10"
-                            : "border-slate-800 hover:border-slate-700 bg-slate-950"
-                        }`}
-                      >
-                        <div className="h-24 w-full rounded-lg overflow-hidden relative bg-slate-900 border border-slate-800">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={preset.url}
-                            alt={preset.alt}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/30" />
-                          {banner.imageUrl === preset.url && (
-                            <div className="absolute top-1.5 right-1.5 bg-yellow-400 text-slate-950 p-1 rounded-full shadow">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white group-hover:text-yellow-400 transition">
-                            {preset.name}
-                          </div>
-                          <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                            {preset.tagline}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Custom Configuration & Layout Options */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column: Image Source & Dimensions */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-                      <Sliders className="w-4 h-4 text-yellow-400" />
-                      <span>Image Source &amp; Dimensions</span>
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
-                          Image URL (Custom or Preset)
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={banner.imageUrl || ""}
-                            onChange={(e) => updateGlobalBanner({ imageUrl: e.target.value })}
-                            placeholder="e.g. https://... or select from Resource Library"
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPickerTarget("globalBanner");
-                              setPickerFilterCategory("header");
-                              setIsAssetPickerOpen(true);
-                            }}
-                            className="px-3.5 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/30 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 text-xs font-bold transition flex items-center gap-1.5 shrink-0"
-                            title="Browse Resource Library"
-                          >
-                            <FolderOpen className="w-3.5 h-3.5" />
-                            <span>Library</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
-                          Image Alt Text (Accessibility &amp; SEO)
-                        </label>
-                        <input
-                          type="text"
-                          value={banner.altText || ""}
-                          onChange={(e) => updateGlobalBanner({ altText: e.target.value })}
-                          placeholder="e.g. Eagleburger Band marching brass and drum battery in Pittsburgh"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
-                        />
-                      </div>
-
-                      {/* Height Preset */}
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Banner Height Preset
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(["compact", "standard", "cinematic"] as const).map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => updateGlobalBanner({ heightPreset: preset })}
-                              className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize transition ${
-                                (banner.heightPreset || "standard") === preset
-                                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
-                                  : "border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              {preset}
-                              <span className="block text-[10px] font-normal text-slate-500">
-                                {preset === "compact" ? "260px" : preset === "standard" ? "340px" : "480px"}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Overlay Opacity Slider */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
-                            Darkness Overlay Opacity
-                          </label>
-                          <span className="text-xs font-mono text-yellow-400 font-bold">
-                            {banner.overlayOpacity ?? 60}%
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={5}
-                          value={banner.overlayOpacity ?? 60}
-                          onChange={(e) => updateGlobalBanner({ overlayOpacity: parseInt(e.target.value, 10) })}
-                          className="w-full accent-yellow-400 cursor-pointer"
-                        />
-                        <div className="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono">
-                          <span>0% (Raw Image)</span>
-                          <span>60% (Default)</span>
-                          <span>100% (Ultra Dark)</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Typography & Text Alignment */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-                      <Type className="w-4 h-4 text-yellow-400" />
-                      <span>Typography &amp; Hero Content</span>
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
-                          Hero Badge Text (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={banner.badgeText || ""}
-                          onChange={(e) => updateGlobalBanner({ badgeText: e.target.value })}
-                          placeholder="e.g. Eagleburger Band"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 uppercase font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
-                          Custom Global Title Fallback
-                        </label>
-                        <input
-                          type="text"
-                          value={banner.customTitle || ""}
-                          onChange={(e) => updateGlobalBanner({ customTitle: e.target.value })}
-                          placeholder="Leave blank to use each page's specific title (e.g. 'Performances', 'Book the Band')"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
-                        />
-                        <span className="text-[10px] text-slate-500 mt-1 block">
-                          When blank, each public page automatically renders its own title.
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
-                          Custom Global Subtitle Fallback
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={banner.customSubtitle || ""}
-                          onChange={(e) => updateGlobalBanner({ customSubtitle: e.target.value })}
-                          placeholder="Leave blank to use each page's specific description/lead text"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
-                        />
-                      </div>
-
-                      {/* Headline Alignment */}
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Text Alignment
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {(["left", "center", "right"] as const).map((align) => (
-                            <button
-                              key={align}
-                              type="button"
-                              onClick={() => updateGlobalBanner({ headlineAlignment: align })}
-                              className={`py-2 px-3 rounded-xl border text-xs font-semibold capitalize transition flex items-center justify-center gap-1.5 ${
-                                (banner.headlineAlignment || "center") === align
-                                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 font-bold"
-                                  : "border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              {align === "left" && <AlignLeft className="w-3.5 h-3.5" />}
-                              {align === "center" && <AlignCenter className="w-3.5 h-3.5" />}
-                              {align === "right" && <AlignRight className="w-3.5 h-3.5" />}
-                              <span>{align}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Responsive Header Preview */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-yellow-400" />
-                      <h3 className="text-sm font-bold text-white">Live Global Banner Preview</h3>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      Renders at top of /gigs, /book, /giving, /contact, /join, /testimonials
-                    </span>
-                  </div>
-
-                  {banner.imageUrl && banner.enabled !== false ? (
-                    <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
-                      <PublicPageHeader
-                        headerImage={banner}
-                        fallbackTitle="Performances &amp; Gigs"
-                        fallbackSubtitle="High-energy brass, street choreography, and unhinged revelry across Western PA."
-                      />
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 text-slate-500 space-y-2">
-                      <ImageIcon className="w-8 h-8 mx-auto text-slate-700" />
-                      <p className="text-xs font-semibold">Global banner is currently disabled or has no image.</p>
-                      <p className="text-[11px]">Select a preset above or enter an image URL to activate the global banner preview.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* TAB 3: ANNOUNCEMENT ALERT BANNER */}
+          {/* TAB 2: ANNOUNCEMENT ALERT BANNER */}
           {globalNavTab === "announcement" && (
             <div className="space-y-6">
               {/* Site Announcement Banner Card */}
@@ -4657,6 +4411,37 @@ export default function CMSPagesStudio() {
           {/* TAB 4: FOOTER LINKS & SOCIAL MEDIA */}
           {globalNavTab === "footer_social" && (
             <div className="space-y-6">
+              {/* Brand Tagline Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-yellow-400" />
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">Brand Tagline</h3>
+                      <p className="text-xs text-slate-400">
+                        Unified tagline rendered directly below the band name in the public header and in the site footer.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-w-xl space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
+                    Public Header &amp; Footer Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={siteNav.brandTagline || ""}
+                    onChange={(e) => setSiteNav((prev) => ({ ...prev, brandTagline: e.target.value }))}
+                    placeholder="e.g. Pittsburgh Brass & Battery"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-yellow-400"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Displayed across the sticky public header and beside the musician portal link in the footer.
+                  </p>
+                </div>
+              </div>
+
               {/* Footer Navigation Management */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
             <div className="border-b border-slate-800 pb-3 flex items-center justify-between">

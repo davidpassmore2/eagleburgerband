@@ -215,10 +215,15 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2.5">
           <div 
             suppressHydrationWarning
-            className="text-slate-950 font-black px-2 py-0.5 rounded text-xs tracking-wider shadow"
-            style={{ backgroundColor: "var(--ebb-primary)" }}
+            className="w-7 h-7 flex items-center justify-center shrink-0"
           >
-            EBB
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/images/eagleburger-logo.png" 
+              alt="Eagleburger Band Logo" 
+              className="w-full h-full object-contain"
+              suppressHydrationWarning
+            />
           </div>
           <span className="font-bold text-xs text-white truncate">{theme.bandName}</span>
         </div>
@@ -285,10 +290,15 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <div 
                 suppressHydrationWarning
-                className="text-slate-950 font-black px-2 py-1 rounded text-sm tracking-wider shadow"
-                style={{ backgroundColor: "var(--ebb-primary)" }}
+                className="w-9 h-9 flex items-center justify-center shrink-0"
               >
-                EBB
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src="/images/eagleburger-logo.png" 
+                  alt="Eagleburger Band Logo" 
+                  className="w-full h-full object-contain"
+                  suppressHydrationWarning
+                />
               </div>
               <div>
                 <div className="font-bold text-sm text-white">{theme.bandName}</div>

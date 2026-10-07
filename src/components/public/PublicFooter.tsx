@@ -9,9 +9,9 @@ import {
   SocialLink, 
   SiteNavigationSchema, 
   DEFAULT_FOOTER_LINKS, 
-  DEFAULT_SOCIAL_LINKS 
+  DEFAULT_SOCIAL_LINKS,
 } from "@/lib/schema/siteConfig";
-import { Music2, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { SocialIcon, getSocialBrandColors } from "@/components/ui/SocialIcon";
 import { useAuth } from "@/lib/context/AuthContext";
 
@@ -23,6 +23,7 @@ export default function PublicFooter() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(
     DEFAULT_SOCIAL_LINKS.filter((s) => s.isVisible !== false)
   );
+  const [brandTagline, setBrandTagline] = useState("Pittsburgh Brass & Battery");
 
   useEffect(() => {
     let isMounted = true;
@@ -33,6 +34,9 @@ export default function PublicFooter() {
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success) {
+            if (parsed.data.brandTagline) {
+              setBrandTagline(parsed.data.brandTagline);
+            }
             if (parsed.data.footerLinks?.length > 0) {
               const activeLinks = parsed.data.footerLinks
                 .filter((l) => l.isVisible !== false)
@@ -66,8 +70,14 @@ export default function PublicFooter() {
         {/* Col 1: Band Bio & Social Media Channels */}
         <div className="space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-yellow-400 flex items-center justify-center text-slate-950 font-black">
-              <Music2 className="w-5 h-5" />
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/images/eagleburger-logo.png" 
+                alt="Eagleburger Band Logo" 
+                className="w-full h-full object-contain"
+                suppressHydrationWarning
+              />
             </div>
             <span className="text-lg font-bold text-white uppercase tracking-wider font-arvo">
               EAGLEBURGER BAND
@@ -193,7 +203,7 @@ export default function PublicFooter() {
       <div className="max-w-7xl mx-auto border-t border-slate-900 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4" suppressHydrationWarning>
         <p className="font-arvo font-bold">&copy; {new Date().getFullYear()} EAGLEBURGER BAND. Pittsburgh, PA. All rights reserved.</p>
         <div className="flex items-center gap-4">
-          <span>Acoustic &bull; Mobile &bull; Electric</span>
+          <span>{brandTagline}</span>
           <Link 
             href={firebaseUser ? "/portal" : "/login"} 
             suppressHydrationWarning 

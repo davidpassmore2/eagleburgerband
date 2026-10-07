@@ -30,9 +30,10 @@ export const PublicDetailsSchema = z.object({
   city: z.string().default("Pittsburgh, PA"),
   description: z.string().default(""),
   admission: z.string().default("Free"),
+  eventUrl: z.string().default(""),
   facebookEventUrl: z.string().default(""),
   ticketUrl: z.string().default(""),
-  isPublic: z.boolean().default(true),
+  isPublic: z.boolean().default(false),
   showExternalDirections: z.boolean().default(true),
 });
 
@@ -96,9 +97,10 @@ export const GigSchema = z.object({
     city: "Pittsburgh, PA",
     description: "",
     admission: "Free",
+    eventUrl: "",
     facebookEventUrl: "",
     ticketUrl: "",
-    isPublic: true,
+    isPublic: false,
     showExternalDirections: true,
   })),
   internalLogistics: InternalLogisticsSchema.default(() => ({

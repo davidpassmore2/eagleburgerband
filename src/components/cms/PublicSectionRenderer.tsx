@@ -576,7 +576,6 @@ function GigFeedSectionComponent({
                   <span className="text-yellow-400 font-bold bg-yellow-400/10 px-2.5 py-0.5 rounded-full border border-yellow-400/20">
                     {gig.date}
                   </span>
-                  <span className="text-slate-500">{gig.admission}</span>
                 </div>
                 <h3 className="text-base font-arvo font-bold text-white group-hover:text-yellow-400 transition-colors">
                   {gig.title}

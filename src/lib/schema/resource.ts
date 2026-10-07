@@ -15,12 +15,18 @@ export const ResourceCategoryEnum = z.enum([
 ]);
 export type ResourceCategory = z.infer<typeof ResourceCategoryEnum>;
 
+export const StorageProviderEnum = z.enum(["external", "cloudinary", "firebase"]);
+export type StorageProvider = z.infer<typeof StorageProviderEnum>;
+
 export const ResourceAssetSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Resource name is required"),
   url: z.string().url("Must be a valid URL"),
   type: ResourceTypeEnum.default("image"),
   category: ResourceCategoryEnum.default("general"),
+  storageProvider: StorageProviderEnum.default("external"),
+  cloudPublicId: z.string().default(""),
+  format: z.string().default(""),
   description: z.string().default(""),
   altText: z.string().default(""),
   tags: z.array(z.string()).default([]),
@@ -48,7 +54,7 @@ export const ResourceAssetInputSchema = ResourceAssetSchema.omit({
 });
 export type ResourceAssetInput = z.infer<typeof ResourceAssetInputSchema>;
 
-export const DEFAULT_RESOURCES: ResourceAsset[] = [
+export const DEFAULT_RESOURCES: ResourceAsset[] = ([
   {
     id: "res_parade_revelry",
     name: "Parade Street Revelry",
@@ -185,5 +191,5 @@ export const DEFAULT_RESOURCES: ResourceAsset[] = [
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   },
-];
+] as z.input<typeof ResourceAssetSchema>[]).map((item) => ResourceAssetSchema.parse(item));
 

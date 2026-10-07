@@ -25,9 +25,11 @@ interface PublicGig {
   venue: string;
   city: string;
   description: string;
-  admission: string;
+  admission?: string;
+  eventUrl?: string;
   facebookEventUrl?: string;
   ticketUrl?: string;
+  status: string;
 }
 
 export default function PublicGigsPage() {
@@ -51,10 +53,10 @@ export default function PublicGigsPage() {
       },
       (err) => console.warn("CMS Gigs page notice:", err)
     );
-    // Query only confirmed public gigs
+    // Query confirmed and completed public gigs
     const gigsQuery = query(
       collection(db, "gigs"),
-      where("status", "==", "confirmed")
+      where("status", "in", ["confirmed", "completed"])
     );
 
     const unsub = onSnapshot(
@@ -66,6 +68,7 @@ export default function PublicGigsPage() {
           const pub = data.publicDetails || {};
           // Strict Privacy Boundary: never expose internal logistics, call sheets, or musician pay
           if (pub.isPublic !== false) {
+            const rawEventUrl = (pub.eventUrl || pub.facebookEventUrl || "").trim();
             list.push({
               id: doc.id,
               date: data.date || "",
@@ -74,13 +77,15 @@ export default function PublicGigsPage() {
               city: pub.city || "Pittsburgh, PA",
               description: pub.description || "",
               admission: pub.admission || "Free",
-              facebookEventUrl: pub.facebookEventUrl || "",
+              eventUrl: rawEventUrl,
+              facebookEventUrl: rawEventUrl,
               ticketUrl: pub.ticketUrl || "",
+              status: data.status || "confirmed",
             });
           }
         });
 
-        // Sort by date
+        // Sort by date ascending
         list.sort((a, b) => (a.date > b.date ? 1 : -1));
         setGigs(list);
         setLoading(false);
@@ -98,8 +103,8 @@ export default function PublicGigsPage() {
   }, []);
 
   const todayStr = new Date().toISOString().split("T")[0];
-  const upcomingGigs = gigs.filter((g) => !g.date || g.date >= todayStr);
-  const pastGigs = gigs.filter((g) => g.date && g.date < todayStr).reverse();
+  const upcomingGigs = gigs.filter((g) => g.status !== "completed" && (!g.date || g.date >= todayStr));
+  const pastGigs = gigs.filter((g) => g.status === "completed" || (g.date && g.date < todayStr)).reverse();
 
   const displayGigs = showPast ? pastGigs : upcomingGigs;
 
@@ -207,6 +212,7 @@ export default function PublicGigsPage() {
             const monthStr = dateObj ? dateObj.toLocaleDateString("en-US", { month: "short" }) : "TBA";
             const dayStr = dateObj ? dateObj.toLocaleDateString("en-US", { day: "2-digit" }) : "";
             const weekdayStr = dateObj ? dateObj.toLocaleDateString("en-US", { weekday: "long" }) : "";
+            const yearStr = dateObj ? dateObj.getFullYear().toString() : "";
 
             return (
               <div
@@ -215,13 +221,18 @@ export default function PublicGigsPage() {
               >
                 {/* Date Badge */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-yellow-400 text-slate-950 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-yellow-400/10">
-                    <span className="text-[11px] font-black uppercase tracking-wider leading-tight">
+                  <div className="w-[68px] h-[72px] sm:w-[72px] sm:h-[72px] rounded-2xl bg-yellow-400 text-slate-950 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-yellow-400/10 py-1.5 select-none">
+                    <span className="text-[10px] font-black uppercase tracking-wider leading-tight">
                       {monthStr}
                     </span>
-                    <span className="text-2xl font-black leading-none">
+                    <span className="text-xl sm:text-2xl font-black leading-none my-0.5">
                       {dayStr}
                     </span>
+                    {yearStr && (
+                      <span className="text-[9px] sm:text-[10px] font-bold text-slate-800 leading-tight">
+                        {yearStr}
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -250,13 +261,9 @@ export default function PublicGigsPage() {
                     </p>
                   )}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="inline-block bg-slate-800/80 text-slate-300 border border-slate-700/60 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-                      Admission: {gig.admission}
-                    </span>
-
-                    {gig.facebookEventUrl && (
+                    {gig.eventUrl && (
                       <a
-                        href={gig.facebookEventUrl}
+                        href={gig.eventUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] font-bold text-yellow-400 hover:underline bg-yellow-400/10 px-2.5 py-1 rounded-lg border border-yellow-400/20"

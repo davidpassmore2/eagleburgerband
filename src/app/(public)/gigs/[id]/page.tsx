@@ -51,7 +51,8 @@ interface GigData {
     coordinates?: { lat: number; lng: number };
     city: string;
     description: string;
-    admission: string;
+    admission?: string;
+    eventUrl?: string;
     facebookEventUrl?: string;
     ticketUrl?: string;
     isPublic: boolean;
@@ -118,7 +119,8 @@ export default function PublicGigDetailPage({
                 city: pub.city || data.city || "Pittsburgh, PA",
                 description: pub.description || "",
                 admission: pub.admission || "Free",
-                facebookEventUrl: pub.facebookEventUrl || "",
+                eventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
+                facebookEventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
                 ticketUrl: pub.ticketUrl || "",
                 isPublic: pub.isPublic !== false,
                 showExternalDirections: pub.showExternalDirections !== false,
@@ -273,10 +275,6 @@ export default function PublicGigDetailPage({
                 <span className="text-xs font-mono font-bold uppercase text-yellow-400 tracking-wider">
                   {weekdayStr}
                 </span>
-                <span className="text-slate-600">&bull;</span>
-                <span className="text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full">
-                  Admission: {publicDetails.admission}
-                </span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tight">
@@ -319,14 +317,14 @@ export default function PublicGigDetailPage({
               </a>
             )}
 
-            {publicDetails.facebookEventUrl && (
+            {publicDetails.eventUrl && (
               <a
-                href={publicDetails.facebookEventUrl}
+                href={publicDetails.eventUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition"
               >
-                <span>Facebook Event</span>
+                <span>Event Link</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}

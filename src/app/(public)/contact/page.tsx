@@ -229,7 +229,7 @@ export default function ContactPage() {
             <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors font-arvo">
               Looking to Book the Band? &rarr;
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 font-poppins font-normal">
               Planning a parade, street festival, wedding, or block party? Use our dedicated Booking Inquiry form for availability and pricing.
             </p>
           </div>
@@ -244,10 +244,10 @@ export default function ContactPage() {
             <Music2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">
+            <h3 className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors font-arvo">
               Interested in Playing With Us? &rarr;
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 font-poppins font-normal">
               Brass musician or percussionist? Check out our rehearsal schedule and submit an audition request to join our ranks.
             </p>
           </div>

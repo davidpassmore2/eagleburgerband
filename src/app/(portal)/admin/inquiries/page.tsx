@@ -153,6 +153,7 @@ export default function InquiriesAdminPage() {
           venue: inq.venue,
           venueAddress: inq.venueAddress || "",
           description: inq.message || `Booking inquiry via ${inq.clientName} (${inq.organization || "Private"})`,
+          isPublic: false,
         },
         internalLogistics: {
           title: inq.eventTitle,
