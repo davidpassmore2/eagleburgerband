@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "eagleburger-band-dev"
+    "default": "eagleburger-band-dev",
+    "beta": "eagleburger-band-beta"
   }
 }

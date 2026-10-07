@@ -8,8 +8,8 @@ const firebaseConfig = {
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "localhost",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "eagleburger-band-dev",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "eagleburger-band-dev.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abcdef",
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -19,11 +19,24 @@ const storage = getStorage(app);
 
 let isEmulated = false;
 
-if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+// Determine whether to connect to local emulators:
+// - Explicitly requested via NEXT_PUBLIC_USE_FIREBASE_EMULATOR="true"
+// - Or default in local dev when no live cloud API key is configured
+const shouldUseEmulator =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" ||
+  (process.env.NODE_ENV === "development" &&
+    process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR !== "false" &&
+    (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "local-api-key"));
+
+if (typeof window !== "undefined" && shouldUseEmulator) {
   if (!isEmulated) {
     connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
     connectFirestoreEmulator(db, "localhost", 8080);
-    connectStorageEmulator(storage, "localhost", 9199);
+    try {
+      connectStorageEmulator(storage, "localhost", 9199);
+    } catch {
+      // Storage emulator optional
+    }
     isEmulated = true;
   }
 }
