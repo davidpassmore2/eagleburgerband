@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import StarRating from "@/components/portal/StarRating";
 import { calculateTuneScore } from "@/lib/schema/tune";
 import { toast } from "@/lib/context/ToastContext";
@@ -289,8 +290,10 @@ export default function UnifiedRepertoireLibraryPage() {
       );
 
       if (currentRatings[currentUserId]) {
+        dispatchPortalInteraction("rate_tune", `Rated "${tune.title}" ${stars} stars`, { tuneId, tuneTitle: tune.title, stars });
         toast.success(`Rated "${tune.title}" ${stars} star${stars === 1 ? "" : "s"}!`);
       } else {
+        dispatchPortalInteraction("remove_tune_rating", `Removed rating for "${tune.title}"`, { tuneId, tuneTitle: tune.title });
         toast.success(`Removed your rating for "${tune.title}".`);
       }
     } catch (err) {
@@ -341,6 +344,7 @@ export default function UnifiedRepertoireLibraryPage() {
           );
         }
       }
+      dispatchPortalInteraction("vote_tune", `${voteType === "up" ? "Upvoted" : "Downvoted"} "${tune.title}"`, { tuneId, voteType });
     } catch (err) {
       console.error("Voting error:", err);
     }

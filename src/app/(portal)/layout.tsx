@@ -29,6 +29,7 @@ import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
 import { RoleEmulationModal } from "@/components/portal/RoleEmulationModal";
 import { PortalLoadingProvider } from "@/lib/context/PortalLoadingContext";
 import PwaInstallBanner from "@/components/common/PwaInstallBanner";
+import { PortalUsageTracker } from "@/components/portal/PortalUsageTracker";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -573,6 +574,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 
         {/* PWA Musician Install Banner */}
         <PwaInstallBanner />
+
+        {/* Portal Usage & Telemetry Tracker */}
+        <PortalUsageTracker />
       </main>
 
       {/* Interactive Portal Theme Selector Modal */}

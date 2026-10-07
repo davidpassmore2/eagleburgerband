@@ -6,6 +6,7 @@ import {
   AdminActionType,
   AdminLogCategory,
 } from "@/lib/schema/adminLog";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 
 export interface LogAdminActionParams {
   action: AdminActionType;
@@ -41,6 +42,14 @@ export async function logAdminAction(params: LogAdminActionParams): Promise<stri
   try {
     const validated = AdminLogSchema.parse(payload);
     await setDoc(doc(db, "admin_logs", logId), validated);
+
+    // Also dispatch to usage telemetry
+    dispatchPortalInteraction(
+      params.action,
+      params.description,
+      { ...params.metadata, targetId: params.targetId, targetName: params.targetName }
+    );
+
     return logId;
   } catch (err) {
     console.error("Failed to log admin action:", err);

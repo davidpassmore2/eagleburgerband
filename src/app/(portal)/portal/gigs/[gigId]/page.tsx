@@ -38,6 +38,7 @@ import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentM
 import { GigCompensationType } from "@/lib/schema/gig";
 import { GigRsvpSchema, type GigRsvp } from "@/lib/schema/rsvp";
 import { toast } from "@/lib/context/ToastContext";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 
 interface SetlistItem {
   id: string;
@@ -292,6 +293,7 @@ export default function MusicianGigDetailPage() {
         updatedAt: new Date().toISOString(),
       });
       await setDoc(rsvpRef, payload, { merge: true });
+      dispatchPortalInteraction("rsvp_update", `RSVP'd ${status} for gig ${gigId}`, { gigId, status });
       toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       toast.error(

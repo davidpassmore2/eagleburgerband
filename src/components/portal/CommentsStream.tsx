@@ -17,6 +17,7 @@ import { canManageContent, isAdmin } from "@/lib/auth/permissions";
 import { Comment, CommentSchema, CommentTargetTypeEnum } from "@/lib/schema/comment";
 import DOMPurify from "dompurify";
 import { toast } from "@/lib/context/ToastContext";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import {
   MessageSquare,
   Send,
@@ -149,6 +150,7 @@ export default function CommentsStream({
       };
 
       await setDoc(commentDocRef, newComment);
+      dispatchPortalInteraction("post_comment", `Posted comment on ${targetTitle || targetType}`, { targetType, targetId });
       setNewContent("");
 
       // Scroll to bottom of stream

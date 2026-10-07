@@ -32,6 +32,7 @@ import {
   Bell,
   CheckCircle2,
   FolderOpen,
+  Activity,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -325,6 +326,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Admin Action Audit Log",
     href: "/admin/audit-log",
     icon: ShieldCheck,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "portal-usage",
+    title: "Portal Usage Metrics",
+    href: "/admin/analytics/usage",
+    icon: Activity,
     requiredRoles: ["admin"],
     category: "Business & Admin",
   },

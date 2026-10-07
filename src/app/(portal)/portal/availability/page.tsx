@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { BlackoutDateSchema, BlackoutDate } from "@/lib/schema/blackout";
 import { toast } from "@/lib/context/ToastContext";
 import ConfirmDialog from "@/components/portal/ConfirmDialog";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import { 
   CalendarOff, 
   Plus, 
@@ -190,6 +191,7 @@ export default function MusicianAvailabilityPage() {
 
       const validated = BlackoutDateSchema.parse(payload);
       await setDoc(doc(db, "users", firebaseUser.uid, "blackouts", blackoutId), validated);
+      dispatchPortalInteraction("add_blackout", `Added blackout date ${formData.startDate}`, { startDate: formData.startDate, endDate: formData.endDate });
       
       if (formConflicts.length > 0) {
         toast.info(
@@ -213,6 +215,7 @@ export default function MusicianAvailabilityPage() {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "users", firebaseUser.uid, "blackouts", deleteTargetId));
+      dispatchPortalInteraction("delete_blackout", `Removed blackout date`, { blackoutId: deleteTargetId });
       toast.success("Blackout period removed.");
       setDeleteTargetId(null);
     } catch (err) {

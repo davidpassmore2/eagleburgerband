@@ -18,6 +18,7 @@ import { ResourceAssetSchema, DEFAULT_RESOURCES } from "../src/lib/schema/resour
 import { SiteNavigationSchema, DEFAULT_ANNOUNCEMENT_BANNER } from "../src/lib/schema/siteConfig";
 import { GigSchema, PerformerPayoutRecord } from "../src/lib/schema/gig";
 import { generateGigSlug } from "../src/lib/utils/slug";
+import { PortalMetricEventSchema, PortalMetricsConfigSchema } from "../src/lib/schema/metrics";
 
 const localApp = initializeApp({
   projectId: "eagleburger-band-dev",
@@ -2908,7 +2909,110 @@ async function runSeed() {
   console.log("✅ Seeded site navigation & active global announcement banner into 'site_navigation/config'.");
 
   // ==========================================
-  // 25. Super Admin Confirmation
+  // 25. Portal Usage Metrics Telemetry (Config & Events)
+  // ==========================================
+  const defaultMetricsConfig = PortalMetricsConfigSchema.parse({
+    captureEnabled: true,
+    lastResetAt: null,
+    resetByUid: null,
+    resetByName: null,
+    updatedAt: new Date().toISOString(),
+  });
+  await setDoc(doc(db, "portal_metrics_config", "global"), defaultMetricsConfig, { merge: true });
+
+  const sampleMusicians = [
+    { uid: superAdminUid, name: "David Passmore", email: "davidpassmore@gmail.com", role: "admin" },
+    { uid: "seed-user-john", name: "John Fetkovich", email: "john.fetkovich@eagleburger.org", role: "gig_manager" },
+    { uid: "seed-user-joelle", name: "Joelle Killebrew", email: "joelle.killebrew@eagleburger.org", role: "catalog_manager" },
+    { uid: "seed-user-sarah", name: "Sarah Bari", email: "sarah.bari@eagleburger.org", role: "section_leader" },
+    { uid: "seed-user-dan", name: "Dan Brass", email: "dan.brass@eagleburger.org", role: "member" },
+    { uid: "seed-user-megan", name: "Megan Aux", email: "megan.aux@eagleburger.org", role: "member" },
+  ];
+
+  const activeToolList = [
+    { id: "member-gigs", title: "Performance Calendar & RSVPs", path: "/portal/gigs", cat: "Performances & Logistics" },
+    { id: "library", title: "Repertoire Catalog", path: "/portal/library", cat: "Music & Repertoire" },
+    { id: "availability", title: "Musician Availability & Blackouts", path: "/portal/availability", cat: "Performances & Logistics" },
+    { id: "call-sheets", title: "Call Sheet Dispatch", path: "/admin/dispatch", cat: "Performances & Logistics" },
+    { id: "setlists", title: "Setlist Studio", path: "/admin/setlists", cat: "Performances & Logistics" },
+    { id: "suggestions", title: "Suggestion Triage & Voting", path: "/admin/suggestions", cat: "Music & Repertoire" },
+    { id: "checkin", title: "Downbeat Check-In", path: "/admin/checkin", cat: "Performances & Logistics" },
+    { id: "reimbursements", title: "Expense Reimbursements", path: "/portal/reimbursements", cat: "Finance" },
+    { id: "pages", title: "CMS Page Studio", path: "/admin/pages", cat: "Website & Intake" },
+  ];
+
+  const nowMs = Date.now();
+  let eventIndex = 0;
+
+  // Generate realistic events distributed over the last 28 days
+  for (let daysAgo = 28; daysAgo >= 0; daysAgo--) {
+    const targetDate = new Date(nowMs - daysAgo * 86400000);
+    const dateKey = targetDate.toISOString().slice(0, 10);
+    // Skew activity towards weekends and mid-week rehearsals (Wed, Sat, Sun)
+    const dayOfWeek = targetDate.getDay();
+    const isHighActivityDay = dayOfWeek === 0 || dayOfWeek === 3 || dayOfWeek === 6;
+    const viewsCount = isHighActivityDay ? 4 + (daysAgo % 4) : (daysAgo % 3 === 0 ? 2 : 1);
+
+    for (let v = 0; v < viewsCount; v++) {
+      const musician = sampleMusicians[(daysAgo + v) % sampleMusicians.length];
+      const tool = activeToolList[(daysAgo * 2 + v) % activeToolList.length];
+      const eventTimestamp = new Date(targetDate.getTime() + (v * 3600000) + 36000000).toISOString();
+      const eventId = `seed_view_${eventIndex++}_${dateKey}`;
+
+      const viewPayload = PortalMetricEventSchema.parse({
+        id: eventId,
+        type: "route_view",
+        pathname: tool.path,
+        toolId: tool.id,
+        toolTitle: tool.title,
+        category: tool.cat,
+        action: "view",
+        details: `Viewed ${tool.title}`,
+        userId: musician.uid,
+        userName: musician.name,
+        userEmail: musician.email,
+        userRole: musician.role,
+        timestamp: eventTimestamp,
+        dateKey,
+      });
+      await setDoc(doc(db, "portal_metrics_events", eventId), viewPayload);
+
+      // On some days, also generate an interaction / change
+      if (v % 2 === 0) {
+        const interId = `seed_inter_${eventIndex++}_${dateKey}`;
+        const actions = [
+          { act: "rsvp_update", det: "Submitted RSVP (Attending)" },
+          { act: "rate_tune", det: "Rated song in Repertoire Catalog" },
+          { act: "post_comment", det: "Posted feedback comment" },
+          { act: "add_blackout", det: "Submitted blackout date range" },
+          { act: "vote_suggestion", det: "Voted on song suggestion" },
+        ];
+        const selectedAction = actions[(daysAgo + v) % actions.length];
+
+        const interPayload = PortalMetricEventSchema.parse({
+          id: interId,
+          type: "interaction",
+          pathname: tool.path,
+          toolId: tool.id,
+          toolTitle: tool.title,
+          category: tool.cat,
+          action: selectedAction.act,
+          details: selectedAction.det,
+          userId: musician.uid,
+          userName: musician.name,
+          userEmail: musician.email,
+          userRole: musician.role,
+          timestamp: new Date(new Date(eventTimestamp).getTime() + 120000).toISOString(),
+          dateKey,
+        });
+        await setDoc(doc(db, "portal_metrics_events", interId), interPayload);
+      }
+    }
+  }
+  console.log(`✅ Seeded portal metrics config and ${eventIndex} telemetry events (views & interactions).`);
+
+  // ==========================================
+  // 26. Super Admin Confirmation
   // ==========================================
   console.log(`ℹ️ Confirmed canonical Super Admin: davidpassmore@gmail.com (UID: ${superAdminUid})`);
 

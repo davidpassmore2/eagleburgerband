@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import PortalMonthCalendar, { MonthCalendarGig } from "@/components/portal/PortalMonthCalendar";
 import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import {
   Calendar,
   CalendarDays,
@@ -143,6 +144,9 @@ export default function PortalGigsListPage() {
         },
         { merge: true }
       );
+      const targetGig = gigs.find((g) => g.id === gigId);
+      const gigTitle = targetGig?.internalLogistics?.title || targetGig?.publicDetails?.title || "gig";
+      dispatchPortalInteraction("rsvp_update", `RSVP'd ${status} for ${gigTitle}`, { gigId, status });
       toast.success(`RSVP updated: ${status}.`);
     } catch (err) {
       console.error("Failed to update RSVP:", err);

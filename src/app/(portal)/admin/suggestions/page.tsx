@@ -22,6 +22,7 @@ import {
   SuggestionStatus,
 } from "@/lib/schema/suggestion";
 import { toast } from "@/lib/context/ToastContext";
+import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import { 
   Lightbulb, 
   ThumbsUp, 
@@ -268,6 +269,7 @@ export default function SuggestionTriagePage() {
           });
         }
       }
+      dispatchPortalInteraction("vote_suggestion", `${voteType === "up" ? "Upvoted" : "Downvoted"} suggestion: ${sug.title}`, { suggestionId: sug.id, voteType });
     } catch (err) {
       console.error("Voting error:", err);
       toast.error("Failed to submit vote: " + (err instanceof Error ? err.message : String(err)));
@@ -348,6 +350,7 @@ export default function SuggestionTriagePage() {
 
       // Write to suggestions collection
       await setDoc(doc(db, "suggestions", sugId), payload);
+      dispatchPortalInteraction("create_suggestion", `Submitted suggestion: ${createForm.title.trim()}`, { title: createForm.title.trim(), category: createForm.category });
 
       toast.success("Suggestion submitted successfully!");
       setIsCreating(false);
@@ -391,6 +394,7 @@ export default function SuggestionTriagePage() {
         promotedSongId: songId,
         updatedAt: new Date().toISOString(),
       });
+      dispatchPortalInteraction("promote_suggestion", `Promoted "${sug.title}" to catalog`, { suggestionId: sug.id, songId });
 
       toast.success(`"${sug.title}" is now added to the Repertoire Catalog!`);
     } catch (err) {
