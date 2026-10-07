@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "emulators": "firebase emulators:start",
     "seed": "tsx scripts/seed.ts",
-    "seed:beta": "tsx --env-file=.env.beta scripts/seed-beta.ts"
+    "seed:beta": "tsx --env-file=.env.beta scripts/seed-beta.ts",
+    "env:dev": "node -e \"require('fs').copyFileSync('.env.dev', '.env.local'); console.log('🔄 Switched .env.local to DEV (offline emulators)')\"",
+    "env:beta": "node -e \"require('fs').copyFileSync('.env.beta', '.env.local'); console.log('🌐 Switched .env.local to BETA (cloud eagleburger-band-beta)')\""
   },
   "dependencies": {
     "@types/dompurify": "^3.2.0",

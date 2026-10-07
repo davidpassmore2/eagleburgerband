@@ -29,6 +29,15 @@ Stage 46 established a multi-environment configuration separating local emulator
   - `setlists`: 3 master templates + 3 stage setlists.
   - `gigs`: 3 initial verification gigs with call sheets, setlists, and RSVPs.
 
+### 3. Vercel Hosting & Google Sign-In Integration
+- Deployed Next.js application to Vercel connected to custom domain **`beta.eagleburgerband.com`**.
+- Configured public client environment variables (`NEXT_PUBLIC_FIREBASE_*`) in Vercel.
+- Whitelisted `beta.eagleburgerband.com` under Firebase Authentication Authorized Domains.
+- Enabled Google Sign-In provider in Firebase Authentication with project support email.
+- Added cross-platform environment switching scripts in `package.json`:
+  - `npm run env:beta`: Switches `.env.local` to live cloud Firebase.
+  - `npm run env:dev`: Switches `.env.local` back to local emulators.
+
 ---
 
 ## Verification Results
@@ -36,15 +45,20 @@ Stage 46 established a multi-environment configuration separating local emulator
 - **Lint:** `npm run lint` exited with 0 (0 warnings, 0 errors).
 - **Seed Execution:** `npm run seed:beta` successfully connected and seeded all 10 collections into `eagleburger-band-beta`.
 - **Production Build:** `npm run build` compiled all 64 static/dynamic routes in 11.8s.
+- **Live Deployment:** Successfully authenticated Super Admin (`davidpassmore@gmail.com`) via Google Sign-In at `https://beta.eagleburgerband.com`.
 
 ---
 
 ## How to Test
-1. **Running Against Cloud Beta Locally:**
-   - Ensure `.env.local` is set to the beta configuration with `NEXT_PUBLIC_USE_FIREBASE_EMULATOR=false`.
-   - Run `npm run dev`.
-   - Log into the portal as `davidpassmore@gmail.com`.
-   - Verify that live cloud data appears across the catalog, call sheets, and admin dashboards.
-2. **Re-seeding Beta Anytime:**
+1. **Live Cloud Beta:**
+   - Navigate to `https://beta.eagleburgerband.com/login`.
+   - Sign in via Google or Email/Password to test call sheets, repertoire charts, and roster management.
+2. **Running Against Cloud Beta Locally:**
+   - Run `npm run env:beta` to point `.env.local` to cloud Firebase.
+   - Run `npm run dev` to test locally against live cloud data.
+3. **Switching to Offline Development:**
+   - Run `npm run env:dev` to point `.env.local` back to emulators.
+   - Run `npm run emulators` and `npm run dev`.
+4. **Re-seeding Beta Anytime:**
    - Execute `npm run seed:beta` from PowerShell whenever baseline data needs to be restored or updated.
 

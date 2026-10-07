@@ -628,22 +628,34 @@ async function runBetaSeed() {
 
     const gigPayload = GigSchema.parse({
       id: gig.id,
-      slug,
-      title: gig.title,
       date: gig.date,
-      time: gig.downbeat,
       status: gig.status,
-      venue: gig.venue,
-      venueAddress: gig.venueAddress,
-      city: gig.city,
-      description: gig.description,
       setlistId: gig.setlistId,
-      logistics: {
+      setlistName: gig.setlistName,
+      setlistTitle: gig.setlistName,
+      publicDetails: {
+        title: gig.title,
+        venue: gig.venue,
+        address: gig.venueAddress,
+        venueAddress: gig.venueAddress,
+        city: gig.city,
+        description: gig.description,
+        isPublic: true,
+        admission: "Free",
+        showExternalDirections: true,
+      },
+      internalLogistics: {
+        title: gig.title,
         callTime: gig.callTime,
         downbeat: gig.downbeat,
-        attire: gig.attire,
         unloadingAddress: gig.unloadingAddress,
+        parkingInstructions: gig.parkingNotes,
         parkingNotes: gig.parkingNotes,
+        attire: gig.attire,
+        compensation: gig.compensation,
+        compensationType: gig.compensationType,
+        setlistId: gig.setlistId,
+        setlistName: gig.setlistName,
         setlistTitle: gig.setlistName,
         description: gig.description,
       },
@@ -661,7 +673,7 @@ async function runBetaSeed() {
       updatedAt: new Date().toISOString(),
     });
 
-    await setDoc(doc(db, "gigs", gig.id), gigPayload, { merge: true });
+    await setDoc(doc(db, "gigs", gig.id), { ...gigPayload, slug }, { merge: true });
 
     // Seed setlist copy for the gig
     await setDoc(
