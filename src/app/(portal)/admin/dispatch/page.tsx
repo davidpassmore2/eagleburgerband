@@ -27,7 +27,11 @@ import {
   Check, 
   Sparkles,
   FileText,
-  Mail
+  Mail,
+  Search,
+  X,
+  ArrowUpDown,
+  ExternalLink
 } from "lucide-react";
 
 interface GigSummary {
@@ -38,6 +42,7 @@ interface GigSummary {
   callTime?: string;
   performanceTime?: string;
   locationDetails?: string;
+  status?: string;
 }
 
 interface MusicianRsvp {
@@ -57,6 +62,11 @@ export default function DispatchStudioPage() {
   const [copied, setCopied] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
 
+  // Event List Search & Filter State
+  const [eventSearch, setEventSearch] = useState("");
+  const [eventFilter, setEventFilter] = useState<"all" | "upcoming" | "past">("all");
+  const [sortAsc, setSortAsc] = useState(true);
+
   // Dispatch Form Fields
   const [uniformBrief, setUniformBrief] = useState("Eagleburger black t-shirt, dark trousers/jeans, comfortable brass marching shoes.");
   const [callTimeBrief, setCallTimeBrief] = useState("Call time: 45 min before downbeat for warm-up and chart run-through.");
@@ -74,12 +84,13 @@ export default function DispatchStudioPage() {
           const data = d.data();
           gList.push({
             id: d.id,
-            title: data.title || data.publicDetails?.title || `Gig ${d.id.slice(0, 6)}`,
+            title: data.title || data.publicDetails?.title || data.internalLogistics?.title || `Gig ${d.id.slice(0, 6)}`,
             date: data.date || "TBD",
             venue: data.venue || data.publicDetails?.venue || "TBD",
-            callTime: data.callTime || data.schedule?.callTime || "TBD",
-            performanceTime: data.performanceTime || data.schedule?.performanceTime || "TBD",
-            locationDetails: data.locationDetails || data.internalLogistics?.location || "",
+            callTime: data.internalLogistics?.callTime || data.callTime || data.schedule?.callTime || "TBD",
+            performanceTime: data.internalLogistics?.downbeat || data.performanceTime || data.schedule?.performanceTime || "TBD",
+            locationDetails: data.locationDetails || data.internalLogistics?.unloadingAddress || data.internalLogistics?.parkingInstructions || "",
+            status: data.status || "confirmed",
           });
         });
         gList.sort((a, b) => a.date.localeCompare(b.date));
@@ -158,6 +169,37 @@ export default function DispatchStudioPage() {
   const selectedGig = gigs.find((g) => g.id === selectedGigId);
   const attendingMusicians = useMemo(() => rsvps.filter((r) => r.status === "attending"), [rsvps]);
   const tentativeMusicians = useMemo(() => rsvps.filter((r) => r.status === "tentative"), [rsvps]);
+
+  // Filtered & Sorted Gigs for the right-hand column selector
+  const filteredGigs = useMemo(() => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const q = eventSearch.toLowerCase().trim();
+
+    const filtered = gigs.filter((g) => {
+      if (q) {
+        const matchesTitle = g.title.toLowerCase().includes(q);
+        const matchesVenue = (g.venue || "").toLowerCase().includes(q);
+        const matchesDate = g.date.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesVenue && !matchesDate) return false;
+      }
+
+      if (eventFilter === "upcoming") {
+        if (g.date === "TBD") return true;
+        return g.date >= todayStr;
+      }
+      if (eventFilter === "past") {
+        if (g.date === "TBD") return false;
+        return g.date < todayStr;
+      }
+
+      return true;
+    });
+
+    return filtered.slice().sort((a, b) => {
+      const cmp = a.date.localeCompare(b.date);
+      return sortAsc ? cmp : -cmp;
+    });
+  }, [gigs, eventSearch, eventFilter, sortAsc]);
 
   // Generated Text Brief for copying / emailing
   const generatedCallSheet = useMemo(() => {
@@ -238,7 +280,7 @@ Questions or late changes? Contact Band Management.`;
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
@@ -286,143 +328,296 @@ Questions or late changes? Contact Band Management.`;
         </div>
       </div>
 
-      {/* Gig Picker Tabs */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-          Select Performance Event
-        </label>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-          {gigs.map((gig) => {
-            const isSelected = gig.id === selectedGigId;
-            return (
-              <button
-                key={gig.id}
-                type="button"
-                onClick={() => setSelectedGigId(gig.id)}
-                className={`text-xs px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-2 border shrink-0 text-left ${
-                  isSelected
-                    ? "bg-slate-800 text-white border-yellow-400/80 shadow-md"
-                    : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
-                }`}
-              >
-                <Calendar className={`w-3.5 h-3.5 ${isSelected ? "text-yellow-400" : "text-slate-500"}`} />
-                <div>
-                  <div className="font-bold truncate max-w-[170px]">{gig.title}</div>
-                  <div className="text-[10px] font-mono text-slate-500">{gig.date}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Main Grid: Digest Builder & Preview */}
+      {/* Main Studio Grid: Left 8 cols for Dispatch Studio, Right 4 cols for Vertical Event Selector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Input Builder */}
-        <div className="lg:col-span-6 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-yellow-400" /> Briefing Parameters
-            </h2>
+        {/* Left Column (8 cols): Active Gig Overview + Parameters + Preview + History */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Active Event Summary Header */}
+          {selectedGig ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20">
+                      Active Event
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">{selectedGig.date}</span>
+                    {selectedGig.status && (
+                      <span className="text-[10px] font-mono uppercase text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        {selectedGig.status}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{selectedGig.title}</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/portal/gigs`}
+                    target="_blank"
+                    className="text-xs text-slate-400 hover:text-yellow-400 flex items-center gap-1 transition"
+                  >
+                    <span>View Calendar</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
 
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                <Clock className="w-3.5 h-3.5 text-yellow-400" /> Call Time & Schedule
-              </label>
-              <textarea
-                rows={2}
-                value={callTimeBrief}
-                onChange={(e) => setCallTimeBrief(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                <Shirt className="w-3.5 h-3.5 text-emerald-400" /> Uniform & Attire Standards
-              </label>
-              <textarea
-                rows={2}
-                value={uniformBrief}
-                onChange={(e) => setUniformBrief(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                <MapPin className="w-3.5 h-3.5 text-rose-400" /> Parking, Load-In & Venue Access
-              </label>
-              <textarea
-                rows={3}
-                value={logisticsBrief}
-                onChange={(e) => setLogisticsBrief(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
-              />
-            </div>
-          </div>
-
-          {/* Recipient Audience Stats */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-yellow-400" />
-              <div>
-                <div className="text-xs font-bold text-white">Target Recipients</div>
-                <div className="text-[11px] text-slate-400">
-                  {attendingMusicians.length} confirmed attending
-                  {tentativeMusicians.length > 0 && ` • ${tentativeMusicians.length} tentative`}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 text-xs">
+                <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Venue</span>
+                  <span className="font-semibold text-slate-200 truncate block mt-0.5">{selectedGig.venue || "TBD"}</span>
+                </div>
+                <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Call Time</span>
+                  <span className="font-semibold text-yellow-400 truncate block mt-0.5">{selectedGig.callTime || "TBD"}</span>
+                </div>
+                <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Performance</span>
+                  <span className="font-semibold text-slate-200 truncate block mt-0.5">{selectedGig.performanceTime || "TBD"}</span>
+                </div>
+                <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Confirmed</span>
+                  <span className="font-semibold text-emerald-400 truncate block mt-0.5">{attendingMusicians.length} Musicians</span>
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
+              No performance event selected. Choose an event from the list on the right.
+            </div>
+          )}
 
-            <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-              {attendingMusicians.length} Musician{attendingMusicians.length === 1 ? "" : "s"}
-            </span>
+          {/* Sub-grid: Form Inputs on Left subcolumn, Digest Preview & History on Right subcolumn */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            {/* Input Builder & Audience */}
+            <div className="space-y-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-yellow-400" /> Briefing Parameters
+                </h2>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
+                    <Clock className="w-3.5 h-3.5 text-yellow-400" /> Call Time & Schedule
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={callTimeBrief}
+                    onChange={(e) => setCallTimeBrief(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
+                    <Shirt className="w-3.5 h-3.5 text-emerald-400" /> Uniform & Attire Standards
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={uniformBrief}
+                    onChange={(e) => setUniformBrief(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" /> Parking, Load-In & Venue Access
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={logisticsBrief}
+                    onChange={(e) => setLogisticsBrief(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* Recipient Audience Stats */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-yellow-400" />
+                  <div>
+                    <div className="text-xs font-bold text-white">Target Recipients</div>
+                    <div className="text-[11px] text-slate-400">
+                      {attendingMusicians.length} confirmed attending
+                      {tentativeMusicians.length > 0 && ` • ${tentativeMusicians.length} tentative`}
+                    </div>
+                  </div>
+                </div>
+
+                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                  {attendingMusicians.length} Musician{attendingMusicians.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Digest Preview & History */}
+            <div className="space-y-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-yellow-400" /> Formatted Digest Preview
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">Live Markdown Preview</span>
+                </div>
+
+                <pre className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto max-h-[280px]">
+                  {generatedCallSheet}
+                </pre>
+              </div>
+
+              {/* Dispatch Log / History */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <History className="w-4 h-4 text-slate-400" /> Dispatch History
+                </h2>
+
+                {dispatchHistory.length === 0 ? (
+                  <div className="text-xs text-slate-500 italic py-2">
+                    No recorded dispatches broadcast for this gig yet.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-800 text-xs max-h-[160px] overflow-y-auto pr-1">
+                    {dispatchHistory.map((item) => (
+                      <div key={item.id} className="py-2.5 flex items-center justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-white">{item.subject}</div>
+                          <div className="text-[10px] font-mono text-slate-500">
+                            Dispatched by {item.sentByName} • {new Date(item.sentAt).toLocaleDateString()} at {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 shrink-0">
+                          {item.recipientCount} sent
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Live Digest Preview & History */}
-        <div className="lg:col-span-6 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-400" /> Formatted Digest Preview
+        {/* Right Column (4 cols): Sticky Performance Events Selector Column */}
+        <div className="lg:col-span-4 lg:sticky lg:top-4 space-y-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-yellow-400" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-white">
+                  Performance Events
+                </h2>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                {filteredGigs.length} {filteredGigs.length === 1 ? "Event" : "Events"}
               </span>
-              <span className="text-[10px] font-mono text-slate-500">Live Markdown Preview</span>
             </div>
 
-            <pre className="bg-slate-950 border border-slate-800/80 rounded-xl p-4 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
-              {generatedCallSheet}
-            </pre>
-          </div>
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search gigs or venues..."
+                value={eventSearch}
+                onChange={(e) => setEventSearch(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-sans"
+              />
+              {eventSearch && (
+                <button
+                  type="button"
+                  onClick={() => setEventSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
-          {/* Dispatch Log / History */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <History className="w-4 h-4 text-slate-400" /> Dispatch History
-            </h2>
-
-            {dispatchHistory.length === 0 ? (
-              <div className="text-xs text-slate-500 italic py-2">
-                No recorded dispatches broadcast for this gig yet.
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-800 text-xs">
-                {dispatchHistory.map((item) => (
-                  <div key={item.id} className="py-2.5 flex items-center justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-white">{item.subject}</div>
-                      <div className="text-[10px] font-mono text-slate-500">
-                        Dispatched by {item.sentByName} • {new Date(item.sentAt).toLocaleDateString()} at {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 shrink-0">
-                      {item.recipientCount} sent
-                    </span>
-                  </div>
+            {/* Filter Tabs & Sort Toggle */}
+            <div className="flex items-center justify-between gap-1 pt-0.5">
+              <div className="inline-flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px]">
+                {(["all", "upcoming", "past"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setEventFilter(tab)}
+                    className={`px-2.5 py-1 rounded-md font-semibold capitalize transition ${
+                      eventFilter === tab
+                        ? "bg-yellow-400 text-slate-950 shadow-sm"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {tab}
+                  </button>
                 ))}
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setSortAsc((prev) => !prev)}
+                className="text-[11px] flex items-center gap-1 text-slate-400 hover:text-yellow-400 px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 transition"
+                title={`Sort by Date (${sortAsc ? "Oldest First" : "Newest First"})`}
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                <span className="font-mono text-[10px]">{sortAsc ? "Asc" : "Desc"}</span>
+              </button>
+            </div>
+
+            {/* Vertical Scroll List */}
+            <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-320px)] min-h-[220px] pr-1 scrollbar-thin">
+              {filteredGigs.length === 0 ? (
+                <div className="text-center py-8 text-xs text-slate-500 italic bg-slate-950/40 rounded-xl border border-slate-800/50">
+                  No performance events match the criteria.
+                </div>
+              ) : (
+                filteredGigs.map((gig) => {
+                  const isSelected = gig.id === selectedGigId;
+                  return (
+                    <button
+                      key={gig.id}
+                      type="button"
+                      onClick={() => setSelectedGigId(gig.id)}
+                      className={`w-full text-left p-3 rounded-xl border transition flex flex-col gap-1.5 ${
+                        isSelected
+                          ? "bg-slate-800 border-yellow-400 shadow-md ring-1 ring-yellow-400/40 text-white"
+                          : "bg-slate-950/70 border-slate-800 hover:bg-slate-800/50 hover:border-slate-700 text-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[10px] font-mono font-bold ${isSelected ? "text-yellow-400" : "text-yellow-400/80"}`}>
+                          {gig.date}
+                        </span>
+                        {gig.callTime && gig.callTime !== "TBD" && (
+                          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5 text-slate-500" />
+                            {gig.callTime}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="font-bold text-xs leading-snug line-clamp-2">
+                        {gig.title}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                        <span className="truncate flex items-center gap-1 max-w-[190px]">
+                          <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span className="truncate">{gig.venue || "Venue TBD"}</span>
+                        </span>
+
+                        {isSelected && (
+                          <span className="text-[9px] font-mono uppercase bg-yellow-400 text-slate-950 font-bold px-1.5 py-0.5 rounded shrink-0">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       </div>

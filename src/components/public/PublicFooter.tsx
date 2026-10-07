@@ -10,6 +10,7 @@ import {
   SiteNavigationSchema, 
   DEFAULT_FOOTER_LINKS, 
   DEFAULT_SOCIAL_LINKS,
+  DEFAULT_FOOTER_DESCRIPTION,
 } from "@/lib/schema/siteConfig";
 import { ExternalLink } from "lucide-react";
 import { SocialIcon, getSocialBrandColors } from "@/components/ui/SocialIcon";
@@ -24,6 +25,7 @@ export default function PublicFooter() {
     DEFAULT_SOCIAL_LINKS.filter((s) => s.isVisible !== false)
   );
   const [brandTagline, setBrandTagline] = useState("Pittsburgh Brass & Battery");
+  const [footerDescription, setFooterDescription] = useState(DEFAULT_FOOTER_DESCRIPTION);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,6 +38,9 @@ export default function PublicFooter() {
           if (parsed.success) {
             if (parsed.data.brandTagline) {
               setBrandTagline(parsed.data.brandTagline);
+            }
+            if (parsed.data.footerDescription) {
+              setFooterDescription(parsed.data.footerDescription);
             }
             if (parsed.data.footerLinks?.length > 0) {
               const activeLinks = parsed.data.footerLinks
@@ -83,8 +88,8 @@ export default function PublicFooter() {
               EAGLEBURGER BAND
             </span>
           </div>
-          <p className="text-xs text-slate-400 max-w-md leading-relaxed">
-            Pittsburgh&apos;s mobile acoustic street brass and drumline powerhouse. Bringing thunderous horns and unstoppable drum grooves to parades, festivals, and celebrations across Western Pennsylvania.
+          <p className="text-xs text-slate-400 max-w-md leading-relaxed whitespace-pre-line">
+            {footerDescription}
           </p>
 
           {/* Social Media Links with Brand Font Icons */}

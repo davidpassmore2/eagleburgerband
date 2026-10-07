@@ -49,6 +49,9 @@ export const TuneSchema = z.object({
   chartAttachments: z.array(ChartAttachmentSchema).default([]),
   upvoteUids: z.array(z.string()).default([]),
   downvoteUids: z.array(z.string()).default([]),
+  ratings: z.record(z.string(), z.number().min(1).max(5)).default({}),
+  ratingAverage: z.number().default(0),
+  ratingCount: z.number().default(0),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
@@ -56,3 +59,21 @@ export const TuneSchema = z.object({
 export type Tune = z.infer<typeof TuneSchema>;
 export type TuneStatus = z.infer<typeof TuneStatusEnum>;
 export type ChartAttachment = z.infer<typeof ChartAttachmentSchema>;
+
+/**
+ * Calculates average rating (1-5 stars) and count from member votes.
+ */
+export function calculateTuneScore(ratings: Record<string, number> = {}): {
+  average: number;
+  count: number;
+} {
+  const values = Object.values(ratings).filter(
+    (v) => typeof v === "number" && v >= 1 && v <= 5
+  );
+  if (values.length === 0) {
+    return { average: 0, count: 0 };
+  }
+  const sum = values.reduce((acc, curr) => acc + curr, 0);
+  const average = Math.round((sum / values.length) * 10) / 10;
+  return { average, count: values.length };
+}

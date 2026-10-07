@@ -75,6 +75,9 @@ export const DEFAULT_SOCIAL_LINKS = [
   { id: "soc_tiktok", platform: "tiktok" as const, label: "TikTok", href: "https://www.tiktok.com/@eagleburgerband", isVisible: false, order: 5 },
 ];
 
+export const DEFAULT_FOOTER_DESCRIPTION =
+  "Pittsburgh's mobile acoustic street brass and drumline powerhouse. Bringing thunderous horns and unstoppable drum grooves to parades, festivals, and celebrations across Western Pennsylvania.";
+
 export const GlobalPageBannerSchema = z.object({
   enabled: z.boolean().default(false),
   imageUrl: z.string().default(""),
@@ -90,6 +93,7 @@ export const GlobalPageBannerSchema = z.object({
 export const SiteNavigationSchema = z.object({
   id: z.string().default("main_nav"),
   brandTagline: z.string().default("Pittsburgh Brass & Battery"),
+  footerDescription: z.string().default(DEFAULT_FOOTER_DESCRIPTION),
   headerOpacity: z.number().min(0).max(100).default(90),
   headerLinks: z.array(NavLinkSchema).default(() => DEFAULT_HEADER_LINKS.map((l) => NavLinkSchema.parse(l))),
   footerLinks: z.array(NavLinkSchema).default(() => DEFAULT_FOOTER_LINKS.map((l) => NavLinkSchema.parse(l))),

@@ -30,6 +30,8 @@ interface PublicGig {
   facebookEventUrl?: string;
   ticketUrl?: string;
   status: string;
+  headerImageUrl?: string;
+  headerImageAlt?: string;
 }
 
 export default function PublicGigsPage() {
@@ -81,6 +83,8 @@ export default function PublicGigsPage() {
               facebookEventUrl: rawEventUrl,
               ticketUrl: pub.ticketUrl || "",
               status: data.status || "confirmed",
+              headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
+              headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
             });
           }
         });

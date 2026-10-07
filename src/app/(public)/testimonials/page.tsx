@@ -23,6 +23,8 @@ import {
   Sparkles,
   X,
   Send,
+  Globe,
+  EyeOff,
 } from "lucide-react";
 
 function cleanString(val: string): string {
@@ -61,6 +63,7 @@ export default function TestimonialsPublicPage() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [formData, setFormData] = useState({
     authorName: "",
+    nameVisibility: "public" as "public" | "private",
     roleOrEvent: "",
     organization: "",
     email: "",
@@ -147,6 +150,7 @@ export default function TestimonialsPublicPage() {
 
     const cleanedPayload = {
       authorName: cleanString(formData.authorName),
+      nameVisibility: formData.nameVisibility,
       roleOrEvent: cleanString(formData.roleOrEvent),
       organization: cleanString(formData.organization),
       email: cleanString(formData.email),
@@ -176,6 +180,7 @@ export default function TestimonialsPublicPage() {
     try {
       const validatedDoc = TestimonialSchema.parse({
         authorName: result.data.authorName,
+        nameVisibility: result.data.nameVisibility,
         roleOrEvent: result.data.roleOrEvent || "",
         organization: result.data.organization || "",
         email: result.data.email,
@@ -207,6 +212,7 @@ export default function TestimonialsPublicPage() {
   const resetForm = () => {
     setFormData({
       authorName: "",
+      nameVisibility: "public",
       roleOrEvent: "",
       organization: "",
       email: "",
@@ -382,7 +388,9 @@ export default function TestimonialsPublicPage() {
               {/* Author Footer */}
               <div className="pt-6 mt-6 border-t border-slate-800/80 flex items-center justify-between gap-3 text-xs">
                 <div>
-                  <h4 className="font-bold text-white text-xs">{t.authorName}</h4>
+                  <h4 className="font-bold text-white text-xs">
+                    {t.nameVisibility === "private" ? "Anonymous (Verified Reviewer)" : t.authorName}
+                  </h4>
                   {(t.roleOrEvent || t.organization) && (
                     <p className="text-[11px] text-slate-400">
                       {[t.roleOrEvent, t.organization].filter(Boolean).join(" • ")}
@@ -525,9 +533,40 @@ export default function TestimonialsPublicPage() {
                 {/* Author Name and Email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                      Your Name *
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                        Your Name *
+                      </label>
+                      {/* Name Visibility Toggle */}
+                      <div className="flex items-center bg-slate-950 rounded-lg p-0.5 border border-slate-800 text-[10px] font-mono">
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, nameVisibility: "public" }))}
+                          className={`px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer ${
+                            formData.nameVisibility === "public"
+                              ? "bg-yellow-400 text-slate-950 font-bold shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Display your name publicly alongside your review"
+                        >
+                          <Globe className="w-2.5 h-2.5" />
+                          <span>Public</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, nameVisibility: "private" }))}
+                          className={`px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer ${
+                            formData.nameVisibility === "private"
+                              ? "bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                          title="Keep your name private (display as Anonymous / Verified Reviewer)"
+                        >
+                          <EyeOff className="w-2.5 h-2.5" />
+                          <span>Private</span>
+                        </button>
+                      </div>
+                    </div>
                     <input
                       type="text"
                       required
@@ -543,9 +582,17 @@ export default function TestimonialsPublicPage() {
                           : "border-slate-800 focus:border-yellow-400 focus:ring-yellow-400"
                       }`}
                     />
-                    {errors.authorName && (
-                      <p className="text-[11px] text-rose-400 font-medium">{errors.authorName}</p>
-                    )}
+                    <div className="flex items-center justify-between text-[11px]">
+                      {errors.authorName ? (
+                        <p className="text-rose-400 font-medium">{errors.authorName}</p>
+                      ) : (
+                        <p className="text-slate-500">
+                          {formData.nameVisibility === "private"
+                            ? "🔒 Name verified by the band but displayed as Anonymous on the site."
+                            : "🌐 Name will be displayed publicly with your review."}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -636,10 +683,10 @@ export default function TestimonialsPublicPage() {
                         setFormData((prev) => ({ ...prev, permissionToPublish: e.target.checked }));
                         clearFieldError("permissionToPublish");
                       }}
-                      className="mt-0.5 rounded bg-slate-950 border-slate-800 text-yellow-400 focus:ring-yellow-400 w-4 h-4"
+                      className="mt-0.5 rounded bg-slate-950 border-slate-800 text-yellow-400 focus:ring-yellow-400 w-4 h-4 shrink-0"
                     />
                     <span className="text-[11px] text-slate-400 leading-tight">
-                      I grant the Eagleburger Band permission to display this review and my name publicly on their website and promotional channels.
+                      I grant the Eagleburger Band permission to display this review on their website and promotional channels, adhering to my selected name visibility preference ({formData.nameVisibility === "private" ? "Private / Anonymous" : "Public"}).
                     </span>
                   </label>
                   {errors.permissionToPublish && (

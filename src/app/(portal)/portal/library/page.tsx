@@ -38,10 +38,13 @@ import {
   X,
   Loader2,
   SlidersHorizontal,
-  Lightbulb
+  Lightbulb,
+  Star
 } from "lucide-react";
 import Link from "next/link";
 import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
+import StarRating from "@/components/portal/StarRating";
+import { calculateTuneScore } from "@/lib/schema/tune";
 import { toast } from "@/lib/context/ToastContext";
 
 export interface UnifiedTune {
@@ -67,6 +70,9 @@ export interface UnifiedTune {
   notes?: string;
   upvoteUids?: string[];
   downvoteUids?: string[];
+  ratings?: Record<string, number>;
+  ratingAverage?: number;
+  ratingCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -92,6 +98,7 @@ export default function UnifiedRepertoireLibraryPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "in_repertoire" | "in_rehearsal" | "review" | "frequent" | "vault" | "unplayed" | "archived">("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"title" | "rating" | "ratingCount" | "bpm" | "recent">("title");
 
   // Comments & Audio Preview
   const [selectedTuneForComments, setSelectedTuneForComments] = useState<UnifiedTune | null>(null);
@@ -126,6 +133,11 @@ export default function UnifiedRepertoireLibraryPage() {
         const list: UnifiedTune[] = [];
         snap.forEach((d) => {
           const raw = d.data();
+          const ratings = raw.ratings && typeof raw.ratings === "object" ? (raw.ratings as Record<string, number>) : {};
+          const { average: calcAvg, count: calcCount } = calculateTuneScore(ratings);
+          const ratingAverage = typeof raw.ratingAverage === "number" ? raw.ratingAverage : calcAvg;
+          const ratingCount = typeof raw.ratingCount === "number" ? raw.ratingCount : calcCount;
+
           list.push({
             id: d.id,
             title: raw.title || "Untitled Tune",
@@ -149,6 +161,9 @@ export default function UnifiedRepertoireLibraryPage() {
             notes: raw.notes || "",
             upvoteUids: Array.isArray(raw.upvoteUids) ? raw.upvoteUids : Array.isArray(raw.upvotes) ? raw.upvotes : [],
             downvoteUids: Array.isArray(raw.downvoteUids) ? raw.downvoteUids : Array.isArray(raw.downvotes) ? raw.downvotes : [],
+            ratings,
+            ratingAverage,
+            ratingCount,
             createdAt: raw.createdAt || new Date().toISOString(),
             updatedAt: raw.updatedAt || new Date().toISOString(),
           });
@@ -234,6 +249,53 @@ export default function UnifiedRepertoireLibraryPage() {
         toast.error("Audio playback error: " + err.message);
         setPlayingAudioTuneId(null);
       });
+    }
+  };
+
+  // 1-5 Star Member Rating Handler
+  const handleRateTune = async (tuneId: string, stars: number) => {
+    if (!currentUserId) {
+      toast.error("Please log in to rate songs.");
+      return;
+    }
+    if (stars < 1 || stars > 5) return;
+
+    const tune = tunes.find((t) => t.id === tuneId);
+    if (!tune) return;
+
+    const currentRatings = { ...(tune.ratings || {}) };
+    const prevVote = currentRatings[currentUserId];
+
+    if (prevVote === stars) {
+      // Toggle off / remove vote
+      delete currentRatings[currentUserId];
+    } else {
+      currentRatings[currentUserId] = stars;
+    }
+
+    const { average, count } = calculateTuneScore(currentRatings);
+
+    try {
+      const tuneRef = doc(db, "tunes", tuneId);
+      await setDoc(
+        tuneRef,
+        {
+          ratings: currentRatings,
+          ratingAverage: average,
+          ratingCount: count,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      if (currentRatings[currentUserId]) {
+        toast.success(`Rated "${tune.title}" ${stars} star${stars === 1 ? "" : "s"}!`);
+      } else {
+        toast.success(`Removed your rating for "${tune.title}".`);
+      }
+    } catch (err) {
+      console.error("Rating error:", err);
+      toast.error("Failed to submit rating: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -394,7 +456,7 @@ export default function UnifiedRepertoireLibraryPage() {
 
   // Filtered Tunes List
   const filteredTunes = useMemo(() => {
-    return tunes.filter((t) => {
+    const filtered = tunes.filter((t) => {
       const norm = normalizeSongTitle(t.title);
       const stat = analytics[norm];
 
@@ -423,7 +485,27 @@ export default function UnifiedRepertoireLibraryPage() {
 
       return true;
     });
-  }, [tunes, search, statusFilter, selectedTag, analytics]);
+
+    return filtered.slice().sort((a, b) => {
+      if (sortBy === "rating") {
+        const diff = (b.ratingAverage || 0) - (a.ratingAverage || 0);
+        if (diff !== 0) return diff;
+        return (b.ratingCount || 0) - (a.ratingCount || 0);
+      }
+      if (sortBy === "ratingCount") {
+        const diff = (b.ratingCount || 0) - (a.ratingCount || 0);
+        if (diff !== 0) return diff;
+        return (b.ratingAverage || 0) - (a.ratingAverage || 0);
+      }
+      if (sortBy === "bpm") {
+        return (b.tempoBpm || 0) - (a.tempoBpm || 0);
+      }
+      if (sortBy === "recent") {
+        return (b.updatedAt || "").localeCompare(a.updatedAt || "");
+      }
+      return a.title.localeCompare(b.title);
+    });
+  }, [tunes, search, statusFilter, selectedTag, analytics, sortBy]);
 
   if (authLoading || loading) {
     return (
@@ -588,24 +670,43 @@ export default function UnifiedRepertoireLibraryPage() {
             </button>
           </div>
 
-          {/* Tag Filter Dropdown */}
-          {availableTags.length > 0 && (
+          {/* Tag Filter & Sort Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Tag Filter Dropdown */}
+            {availableTags.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                <select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  className="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-yellow-400 font-semibold"
+                >
+                  <option value="all">All Musical Styles</option>
+                  {availableTags.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Sort Selector */}
             <div className="flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[11px] text-slate-400 font-medium">Sort:</span>
               <select
-                value={selectedTag}
-                onChange={(e) => setSelectedTag(e.target.value)}
-                className="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-yellow-400"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "title" | "rating" | "ratingCount" | "bpm" | "recent")}
+                className="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-yellow-400 font-semibold"
               >
-                <option value="all">All Musical Styles</option>
-                {availableTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
+                <option value="title">Title (A-Z)</option>
+                <option value="rating">★ Highest Rated (1-5 Stars)</option>
+                <option value="ratingCount">Most Rated (Votes)</option>
+                <option value="bpm">Fastest Tempo (BPM)</option>
+                <option value="recent">Recently Updated</option>
               </select>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -713,6 +814,34 @@ export default function UnifiedRepertoireLibraryPage() {
                     ))}
                   </div>
                 )}
+                {/* 1-5 Star Member Rating & Score Row */}
+                <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Score:</span>
+                    <StarRating
+                      score={tune.ratingAverage || 0}
+                      count={tune.ratingCount || 0}
+                      size="sm"
+                      showCount={true}
+                      showScoreText={true}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-medium">Rate:</span>
+                    <StarRating
+                      score={tune.ratingAverage || 0}
+                      count={tune.ratingCount || 0}
+                      userRating={currentUserId && tune.ratings ? tune.ratings[currentUserId] : undefined}
+                      interactive={Boolean(currentUserId)}
+                      size="sm"
+                      showCount={false}
+                      showScoreText={false}
+                      onRate={(stars) => handleRateTune(tune.id, stars)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Bottom Actions & Frequency Stats */}
@@ -792,10 +921,11 @@ export default function UnifiedRepertoireLibraryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedTuneForComments(tune)}
-                    className="p-1.5 rounded-lg bg-slate-950 text-slate-400 hover:text-yellow-400 border border-slate-800 hover:border-yellow-400/40 transition"
+                    className="px-2 py-1.5 rounded-lg bg-slate-950 text-slate-300 hover:text-yellow-400 border border-slate-800 hover:border-yellow-400/40 transition flex items-center gap-1.5 text-xs font-semibold"
                     title="View & Add Rehearsal Discussion"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>Comments</span>
                   </button>
 
                   {/* Sheet Music Charts Drive Link */}
@@ -861,11 +991,17 @@ export default function UnifiedRepertoireLibraryPage() {
         </div>
       )}
 
-      {/* Tune Discussion Modal */}
+      {/* Tune Rating & Discussion Modal */}
       <TuneCommentsModal
         isOpen={Boolean(selectedTuneForComments)}
         onClose={() => setSelectedTuneForComments(null)}
-        tune={selectedTuneForComments}
+        tune={
+          selectedTuneForComments
+            ? tunes.find((t) => t.id === selectedTuneForComments.id) || selectedTuneForComments
+            : null
+        }
+        currentUserId={currentUserId}
+        onRate={handleRateTune}
       />
 
       {/* Manager Add / Edit Chart Modal */}

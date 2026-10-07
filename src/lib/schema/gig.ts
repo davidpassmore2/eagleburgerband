@@ -35,6 +35,11 @@ export const PublicDetailsSchema = z.object({
   ticketUrl: z.string().default(""),
   isPublic: z.boolean().default(false),
   showExternalDirections: z.boolean().default(true),
+  headerImageUrl: z.string().default(""),
+  headerImageAlt: z.string().default(""),
+  headerImageOverlayOpacity: z.number().min(0).max(100).default(0),
+  headerImageHeightPreset: z.enum(["compact", "standard", "cinematic"]).default("standard"),
+  headerImageVerticalPosition: z.number().min(0).max(100).default(50),
 });
 
 export const InternalLogisticsSchema = z.object({
@@ -102,6 +107,11 @@ export const GigSchema = z.object({
     ticketUrl: "",
     isPublic: false,
     showExternalDirections: true,
+    headerImageUrl: "",
+    headerImageAlt: "",
+    headerImageOverlayOpacity: 0,
+    headerImageHeightPreset: "standard" as const,
+    headerImageVerticalPosition: 50,
   })),
   internalLogistics: InternalLogisticsSchema.default(() => ({
     title: "",

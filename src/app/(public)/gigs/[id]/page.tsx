@@ -57,6 +57,11 @@ interface GigData {
     ticketUrl?: string;
     isPublic: boolean;
     showExternalDirections?: boolean;
+    headerImageUrl?: string;
+    headerImageAlt?: string;
+    headerImageOverlayOpacity?: number;
+    headerImageHeightPreset?: "compact" | "standard" | "cinematic";
+    headerImageVerticalPosition?: number;
   };
 }
 
@@ -124,6 +129,11 @@ export default function PublicGigDetailPage({
                 ticketUrl: pub.ticketUrl || "",
                 isPublic: pub.isPublic !== false,
                 showExternalDirections: pub.showExternalDirections !== false,
+                headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
+                headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
+                headerImageOverlayOpacity: pub.headerImageOverlayOpacity ?? data.headerImageOverlayOpacity ?? 0,
+                headerImageHeightPreset: pub.headerImageHeightPreset || data.headerImageHeightPreset || "standard",
+                headerImageVerticalPosition: pub.headerImageVerticalPosition ?? data.headerImageVerticalPosition ?? 50,
               },
             });
           } else {
@@ -254,6 +264,52 @@ export default function PublicGigDetailPage({
           >
             {publicDetails.showExternalDirections ? "Disable Navigation Buttons" : "Enable Navigation Buttons"}
           </button>
+        </div>
+      )}
+
+      {/* Custom Image Header Banner (aligning with content width) */}
+      {publicDetails.headerImageUrl && (
+        <div 
+          className={`relative w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl bg-slate-950 ${
+            publicDetails.headerImageHeightPreset === "compact"
+              ? "h-56 sm:h-72"
+              : publicDetails.headerImageHeightPreset === "cinematic"
+              ? "h-80 sm:h-96 md:h-[440px]"
+              : "h-64 sm:h-80 md:h-96"
+          }`}
+          suppressHydrationWarning
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={publicDetails.headerImageUrl}
+            alt={publicDetails.headerImageAlt || publicDetails.title || "Eagleburger Band Appearance"}
+            className="w-full h-full object-cover select-none"
+            style={{
+              objectPosition: `center ${publicDetails.headerImageVerticalPosition ?? 50}%`,
+            }}
+            loading="eager"
+            suppressHydrationWarning
+          />
+
+          {/* Optional Overlay Tint */}
+          {(publicDetails.headerImageOverlayOpacity ?? 0) > 0 && (
+            <div
+              className="absolute inset-0 pointer-events-none transition-opacity"
+              style={{
+                backgroundColor: `rgba(2, 6, 23, ${(publicDetails.headerImageOverlayOpacity ?? 0) / 100})`,
+              }}
+            />
+          )}
+
+          {/* Decorative Gradient Vignette for Depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20 pointer-events-none" />
+
+          {/* Subtle Alt / Caption Chip if provided */}
+          {publicDetails.headerImageAlt && (
+            <div className="absolute bottom-3 right-3 z-10 px-3 py-1 rounded-xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-300 pointer-events-none shadow-md">
+              {publicDetails.headerImageAlt}
+            </div>
+          )}
         </div>
       )}
 

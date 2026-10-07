@@ -35,11 +35,16 @@ import {
   EyeOff,
   Search,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ImageIcon,
+  FolderOpen,
+  MoveVertical
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
+import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
+import { ResourceAsset } from "@/lib/schema/resource";
 import { GigCompensationType } from "@/lib/schema/gig";
 
 interface GigItem {
@@ -60,6 +65,11 @@ interface GigItem {
     isPublic?: boolean;
     eventUrl?: string;
     facebookEventUrl?: string;
+    headerImageUrl?: string;
+    headerImageAlt?: string;
+    headerImageOverlayOpacity?: number;
+    headerImageHeightPreset?: "compact" | "standard" | "cinematic";
+    headerImageVerticalPosition?: number;
   };
   internalLogistics?: {
     title: string;
@@ -128,6 +138,11 @@ export default function GigsAdminStudioPage() {
     showExternalDirections: true,
     isPublic: false,
     eventUrl: "",
+    headerImageUrl: "",
+    headerImageAlt: "",
+    headerImageHeightPreset: "standard" as "compact" | "standard" | "cinematic",
+    headerImageVerticalPosition: 50,
+    headerImageOverlayOpacity: 0,
     callTime: "5:00 PM",
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
@@ -146,6 +161,11 @@ export default function GigsAdminStudioPage() {
     showExternalDirections: true,
     isPublic: true,
     eventUrl: "",
+    headerImageUrl: "",
+    headerImageAlt: "",
+    headerImageHeightPreset: "standard" as "compact" | "standard" | "cinematic",
+    headerImageVerticalPosition: 50,
+    headerImageOverlayOpacity: 0,
     callTime: "5:00 PM",
     downbeat: "6:00 PM",
     attire: "Eagleburger Yellows & Black",
@@ -155,6 +175,27 @@ export default function GigsAdminStudioPage() {
     description: "",
     setlistId: "",
   });
+
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
+  const [assetPickerTarget, setAssetPickerTarget] = useState<"create" | "edit">("create");
+
+  const handleSelectAsset = (asset: ResourceAsset) => {
+    if (assetPickerTarget === "create") {
+      setFormData((prev) => ({
+        ...prev,
+        headerImageUrl: asset.url,
+        headerImageAlt: asset.altText || asset.name,
+      }));
+    } else {
+      setEditFormData((prev) => ({
+        ...prev,
+        headerImageUrl: asset.url,
+        headerImageAlt: asset.altText || asset.name,
+      }));
+    }
+    setIsAssetPickerOpen(false);
+    toast.success(`Selected "${asset.name}" as gig header image.`);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -325,6 +366,11 @@ export default function GigsAdminStudioPage() {
           showExternalDirections: formData.showExternalDirections,
           isPublic: formData.isPublic,
           eventUrl: formData.eventUrl.trim(),
+          headerImageUrl: formData.headerImageUrl.trim(),
+          headerImageAlt: formData.headerImageAlt.trim(),
+          headerImageHeightPreset: formData.headerImageHeightPreset,
+          headerImageVerticalPosition: formData.headerImageVerticalPosition,
+          headerImageOverlayOpacity: formData.headerImageOverlayOpacity,
         },
         internalLogistics: {
           title: formData.title.trim(),
@@ -380,6 +426,11 @@ export default function GigsAdminStudioPage() {
         showExternalDirections: true,
         isPublic: false,
         eventUrl: "",
+        headerImageUrl: "",
+        headerImageAlt: "",
+        headerImageHeightPreset: "standard",
+        headerImageVerticalPosition: 50,
+        headerImageOverlayOpacity: 0,
         callTime: "5:00 PM",
         downbeat: "6:00 PM",
         attire: "Eagleburger Yellows & Black",
@@ -450,6 +501,11 @@ export default function GigsAdminStudioPage() {
       showExternalDirections: gig.publicDetails?.showExternalDirections !== false,
       isPublic: gig.publicDetails?.isPublic !== false,
       eventUrl: gig.publicDetails?.eventUrl || gig.publicDetails?.facebookEventUrl || "",
+      headerImageUrl: gig.publicDetails?.headerImageUrl || "",
+      headerImageAlt: gig.publicDetails?.headerImageAlt || "",
+      headerImageHeightPreset: gig.publicDetails?.headerImageHeightPreset || "standard",
+      headerImageVerticalPosition: gig.publicDetails?.headerImageVerticalPosition ?? 50,
+      headerImageOverlayOpacity: gig.publicDetails?.headerImageOverlayOpacity ?? 0,
       callTime: gig.internalLogistics?.callTime || "5:00 PM",
       downbeat: gig.internalLogistics?.downbeat || "6:00 PM",
       attire: gig.internalLogistics?.attire || "Eagleburger Yellows & Black",
@@ -503,6 +559,11 @@ export default function GigsAdminStudioPage() {
           isPublic: editFormData.isPublic,
           eventUrl: editFormData.eventUrl.trim(),
           facebookEventUrl: editFormData.eventUrl.trim(),
+          headerImageUrl: editFormData.headerImageUrl.trim(),
+          headerImageAlt: editFormData.headerImageAlt.trim(),
+          headerImageHeightPreset: editFormData.headerImageHeightPreset,
+          headerImageVerticalPosition: editFormData.headerImageVerticalPosition,
+          headerImageOverlayOpacity: editFormData.headerImageOverlayOpacity,
         },
         internalLogistics: {
           title: editFormData.title.trim(),
@@ -816,6 +877,176 @@ export default function GigsAdminStudioPage() {
             </span>
           </div>
 
+          {/* Custom Image Header Banner Selection */}
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-yellow-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Custom Image Header (Optional)
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">
+                    Displays across the top of this gig&apos;s public page, aligning with content width.
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAssetPickerTarget("create");
+                  setIsAssetPickerOpen(true);
+                }}
+                className="px-2.5 py-1.5 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                title="Choose from Resource Library"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Resource Library</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="https://... or select from Resource Library"
+                value={formData.headerImageUrl}
+                onChange={(e) => setFormData({ ...formData, headerImageUrl: e.target.value })}
+                className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-mono"
+              />
+              {formData.headerImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, headerImageUrl: "", headerImageAlt: "" })}
+                  className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-rose-400 border border-slate-800 rounded-lg text-xs font-semibold transition flex items-center gap-1"
+                  title="Remove Header Image"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {formData.headerImageUrl && (
+              <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                {/* Live Preview Thumbnail */}
+                <div 
+                  className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-900 ${
+                    formData.headerImageHeightPreset === "compact"
+                      ? "h-28"
+                      : formData.headerImageHeightPreset === "cinematic"
+                      ? "h-44"
+                      : "h-36"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={formData.headerImageUrl}
+                    alt={formData.headerImageAlt || "Header Preview"}
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: `center ${formData.headerImageVerticalPosition}%` }}
+                  />
+                  {formData.headerImageOverlayOpacity > 0 && (
+                    <div
+                      className="absolute inset-0"
+                      style={{ backgroundColor: `rgba(2, 6, 23, ${formData.headerImageOverlayOpacity / 100})` }}
+                    />
+                  )}
+                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 text-[10px] font-mono text-slate-300 border border-slate-800">
+                    Live Banner Preview
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Image Alt Text / Caption
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Band marching at Millvale Days"
+                      value={formData.headerImageAlt}
+                      onChange={(e) => setFormData({ ...formData, headerImageAlt: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Height Preset
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: "compact", label: "Compact" },
+                        { id: "standard", label: "Standard" },
+                        { id: "cinematic", label: "Cinematic" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, headerImageHeightPreset: preset.id as "compact" | "standard" | "cinematic" })}
+                          className={`py-1 px-1.5 rounded text-[11px] font-semibold border transition ${
+                            formData.headerImageHeightPreset === preset.id
+                              ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
+                              : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vertical Focal Point & Overlay */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      <span>Focal Position</span>
+                      <span className="text-yellow-400 font-mono">{formData.headerImageVerticalPosition}%</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { label: "Top", pos: 0, icon: ArrowUp },
+                        { label: "Center", pos: 50, icon: MoveVertical },
+                        { label: "Bottom", pos: 100, icon: ArrowDown },
+                      ].map((btn) => (
+                        <button
+                          key={btn.label}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, headerImageVerticalPosition: btn.pos })}
+                          className={`flex-1 py-1 px-1 rounded text-[10px] font-bold border transition flex items-center justify-center gap-1 ${
+                            formData.headerImageVerticalPosition === btn.pos
+                              ? "bg-yellow-400 text-slate-950 border-yellow-400"
+                              : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                          }`}
+                        >
+                          <btn.icon className="w-3 h-3" />
+                          <span>{btn.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      <span>Dark Tint Overlay</span>
+                      <span className="text-yellow-400 font-mono">{formData.headerImageOverlayOpacity}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={90}
+                      step={5}
+                      value={formData.headerImageOverlayOpacity}
+                      onChange={(e) => setFormData({ ...formData, headerImageOverlayOpacity: parseInt(e.target.value, 10) || 0 })}
+                      className="w-full accent-yellow-400 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Public Site Visibility Toggle */}
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between gap-3">
@@ -1126,6 +1357,176 @@ export default function GigsAdminStudioPage() {
               <span className="text-[10px] text-slate-500 mt-1 block">
                 Optional external page for the event. If left empty, no event link button is displayed on the public site.
               </span>
+            </div>
+
+            {/* Custom Image Header Banner Selection */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-yellow-400 shrink-0" />
+                  <div>
+                    <span className="text-xs font-semibold text-slate-200 block">
+                      Custom Image Header (Optional)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                      Displays across the top of this gig&apos;s public page, aligning with content width.
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssetPickerTarget("edit");
+                    setIsAssetPickerOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                  title="Choose from Resource Library"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Resource Library</span>
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://... or select from Resource Library"
+                  value={editFormData.headerImageUrl}
+                  onChange={(e) => setEditFormData({ ...editFormData, headerImageUrl: e.target.value })}
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-mono"
+                />
+                {editFormData.headerImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData({ ...editFormData, headerImageUrl: "", headerImageAlt: "" })}
+                    className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-rose-400 border border-slate-800 rounded-lg text-xs font-semibold transition flex items-center gap-1"
+                    title="Remove Header Image"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {editFormData.headerImageUrl && (
+                <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                  {/* Live Preview Thumbnail */}
+                  <div 
+                    className={`relative w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-900 ${
+                      editFormData.headerImageHeightPreset === "compact"
+                        ? "h-28"
+                        : editFormData.headerImageHeightPreset === "cinematic"
+                        ? "h-44"
+                        : "h-36"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={editFormData.headerImageUrl}
+                      alt={editFormData.headerImageAlt || "Header Preview"}
+                      className="w-full h-full object-cover"
+                      style={{ objectPosition: `center ${editFormData.headerImageVerticalPosition}%` }}
+                    />
+                    {editFormData.headerImageOverlayOpacity > 0 && (
+                      <div
+                        className="absolute inset-0"
+                        style={{ backgroundColor: `rgba(2, 6, 23, ${editFormData.headerImageOverlayOpacity / 100})` }}
+                      />
+                    )}
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 text-[10px] font-mono text-slate-300 border border-slate-800">
+                      Live Banner Preview
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Image Alt Text / Caption
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Band marching at Millvale Days"
+                        value={editFormData.headerImageAlt}
+                        onChange={(e) => setEditFormData({ ...editFormData, headerImageAlt: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                        Height Preset
+                      </label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[
+                          { id: "compact", label: "Compact" },
+                          { id: "standard", label: "Standard" },
+                          { id: "cinematic", label: "Cinematic" },
+                        ].map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setEditFormData({ ...editFormData, headerImageHeightPreset: preset.id as "compact" | "standard" | "cinematic" })}
+                            className={`py-1 px-1.5 rounded text-[11px] font-semibold border transition ${
+                              editFormData.headerImageHeightPreset === preset.id
+                                ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
+                                : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vertical Focal Point & Overlay */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        <span>Focal Position</span>
+                        <span className="text-yellow-400 font-mono">{editFormData.headerImageVerticalPosition}%</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[
+                          { label: "Top", pos: 0, icon: ArrowUp },
+                          { label: "Center", pos: 50, icon: MoveVertical },
+                          { label: "Bottom", pos: 100, icon: ArrowDown },
+                        ].map((btn) => (
+                          <button
+                            key={btn.label}
+                            type="button"
+                            onClick={() => setEditFormData({ ...editFormData, headerImageVerticalPosition: btn.pos })}
+                            className={`flex-1 py-1 px-1 rounded text-[10px] font-bold border transition flex items-center justify-center gap-1 ${
+                              editFormData.headerImageVerticalPosition === btn.pos
+                                ? "bg-yellow-400 text-slate-950 border-yellow-400"
+                                : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                            }`}
+                          >
+                            <btn.icon className="w-3 h-3" />
+                            <span>{btn.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        <span>Dark Tint Overlay</span>
+                        <span className="text-yellow-400 font-mono">{editFormData.headerImageOverlayOpacity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={90}
+                        step={5}
+                        value={editFormData.headerImageOverlayOpacity}
+                        onChange={(e) => setEditFormData({ ...editFormData, headerImageOverlayOpacity: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full accent-yellow-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1502,6 +1903,23 @@ export default function GigsAdminStudioPage() {
                 </div>
               </div>
 
+              {g.publicDetails?.headerImageUrl && (
+                <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 mb-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={g.publicDetails.headerImageUrl}
+                    alt={g.publicDetails.headerImageAlt || g.publicDetails.title || "Header"}
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: `center ${g.publicDetails.headerImageVerticalPosition ?? 50}%` }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent pointer-events-none" />
+                  <span className="absolute bottom-1.5 left-2 px-1.5 py-0.5 rounded bg-slate-950/80 text-[9px] font-mono font-bold text-yellow-400 border border-slate-800 flex items-center gap-1 backdrop-blur-sm">
+                    <ImageIcon className="w-2.5 h-2.5" />
+                    <span>Header Banner</span>
+                  </span>
+                </div>
+              )}
+
               <h2 className="text-base font-bold text-white truncate">
                 {g.publicDetails?.title || g.id}
               </h2>
@@ -1773,6 +2191,16 @@ export default function GigsAdminStudioPage() {
           onSaved={() => setManagingSetlistGig(null)}
         />
       )}
+
+      {/* Resource Asset Picker Modal */}
+      <ResourceAssetPickerModal
+        isOpen={isAssetPickerOpen}
+        onClose={() => setIsAssetPickerOpen(false)}
+        onSelectAsset={handleSelectAsset}
+        filterCategory="header"
+        title="Choose Gig Header Image"
+        subtitle="Select a header banner image from the band's resource library for this gig."
+      />
     </div>
   );
 }

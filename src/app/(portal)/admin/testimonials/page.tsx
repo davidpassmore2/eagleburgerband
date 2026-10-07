@@ -32,6 +32,8 @@ import {
   User as UserIcon,
   X,
   Save,
+  Globe,
+  EyeOff,
 } from "lucide-react";
 
 export default function TestimonialsAdminStudio() {
@@ -322,6 +324,17 @@ export default function TestimonialsAdminStudio() {
                       <span className="font-bold text-white flex items-center gap-1.5">
                         <UserIcon className="w-3.5 h-3.5 text-slate-500" />
                         {item.authorName}
+                        {item.nameVisibility === "private" ? (
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1">
+                            <EyeOff className="w-2.5 h-2.5" />
+                            <span>Private (Anonymous)</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1">
+                            <Globe className="w-2.5 h-2.5" />
+                            <span>Public</span>
+                          </span>
+                        )}
                       </span>
                       {(item.roleOrEvent || item.organization) && (
                         <span>
@@ -438,17 +451,34 @@ export default function TestimonialsAdminStudio() {
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="block font-semibold text-slate-300">Author Name</label>
-                <input
-                  type="text"
-                  required
-                  value={editingItem.authorName}
-                  onChange={(e) =>
-                    setEditingItem((prev) => prev ? { ...prev, authorName: e.target.value } : null)
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-yellow-400"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">Author Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingItem.authorName}
+                    onChange={(e) =>
+                      setEditingItem((prev) => prev ? { ...prev, authorName: e.target.value } : null)
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-yellow-400"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block font-semibold text-slate-300">Public Name Visibility</label>
+                  <select
+                    value={editingItem.nameVisibility || "public"}
+                    onChange={(e) =>
+                      setEditingItem((prev) =>
+                        prev ? { ...prev, nameVisibility: e.target.value as "public" | "private" } : null
+                      )
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:border-yellow-400"
+                  >
+                    <option value="public">Public (Show full author name)</option>
+                    <option value="private">Private (Show as Anonymous / Verified Reviewer)</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

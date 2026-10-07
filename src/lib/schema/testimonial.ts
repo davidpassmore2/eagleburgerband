@@ -11,6 +11,7 @@ export const TestimonialStatusEnum = z.enum([
 export const TestimonialSchema = z.object({
   id: z.string().default(""),
   authorName: z.string().default(""),
+  nameVisibility: z.enum(["public", "private"]).default("public"),
   roleOrEvent: z.string().default(""), // e.g. "Parade Coordinator", "Festival Organizer", "Fan"
   organization: z.string().default(""),
   email: z.string().default(""),
@@ -36,6 +37,9 @@ export const TestimonialInputSchema = z.object({
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(100, "Name cannot exceed 100 characters"),
+  nameVisibility: z
+    .enum(["public", "private"])
+    .default("public"),
   roleOrEvent: z
     .string()
     .trim()
