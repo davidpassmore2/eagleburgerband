@@ -9,7 +9,6 @@ import {
   Sparkles, 
   Mail, 
   Lock, 
-  User, 
   ArrowRight, 
   CheckCircle2, 
   AlertCircle, 
@@ -17,7 +16,8 @@ import {
   EyeOff, 
   RefreshCw,
   HelpCircle,
-  ArrowLeft
+  ArrowLeft,
+  MailCheck
 } from "lucide-react";
 
 function LoginContent() {
@@ -31,12 +31,13 @@ function LoginContent() {
     firebaseUser,
     profile,
     loading: authLoading,
+    authNotice,
+    clearAuthNotice,
     signInWithGoogle,
     signInWithApple,
     signInWithMicrosoft,
     signInWithGithub,
     signInWithPassword,
-    signUpWithPassword,
     sendPasswordReset,
     sendMagicLink,
     signInWithMagicLink,
@@ -45,19 +46,32 @@ function LoginContent() {
 
   // Active form tab: "magic" | "password"
   const [activeTab, setActiveTab] = useState<"magic" | "password">("magic");
-  // Password mode: "signin" | "signup" | "reset"
-  const [passwordMode, setPasswordMode] = useState<"signin" | "signup" | "reset">("signin");
+  // Password mode: "signin" | "reset" (Option C: invite-only, direct signup disabled)
+  const [passwordMode, setPasswordMode] = useState<"signin" | "reset">("signin");
 
   // Form states
   const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Forgot password flow states
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetEmailSentTo, setResetEmailSentTo] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Status feedback
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMagicVerifying, setIsMagicVerifying] = useState(false);
+
+  // Cooldown timer for password reset resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Handle incoming passwordless magic link verification
   useEffect(() => {
@@ -113,13 +127,12 @@ function LoginContent() {
     fn: () => Promise<void>
   ) => {
     setStatusMessage(null);
+    clearAuthNotice();
     setIsSubmitting(true);
     try {
       await fn();
-      setStatusMessage({ type: "success", text: `Authenticated with ${providerName}! Redirecting...` });
-      setTimeout(() => {
-        router.replace(redirectTarget);
-      }, 500);
+      // If user has a valid profile, the profile listener will update and the useEffect will redirect.
+      // If uninvited, AuthContext immediately signs out and sets authNotice.
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") {
@@ -137,6 +150,7 @@ function LoginContent() {
   // Magic Link Dispatch Handler
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearAuthNotice();
     if (!email.trim()) {
       setStatusMessage({ type: "error", text: "Please enter your email address." });
       return;
@@ -157,9 +171,10 @@ function LoginContent() {
     }
   };
 
-  // Password / Register / Reset Handler
+  // Password / Reset Handler
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearAuthNotice();
     if (!email.trim()) {
       setStatusMessage({ type: "error", text: "Email address required." });
       return;
@@ -174,28 +189,10 @@ function LoginContent() {
       if (res.error) {
         setStatusMessage({ type: "error", text: res.error });
       } else {
-        setStatusMessage({
-          type: "success",
-          text: `Password reset instructions sent to ${email.trim()}.`,
-        });
-        setPasswordMode("signin");
-      }
-      return;
-    }
-
-    if (passwordMode === "signup") {
-      if (!password || password.length < 6) {
-        setIsSubmitting(false);
-        setStatusMessage({ type: "error", text: "Password must be at least 6 characters." });
-        return;
-      }
-      const res = await signUpWithPassword(email.trim(), password, displayName.trim());
-      setIsSubmitting(false);
-      if (res.error) {
-        setStatusMessage({ type: "error", text: res.error });
-      } else {
-        setStatusMessage({ type: "success", text: "Account created! Redirecting to musician portal..." });
-        setTimeout(() => router.replace(redirectTarget), 600);
+        setResetSuccess(true);
+        setResetEmailSentTo(email.trim());
+        setResendCooldown(30);
+        setStatusMessage(null);
       }
       return;
     }
@@ -213,7 +210,24 @@ function LoginContent() {
       setStatusMessage({ type: "error", text: res.error });
     } else {
       setStatusMessage({ type: "success", text: "Welcome back! Entering musician portal..." });
-      setTimeout(() => router.replace(redirectTarget), 500);
+    }
+  };
+
+  // Resend password reset email handler
+  const handleResendReset = async () => {
+    if (resendCooldown > 0 || !resetEmailSentTo) return;
+    clearAuthNotice();
+    setIsSubmitting(true);
+    const res = await sendPasswordReset(resetEmailSentTo);
+    setIsSubmitting(false);
+    if (res.error) {
+      setStatusMessage({ type: "error", text: res.error });
+    } else {
+      setResendCooldown(30);
+      setStatusMessage({
+        type: "success",
+        text: `Reset instructions re-sent to ${resetEmailSentTo}. Please check your inbox.`,
+      });
     }
   };
 
@@ -269,24 +283,41 @@ function LoginContent() {
         </div>
 
         {/* Status Notification Banner */}
-        {statusMessage && (
+        {(authNotice || statusMessage) && (
           <div
             className={`p-3.5 rounded-2xl text-xs flex items-start gap-2.5 border transition-all ${
-              statusMessage.type === "success"
+              authNotice
+                ? "bg-rose-500/15 border-rose-500/40 text-rose-200"
+                : statusMessage?.type === "success"
                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                : statusMessage.type === "error"
+                : statusMessage?.type === "error"
                 ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
                 : "bg-yellow-400/10 border-yellow-400/30 text-yellow-300"
             }`}
           >
-            {statusMessage.type === "success" ? (
+            {authNotice ? (
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+            ) : statusMessage?.type === "success" ? (
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
-            ) : statusMessage.type === "error" ? (
+            ) : statusMessage?.type === "error" ? (
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
             ) : (
               <Sparkles className="w-4 h-4 shrink-0 text-yellow-400 mt-0.5" />
             )}
-            <span className="leading-relaxed font-medium">{statusMessage.text}</span>
+            <div className="flex-1 space-y-1">
+              <span className="leading-relaxed font-semibold">
+                {authNotice || statusMessage?.text}
+              </span>
+              {authNotice && (
+                <p className="text-[11px] text-rose-300/80 pt-0.5">
+                  Have an invitation? Check your email for your activation link, or visit{" "}
+                  <Link href="/join" className="underline font-bold text-white hover:text-yellow-400">
+                    Auditions &amp; Join
+                  </Link>{" "}
+                  to apply.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -443,72 +474,137 @@ function LoginContent() {
             </form>
           )}
 
-          {/* TAB B: Password / Register / Reset Suite */}
+          {/* TAB B: Password / Reset Suite */}
           {activeTab === "password" && (
             <form onSubmit={handlePasswordSubmit} className="space-y-3">
               {passwordMode === "reset" ? (
                 // Password Reset View
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
-                      Account Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@domain.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
-                      />
+                resetSuccess ? (
+                  // Reset Confirmation Screen
+                  <div className="space-y-4 py-1 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center">
+                      <MailCheck className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h2 className="text-base font-black text-white uppercase tracking-tight">
+                        Reset Link Dispatched
+                      </h2>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        We sent password reset instructions to{" "}
+                        <span className="font-bold text-yellow-400">{resetEmailSentTo}</span>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 text-[11px] text-slate-400 text-left space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-300 uppercase tracking-wider text-[10px]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Next Steps</span>
+                      </div>
+                      <p>• Click the link in your email to choose a new password.</p>
+                      <p>• If you don&apos;t see it within 2 minutes, check your spam or junk folder.</p>
+                      <p>• The reset link remains valid for 1 hour.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordMode("signin");
+                          setResetSuccess(false);
+                          setStatusMessage(null);
+                          clearAuthNotice();
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/10"
+                      >
+                        <span>Return to Sign In</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSubmitting || resendCooldown > 0}
+                        onClick={handleResendReset}
+                        className="text-xs text-slate-400 hover:text-white transition disabled:opacity-50 py-1"
+                      >
+                        {isSubmitting ? (
+                          <span className="inline-flex items-center gap-1 justify-center">
+                            <RefreshCw className="w-3 h-3 animate-spin inline" /> Resending...
+                          </span>
+                        ) : resendCooldown > 0 ? (
+                          `Resend reset link in ${resendCooldown}s`
+                        ) : (
+                          "Didn't receive the email? Resend link"
+                        )}
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  // Reset Request Form
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <h2 className="text-sm font-black text-white uppercase tracking-tight">
+                        Reset Your Password
+                      </h2>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Enter your registered musician email address. We will send you instructions to create a new password.
+                      </p>
+                    </div>
 
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Enter the email registered with the band. We will send you instructions to reset your password.
-                  </p>
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setPasswordMode("signin")}
-                      className="px-3 py-2 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold transition"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="flex-1 flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Sending..." : "Send Reset Email"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                // Normal Sign-in / Sign-up View
-                <>
-                  {passwordMode === "signup" && (
                     <div className="space-y-1">
                       <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
-                        Musician Full Name
+                        Musician Email Address
                       </label>
                       <div className="relative">
-                        <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
-                          type="text"
+                          type="email"
                           required
-                          value={displayName}
-                          onChange={(e) => setDisplayName(e.target.value)}
-                          placeholder="First & Last Name"
-                          className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            clearAuthNotice();
+                          }}
+                          placeholder="you@domain.com"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
                         />
                       </div>
                     </div>
-                  )}
 
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordMode("signin");
+                          setStatusMessage(null);
+                          clearAuthNotice();
+                        }}
+                        className="px-4 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold transition"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition disabled:opacity-50 shadow-lg shadow-yellow-400/10"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Sending Reset Link...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-4 h-4" />
+                            <span>Send Reset Link</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              ) : (
+                // Sign-in View (Option C: Direct account creation disabled)
+                <>
                   <div className="space-y-1">
                     <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                       Email Address
@@ -519,7 +615,10 @@ function LoginContent() {
                         type="email"
                         required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          clearAuthNotice();
+                        }}
                         placeholder="you@domain.com"
                         className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
                       />
@@ -531,15 +630,18 @@ function LoginContent() {
                       <label className="block text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
                         Password
                       </label>
-                      {passwordMode === "signin" && (
-                        <button
-                          type="button"
-                          onClick={() => setPasswordMode("reset")}
-                          className="text-[11px] text-yellow-400 hover:underline font-semibold"
-                        >
-                          Forgot?
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordMode("reset");
+                          setResetSuccess(false);
+                          setStatusMessage(null);
+                          clearAuthNotice();
+                        }}
+                        className="text-[11px] text-yellow-400 hover:underline font-semibold"
+                      >
+                        Forgot password?
+                      </button>
                     </div>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -547,7 +649,10 @@ function LoginContent() {
                         type={showPassword ? "text" : "password"}
                         required
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          clearAuthNotice();
+                        }}
                         placeholder="••••••••"
                         className="w-full pl-10 pr-10 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-medium"
                       />
@@ -574,38 +679,30 @@ function LoginContent() {
                     ) : (
                       <>
                         <ArrowRight className="w-4 h-4" />
-                        <span>
-                          {passwordMode === "signup" ? "Register Member Account" : "Sign In to Portal"}
-                        </span>
+                        <span>Sign In to Musician Portal</span>
                       </>
                     )}
                   </button>
 
-                  {/* Toggle between Sign-in and Sign-up */}
-                  <div className="text-center pt-1 text-xs text-slate-400">
-                    {passwordMode === "signin" ? (
-                      <span>
-                        New to the band?{" "}
-                        <button
-                          type="button"
-                          onClick={() => setPasswordMode("signup")}
-                          className="text-yellow-400 hover:underline font-bold ml-1"
-                        >
-                          Register here
-                        </button>
-                      </span>
-                    ) : (
-                      <span>
-                        Already have an account?{" "}
-                        <button
-                          type="button"
-                          onClick={() => setPasswordMode("signin")}
-                          className="text-yellow-400 hover:underline font-bold ml-1"
-                        >
-                          Sign in
-                        </button>
-                      </span>
-                    )}
+                  {/* Option C: Strict Invite-Only Notice */}
+                  <div className="mt-4 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 text-left space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      <Shield className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      <span>Membership by Invitation Only</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Musician portal accounts cannot be created directly. If you received an invitation email from leadership, use the activation link in your email.
+                    </p>
+                    <div className="pt-0.5 text-[11px] text-slate-400">
+                      Interested in performing with us?{" "}
+                      <Link
+                        href="/join"
+                        className="text-yellow-400 hover:underline font-bold inline-flex items-center gap-1 ml-0.5"
+                      >
+                        <span>Auditions &amp; Join Info</span>
+                        <ArrowRight className="w-3 h-3 inline" />
+                      </Link>
+                    </div>
                   </div>
                 </>
               )}

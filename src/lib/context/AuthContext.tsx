@@ -43,6 +43,8 @@ export interface AuthContextValue {
   isEmulating: boolean;
   emulatedRoles: Role[] | null;
   authProviderId: string | null;
+  authNotice: string | null;
+  clearAuthNotice: () => void;
   setEmulatedRoles: (roles: Role[] | null) => void;
   clearEmulation: () => void;
   signInWithGoogle: () => Promise<void>;
@@ -70,6 +72,8 @@ const AuthContext = createContext<AuthContextValue>({
   isEmulating: false,
   emulatedRoles: null,
   authProviderId: null,
+  authNotice: null,
+  clearAuthNotice: () => {},
   setEmulatedRoles: () => {},
   clearEmulation: () => {},
   signInWithGoogle: async () => {},
@@ -145,12 +149,17 @@ function notifyEmulationChange() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [rawProfile, setRawProfile] = useState<User | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const emulatedRoles = useSyncExternalStore(
     subscribeEmulation,
     getEmulatedRolesSnapshot,
     getServerSnapshot
   );
   const [loading, setLoading] = useState(true);
+
+  const clearAuthNotice = () => {
+    setAuthNotice(null);
+  };
 
   const setEmulatedRoles = (roles: Role[] | null) => {
     try {
@@ -185,6 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Social OAuth Providers
   const signInWithGoogle = async () => {
+    setAuthNotice(null);
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
@@ -201,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithApple = async () => {
+    setAuthNotice(null);
     try {
       const provider = new OAuthProvider("apple.com");
       provider.addScope("email");
@@ -218,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithMicrosoft = async () => {
+    setAuthNotice(null);
     try {
       const provider = new OAuthProvider("microsoft.com");
       provider.setCustomParameters({ prompt: "select_account" });
@@ -234,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGithub = async () => {
+    setAuthNotice(null);
     try {
       const provider = new GithubAuthProvider();
       provider.addScope("read:user");
@@ -252,6 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 2. Email & Password Suite
   const signInWithPassword = async (email: string, password: string): Promise<{ error?: string }> => {
+    setAuthNotice(null);
     const trimmedEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
@@ -295,6 +309,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: "Invalid email or password. Please verify and try again." };
       }
 
+      if (e.code === "auth/too-many-requests") {
+        return { error: "Too many failed login attempts. Please wait a moment or reset your password." };
+      }
+
       console.error("[Auth] Sign-in error:", e);
       return { error: e.message || "Failed to sign in. Please try again." };
     }
@@ -305,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string, 
     displayName: string
   ): Promise<{ error?: string }> => {
+    setAuthNotice(null);
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       if (displayName.trim()) {
@@ -325,12 +344,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const sendPasswordReset = async (email: string): Promise<{ error?: string; success?: boolean }> => {
+    setAuthNotice(null);
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      return { error: "Please enter your email address." };
+    }
+
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      // In strict invite-only mode, verify account exists in users or has pending invite
+      const isSuper = trimmedEmail === SUPER_ADMIN_EMAIL;
+      if (!isSuper) {
+        const userQuery = query(
+          collection(db, "users"), 
+          where("email", "==", trimmedEmail)
+        );
+        const userSnap = await getDocs(userQuery);
+
+        if (userSnap.empty) {
+          // Check if there is an unclaimed pending invite
+          const inviteQuery = query(
+            collection(db, "invites"), 
+            where("email", "==", trimmedEmail)
+          );
+          const inviteSnap = await getDocs(inviteQuery);
+          const hasPending = inviteSnap.docs.some((d) => d.data().status === "pending");
+
+          if (hasPending) {
+            return { 
+              error: "An invitation has been sent to this email address but has not been claimed yet. Please check your inbox for your invitation link to activate your account." 
+            };
+          }
+
+          return { 
+            error: "No member account found with this email address. Portal access is strictly by invitation only." 
+          };
+        }
+      }
+
+      await sendPasswordResetEmail(auth, trimmedEmail);
       return { success: true };
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
       console.error("sendPasswordReset failed:", e);
+      if (e.code === "auth/user-not-found") {
+        return { error: "No registered account found with this email address." };
+      }
+      if (e.code === "auth/invalid-email") {
+        return { error: "Please enter a valid email address." };
+      }
+      if (e.code === "auth/too-many-requests") {
+        return { error: "Too many reset requests. Please wait a few moments before trying again." };
+      }
       return { error: e.message || "Failed to send password reset email. Please check the address." };
     }
   };
@@ -340,15 +404,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string, 
     targetRedirect = "/portal"
   ): Promise<{ error?: string; success?: boolean }> => {
+    setAuthNotice(null);
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      return { error: "Please enter your email address." };
+    }
+
     try {
+      // Check if user is registered or has pending invite
+      const isSuper = trimmedEmail === SUPER_ADMIN_EMAIL;
+      if (!isSuper) {
+        const userSnap = await getDocs(query(collection(db, "users"), where("email", "==", trimmedEmail)));
+        if (userSnap.empty) {
+          const inviteSnap = await getDocs(query(collection(db, "invites"), where("email", "==", trimmedEmail)));
+          const hasPending = inviteSnap.docs.some((d) => d.data().status === "pending");
+          if (!hasPending) {
+            return {
+              error: "No member account or pending invitation found for this email address. Portal access is strictly by invitation only.",
+            };
+          }
+        }
+      }
+
       const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
       const actionCodeSettings = {
-        url: `${origin}/login?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(targetRedirect)}&magic=true`,
+        url: `${origin}/login?email=${encodeURIComponent(trimmedEmail)}&redirect=${encodeURIComponent(targetRedirect)}&magic=true`,
         handleCodeInApp: true,
       };
-      await sendSignInLinkToEmail(auth, email.trim(), actionCodeSettings);
+      await sendSignInLinkToEmail(auth, trimmedEmail, actionCodeSettings);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("ebb_email_for_sign_in", email.trim().toLowerCase());
+        window.localStorage.setItem("ebb_email_for_sign_in", trimmedEmail);
       }
       return { success: true };
     } catch (err: unknown) {
@@ -570,10 +655,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
               }
 
-              // Default standard musician profile for verified new accounts
-              const defaultProfile = inviteMatchedProfile || buildDefaultProfile(user.uid, user.email, user.displayName);
-              await setDoc(userRef, defaultProfile, { merge: true });
-              setRawProfile(defaultProfile as unknown as User);
+              // If a pending invite matches, provision member profile and claim invite
+              if (inviteMatchedProfile) {
+                await setDoc(userRef, inviteMatchedProfile, { merge: true });
+                setRawProfile(inviteMatchedProfile as unknown as User);
+              } else {
+                // Option C: Strict invite-only. Uninvited accounts cannot access or auto-create profiles.
+                console.warn(`[Auth] Blocked uninvited sign-in attempt for ${user.email} (${user.uid}). Portal access is invite-only.`);
+                try {
+                  sessionStorage.removeItem("ebb_emulated_roles");
+                  sessionStorage.removeItem("ebb_persona_name");
+                  sessionStorage.removeItem("ebb_persona_section");
+                } catch {
+                  // Ignore
+                }
+                setEmulatedRoles(null);
+                await firebaseSignOut(auth);
+                setRawProfile(null);
+                setFirebaseUser(null);
+                setAuthNotice(
+                  "No active membership or invitation found for this account. Access to the Musician Portal is strictly by invitation only. If you are an active musician, please contact leadership or apply to join."
+                );
+                setLoading(false);
+                return;
+              }
             }
           }
           setLoading(false);
@@ -644,6 +749,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isEmulating,
         emulatedRoles,
         authProviderId,
+        authNotice,
+        clearAuthNotice,
         setEmulatedRoles,
         clearEmulation,
         signInWithGoogle,
