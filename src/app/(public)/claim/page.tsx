@@ -10,6 +10,7 @@ import {
   setDoc 
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
+import { sendEmailVerification } from "firebase/auth";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Invite, InviteSchema } from "@/lib/schema/invite";
 import { Section } from "@/lib/schema/section";
@@ -25,7 +26,9 @@ import {
   Mail, 
   Eye, 
   EyeOff, 
-  HelpCircle 
+  HelpCircle,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 function ClaimContent() {
@@ -48,6 +51,13 @@ function ClaimContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
+
+  // Email verification state for password registrations
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [isCheckingVerification, setIsCheckingVerification] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   // Email/password tab fallback
   const [authMode, setAuthMode] = useState<"google" | "password">("google");
@@ -159,13 +169,26 @@ function ClaimContent() {
     }
   };
 
-  // 3. Handle Google Sign-In & Claim
+  // 3. Handle Google Sign-In & Claim (with Strict Email Match Check)
   const handleGoogleClaim = async () => {
     setErrorMessage(null);
     setIsClaiming(true);
     try {
       await signInWithGoogle();
       if (auth.currentUser) {
+        const currentEmail = auth.currentUser.email?.toLowerCase().trim();
+        const expectedEmail = invite?.email?.toLowerCase().trim();
+
+        // Enforce strict email matching for Google Auth
+        if (expectedEmail && currentEmail !== expectedEmail) {
+          await signOut();
+          setIsClaiming(false);
+          setErrorMessage(
+            `Email address mismatch: You signed in with Google as "${currentEmail}", but this invitation was issued to "${expectedEmail}". Please sign in with the Google account for "${expectedEmail}".`
+          );
+          return;
+        }
+
         await finalizeClaim(
           auth.currentUser.uid,
           auth.currentUser.email || invite?.email || "",
@@ -178,7 +201,7 @@ function ClaimContent() {
     }
   };
 
-  // 4. Handle Password Sign-In / Sign-Up Claim
+  // 4. Handle Password Sign-In / Sign-Up Claim (with Email Verification)
   const handlePasswordClaim = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
@@ -196,10 +219,34 @@ function ClaimContent() {
           setIsClaiming(false);
           return;
         }
+
+        // Send email verification link before granting portal access
+        if (auth.currentUser) {
+          try {
+            await sendEmailVerification(auth.currentUser);
+          } catch (evErr) {
+            console.warn("Could not dispatch verification email:", evErr);
+          }
+          setVerificationSent(true);
+          setIsClaiming(false);
+          return;
+        }
       } else {
         const res = await signInWithPassword(passwordEmail, password);
         if (res.error) {
           setPasswordError(res.error);
+          setIsClaiming(false);
+          return;
+        }
+
+        // If existing user account is not verified, require verification
+        if (auth.currentUser && !auth.currentUser.emailVerified) {
+          try {
+            await sendEmailVerification(auth.currentUser);
+          } catch (evErr) {
+            console.warn("Could not dispatch verification email:", evErr);
+          }
+          setVerificationSent(true);
           setIsClaiming(false);
           return;
         }
@@ -333,6 +380,128 @@ function ClaimContent() {
           >
             Contact Manager
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // State D3: Email Verification Pending
+  if (verificationSent && invite) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-amber-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 mb-4 animate-pulse">
+          <Mail className="w-8 h-8" />
+        </div>
+        <span className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 mb-2">
+          Step 2 of 2: Verify Email
+        </span>
+        <h1 className="text-2xl font-bold text-white">Check Your Inbox</h1>
+        <p className="text-sm text-slate-300 mt-2">
+          We sent a verification link to <strong className="text-yellow-400 font-mono">{invite.email}</strong>.
+        </p>
+        <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+          To ensure account security, please open the email and click the confirmation link to verify ownership of this address, then click below to activate your roster spot.
+        </p>
+
+        {verificationError && (
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{verificationError}</span>
+          </div>
+        )}
+
+        {resendSuccess && (
+          <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>Verification email resent! Please check your spam folder if it doesn&apos;t arrive shortly.</span>
+          </div>
+        )}
+
+        <div className="mt-6 space-y-3 w-full">
+          <button
+            type="button"
+            disabled={isCheckingVerification}
+            onClick={async () => {
+              setIsCheckingVerification(true);
+              setVerificationError(null);
+              setResendSuccess(false);
+              try {
+                if (auth.currentUser) {
+                  await auth.currentUser.reload();
+                  if (auth.currentUser.emailVerified) {
+                    await finalizeClaim(
+                      auth.currentUser.uid,
+                      auth.currentUser.email || invite.email,
+                      auth.currentUser.displayName || invite.displayName || "Musician"
+                    );
+                  } else {
+                    setVerificationError(
+                      "Email not yet confirmed. Please click the link in your verification email and try again."
+                    );
+                  }
+                } else {
+                  setVerificationError("Session expired. Please sign in again.");
+                  setVerificationSent(false);
+                }
+              } catch (err) {
+                setVerificationError(err instanceof Error ? err.message : "Failed to check verification.");
+              } finally {
+                setIsCheckingVerification(false);
+              }
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-yellow-400/10 cursor-pointer disabled:opacity-50"
+          >
+            {isCheckingVerification ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Checking Verification...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>I&apos;ve Verified &rarr; Activate My Spot</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={resendCooldown > 0}
+            onClick={async () => {
+              try {
+                if (auth.currentUser) {
+                  await sendEmailVerification(auth.currentUser);
+                  setResendSuccess(true);
+                  setResendCooldown(60);
+                  const timer = setInterval(() => {
+                    setResendCooldown((prev) => {
+                      if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                      }
+                      return prev - 1;
+                    });
+                  }, 1000);
+                }
+              } catch {
+                setVerificationError("Could not resend verification email. Please wait a moment.");
+              }
+            }}
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+          >
+            {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : "Resend Verification Email"}
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut();
+              setVerificationSent(false);
+            }}
+            className="text-xs text-slate-400 hover:text-slate-200 transition py-1"
+          >
+            Cancel & use a different sign-in method
+          </button>
         </div>
       </div>
     );
