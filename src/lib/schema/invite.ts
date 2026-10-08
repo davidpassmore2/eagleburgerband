@@ -9,6 +9,8 @@ export const InviteSchema = z.object({
   email: z.string(),
   displayName: z.string().default(""),
   sectionId: z.string().nullable().default(null),
+  instruments: z.array(z.string()).default([]),
+  notes: z.string().default(""),
   roles: z.array(RoleEnum).default(["member"]),
   status: InviteStatusEnum.default("pending"),
   createdAt: z.string().default(""),

@@ -37,6 +37,7 @@ import { SetlistTuneItem } from "@/lib/schema/setlist";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
 import { GigCompensationType } from "@/lib/schema/gig";
 import { GigRsvpSchema, type GigRsvp } from "@/lib/schema/rsvp";
+import { Section, SectionSchema } from "@/lib/schema/section";
 import { toast } from "@/lib/context/ToastContext";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 
@@ -114,6 +115,7 @@ export default function MusicianGigDetailPage() {
     title?: string;
   } | null>(null);
   const [rsvps, setRsvps] = useState<MusicianRsvp[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   // Only start in loading state if gigId exists to fetch
   const [loading, setLoading] = useState(Boolean(gigId));
   const [error, setError] = useState<string | null>(null);
@@ -216,11 +218,31 @@ export default function MusicianGigDetailPage() {
       }
     );
 
+    // 4. Real-time listener for band sections
+    const unsubSections = onSnapshot(
+      collection(db, "sections"),
+      (snap) => {
+        if (isMounted) {
+          const list: Section[] = [];
+          snap.forEach((d) => {
+            const parsed = SectionSchema.safeParse({ id: d.id, ...d.data() });
+            if (parsed.success) list.push(parsed.data);
+          });
+          list.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setSections(list);
+        }
+      },
+      (err) => {
+        console.warn("Notice: sections listener note:", err);
+      }
+    );
+
     return () => {
       isMounted = false;
       unsubGig();
       unsubRsvps();
       unsubStageSetlist();
+      unsubSections();
     };
   }, [gigId]);
 
@@ -601,48 +623,154 @@ export default function MusicianGigDetailPage() {
         </div>
       </div>
 
-      {/* Quorum Breakdown */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Users className="w-4 h-4 text-yellow-400" /> Section Quorum & RSVPs
-          </h2>
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="text-emerald-400 font-bold">
-              {attendingCount} In
+      {/* Section Quorum & Attendance Breakdown */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-yellow-400" />
+              <span>Section Quorum & Musician Attendance</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Real-time headcount grouped by instrument section. Green indicators confirm the section meets minimum performance recommendations.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+            <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+              {attendingCount} Confirmed In
             </span>
-            <span className="text-yellow-400 font-bold">
+            <span className="px-2.5 py-1 rounded-xl bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold">
               {tentativeCount} Tentative
             </span>
-            <span className="text-rose-400 font-bold">{declinedCount} Out</span>
+            <span className="px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">
+              {declinedCount} Out
+            </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-          {rsvps.map((rsvp) => (
-            <div
-              key={rsvp.uid}
-              className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs flex items-center justify-between"
-            >
-              <div className="truncate pr-2">
-                <div className="font-bold text-white truncate">
-                  {rsvp.displayName}
+        {/* Section Cards Grid */}
+        <div className="space-y-4">
+          {(sections.length > 0 ? sections : [{ id: "general", name: "General Roster", order: 1, minRecommended: 1 } as Section]).map((sec) => {
+            const sectionRsvps = rsvps.filter((r) => (r.sectionId || "").toLowerCase() === sec.id.toLowerCase());
+            const secAttending = sectionRsvps.filter((r) => r.status === "attending").length;
+            const minReq = sec.minRecommended || 1;
+            const isMet = secAttending >= minReq;
+
+            return (
+              <div 
+                key={sec.id}
+                className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-4 space-y-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">
+                      {sec.name}
+                    </span>
+                    {sec.leaderName && (
+                      <span className="text-[10px] text-slate-500 hidden sm:inline">
+                        (Lead: {sec.leaderName})
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                        isMet 
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      }`}
+                    >
+                      {isMet ? `✓ Quorum Met (${secAttending}/${minReq} min)` : `Needs ${minReq - secAttending} more (${secAttending}/${minReq} min)`}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-[10px] text-slate-500 capitalize">
-                  {rsvp.sectionId}
+
+                {sectionRsvps.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {sectionRsvps.map((rsvp) => (
+                      <div
+                        key={rsvp.uid}
+                        className="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5 text-xs flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0 pr-1">
+                          <div className="font-bold text-white truncate">
+                            {rsvp.displayName}
+                          </div>
+                          {rsvp.notes ? (
+                            <div className="text-[10px] text-slate-400 truncate italic">
+                              &ldquo;{rsvp.notes}&rdquo;
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-slate-500 capitalize">
+                              {rsvp.status}
+                            </div>
+                          )}
+                        </div>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                            rsvp.status === "attending"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : rsvp.status === "tentative"
+                                ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+                                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                          }`}
+                        >
+                          {rsvp.status === "attending" ? "In" : rsvp.status === "tentative" ? "Maybe" : "Out"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic py-1">
+                    No section musicians have responded yet.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Unassigned / Guest RSVPs */}
+          {(() => {
+            const knownIds = new Set(sections.map((s) => s.id.toLowerCase()));
+            const unassigned = rsvps.filter((r) => !r.sectionId || !knownIds.has(r.sectionId.toLowerCase()));
+            if (unassigned.length === 0) return null;
+
+            return (
+              <div className="bg-slate-950/50 border border-slate-800/60 rounded-2xl p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  General / Guest Roster
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {unassigned.map((rsvp) => (
+                    <div
+                      key={rsvp.uid}
+                      className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0 pr-1">
+                        <div className="font-bold text-white truncate">
+                          {rsvp.displayName}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {rsvp.notes || rsvp.status}
+                        </div>
+                      </div>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                          rsvp.status === "attending"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : rsvp.status === "tentative"
+                              ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+                              : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                        }`}
+                      >
+                        {rsvp.status === "attending" ? "In" : rsvp.status === "tentative" ? "Maybe" : "Out"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  rsvp.status === "attending"
-                    ? "bg-emerald-400"
-                    : rsvp.status === "tentative"
-                      ? "bg-yellow-400"
-                      : "bg-rose-500"
-                }`}
-              />
-            </div>
-          ))}
+            );
+          })()}
         </div>
       </div>
 

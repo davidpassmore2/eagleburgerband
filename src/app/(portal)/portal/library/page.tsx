@@ -21,7 +21,6 @@ import { TuneStatus } from "@/lib/schema/tune";
 import { 
   Music2, 
   Search, 
-  ExternalLink, 
   Flame, 
   Archive, 
   RotateCcw, 
@@ -45,6 +44,7 @@ import Link from "next/link";
 import TuneCommentsModal from "@/components/portal/TuneCommentsModal";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import StarRating from "@/components/portal/StarRating";
+import SheetMusicViewerModal from "@/components/portal/SheetMusicViewerModal";
 import { calculateTuneScore } from "@/lib/schema/tune";
 import { toast } from "@/lib/context/ToastContext";
 
@@ -101,8 +101,9 @@ export default function UnifiedRepertoireLibraryPage() {
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"title" | "rating" | "ratingCount" | "bpm" | "recent">("title");
 
-  // Comments & Audio Preview
+  // Comments, Charts & Audio Preview
   const [selectedTuneForComments, setSelectedTuneForComments] = useState<UnifiedTune | null>(null);
+  const [selectedTuneForCharts, setSelectedTuneForCharts] = useState<UnifiedTune | null>(null);
   const [playingAudioTuneId, setPlayingAudioTuneId] = useState<string | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -932,18 +933,20 @@ export default function UnifiedRepertoireLibraryPage() {
                     <span>Comments</span>
                   </button>
 
-                  {/* Sheet Music Charts Drive Link */}
+                  {/* Sheet Music Charts Viewer */}
                   {tune.driveLink && (
-                    <a
-                      href={tune.driveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 font-bold text-xs flex items-center gap-1 transition"
-                      title="Open Sheet Music Charts in Google Drive"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        dispatchPortalInteraction("open_charts_modal", tune.title, { tuneId: tune.id });
+                        setSelectedTuneForCharts(tune);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                      title="View Sheet Music Charts & Reference Audio"
                     >
+                      <Music2 className="w-3.5 h-3.5" />
                       <span>Charts</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    </button>
                   )}
 
                   {/* Manager Actions: Edit & Delete */}
@@ -1006,6 +1009,19 @@ export default function UnifiedRepertoireLibraryPage() {
         }
         currentUserId={currentUserId}
         onRate={handleRateTune}
+      />
+
+      {/* Sheet Music & Audio Viewer Modal */}
+      <SheetMusicViewerModal
+        key={selectedTuneForCharts?.id || "empty"}
+        isOpen={Boolean(selectedTuneForCharts)}
+        onClose={() => setSelectedTuneForCharts(null)}
+        tune={
+          selectedTuneForCharts
+            ? tunes.find((t) => t.id === selectedTuneForCharts.id) || selectedTuneForCharts
+            : null
+        }
+        userSectionId={profile?.sectionId}
       />
 
       {/* Manager Add / Edit Chart Modal */}

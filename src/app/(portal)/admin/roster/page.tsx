@@ -39,6 +39,8 @@ export default function RosterAdminPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteSection, setInviteSection] = useState("");
+  const [inviteInstruments, setInviteInstruments] = useState("");
+  const [inviteNotes, setInviteNotes] = useState("");
   const [inviteRoles] = useState<Role[]>(["member"]);
   const [lastCreatedInvite, setLastCreatedInvite] = useState<{
     email: string;
@@ -111,6 +113,10 @@ export default function RosterAdminPage() {
         email: inviteEmail.trim().toLowerCase(),
         displayName: inviteName.trim(),
         sectionId: inviteSection || null,
+        instruments: inviteInstruments
+          ? inviteInstruments.split(",").map((i) => i.trim()).filter(Boolean)
+          : [],
+        notes: inviteNotes.trim(),
         roles: inviteRoles,
         status: "pending" as const,
         createdAt: new Date().toISOString(),
@@ -129,6 +135,9 @@ export default function RosterAdminPage() {
       setShowInviteModal(false);
       setInviteEmail("");
       setInviteName("");
+      setInviteSection("");
+      setInviteInstruments("");
+      setInviteNotes("");
       toast.success("Onboarding link generated!");
     } catch (err) {
       toast.error("Failed to generate invite: " + (err instanceof Error ? err.message : String(err)));
@@ -292,6 +301,28 @@ export default function RosterAdminPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Instruments (Comma Separated)</label>
+                <input
+                  type="text"
+                  value={inviteInstruments}
+                  onChange={(e) => setInviteInstruments(e.target.value)}
+                  placeholder="e.g. Tenor Trombone, Bass Trombone"
+                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Internal Note (Optional)</label>
+                <input
+                  type="text"
+                  value={inviteNotes}
+                  onChange={(e) => setInviteNotes(e.target.value)}
+                  placeholder="e.g. Met at Porchfest, joining for fall parades"
+                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
