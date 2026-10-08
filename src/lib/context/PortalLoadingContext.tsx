@@ -138,47 +138,6 @@ export function PortalLoadingProvider({ children }: { children: React.ReactNode 
     };
   }, []);
 
-  // Intercept global fetch calls inside portal for automated service call loading
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const originalFetch = window.fetch;
-    let counter = 0;
-
-    window.fetch = async (...args) => {
-      const callId = `fetch-${++counter}-${Date.now()}`;
-      const urlString =
-        typeof args[0] === "string"
-          ? args[0]
-          : args[0] instanceof Request
-          ? args[0].url
-          : "";
-
-      const isInternalOrPrefetch =
-        urlString.includes("/_next/") ||
-        urlString.includes("/api/telemetry") ||
-        urlString.includes("_rsc=") ||
-        (typeof args[1]?.headers === "object" &&
-          args[1]?.headers !== null &&
-          "RSC" in (args[1].headers as Record<string, unknown>));
-
-      if (!isInternalOrPrefetch) {
-        startLoading(callId);
-      }
-
-      try {
-        return await originalFetch(...args);
-      } finally {
-        if (!isInternalOrPrefetch) {
-          stopLoading(callId);
-        }
-      }
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, [startLoading, stopLoading]);
 
   const isLoading = useMemo(() => {
     return isNavigating || activeKeys.size > 0;
