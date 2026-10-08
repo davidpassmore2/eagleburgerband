@@ -266,7 +266,12 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               suppressHydrationWarning
             />
           </div>
-          <span className="font-bold text-xs text-white truncate">{theme.bandName}</span>
+          <span 
+            style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
+            className="font-arvo font-bold text-xs truncate tracking-tight"
+          >
+            {theme.bandName}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -342,7 +347,12 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <div>
-                <div className="font-bold text-sm text-white">{theme.bandName}</div>
+                <div 
+                  style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
+                  className="font-arvo font-bold text-sm tracking-tight"
+                >
+                  {theme.bandName}
+                </div>
                 <div className="text-[11px] text-slate-400">Musician Portal</div>
               </div>
             </div>
@@ -421,7 +431,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 
                   return (
                     <div key={category} className="space-y-1">
-                      <div className="px-3 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                      <div 
+                        style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
+                        className="px-3 pt-2 pb-0.5 text-[11px] font-arvo font-bold uppercase tracking-wider"
+                      >
                         {category}
                       </div>
                       <div className="space-y-0.5">
