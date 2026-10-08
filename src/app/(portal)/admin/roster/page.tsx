@@ -23,9 +23,13 @@ import {
   Search, 
   Sparkles,
   Loader2,
-  X
+  X,
+  Download,
+  Upload
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
+import RosterExportModal from "@/components/portal/RosterExportModal";
+import RosterImportModal from "@/components/portal/RosterImportModal";
 import { z } from "zod";
 
 type Role = z.infer<typeof RoleEnum>;
@@ -74,6 +78,8 @@ export default function RosterAdminPage() {
 
   // Create invite modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteSection, setInviteSection] = useState("");
@@ -334,12 +340,33 @@ export default function RosterAdminPage() {
             Review active ensemble members, modify assigned sections, configure RBAC permissions, and manage onboarding invitations.
           </p>
         </div>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm transition shadow cursor-pointer shrink-0"
-        >
-          <UserPlus className="w-4 h-4" /> Issue Invite Link
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition border border-slate-700 cursor-pointer shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5 text-yellow-400" />
+            <span>Download Roster</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition border border-slate-700 cursor-pointer shadow-sm"
+          >
+            <Upload className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Upload / Import</span>
+          </button>
+
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow cursor-pointer"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Issue Invite Link</span>
+          </button>
+        </div>
       </div>
 
       {/* Navigation Tabs */}
@@ -877,6 +904,22 @@ export default function RosterAdminPage() {
           </div>
         </div>
       )}
+
+      {/* Export Roster Modal */}
+      <RosterExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        users={users}
+        sections={sections}
+      />
+
+      {/* Import Roster Modal */}
+      <RosterImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        currentUsers={users}
+        sections={sections}
+      />
     </div>
   );
 }

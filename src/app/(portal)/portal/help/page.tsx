@@ -1699,6 +1699,7 @@ export default function PortalHelpCenterPage() {
                 updatedAt: new Date().toISOString(),
               },
               metadata: {},
+              createdAt: raw.createdAt || new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
 

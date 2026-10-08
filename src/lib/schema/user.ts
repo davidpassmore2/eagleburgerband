@@ -61,6 +61,7 @@ export const UserSchema = z.object({
   }),
 
   metadata: z.record(z.string(), z.any()).optional().default({}),
+  createdAt: z.string().optional().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
 
