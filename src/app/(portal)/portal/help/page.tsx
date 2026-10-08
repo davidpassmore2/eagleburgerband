@@ -58,6 +58,7 @@ import {
   MessageSquare,
   Inbox,
   CheckSquare,
+  Workflow,
 } from "lucide-react";
 
 export type HelpCategory =
@@ -126,6 +127,7 @@ function getRouteIcon(iconName: string) {
     case "Contact": return <Contact className="w-4 h-4" />;
     case "MessageSquare": return <MessageSquare className="w-4 h-4" />;
     case "ShieldCheck": return <ShieldCheck className="w-4 h-4" />;
+    case "Workflow": return <Workflow className="w-4 h-4" />;
     default: return <Compass className="w-4 h-4" />;
   }
 }
@@ -389,6 +391,39 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
 
   // --- Performances & Logistics ---
+  {
+    id: "status-matrix",
+    title: "Status Matrix & Lifecycle Guide",
+    path: "/portal/status-matrix",
+    category: "Performances & Logistics",
+    roles: ["member", "guest"],
+    badge: "Operations Reference",
+    iconName: "Workflow",
+    summary: "Complete operational guide covering Lead-to-Gig lifecycle, 4-state RSVPs, member hiatus, and dispatch automation.",
+    description: "The Status Matrix is the authoritative manual for band members and managers detailing every status phase in our performance pipeline. Learn how leads convert to tentative gigs, how the 4-state RSVP system (In, Probable, Tentative, Declined) drives playing strength quorum, and how member hiatus shields musicians from email dispatches.",
+    keyFeatures: [
+      "Visual end-to-end performance lifecycle from Lead intake to post-downbeat settlement.",
+      "Comprehensive definition table for all Lead, Gig, RSVP, and Member account statuses.",
+      "Interactive Quorum & Playing Strength Calculator testing 'Probable' availability rules.",
+      "Automated dispatch triggers: initial availability polling and confirmation dispatches.",
+      "Member Hiatus Mode guidelines and automated blackout date collision suppression."
+    ],
+    howToUse: [
+      "Navigate to the Status Matrix from the sidebar or Help & Documentation.",
+      "Use category tabs or the search bar to filter status codes and definitions.",
+      "Explore the interactive Quorum Calculator to see how 'In' + 'Probable' achieve staffing quorum.",
+      "Review the FAQ section to clarify questions on dispatches, hiatus, and calendar sync."
+    ],
+    proTips: [
+      "Remember: marking 'Probable' allows coordinators to confirm gigs faster while accounting for work contingencies.",
+      "If taking an extended absence from the band, activate Hiatus Mode in your profile to mute all performance call sheets without losing account access."
+    ],
+    relatedRoutes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "Musician Availability", path: "/portal/availability" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
+    ]
+  },
   {
     id: "admin-checkin",
     title: "Downbeat Check-In Studio",
@@ -1952,6 +1987,51 @@ export default function PortalHelpCenterPage() {
             <span><strong>{users.length}</strong> Roster Members</span>
           </div>
         </div>
+      </div>
+
+      {/* Featured Status Matrix Guide Banner */}
+      <div
+        className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+        style={{
+          backgroundColor: "rgba(245, 158, 11, 0.08)",
+          borderColor: "rgba(245, 158, 11, 0.3)",
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+            <Workflow className="w-5 h-5" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider font-mono text-amber-400">
+                New Documentation Guide
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                Stage 50
+              </span>
+            </div>
+            <h3 className="text-sm sm:text-base font-bold text-white">
+              Status Matrix & Lifecycle Guide
+            </h3>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Explore how booking leads convert to performances, the 4-state RSVP system (In, Probable, Tentative, Declined),
+              playing strength quorum rules, and automated dispatches.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/portal/status-matrix"
+          className="px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition hover:brightness-125 shrink-0 self-stretch sm:self-auto justify-center"
+          style={{
+            backgroundColor: "var(--ebb-primary)",
+            borderColor: "var(--ebb-primary)",
+            color: "#020617",
+          }}
+        >
+          <span>Open Status Matrix</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* Interactive Search & Filter Controls */}

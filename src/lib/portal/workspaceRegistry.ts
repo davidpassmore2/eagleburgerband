@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   FolderOpen,
   Activity,
+  Workflow,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -68,6 +69,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Musician Availability & Blackouts",
     href: "/portal/availability",
     icon: CalendarOff,
+    requiredRoles: ["member", "guest"],
+    category: "Performances & Logistics",
+  },
+  {
+    id: "status-matrix",
+    title: "Status Matrix & Lifecycle Guide",
+    href: "/portal/status-matrix",
+    icon: Workflow,
     requiredRoles: ["member", "guest"],
     category: "Performances & Logistics",
   },
