@@ -11,6 +11,7 @@ import {
   deleteDoc, 
   doc,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -32,6 +33,10 @@ import {
   ChevronLeft,
   ChevronRight,
   List,
+  Palmtree,
+  PlayCircle,
+  PauseCircle,
+  CheckCircle2,
 } from "lucide-react";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 
@@ -65,6 +70,36 @@ export default function MusicianAvailabilityPage() {
     endDate: "",
     reason: "",
   });
+
+  const [togglingHiatus, setTogglingHiatus] = useState(false);
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
+
+  const handleToggleHiatus = async () => {
+    if (!firebaseUser) return;
+    setTogglingHiatus(true);
+    const nextVal = !isOnHiatus;
+    try {
+      await updateDoc(doc(db, "users", firebaseUser.uid), {
+        onHiatus: nextVal,
+        status: nextVal ? "hiatus" : "active",
+        updatedAt: new Date().toISOString(),
+      });
+      dispatchPortalInteraction(
+        "toggle_hiatus",
+        nextVal ? "Member entered hiatus mode" : "Member resumed active status",
+        { onHiatus: nextVal }
+      );
+      toast.success(
+        nextVal
+          ? "🌴 Hiatus mode enabled. You will not receive gig dispatch emails."
+          : "⚡ Welcome back! Active member status restored. You will now receive gig dispatches."
+      );
+    } catch (err) {
+      toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setTogglingHiatus(false);
+    }
+  };
 
   // 1. Subscribe to user's blackout dates
   useEffect(() => {
@@ -344,6 +379,75 @@ export default function MusicianAvailabilityPage() {
               <Plus className="w-4 h-4" /> Add Blackout
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Musician Hiatus Mode Banner */}
+      <div
+        className={`rounded-2xl p-5 border transition shadow-lg ${
+          isOnHiatus
+            ? "bg-amber-950/30 border-amber-500/40 text-amber-200"
+            : "bg-slate-900 border-slate-800 text-slate-300"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div
+              className={`p-2.5 rounded-xl border shrink-0 ${
+                isOnHiatus
+                  ? "bg-amber-500/20 border-amber-500/30 text-amber-400"
+                  : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+              }`}
+            >
+              {isOnHiatus ? <Palmtree className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+            </div>
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase tracking-wider font-bold">
+                  Member Dispatch Status:
+                </span>
+                <span
+                  className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded border uppercase ${
+                    isOnHiatus
+                      ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                      : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  }`}
+                >
+                  {isOnHiatus ? "🌴 On Hiatus (Muted)" : "⚡ Active Musician"}
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">
+                {isOnHiatus
+                  ? "You are currently on Hiatus. You will receive ZERO gig availability requests, confirmations, or call sheet dispatches. You can resume active duty whenever you are ready."
+                  : "You are currently an active performer receiving all gig announcements, availability roll calls, and confirmed call sheets. If you need temporary time away, enable hiatus mode."}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={togglingHiatus}
+            onClick={handleToggleHiatus}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-50 ${
+              isOnHiatus
+                ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold shadow-lg shadow-emerald-500/20"
+                : "bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/30 text-slate-300 border border-slate-700"
+            }`}
+          >
+            {togglingHiatus ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isOnHiatus ? (
+              <>
+                <PlayCircle className="w-4 h-4" />
+                <span>Resume Active Status</span>
+              </>
+            ) : (
+              <>
+                <Palmtree className="w-4 h-4 text-amber-400" />
+                <span>Go On Hiatus</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 

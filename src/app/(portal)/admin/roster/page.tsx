@@ -25,7 +25,8 @@ import {
   Loader2,
   X,
   Download,
-  Upload
+  Upload,
+  Palmtree,
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
 import RosterExportModal from "@/components/portal/RosterExportModal";
@@ -191,6 +192,24 @@ export default function RosterAdminPage() {
     await updateDoc(doc(db, "users", user.uid), {
       sectionId: newSectionId === "" ? null : newSectionId,
     });
+  };
+
+  const handleToggleUserHiatus = async (user: User) => {
+    const nextHiatus = !Boolean(user.onHiatus || user.status === "hiatus");
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        onHiatus: nextHiatus,
+        status: nextHiatus ? "hiatus" : "active",
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(
+        nextHiatus
+          ? `${user.displayName} is now on Hiatus (dispatches muted).`
+          : `${user.displayName} is now Active (receiving dispatches).`
+      );
+    } catch (err) {
+      toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
   const handleCreateInvite = async (e: React.FormEvent) => {
@@ -504,9 +523,42 @@ export default function RosterAdminPage() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase font-mono text-[10px] font-bold">
-                      {u.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {u.onHiatus || u.status === "hiatus" ? (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-mono text-[10px] font-bold flex items-center gap-1">
+                          <Palmtree className="w-3 h-3" /> Hiatus
+                        </span>
+                      ) : u.status === "inactive" ? (
+                        <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 uppercase font-mono text-[10px] font-bold">
+                          Inactive
+                        </span>
+                      ) : u.status === "pending" ? (
+                        <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase font-mono text-[10px] font-bold">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase font-mono text-[10px] font-bold">
+                          Active
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleUserHiatus(u)}
+                        title={
+                          u.onHiatus || u.status === "hiatus"
+                            ? "Resume active status (unmute dispatches)"
+                            : "Place on hiatus (mute all gig dispatches)"
+                        }
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold transition border cursor-pointer ${
+                          u.onHiatus || u.status === "hiatus"
+                            ? "bg-slate-900 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-300 border-slate-800"
+                            : "bg-slate-900 hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 border-slate-800"
+                        }`}
+                      >
+                        {u.onHiatus || u.status === "hiatus" ? "Resume" : "Hiatus"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -31,7 +31,8 @@ import {
   Search,
   X,
   ArrowUpDown,
-  ExternalLink
+  ExternalLink,
+  Palmtree,
 } from "lucide-react";
 
 interface GigSummary {
@@ -63,7 +64,9 @@ export default function DispatchStudioPage() {
   const [sentSuccess, setSentSuccess] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
-  const [usersMap, setUsersMap] = useState<Record<string, { email: string; displayName: string }>>({});
+  const [usersMap, setUsersMap] = useState<
+    Record<string, { email: string; displayName: string; onHiatus: boolean; status: string }>
+  >({});
 
   // Event List Search & Filter State
   const [eventSearch, setEventSearch] = useState("");
@@ -78,13 +81,15 @@ export default function DispatchStudioPage() {
   // Listen to Users to resolve emails for confirmed musicians
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "users"), (snap) => {
-      const map: Record<string, { email: string; displayName: string }> = {};
+      const map: Record<string, { email: string; displayName: string; onHiatus: boolean; status: string }> = {};
       snap.forEach((d) => {
         const u = d.data();
         if (u.email) {
           map[d.id] = {
             email: u.email,
             displayName: u.displayName || u.name || "Musician",
+            onHiatus: Boolean(u.onHiatus || u.status === "hiatus"),
+            status: u.status || "active",
           };
         }
       });
@@ -191,11 +196,26 @@ export default function DispatchStudioPage() {
   const attendingMusicians = useMemo(() => rsvps.filter((r) => r.status === "attending"), [rsvps]);
   const tentativeMusicians = useMemo(() => rsvps.filter((r) => r.status === "tentative"), [rsvps]);
 
+  // Filter attending musicians who are active and NOT on hiatus
+  const eligibleAttendingMusicians = useMemo(() => {
+    return attendingMusicians.filter((m) => {
+      const u = usersMap[m.uid];
+      if (!u) return true;
+      if (u.onHiatus) return false;
+      if (u.status === "inactive") return false;
+      return true;
+    });
+  }, [attendingMusicians, usersMap]);
+
+  const hiatusAttendingCount = useMemo(() => {
+    return attendingMusicians.filter((m) => usersMap[m.uid]?.onHiatus).length;
+  }, [attendingMusicians, usersMap]);
+
   const attendingMusicianEmails = useMemo(() => {
-    return attendingMusicians
+    return eligibleAttendingMusicians
       .map((m) => usersMap[m.uid]?.email)
       .filter((em): em is string => Boolean(em && em.includes("@")));
-  }, [attendingMusicians, usersMap]);
+  }, [eligibleAttendingMusicians, usersMap]);
 
   // Filtered & Sorted Gigs for the right-hand column selector
   const filteredGigs = useMemo(() => {
@@ -291,7 +311,7 @@ Questions or late changes? Contact Band Management.`;
         uniformBrief,
         callTimeBrief,
         logisticsBrief,
-        recipientCount: attendingMusicians.length,
+        recipientCount: eligibleAttendingMusicians.length,
       };
 
       const validated = DispatchSchema.parse(payload);
@@ -505,21 +525,35 @@ Questions or late changes? Contact Band Management.`;
               </div>
 
               {/* Recipient Audience Stats */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow">
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow">
                 <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-yellow-400" />
+                  <Users className="w-5 h-5 text-yellow-400 shrink-0" />
                   <div>
-                    <div className="text-xs font-bold text-white">Target Recipients</div>
-                    <div className="text-[11px] text-slate-400">
-                      {attendingMusicians.length} confirmed attending
+                    <div className="text-xs font-bold text-white flex items-center gap-2">
+                      <span>Target Audience: Confirmed Attendees</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        CONFIRMED ROSTER
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {eligibleAttendingMusicians.length} active musicians marked attending
+                      {hiatusAttendingCount > 0 && ` • ${hiatusAttendingCount} on hiatus (muted)`}
                       {tentativeMusicians.length > 0 && ` • ${tentativeMusicians.length} tentative`}
                     </div>
                   </div>
                 </div>
 
-                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                  {attendingMusicians.length} Musician{attendingMusicians.length === 1 ? "" : "s"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {hiatusAttendingCount > 0 && (
+                    <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/30 flex items-center gap-1">
+                      <Palmtree className="w-3 h-3" />
+                      {hiatusAttendingCount} Hiatus
+                    </span>
+                  )}
+                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                    {eligibleAttendingMusicians.length} Confirmed Recipient{eligibleAttendingMusicians.length === 1 ? "" : "s"}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -725,15 +759,26 @@ Questions or late changes? Contact Band Management.`;
 
               <div>
                 <label className="block text-slate-400 font-semibold mb-1 uppercase text-[10px]">
-                  Recipients ({attendingMusicianEmails.length} with verified emails)
+                  Recipients ({attendingMusicianEmails.length} active confirmed with verified emails)
                 </label>
-                <div className="max-h-32 overflow-y-auto bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1 font-mono text-[11px]">
+                <div className="max-h-36 overflow-y-auto bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5 font-mono text-[11px]">
                   {attendingMusicians.map((m) => {
-                    const email = usersMap[m.uid]?.email;
+                    const u = usersMap[m.uid];
+                    const email = u?.email;
+                    const onHiatus = u?.onHiatus;
                     return (
-                      <div key={m.uid} className="flex items-center justify-between">
-                        <span className="text-white">{m.displayName}</span>
-                        <span className={email ? "text-slate-400" : "text-rose-400"}>
+                      <div key={m.uid} className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className={onHiatus ? "text-slate-500 line-through" : "text-white"}>
+                            {m.displayName}
+                          </span>
+                          {onHiatus && (
+                            <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-sans font-semibold">
+                              Hiatus (Muted)
+                            </span>
+                          )}
+                        </div>
+                        <span className={onHiatus ? "text-slate-600" : email ? "text-slate-400" : "text-rose-400"}>
                           {email || "No email on profile"}
                         </span>
                       </div>

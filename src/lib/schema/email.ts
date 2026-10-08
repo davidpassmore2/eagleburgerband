@@ -55,3 +55,34 @@ export const SendBroadcastEmailSchema = z.object({
 });
 export type SendBroadcastEmailPayload = z.infer<typeof SendBroadcastEmailSchema>;
 
+export const SendGigAvailabilityEmailSchema = z.object({
+  gigId: z.string().min(1, "Gig ID is required"),
+  gigTitle: z.string().min(1, "Gig title is required"),
+  date: z.string().default("Upcoming Date"),
+  callTime: z.string().default("TBD"),
+  downbeat: z.string().default("TBD"),
+  venue: z.string().default(""),
+  address: z.string().default(""),
+  notes: z.string().default(""),
+  recipientEmails: z.array(z.string().email()).default([]),
+  actorUid: z.string().optional(),
+});
+export type SendGigAvailabilityEmailPayload = z.infer<typeof SendGigAvailabilityEmailSchema>;
+
+export const SendGigConfirmationEmailSchema = z.object({
+  gigId: z.string().min(1, "Gig ID is required"),
+  gigTitle: z.string().min(1, "Gig title is required"),
+  date: z.string().default("Upcoming Date"),
+  callTime: z.string().default("TBD"),
+  downbeat: z.string().default("TBD"),
+  venue: z.string().default(""),
+  address: z.string().default(""),
+  attire: z.string().default(""),
+  notes: z.string().default(""),
+  setlistUrl: z.string().default(""),
+  recipientEmails: z.array(z.string().email()).default([]),
+  actorUid: z.string().optional(),
+});
+export type SendGigConfirmationEmailPayload = z.infer<typeof SendGigConfirmationEmailSchema>;
+
+

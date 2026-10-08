@@ -185,7 +185,38 @@ export default function InquiriesAdminPage() {
         updatedAt: new Date().toISOString(),
       });
 
-      toast.success(`Draft gig created: ${inq.eventTitle}`);
+      // Dispatch initial availability request email (filtering blackouts & hiatus)
+      try {
+        const dispatchRes = await fetch("/api/email/gig-availability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gigId,
+            gigTitle: inq.eventTitle,
+            date: inq.date,
+            callTime: inq.startTime || "TBD",
+            downbeat: inq.startTime || "TBD",
+            venue: inq.venue,
+            address: inq.venueAddress || inq.venue || "",
+            notes: inq.message || "",
+            actorUid: profile?.uid,
+          }),
+        });
+        const dispatchData = await dispatchRes.json();
+        if (dispatchRes.ok && dispatchData.success) {
+          const recCount = dispatchData.recipientCount || 0;
+          const boCount = dispatchData.blackedOutCount || 0;
+          const hiCount = dispatchData.hiatusCount || 0;
+          toast.success(
+            `Converted to gig! Availability request sent to ${recCount} member(s) (${boCount} blacked out, ${hiCount} on hiatus skipped).`
+          );
+        } else {
+          toast.success(`Draft gig created: ${inq.eventTitle}`);
+        }
+      } catch (dispErr) {
+        console.warn("Notice: availability dispatch post conversion:", dispErr);
+        toast.success(`Draft gig created: ${inq.eventTitle}`);
+      }
     } catch (err) {
       toast.error("Failed to convert into gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {

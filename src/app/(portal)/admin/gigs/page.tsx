@@ -38,7 +38,9 @@ import {
   ArrowDown,
   ImageIcon,
   FolderOpen,
-  MoveVertical
+  MoveVertical,
+  Mail,
+  Send,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -150,6 +152,7 @@ export default function GigsAdminStudioPage() {
     compensationType: "individual" as GigCompensationType,
     totalFee: 0,
     description: "",
+    dispatchAvailability: true,
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -174,7 +177,10 @@ export default function GigsAdminStudioPage() {
     totalFee: 0,
     description: "",
     setlistId: "",
+    dispatchConfirmationOnConfirm: true,
   });
+
+  const [dispatchingConfirmationId, setDispatchingConfirmationId] = useState<string | null>(null);
 
   const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [assetPickerTarget, setAssetPickerTarget] = useState<"create" | "edit">("create");
@@ -416,6 +422,43 @@ export default function GigsAdminStudioPage() {
         { merge: true }
       );
 
+      // Dispatch initial availability request email if requested
+      if (formData.dispatchAvailability) {
+        try {
+          const dispRes = await fetch("/api/email/gig-availability", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              gigId,
+              gigTitle: formData.title.trim(),
+              date: formData.date,
+              callTime: formData.callTime || "TBD",
+              downbeat: formData.downbeat || "TBD",
+              venue: formData.venue.trim(),
+              address: formData.venueAddress.trim() || formData.venue.trim(),
+              notes: formData.description.trim(),
+              actorUid: profile?.uid,
+            }),
+          });
+          const dispData = await dispRes.json();
+          if (dispRes.ok && dispData.success) {
+            const count = dispData.recipientCount || 0;
+            const boCount = dispData.blackedOutCount || 0;
+            const hiCount = dispData.hiatusCount || 0;
+            toast.success(
+              `Performance created! Availability dispatch sent to ${count} musician(s) (${boCount} blacked out, ${hiCount} on hiatus skipped).`
+            );
+          } else {
+            toast.success(`Performance "${formData.title.trim()}" created!`);
+          }
+        } catch (dispErr) {
+          console.warn("Notice: availability dispatch post gig creation:", dispErr);
+          toast.success(`Performance "${formData.title.trim()}" created!`);
+        }
+      } else {
+        toast.success(`Performance "${formData.title.trim()}" created!`);
+      }
+
       setIsCreating(false);
       setFormData({
         title: "",
@@ -438,8 +481,8 @@ export default function GigsAdminStudioPage() {
         compensationType: "individual",
         totalFee: 0,
         description: "",
+        dispatchAvailability: true,
       });
-      toast.success(`Performance "${formData.title.trim()}" created!`);
     } catch (err) {
       toast.error("Failed to create gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -514,6 +557,7 @@ export default function GigsAdminStudioPage() {
       totalFee: gig.financials?.totalFee ?? 0,
       description: gig.publicDetails?.description || "",
       setlistId: gig.setlistId || gig.internalLogistics?.setlistId || "",
+      dispatchConfirmationOnConfirm: true,
     });
   };
 
@@ -664,12 +708,90 @@ export default function GigsAdminStudioPage() {
         }
       }
 
+      // Check if gig is now confirmed and confirmation dispatch should be triggered
+      const isNowConfirmed = editFormData.status === "confirmed";
+      const wasConfirmed = editingGig.status === "confirmed";
+      if (isNowConfirmed && (!wasConfirmed || editFormData.dispatchConfirmationOnConfirm)) {
+        try {
+          const confRes = await fetch("/api/email/gig-confirmation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              gigId: editingGig.id,
+              gigTitle: editFormData.title.trim(),
+              date: editFormData.date,
+              callTime: editFormData.callTime || "TBD",
+              downbeat: editFormData.downbeat || "TBD",
+              venue: editFormData.venue.trim(),
+              address: editFormData.venueAddress.trim() || editFormData.venue.trim(),
+              attire: editFormData.attire.trim(),
+              notes: editFormData.description.trim(),
+              actorUid: profile?.uid,
+            }),
+          });
+          const confData = await confRes.json();
+          if (confRes.ok && confData.success) {
+            const count = confData.recipientCount || 0;
+            const hiCount = confData.hiatusCount || 0;
+            if (count > 0) {
+              toast.success(
+                `Gig confirmed! Confirmation dispatch sent to ${count} attendee(s) marked 'in'${
+                  hiCount > 0 ? ` (${hiCount} on hiatus skipped)` : ""
+                }.`
+              );
+            }
+          }
+        } catch (confErr) {
+          console.warn("Notice: confirmation dispatch post gig update:", confErr);
+        }
+      }
+
       setEditingGig(null);
       toast.success("Performance details updated successfully!");
     } catch (err) {
       toast.error("Failed to update gig: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDispatchConfirmationNow = async (gig: GigItem) => {
+    setDispatchingConfirmationId(gig.id);
+    try {
+      const gigTitle = gig.internalLogistics?.title || gig.publicDetails?.title || "Gig";
+      const res = await fetch("/api/email/gig-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: gig.id,
+          gigTitle,
+          date: gig.date,
+          callTime: gig.internalLogistics?.callTime || "TBD",
+          downbeat: gig.internalLogistics?.downbeat || "TBD",
+          venue: gig.publicDetails?.venue || "",
+          address: gig.publicDetails?.venueAddress || gig.publicDetails?.venue || "",
+          attire: gig.internalLogistics?.attire || "",
+          notes: gig.publicDetails?.description || gig.internalLogistics?.parkingNotes || "",
+          actorUid: profile?.uid,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to dispatch confirmation emails");
+      }
+      if (data.recipientCount > 0) {
+        toast.success(
+          `Confirmation email sent to ${data.recipientCount} confirmed attendee(s) marked 'in'!${
+            data.hiatusCount > 0 ? ` (${data.hiatusCount} on hiatus skipped)` : ""
+          }`
+        );
+      } else {
+        toast.info(data.message || "No confirmed attendees marked 'in' to dispatch.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDispatchingConfirmationId(null);
     }
   };
 
@@ -1222,6 +1344,28 @@ export default function GigsAdminStudioPage() {
             )}
           </div>
 
+          {/* Initial Availability Dispatch Option */}
+          <div className="bg-slate-950/70 border border-purple-500/30 rounded-xl p-3.5 flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-purple-400" />
+                Dispatch Initial Availability Request Email
+              </span>
+              <span className="text-[11px] text-slate-400 block leading-relaxed">
+                Sends an RSVP invitation email to active band members requesting them to mark their availability. Automatically filters out members on hiatus and those with this date blacked out.
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                checked={formData.dispatchAvailability}
+                onChange={(e) => setFormData({ ...formData, dispatchAvailability: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+            </label>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -1704,6 +1848,56 @@ export default function GigsAdminStudioPage() {
               )}
             </div>
 
+            {/* Confirmation Dispatch Banner / Controls */}
+            {editFormData.status === "confirmed" && (
+              <div className="bg-slate-950/70 border border-emerald-500/30 rounded-xl p-3.5 space-y-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                      Send Confirmation Dispatch Email to Attending Members
+                    </span>
+                    <span className="text-[11px] text-slate-400 block leading-relaxed">
+                      Sends a confirmation email with finalized call times to members marked &apos;attending&apos; (in). Excludes any members currently on hiatus.
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={editFormData.dispatchConfirmationOnConfirm}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          dispatchConfirmationOnConfirm: e.target.checked,
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-800/80">
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    Subsequent dispatches will go to this confirmed list
+                  </span>
+                  <button
+                    type="button"
+                    disabled={Boolean(dispatchingConfirmationId)}
+                    onClick={() => handleDispatchConfirmationNow(editingGig)}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition disabled:opacity-50 shrink-0 self-start sm:self-auto cursor-pointer"
+                  >
+                    {dispatchingConfirmationId === editingGig.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                    <span>Dispatch Now to Confirmed List</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
@@ -2169,13 +2363,31 @@ export default function GigsAdminStudioPage() {
                   <span>Private Gig</span>
                 </span>
               )}
-              <Link
-                href={`/portal/gigs/${g.id}`}
-                className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
-              >
-                <span>Call Sheet</span>
-                <ExternalLink className="w-3 h-3" />
-              </Link>
+              <div className="flex items-center gap-2">
+                {g.status === "confirmed" && (
+                  <button
+                    type="button"
+                    disabled={dispatchingConfirmationId === g.id}
+                    onClick={() => handleDispatchConfirmationNow(g)}
+                    title="Send confirmation dispatch email to attending members"
+                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg border border-emerald-500/20 transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {dispatchingConfirmationId === g.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                    <span>Dispatch Confirmed</span>
+                  </button>
+                )}
+                <Link
+                  href={`/portal/gigs/${g.id}`}
+                  className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+                >
+                  <span>Call Sheet</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
           </div>
         ))}

@@ -11,6 +11,7 @@ import {
   arrayUnion,
   arrayRemove,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -44,6 +45,7 @@ import {
   Info,
   Clock,
   MailCheck,
+  Palmtree,
 } from "lucide-react";
 
 export default function MemberNotificationsPage() {
@@ -87,6 +89,25 @@ export default function MemberNotificationsPage() {
   const [broadcastActionLabel, setBroadcastActionLabel] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
+  const [togglingHiatus, setTogglingHiatus] = useState(false);
+  const isOnHiatus = Boolean(userProfile?.onHiatus || userProfile?.status === "hiatus");
+
+  const handleToggleHiatus = async () => {
+    if (!currentUserId) return;
+    setTogglingHiatus(true);
+    const nextVal = !isOnHiatus;
+    try {
+      await updateDoc(doc(db, "users", currentUserId), {
+        onHiatus: nextVal,
+        status: nextVal ? "hiatus" : "active",
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Failed to update hiatus:", err);
+    } finally {
+      setTogglingHiatus(false);
+    }
+  };
 
   // Subscribe to real-time notifications
   useEffect(() => {
@@ -622,6 +643,57 @@ export default function MemberNotificationsPage() {
             <p className="text-xs text-slate-400">
               Customize which alerts you want to receive inside the portal, by email, or for emergency gig calls.
             </p>
+          </div>
+
+          {/* Master Hiatus Safeguard Banner */}
+          <div
+            className={`rounded-xl p-4 border transition ${
+              isOnHiatus
+                ? "bg-amber-950/30 border-amber-500/40 text-amber-200"
+                : "bg-slate-950 border-slate-800 text-slate-300"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <Palmtree
+                  className={`w-4 h-4 shrink-0 mt-0.5 ${
+                    isOnHiatus ? "text-amber-400" : "text-slate-500"
+                  }`}
+                />
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Hiatus Mode (Master Dispatch Mute)</span>
+                    <span
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase font-bold ${
+                        isOnHiatus
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                          : "bg-slate-800 text-slate-400 border-slate-700"
+                      }`}
+                    >
+                      {isOnHiatus ? "On Hiatus" : "Active"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {isOnHiatus
+                      ? "Hiatus is active. You will receive ZERO gig dispatches or availability requests until resumed."
+                      : "When enabled, you are temporarily relieved of band calls and will receive no gig availability or dispatch emails."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={togglingHiatus}
+                onClick={handleToggleHiatus}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer disabled:opacity-50 ${
+                  isOnHiatus
+                    ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold"
+                    : "bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-300 border border-slate-700 hover:border-amber-500/30"
+                }`}
+              >
+                {togglingHiatus ? "Updating..." : isOnHiatus ? "Resume Active" : "Take Hiatus"}
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSavePreferences} className="space-y-6">

@@ -543,3 +543,158 @@ export function renderBroadcastEmail(params: {
   return { subject: params.subject, html, text };
 }
 
+export function renderGigAvailabilityRequestEmail(params: {
+  gigId: string;
+  gigTitle: string;
+  date: string;
+  callTime?: string;
+  downbeat?: string;
+  venue?: string;
+  address?: string;
+  notes?: string;
+  recipientName?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const portalGigUrl = `${appUrl}/portal/gigs/${params.gigId}`;
+  const subject = `Action Required: Mark Your Availability for ${params.gigTitle} (${params.date})`;
+  const musicianName = params.recipientName || "Musician";
+
+  const innerHtml = `
+    <h2>New Gig Announced: RSVP Required</h2>
+    <p>Hey <strong>${musicianName}</strong>,</p>
+    <p>A new performance has been added to our schedule. Please log in to the Musician Portal and mark your availability (<strong>Attending / In</strong>, or <strong>Declined / Out</strong>) so our section leaders and gig managers can balance lead, rhythm, and low brass parts.</p>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin: 18px 0;">
+      <h3 style="margin: 0 0 12px 0; color: #f59e0b; font-size: 16px;">${params.gigTitle}</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8; width: 140px;"><strong>Date:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc; font-weight: bold;">${params.date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Call Time:</strong></td>
+          <td style="padding: 8px 0; color: #f59e0b; font-weight: bold;">${params.callTime || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Downbeat / Step-Off:</strong></td>
+          <td style="padding: 8px 0; color: #10b981; font-weight: bold;">${params.downbeat || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Venue:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc;">${params.venue || "TBD"}</td>
+        </tr>
+        ${params.address ? `
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Staging / Address:</strong></td>
+          <td style="padding: 8px 0; color: #cbd5e1;">${params.address}</td>
+        </tr>` : ""}
+      </table>
+    </div>
+
+    ${params.notes ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #a855f7;">
+      <p style="margin: 0; font-size: 13px; color: #a855f7;"><strong>Performance Notes:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #e2e8f0;">${params.notes}</p>
+    </div>` : ""}
+
+    <p style="text-align: center; margin: 26px 0;">
+      <a href="${portalGigUrl}" style="background-color: #a855f7; color: #ffffff; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        Submit Your RSVP in Gig Central &rarr;
+      </a>
+    </p>
+
+    <div style="background-color: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 6px; margin: 16px 0; font-size: 12px; color: #94a3b8; border: 1px dashed #334155;">
+      💡 <em>Notice: Band members on hiatus or with this date marked on their blackout calendar were automatically excluded from this dispatch. If your schedule changes, update your calendar in the portal anytime.</em>
+    </div>
+
+    <p>Thank you for keeping our horn line tight,<br /><strong>The Personnel & Gig Operations Team</strong></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `RSVP Request: ${params.gigTitle}\nDate: ${params.date}\nCall: ${params.callTime || "TBD"} | Downbeat: ${params.downbeat || "TBD"}\nVenue: ${params.venue || "TBD"}\n\nPlease submit your availability now:\n${portalGigUrl}\n\nNote: Band members on hiatus or with blackouts for this date were excluded.`;
+
+  return { subject, html, text };
+}
+
+export function renderGigConfirmedEmail(params: {
+  gigId: string;
+  gigTitle: string;
+  date: string;
+  callTime?: string;
+  downbeat?: string;
+  venue?: string;
+  address?: string;
+  attire?: string;
+  notes?: string;
+  setlistUrl?: string;
+  recipientName?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const portalGigUrl = `${appUrl}/portal/gigs/${params.gigId}`;
+  const subject = `🎉 Gig Confirmed: ${params.gigTitle} — ${params.date}`;
+  const musicianName = params.recipientName || "Musician";
+
+  const innerHtml = `
+    <div style="background-color: rgba(16, 185, 129, 0.1); border: 2px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+      <h2 style="margin: 0 0 4px 0; color: #10b981; font-size: 18px;">🎉 Performance Confirmed!</h2>
+      <p style="margin: 0; font-size: 13px; color: #a7f3d0;"><strong>${params.gigTitle}</strong> on <strong>${params.date}</strong> is officially locked in.</p>
+    </div>
+
+    <p>Hey <strong>${musicianName}</strong>,</p>
+    <p>You are receiving this confirmation because you marked your availability as <strong>attending (in)</strong> for this performance. All upcoming call sheet revisions, logistics changes, and tunes will be dispatched to this confirmed roster.</p>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin: 18px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8; width: 140px;"><strong>Date:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc; font-weight: bold;">${params.date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Musician Call Time:</strong></td>
+          <td style="padding: 8px 0; color: #f59e0b; font-weight: bold; font-size: 15px;">${params.callTime || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Downbeat / Step-Off:</strong></td>
+          <td style="padding: 8px 0; color: #10b981; font-weight: bold;">${params.downbeat || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Venue:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc;">${params.venue || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Staging / Address:</strong></td>
+          <td style="padding: 8px 0; color: #cbd5e1;">${params.address || "See portal for GPS coordinates"}</td>
+        </tr>
+      </table>
+    </div>
+
+    ${params.attire ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; font-size: 13px; color: #f59e0b;"><strong>Attire Guidelines:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #cbd5e1;">${params.attire}</p>
+    </div>` : ""}
+
+    ${params.notes ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 13px; color: #94a3b8;"><strong>Logistics Notes:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #e2e8f0;">${params.notes}</p>
+    </div>` : ""}
+
+    <p style="text-align: center; margin: 26px 0;">
+      <a href="${portalGigUrl}" style="background-color: #10b981; color: #020617; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        View Live Call Sheet & Charts &rarr;
+      </a>
+    </p>
+
+    <p>Arrive warmed up and ready to rock the street!<br /><strong>The Eagleburger Band Directors & Gig Operations</strong></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `🎉 Gig Confirmed: ${params.gigTitle}\nDate: ${params.date}\nCall: ${params.callTime || "TBD"} | Downbeat: ${params.downbeat || "TBD"}\nVenue: ${params.venue || "TBD"}\nStaging: ${params.address || "TBD"}\n\nView details: ${portalGigUrl}`;
+
+  return { subject, html, text };
+}
+
+
