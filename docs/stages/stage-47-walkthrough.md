@@ -57,6 +57,39 @@ Stage 47 delivers the end-to-end musician onboarding and mobile performance kit 
     - `Needs X more` (amber badge) when section attendance is below quorum.
   - Displays attending musician names, avatar initials, and instrument designations per section.
 
+### 6. User Lifecycle & Complete Purge Infrastructure
+- **Files:**
+  - Route: [`src/app/api/admin/users/purge/route.ts`](file:///c:/repos/eagleburgerband/src/app/api/admin/users/purge/route.ts)
+  - Firebase REST Helper: [`src/lib/firebase/admin.ts`](file:///c:/repos/eagleburgerband/src/lib/firebase/admin.ts)
+  - Studio UI: [`src/app/(portal)/admin/users/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/users/page.tsx)
+  - Inactive Guard: [`src/app/(portal)/layout.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/layout.tsx)
+  - Auth Kill-Switch: [`src/lib/context/AuthContext.tsx`](file:///c:/repos/eagleburgerband/src/lib/context/AuthContext.tsx)
+- **Features:**
+  - **"Remove & Purge"**: Immediately removes the user from all Firebase records:
+    - Calls Google Identity Toolkit REST API (`/v1/accounts:delete`) using direct RS256 JWT service account credentials via `node:crypto`, bypassing Vercel `firebase-admin`/`jwks-rsa` ESM bundle errors.
+    - Permanently deletes Firestore document `users/{uid}` and unclaims linked `invites`.
+    - Logs an immutable security entry in `admin_logs`.
+    - **Session Termination Guard**: `AuthContext` checks `await user.reload()` before auto-provisioning missing profiles; if the account was deleted in Firebase Auth (`auth/user-not-found`), it immediately clears local credentials, terminates the open session, and redirects to `/login`.
+  - **"Deactivate / Reactivate"**: Keeps all Firestore records and Firebase Auth credentials intact, marks user `status: "inactive"`, displays an informative "Account Deactivated" screen in portal layout, and allows one-click reactivation.
+
+### 7. Booking Request Validation & UX Fixes
+- **Files:**
+  - Schema: [`src/lib/schema/lead.ts`](file:///c:/repos/eagleburgerband/src/lib/schema/lead.ts)
+  - Component: [`src/components/public/BookingFormSection.tsx`](file:///c:/repos/eagleburgerband/src/components/public/BookingFormSection.tsx)
+- **Fixes:**
+  - Updated `BookingInputSchema.budget` to accept numeric strings, numbers, and empty strings (`""`) up to $1,000,000, eliminating the false "Invalid input" error when entering budgets or leaving the optional field blank.
+  - Allowed empty strings on optional phone numbers and corrected the label formatting from `(\$)` to `($)`.
+
+### 8. Cloud Datastore Performance & Loading Overlay Polish
+- **File:** [`src/lib/context/PortalLoadingContext.tsx`](file:///c:/repos/eagleburgerband/src/lib/context/PortalLoadingContext.tsx)
+- **Fix:** Removed global `window.fetch` monkey-patching. Background Cloud Firestore sync requests (`firestore.googleapis.com`) and route prefetching now run silently in the background without causing the full-screen portal loading overlay to flash while scrolling.
+
+### 9. Onboarding Security Hardening
+- **File:** [`src/app/(public)/claim/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(public)/claim/page.tsx)
+- **Features:**
+  - **Strict Google Email Matching**: Compares `auth.currentUser.email` with `invite.email`. If an unauthorized Google account attempts to claim an invite link, the claim is rejected and the user is signed out immediately.
+  - **Email Verification for Password Registrations**: When setting an account password, dispatches `sendEmailVerification()` and transitions to a "Step 2 of 2: Verify Email" screen. Access to `/portal` is only granted once the recipient confirms ownership via the link sent to their inbox.
+
 ---
 
 ## Verification Results
@@ -65,30 +98,25 @@ Stage 47 delivers the end-to-end musician onboarding and mobile performance kit 
 |---|---|---|---|
 | **TypeScript Typecheck** | `npx tsc --noEmit` | **PASSED** | 0 errors |
 | **ESLint Validation** | `npm run lint` | **PASSED** | 0 errors, 0 warnings |
-| **Next.js Production Build** | `npm run build` | **PASSED** | 65 routes compiled cleanly with Turbopack (including `/claim`) |
+| **Next.js Production Build** | `npm run build` | **PASSED** | 65 routes compiled cleanly with Turbopack (including `/claim` and `/api/admin/users/purge`) |
 
 ---
 
 ## How to Test in Beta
 
-### Test Flow 1: Generate & Claim an Onboarding Invite
+### Test Flow 1: Generate & Claim an Onboarding Invite with Security Verification
 1. Sign in as Admin at `https://beta.eagleburgerband.com/admin/roster` (or localhost).
-2. Click **"Invite Member"**.
-3. Fill in the musician's name, email, section (e.g., *Trumpet*), and instrument (*Trumpet 1*).
-4. Click **"Create & Copy Link"**.
-5. Open an Incognito window and navigate to the copied claim link (`/claim?token=...`).
-6. Confirm the welcome message displays the musician's name, section, and instruments.
-7. Click **"Claim Spot with Google"** (or create an email account) to accept the invitation and enter the musician portal.
+2. Click **"Invite Member"** and send an invite to a test email (e.g. `test@example.com`).
+3. Open an Incognito window and navigate to the claim link (`/claim?token=...`).
+4. Test **Google Sign-In**: Attempting to claim with an account other than `test@example.com` will be cleanly blocked.
+5. Test **Password Registration**: Entering a password transitions to "Step 2 of 2: Verify Email" and dispatches a verification email.
 
-### Test Flow 2: View Sheet Music & Rehearsal Audio
-1. Navigate to `/portal/library`.
-2. Find any chart in the catalog (e.g., *Iron City Funk* or *Cissy Strut*).
-3. Click the **"Charts"** button.
-4. Verify the `SheetMusicViewerModal` opens with tempo, key signature, notes, and the Google Drive chart preview.
-5. If an audio reference sample is attached, test the audio playback scrubber.
-6. Click the fullscreen button to test **Stand Mode**.
+### Test Flow 2: Remove & Purge Member Records
+1. Go to `/admin/users`.
+2. Locate a test member and click **"Remove & Purge"**.
+3. Type the user's name/email in the modal and confirm.
+4. The user is instantly deleted from both Cloud Firestore and Firebase Authentication. Any open session for that user in another tab will terminate and redirect to `/login`.
 
-### Test Flow 3: Verify Section Quorum on Call Sheets
-1. Navigate to `/portal/gigs/[gigId]` for an upcoming performance.
-2. Scroll to the **"Musician Attendance & Section Quorum"** section.
-3. Verify sections show attending musicians grouped by section, along with `Quorum Met` or `Needs X more` status tags.
+### Test Flow 3: View Sheet Music & Section Quorum
+1. Navigate to `/portal/library` and click **"Charts"** on any tune to launch the `SheetMusicViewerModal` with Google Drive sheet preview and Stand Mode.
+2. Navigate to `/portal/gigs/[gigId]` to view the real-time **Musician Attendance & Section Quorum** breakdown.
