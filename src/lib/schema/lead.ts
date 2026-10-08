@@ -51,12 +51,12 @@ export const BookingInputSchema = z.object({
   phone: z
     .string()
     .trim()
-    .min(7, "Phone number must be at least 7 digits")
     .max(25, "Phone number cannot exceed 25 characters")
-    .regex(
-      /^[\d\s\-\+\(\)\.extEXT]+$/,
-      "Please enter a valid phone number (digits, spaces, dashes, parentheses)"
-    ),
+    .refine(
+      (val) => !val || (val.length >= 7 && /^[\d\s\-\+\(\)\.extEXT]+$/.test(val)),
+      "Please enter a valid phone number (at least 7 digits)"
+    )
+    .default(""),
   eventTitle: z
     .string()
     .trim()
@@ -89,14 +89,17 @@ export const BookingInputSchema = z.object({
     .default(""),
   budget: z
     .union([
-      z
-        .number()
-        .min(0, "Budget cannot be negative")
-        .max(1000000, "Budget cannot exceed $1,000,000"),
+      z.string().trim(),
+      z.number(),
       z.null(),
       z.undefined(),
     ])
-    .optional(),
+    .optional()
+    .refine((val) => {
+      if (val === "" || val === null || val === undefined) return true;
+      const num = Number(val);
+      return !isNaN(num) && num >= 0 && num <= 1000000;
+    }, "Please enter a valid dollar amount up to $1,000,000"),
   message: z
     .string()
     .trim()

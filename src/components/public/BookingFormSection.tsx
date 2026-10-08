@@ -514,7 +514,7 @@ export default function BookingFormSection({
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5 text-slate-500" />
-                  Estimated Budget / Honorarium (\$)
+                  Estimated Budget / Honorarium ($)
                 </label>
                 <input
                   type="number"
