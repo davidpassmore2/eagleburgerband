@@ -7,7 +7,6 @@ import {
   onSnapshot,
   doc,
   updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -267,37 +266,32 @@ export default function UsersAdminPage() {
     try {
       const targetUid = purgeTarget.uid;
       const targetName = purgeTarget.displayName || purgeTarget.email;
-      const targetEmail = purgeTarget.email;
 
-      // 1. Permanently remove user doc
-      await deleteDoc(doc(db, "users", targetUid));
-
-      // 2. Write high-severity audit log
-      await logAdminAction({
-        action: "member_purged",
-        category: "personnel",
-        actor: {
-          uid: profile.uid,
-          displayName: profile.displayName || "Admin",
-          email: profile.email || "",
-        },
-        targetId: targetUid,
-        targetName,
-        description: `CRITICAL: Administrator ${profile.displayName || profile.email} PERMANENTLY PURGED member record for ${targetName} (${targetEmail}).`,
-        metadata: {
-          purgedUid: targetUid,
-          purgedEmail: targetEmail,
-          purgedRoles: purgeTarget.roles || [],
-          purgedSectionId: purgeTarget.sectionId || null,
-        },
+      const res = await fetch("/api/admin/users/purge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetUid,
+          actorUid: profile.uid,
+        }),
       });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to purge user.");
+      }
 
       setPurgeTarget(null);
       setPurgeConfirmText("");
-      toast.success(`User record for ${targetName} has been permanently purged.`);
+
+      if (data.warning) {
+        toast.info(`Purged user records: ${data.warning}`);
+      } else {
+        toast.success(`User ${targetName} permanently removed and purged from all records.`);
+      }
     } catch (err) {
       console.error("Failed to purge user:", err);
-      toast.error("Error purging user record: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error purging user: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsPurging(false);
     }
@@ -520,7 +514,7 @@ export default function UsersAdminPage() {
                       </button>
                     )}
 
-                    {/* Purge Member (Admin only, cannot purge self) */}
+                    {/* Remove & Purge Member (Admin only, cannot purge self) */}
                     {!isSelf && (
                       <button
                         type="button"
@@ -529,11 +523,11 @@ export default function UsersAdminPage() {
                           setPurgeTarget(member);
                           setPurgeConfirmText("");
                         }}
-                        className="px-3 py-1 rounded-lg text-xs font-semibold text-red-400 hover:text-white bg-red-950/40 hover:bg-red-600 border border-red-800/40 hover:border-red-600 transition flex items-center gap-1.5 disabled:opacity-50"
-                        title="Permanently purge member record from database"
+                        className="px-3 py-1 rounded-lg text-xs font-semibold text-red-400 hover:text-white bg-red-950/40 hover:bg-red-600 border border-red-800/40 hover:border-red-600 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        title="Permanently remove member from Firestore and Firebase Authentication"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Purge</span>
+                        <span>Remove & Purge</span>
                       </button>
                     )}
                   </div>
@@ -572,7 +566,7 @@ export default function UsersAdminPage() {
         )}
       </div>
 
-      {/* Confirmation Modal for Permanent Purge */}
+      {/* Confirmation Modal for Permanent Remove & Purge */}
       {purgeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
           <div className="bg-slate-900 border border-red-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
@@ -582,14 +576,14 @@ export default function UsersAdminPage() {
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Permanently Purge Member</h3>
-                  <p className="text-xs text-red-400 font-mono">Irreversible Administrative Action</p>
+                  <h3 className="text-base font-bold text-white">Remove and Purge Member</h3>
+                  <p className="text-xs text-red-400 font-mono">Removes from Firestore & Firebase Authentication</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setPurgeTarget(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -597,7 +591,7 @@ export default function UsersAdminPage() {
 
             <div className="text-xs text-slate-300 space-y-3 bg-red-950/20 border border-red-500/20 rounded-xl p-4">
               <p className="font-semibold text-red-300">
-                You are about to permanently purge the user record for:
+                You are about to permanently remove and purge all records for:
               </p>
               <div className="text-sm font-bold text-white">
                 {purgeTarget.displayName || purgeTarget.email}
@@ -606,9 +600,10 @@ export default function UsersAdminPage() {
                 </span>
               </div>
               <ul className="list-disc list-inside space-y-1 text-slate-300 pt-1">
-                <li>This removes the musician profile document from Firestore.</li>
-                <li>The user will lose all RBAC roles, preferences, and portal access.</li>
-                <li>This action will be logged in the immutable Admin Audit Log.</li>
+                <li>Removes the musician profile document and linked data from Cloud Firestore.</li>
+                <li>Deletes the user account and login credentials from Firebase Authentication.</li>
+                <li>The user cannot log in or be automatically re-created.</li>
+                <li>This action is permanently logged in the Admin Audit Log.</li>
               </ul>
             </div>
 
@@ -634,7 +629,7 @@ export default function UsersAdminPage() {
                 type="button"
                 onClick={() => setPurgeTarget(null)}
                 disabled={isPurging}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -642,17 +637,17 @@ export default function UsersAdminPage() {
                 type="button"
                 onClick={handleExecutePurge}
                 disabled={!isPurgeNameMatch || isPurging}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 transition flex items-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-500 transition flex items-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isPurging ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Purging Record...</span>
+                    <span>Removing & Purging...</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
-                    <span>Purge Member Document</span>
+                    <span>Remove and Purge Member</span>
                   </>
                 )}
               </button>

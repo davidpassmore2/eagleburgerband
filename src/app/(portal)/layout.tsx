@@ -191,6 +191,46 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (profile && profile.status === "inactive" && !isRealAdmin) {
+    return (
+      <div 
+        suppressHydrationWarning
+        style={{
+          ...getScopedStyles("portal"),
+          backgroundColor: "var(--ebb-background)",
+        }}
+        className="min-h-screen flex items-center justify-center p-4"
+      >
+        <div className="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-3xl p-8 text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 mx-auto flex items-center justify-center">
+            <Shield className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-black text-white uppercase tracking-tight">
+            Account Deactivated
+          </h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Your Eagleburger Band musician account has been deactivated by administration. Repertoire charts, gig call sheets, and dispatch tools are currently unavailable.
+          </p>
+          <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={() => signOut()}
+              className="inline-flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+            <Link
+              href="/contact"
+              className="text-xs text-yellow-400 hover:underline pt-1 block"
+            >
+              Contact Band Administration
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       suppressHydrationWarning
