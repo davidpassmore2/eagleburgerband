@@ -17,7 +17,7 @@ import {
   AlertCircle
 } from "lucide-react";
 
-export type AttendanceStatus = "attending" | "declined" | "tentative";
+export type AttendanceStatus = "attending" | "probable" | "declined" | "tentative";
 
 export type DayModalGig = {
   id: string;
@@ -274,6 +274,11 @@ export default function PortalDayEventsModal({
                               <CheckCircle2 className="w-3.5 h-3.5" /> Confirmed In
                             </span>
                           )}
+                          {userRsvp === "probable" && (
+                            <span className="text-cyan-400 font-bold flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" /> Probable
+                            </span>
+                          )}
                           {userRsvp === "tentative" && (
                             <span className="text-amber-400 font-bold flex items-center gap-1">
                               <HelpCircle className="w-3.5 h-3.5" /> Tentative
@@ -299,7 +304,7 @@ export default function PortalDayEventsModal({
 
                       {/* 1-Click RSVP Button Selector */}
                       {onRsvpChange && (
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <button
                             type="button"
                             disabled={isUpdatingRsvp}
@@ -312,6 +317,20 @@ export default function PortalDayEventsModal({
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             <span>In / Attend</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isUpdatingRsvp}
+                            onClick={() => onRsvpChange(gig.id, "probable")}
+                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                              userRsvp === "probable"
+                                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm"
+                                : "bg-black/30 hover:bg-cyan-500/10 text-slate-300 hover:text-cyan-300 border-white/10"
+                            }`}
+                          >
+                            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Probable</span>
                           </button>
 
                           <button

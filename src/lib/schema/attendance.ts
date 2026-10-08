@@ -23,7 +23,7 @@ export const CheckInSchema = z.object({
 
 export type CheckInRecord = z.infer<typeof CheckInSchema>;
 
-export const RsvpStatusEnum = z.enum(["attending", "declined", "tentative"]);
+export const RsvpStatusEnum = z.enum(["attending", "probable", "tentative", "declined"]);
 export type RsvpStatus = z.infer<typeof RsvpStatusEnum>;
 
 export const RsvpSchema = z.object({

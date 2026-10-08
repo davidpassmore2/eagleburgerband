@@ -16,7 +16,7 @@ export type AuditPerformer = {
   displayName: string;
   sectionId?: string;
   instruments?: string[];
-  status: "attending" | "declined" | "tentative";
+  status: "attending" | "probable" | "declined" | "tentative";
 };
 
 export type SectionData = {
@@ -46,13 +46,17 @@ export default function InstrumentationAuditDrawer({
 
   if (!isOpen) return null;
 
-  const attendingPerformers = performers.filter((p) => p.status === "attending");
+  const confirmedPerformers = performers.filter((p) => p.status === "attending");
+  const probablePerformers = performers.filter((p) => p.status === "probable");
+  const availablePerformers = performers.filter(
+    (p) => p.status === "attending" || p.status === "probable"
+  );
 
-  // Aggregate instrument counts
+  // Aggregate instrument counts across confirmed & probable musicians
   const instrumentCounts: Record<string, number> = {};
   const sectionCounts: Record<string, number> = {};
 
-  attendingPerformers.forEach((p) => {
+  availablePerformers.forEach((p) => {
     const secId = p.sectionId || "unassigned";
     sectionCounts[secId] = (sectionCounts[secId] || 0) + 1;
 
@@ -78,13 +82,13 @@ export default function InstrumentationAuditDrawer({
     if (count === 0) {
       warnings.push({
         section: sec.name,
-        message: `No players confirmed! Critical gap.`,
+        message: `No players committed! Critical gap.`,
         severity: "danger",
       });
     } else if (count < min) {
       warnings.push({
         section: sec.name,
-        message: `Only ${count} confirmed (recommended: ${min}+).`,
+        message: `Only ${count} committed (recommended: ${min}+).`,
         severity: "warning",
       });
     }
@@ -93,7 +97,7 @@ export default function InstrumentationAuditDrawer({
   const handleCopySectionCallout = () => {
     const lines = [
       `🚨 SECTION ROSTER AUDIT: ${gigTitle} (${gigDate})`,
-      `👥 Total Confirmed: ${attendingPerformers.length}`,
+      `👥 Total Committed: ${availablePerformers.length} (${confirmedPerformers.length} In, ${probablePerformers.length} Probable)`,
       "",
       warnings.length > 0 ? "⚠️ SECTIONS NEEDING PLAYERS / SUBS:" : "✅ All sections met baseline minimums!",
       ...warnings.map((w) => `• ${w.section}: ${w.message}`),
@@ -132,8 +136,10 @@ export default function InstrumentationAuditDrawer({
                 Total Playing Strength
               </span>
               <div className="text-2xl font-extrabold text-white font-mono">
-                {attendingPerformers.length}{" "}
-                <span className="text-xs font-normal text-slate-400">musicians confirmed</span>
+                {availablePerformers.length}{" "}
+                <span className="text-xs font-normal text-slate-400">
+                  musicians committed ({confirmedPerformers.length} in{probablePerformers.length > 0 ? `, ${probablePerformers.length} probable` : ""})
+                </span>
               </div>
             </div>
 

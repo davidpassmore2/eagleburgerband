@@ -347,7 +347,7 @@ export default function MusicianPortalOverviewPage() {
   }, [gigs, todayStr]);
 
   const confirmedCount = useMemo(() => {
-    return upcomingGigs.filter((g) => userRsvps[g.id] === "attending").length;
+    return upcomingGigs.filter((g) => userRsvps[g.id] === "attending" || userRsvps[g.id] === "probable").length;
   }, [upcomingGigs, userRsvps]);
 
   const unansweredGigs = useMemo(() => {
@@ -594,6 +594,9 @@ export default function MusicianPortalOverviewPage() {
                   {userRsvps[nextGig.id] === "attending" && (
                     <span className="text-emerald-400 font-bold">Confirmed In</span>
                   )}
+                  {userRsvps[nextGig.id] === "probable" && (
+                    <span className="text-cyan-400 font-bold">Probable</span>
+                  )}
                   {userRsvps[nextGig.id] === "tentative" && (
                     <span className="text-amber-400 font-bold">Tentative</span>
                   )}
@@ -605,12 +608,12 @@ export default function MusicianPortalOverviewPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   <button
                     type="button"
                     disabled={isUpdatingRsvp}
                     onClick={() => handleRsvpChange(nextGig.id, "attending")}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
                       userRsvps[nextGig.id] === "attending"
                         ? "bg-emerald-500 text-slate-950 shadow"
                         : "bg-white/5 hover:bg-emerald-500/20 text-slate-300"
@@ -621,8 +624,20 @@ export default function MusicianPortalOverviewPage() {
                   <button
                     type="button"
                     disabled={isUpdatingRsvp}
+                    onClick={() => handleRsvpChange(nextGig.id, "probable")}
+                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                      userRsvps[nextGig.id] === "probable"
+                        ? "bg-cyan-500 text-slate-950 shadow"
+                        : "bg-white/5 hover:bg-cyan-500/20 text-slate-300"
+                    }`}
+                  >
+                    <Clock className="w-3 h-3" /> Probable
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isUpdatingRsvp}
                     onClick={() => handleRsvpChange(nextGig.id, "tentative")}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
                       userRsvps[nextGig.id] === "tentative"
                         ? "bg-amber-400 text-slate-950 shadow"
                         : "bg-white/5 hover:bg-amber-400/20 text-slate-300"
@@ -634,7 +649,7 @@ export default function MusicianPortalOverviewPage() {
                     type="button"
                     disabled={isUpdatingRsvp}
                     onClick={() => handleRsvpChange(nextGig.id, "declined")}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
                       userRsvps[nextGig.id] === "declined"
                         ? "bg-rose-500 text-white shadow"
                         : "bg-white/5 hover:bg-rose-500/20 text-slate-300"
@@ -1214,6 +1229,11 @@ export default function MusicianPortalOverviewPage() {
                             <CheckCircle2 className="w-3 h-3" /> Confirmed In
                           </span>
                         )}
+                        {status === "probable" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-lg">
+                            <Clock className="w-3 h-3" /> Probable
+                          </span>
+                        )}
                         {status === "declined" && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
                             <XCircle className="w-3 h-3" /> Out
@@ -1231,7 +1251,7 @@ export default function MusicianPortalOverviewPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
                           disabled={isUpdatingRsvp}
@@ -1243,6 +1263,18 @@ export default function MusicianPortalOverviewPage() {
                           }`}
                         >
                           <Check className="w-3 h-3 text-emerald-400" /> In
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isUpdatingRsvp}
+                          onClick={() => handleRsvpChange(gig.id, "probable")}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            status === "probable"
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                              : "bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-300"
+                          }`}
+                        >
+                          <Clock className="w-3 h-3 text-cyan-400" /> Probable
                         </button>
                         <button
                           type="button"

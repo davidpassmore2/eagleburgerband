@@ -735,7 +735,7 @@ export default function GigsAdminStudioPage() {
             const hiCount = confData.hiatusCount || 0;
             if (count > 0) {
               toast.success(
-                `Gig confirmed! Confirmation dispatch sent to ${count} attendee(s) marked 'in'${
+                `Gig confirmed! Confirmation dispatch sent to ${count} attendee(s) (In & Probable)${
                   hiCount > 0 ? ` (${hiCount} on hiatus skipped)` : ""
                 }.`
               );

@@ -395,6 +395,8 @@ export default function PortalMonthCalendar({
                           let pillColor = "bg-sky-500/20 text-sky-300 border-sky-500/30";
                           if (rsvp === "attending")
                             pillColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+                          else if (rsvp === "probable")
+                            pillColor = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
                           else if (rsvp === "tentative")
                             pillColor = "bg-amber-500/20 text-amber-300 border-amber-500/40";
                           else if (rsvp === "declined")
@@ -434,6 +436,7 @@ export default function PortalMonthCalendar({
                           const rsvp = userRsvps[gig.id];
                           let dotColor = "bg-sky-400";
                           if (rsvp === "attending") dotColor = "bg-emerald-400";
+                          else if (rsvp === "probable") dotColor = "bg-cyan-400";
                           else if (rsvp === "tentative") dotColor = "bg-amber-400";
                           else if (rsvp === "declined") dotColor = "bg-rose-400";
 
@@ -465,6 +468,10 @@ export default function PortalMonthCalendar({
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
             <span>RSVP In</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
+            <span>Probable</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />

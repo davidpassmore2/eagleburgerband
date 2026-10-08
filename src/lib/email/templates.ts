@@ -643,7 +643,7 @@ export function renderGigConfirmedEmail(params: {
     </div>
 
     <p>Hey <strong>${musicianName}</strong>,</p>
-    <p>You are receiving this confirmation because you marked your availability as <strong>attending (in)</strong> for this performance. All upcoming call sheet revisions, logistics changes, and tunes will be dispatched to this confirmed roster.</p>
+    <p>You are receiving this confirmation because you marked your availability as <strong>attending (in)</strong> or <strong>probable</strong> for this performance. All upcoming call sheet revisions, logistics changes, and tunes will be dispatched to this confirmed roster.</p>
 
     <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin: 18px 0;">
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">

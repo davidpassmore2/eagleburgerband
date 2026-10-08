@@ -149,6 +149,9 @@ export default function SectionAttendanceAdminPage() {
       const confirmedMusicians = allRsvps.filter(
         (r) => r.sectionId === sec.id && r.status === "attending"
       );
+      const probableMusicians = allRsvps.filter(
+        (r) => r.sectionId === sec.id && r.status === "probable"
+      );
       const tentativeMusicians = allRsvps.filter(
         (r) => r.sectionId === sec.id && r.status === "tentative"
       );
@@ -157,12 +160,12 @@ export default function SectionAttendanceAdminPage() {
       );
 
       const min = sec.minRecommended || 1;
-      const count = confirmedMusicians.length;
+      const committedCount = confirmedMusicians.length + probableMusicians.length;
       let status: "met" | "warning" | "critical" = "critical";
 
-      if (count >= min) {
+      if (committedCount >= min) {
         status = "met";
-      } else if (count + tentativeMusicians.length >= min) {
+      } else if (committedCount + tentativeMusicians.length >= min) {
         status = "warning";
       }
 
@@ -170,10 +173,13 @@ export default function SectionAttendanceAdminPage() {
         section: sec,
         minRecommended: min,
         confirmed: confirmedMusicians,
+        probable: probableMusicians,
         tentative: tentativeMusicians,
         declined: declinedMusicians,
-        confirmedCount: count,
-        deficit: Math.max(0, min - count),
+        confirmedCount: confirmedMusicians.length,
+        probableCount: probableMusicians.length,
+        committedCount,
+        deficit: Math.max(0, min - committedCount),
         status,
       };
     });
@@ -406,7 +412,7 @@ export default function SectionAttendanceAdminPage() {
                   {/* Progress Quorum Bar */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-[11px] font-mono text-slate-400">
-                      <span>Confirmed: {item.confirmedCount}</span>
+                      <span>Available: {item.committedCount} ({item.confirmedCount} In{item.probableCount > 0 ? ` + ${item.probableCount} Prob` : ""})</span>
                       <span>Required: {item.minRecommended}</span>
                     </div>
                     <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
@@ -419,7 +425,7 @@ export default function SectionAttendanceAdminPage() {
                             : "bg-rose-500"
                         }`}
                         style={{
-                          width: `${Math.min(100, (item.confirmedCount / item.minRecommended) * 100)}%`,
+                          width: `${Math.min(100, (item.committedCount / item.minRecommended) * 100)}%`,
                         }}
                       />
                     </div>
@@ -430,13 +436,31 @@ export default function SectionAttendanceAdminPage() {
                     {item.confirmed.length > 0 && (
                       <div>
                         <span className="text-[10px] uppercase font-bold text-emerald-400 block mb-0.5">
-                          Confirmed ({item.confirmed.length})
+                          Confirmed In ({item.confirmed.length})
                         </span>
                         <div className="flex flex-wrap gap-1">
                           {item.confirmed.map((m) => (
                             <span
                               key={m.uid}
                               className="bg-slate-950 text-slate-300 px-2 py-0.5 rounded text-[11px] border border-slate-800"
+                            >
+                              {m.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {item.probable.length > 0 && (
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-cyan-400 block mb-0.5">
+                          Probable ({item.probable.length})
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {item.probable.map((m) => (
+                            <span
+                              key={m.uid}
+                              className="bg-slate-950 text-cyan-300 px-2 py-0.5 rounded text-[11px] border border-cyan-500/30"
                             >
                               {m.displayName}
                             </span>
@@ -481,9 +505,9 @@ export default function SectionAttendanceAdminPage() {
                       </div>
                     )}
 
-                    {item.confirmed.length === 0 && item.tentative.length === 0 && (
+                    {item.confirmed.length === 0 && item.probable.length === 0 && item.tentative.length === 0 && (
                       <div className="text-[11px] text-rose-400 italic">
-                        No musicians confirmed yet for this section.
+                        No musicians committed yet for this section.
                       </div>
                     )}
                   </div>

@@ -127,3 +127,26 @@ This guide walks through verifying the newly implemented gig availability dispat
    - Click **Send to X Musicians**.
    - Dispatches are delivered strictly to the confirmed attendee roster.
 
+---
+
+### Scenario 8: 4-State RSVP System with "Probable" Availability
+
+1. **Mark RSVP as "Probable":**
+   - On the Home Base dashboard (`/portal`), locate the Next Performance spotlight or Upcoming Gigs queue.
+   - Click the cyan **Probable** button.
+   - Observe that the RSVP status updates to `Probable` with the cyan indicator.
+2. **Review Quorum on Call Sheet Detail:**
+   - Go to `/portal/gigs/[gigId]`.
+   - Observe the headcount summary bar displays:
+     - `X Confirmed In`, `Y Probable`, `Z Tentative`, `W Out`.
+   - In the Section Breakdown cards, quorum status reflects combined available strength:
+     - `✓ Quorum Met (X/Min req incl. Y prob.)`.
+3. **Inspect Manager Section Attendance Matrix:**
+   - Go to `/admin/attendance`.
+   - Select the gig.
+   - Progress bar displays: `Available: X (A In + B Prob) / Required: Min`.
+   - Musicians are grouped under dedicated headings: `Confirmed In`, `Probable`, `Tentative`, and `Declined`.
+4. **Broadcast to Confirmed + Probable Roster:**
+   - In `/admin/dispatch`, target audience automatically counts both In and Probable performers as committed performers (`CONFIRMED ROSTER`).
+   - Dispatches reach all active non-hiatus musicians who RSVP'd either "attending" or "probable".
+

@@ -100,7 +100,8 @@ export default function CalendarSubscribeModal({ isOpen, onClose }: Props) {
         let isAttending = false;
 
         rsvpsSnap.forEach((r) => {
-          if (r.id === uid && r.data().status === "attending") {
+          const status = r.data().status;
+          if (r.id === uid && (status === "attending" || status === "probable")) {
             isAttending = true;
           }
         });

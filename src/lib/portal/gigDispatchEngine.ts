@@ -24,6 +24,8 @@ export interface AvailabilityResolutionResult {
 export interface ConfirmedResolutionResult {
   confirmedRecipients: ResolvedMusician[];
   totalAttendingCount: number;
+  totalProbableCount: number;
+  totalCommittedCount: number;
   excludedHiatusCount: number;
   hiatusMusicians: { uid: string; displayName: string }[];
 }
@@ -137,7 +139,7 @@ export async function resolveGigAvailabilityRecipients(
  * Resolves the confirmed recipient list for a confirmed gig dispatch.
  * 
  * Rules:
- * 1. Musician must have RSVP'd "attending" (in) for the gig.
+ * 1. Musician must have RSVP'd "attending" (in) or "probable" for the gig.
  * 2. Musician must NOT be on hiatus.
  * 3. Musician must have a valid email.
  */
@@ -146,19 +148,25 @@ export async function resolveGigConfirmedRecipients(
 ): Promise<ConfirmedResolutionResult> {
   const rsvpsSnap = await getDocs(collection(db, "gigs", gigId, "rsvps"));
   const attendingUids: string[] = [];
+  const probableUids: string[] = [];
+  const committedUids: string[] = [];
 
   rsvpsSnap.forEach((d) => {
     const data = d.data();
     if (data.status === "attending") {
       attendingUids.push(d.id);
+      committedUids.push(d.id);
+    } else if (data.status === "probable") {
+      probableUids.push(d.id);
+      committedUids.push(d.id);
     }
   });
 
   const confirmedRecipients: ResolvedMusician[] = [];
   const hiatusMusicians: { uid: string; displayName: string }[] = [];
 
-  // Query each attending user to verify active and non-hiatus status
-  for (const uid of attendingUids) {
+  // Query each committed user (attending or probable) to verify active and non-hiatus status
+  for (const uid of committedUids) {
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (!userDoc.exists()) continue;
@@ -192,6 +200,8 @@ export async function resolveGigConfirmedRecipients(
   return {
     confirmedRecipients,
     totalAttendingCount: attendingUids.length,
+    totalProbableCount: probableUids.length,
+    totalCommittedCount: committedUids.length,
     excludedHiatusCount: hiatusMusicians.length,
     hiatusMusicians,
   };

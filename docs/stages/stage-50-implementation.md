@@ -107,7 +107,19 @@ Created a standalone recipient resolution engine that executes server-side or cl
 ### 6. Subsequent Dispatches (`/admin/dispatch`)
 - **Dispatch Studio:**
   - `usersMap` now tracks member hiatus status in real-time.
-  - For confirmed performances, subsequent call sheet dispatches strictly filter for `status === "attending"` and exclude members on hiatus.
-  - Target Audience card explicitly displays: `CONFIRMED ROSTER: X active confirmed musicians • Y on hiatus (muted)`.
-  - Modal recipient preview displays a strikethrough and `Hiatus (Muted)` badge for any attending musician currently on hiatus.
+  - For confirmed performances, subsequent call sheet dispatches strictly filter for `status === "attending" || status === "probable"` and exclude members on hiatus.
+  - Target Audience card explicitly displays: `CONFIRMED ROSTER: X active confirmed musicians (In & Probable) • Y on hiatus (muted)`.
+  - Modal recipient preview displays a strikethrough and `Hiatus (Muted)` badge for any attending/probable musician currently on hiatus.
+
+### 7. 4-State RSVP System with "Probable" Availability (`src/lib/schema/attendance.ts`)
+- **RSVP Status Model:**
+  - `RsvpStatusEnum = z.enum(["attending", "probable", "tentative", "declined"])`.
+  - Added `"probable"` to support realistic band commitment thresholds, enabling managers to lock in gigs based on combined committed strength (**In + Probable**).
+- **Headcount & Quorum Logic:**
+  - **Quorum Assessment:** Available playing strength = `attendingCount + probableCount`. Quorum thresholds and instrument audits in `/admin/attendance`, `/portal/gigs/[gigId]`, and the Instrumentation Audit Drawer evaluate both "In" and "Probable" performers.
+  - **Confirmation Dispatch Targeting:** `resolveGigConfirmedRecipients(gigId)` includes all musicians marked `"attending"` or `"probable"` (excluding hiatus), ensuring all committed players receive confirmed call sheets and revisions.
+  - **Calendar & UI Integration:**
+    - Distinct Cyan styling for `"probable"` badges and dot markers on the monthly calendar.
+    - 4-button selector (`In`, `Probable`, `Tentative/Maybe`, `Out`) available on Home Base spotlight hero, Upcoming Gigs queue, Call Sheet detail view, and Day Events modal.
+    - Personal calendar subscription feed (`/api/calendar/[token]`) synchronizes both "In" and "Probable" performances.
 

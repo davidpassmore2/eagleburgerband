@@ -64,28 +64,30 @@ export default function MemberAnalyticsCard({
       (g) => g.status !== "cancelled" && g.status !== "completed" && g.date >= todayStr
     );
 
-    // Gigs attended
+    // Gigs attended / committed
     let attendedPastCount = 0;
+    let probablePastCount = 0;
     let declinedPastCount = 0;
     let tentativePastCount = 0;
 
     pastGigs.forEach((gig) => {
       const status = userRsvps[gig.id];
       if (status === "attending") attendedPastCount++;
+      else if (status === "probable") probablePastCount++;
       else if (status === "declined") declinedPastCount++;
       else if (status === "tentative") tentativePastCount++;
     });
 
-    // Upcoming attendance counts
+    // Upcoming attendance counts (In and Probable are confirmed commitments)
     const confirmedUpcomingCount = upcomingGigs.filter(
-      (g) => userRsvps[g.id] === "attending"
+      (g) => userRsvps[g.id] === "attending" || userRsvps[g.id] === "probable"
     ).length;
     const unansweredUpcomingCount = upcomingGigs.filter(
       (g) => !userRsvps[g.id]
     ).length;
 
     // Reliability score (based on completed past gigs with member responses)
-    const pastAnswered = attendedPastCount + declinedPastCount;
+    const pastAnswered = attendedPastCount + probablePastCount + declinedPastCount;
     const reliabilityRate =
       pastGigs.length > 0
         ? Math.round((attendedPastCount / Math.max(1, pastAnswered || pastGigs.length)) * 100)

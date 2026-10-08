@@ -336,7 +336,7 @@ function EmailSuiteContent() {
     if (audienceType === "gig_attending") {
       const attendingUids = activeGig?.rsvps
         ? Object.entries(activeGig.rsvps)
-            .filter(([, val]) => val.status === "attending")
+            .filter(([, val]) => val.status === "attending" || val.status === "probable")
             .map(([uid]) => uid)
         : [];
 
@@ -1002,7 +1002,7 @@ function EmailSuiteContent() {
                     >
                       <option value="all_band">Whole Ensemble (All {musicians.length} Musicians)</option>
                       <option value="section">Specific Instrument Section</option>
-                      <option value="gig_attending">Gig Confirmed Attending Roster</option>
+                      <option value="gig_attending">Gig Confirmed Roster (In &amp; Probable)</option>
                       <option value="individual">Single Musician (From Roster)</option>
                       <option value="crm_contact">CRM Client Contact (From Rolodex)</option>
                       <option value="direct">Direct Email Input (Prospective Recruits)</option>

@@ -298,7 +298,7 @@ export default function MusicianGigDetailPage() {
   const myRsvp = rsvps.find((r) => r.uid === firebaseUser?.uid);
 
   const handleRsvpChange = async (
-    status: "attending" | "declined" | "tentative",
+    status: "attending" | "probable" | "declined" | "tentative",
   ) => {
     if (!firebaseUser || !gigId) return;
     setIsUpdatingRsvp(true);
@@ -353,6 +353,7 @@ export default function MusicianGigDetailPage() {
   };
 
   const attendingCount = rsvps.filter((r) => r.status === "attending").length;
+  const probableCount = rsvps.filter((r) => r.status === "probable").length;
   const tentativeCount = rsvps.filter((r) => r.status === "tentative").length;
   const declinedCount = rsvps.filter((r) => r.status === "declined").length;
 
@@ -416,7 +417,7 @@ export default function MusicianGigDetailPage() {
               <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
               disabled={isUpdatingRsvp}
@@ -428,6 +429,18 @@ export default function MusicianGigDetailPage() {
               }`}
             >
               <Check className="w-3.5 h-3.5" /> In
+            </button>
+            <button
+              type="button"
+              disabled={isUpdatingRsvp}
+              onClick={() => handleRsvpChange("probable")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                myRsvp?.status === "probable"
+                  ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
+                  : "bg-slate-900 text-slate-300 hover:bg-slate-800"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" /> Probable
             </button>
             <button
               type="button"
@@ -635,10 +648,15 @@ export default function MusicianGigDetailPage() {
               Real-time headcount grouped by instrument section. Green indicators confirm the section meets minimum performance recommendations.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono shrink-0">
+          <div className="flex items-center gap-2 text-xs font-mono shrink-0 flex-wrap">
             <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
               {attendingCount} Confirmed In
             </span>
+            {probableCount > 0 && (
+              <span className="px-2.5 py-1 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
+                {probableCount} Probable
+              </span>
+            )}
             <span className="px-2.5 py-1 rounded-xl bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold">
               {tentativeCount} Tentative
             </span>
@@ -653,8 +671,10 @@ export default function MusicianGigDetailPage() {
           {(sections.length > 0 ? sections : [{ id: "general", name: "General Roster", order: 1, minRecommended: 1 } as Section]).map((sec) => {
             const sectionRsvps = rsvps.filter((r) => (r.sectionId || "").toLowerCase() === sec.id.toLowerCase());
             const secAttending = sectionRsvps.filter((r) => r.status === "attending").length;
+            const secProbable = sectionRsvps.filter((r) => r.status === "probable").length;
+            const secAvailable = secAttending + secProbable;
             const minReq = sec.minRecommended || 1;
-            const isMet = secAttending >= minReq;
+            const isMet = secAvailable >= minReq;
 
             return (
               <div 
@@ -680,7 +700,7 @@ export default function MusicianGigDetailPage() {
                           : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                       }`}
                     >
-                      {isMet ? `✓ Quorum Met (${secAttending}/${minReq} min)` : `Needs ${minReq - secAttending} more (${secAttending}/${minReq} min)`}
+                      {isMet ? `✓ Quorum Met (${secAvailable}/${minReq} min${secProbable > 0 ? ` incl. ${secProbable} prob.` : ""})` : `Needs ${minReq - secAvailable} more (${secAvailable}/${minReq} min)`}
                     </span>
                   </div>
                 </div>
@@ -710,12 +730,14 @@ export default function MusicianGigDetailPage() {
                           className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
                             rsvp.status === "attending"
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : rsvp.status === "tentative"
-                                ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
-                                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                              : rsvp.status === "probable"
+                                ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                : rsvp.status === "tentative"
+                                  ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+                                  : "bg-rose-500/10 text-rose-400 border-rose-500/20"
                           }`}
                         >
-                          {rsvp.status === "attending" ? "In" : rsvp.status === "tentative" ? "Maybe" : "Out"}
+                          {rsvp.status === "attending" ? "In" : rsvp.status === "probable" ? "Probable" : rsvp.status === "tentative" ? "Maybe" : "Out"}
                         </span>
                       </div>
                     ))}
@@ -758,12 +780,14 @@ export default function MusicianGigDetailPage() {
                         className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
                           rsvp.status === "attending"
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : rsvp.status === "tentative"
-                              ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
-                              : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                            : rsvp.status === "probable"
+                              ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                              : rsvp.status === "tentative"
+                                ? "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
+                                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
                         }`}
                       >
-                        {rsvp.status === "attending" ? "In" : rsvp.status === "tentative" ? "Maybe" : "Out"}
+                        {rsvp.status === "attending" ? "In" : rsvp.status === "probable" ? "Probable" : rsvp.status === "tentative" ? "Maybe" : "Out"}
                       </span>
                     </div>
                   ))}

@@ -194,22 +194,27 @@ export default function DispatchStudioPage() {
 
   const selectedGig = gigs.find((g) => g.id === selectedGigId);
   const attendingMusicians = useMemo(() => rsvps.filter((r) => r.status === "attending"), [rsvps]);
+  const probableMusicians = useMemo(() => rsvps.filter((r) => r.status === "probable"), [rsvps]);
+  const committedMusicians = useMemo(
+    () => rsvps.filter((r) => r.status === "attending" || r.status === "probable"),
+    [rsvps]
+  );
   const tentativeMusicians = useMemo(() => rsvps.filter((r) => r.status === "tentative"), [rsvps]);
 
-  // Filter attending musicians who are active and NOT on hiatus
+  // Filter committed musicians (In & Probable) who are active and NOT on hiatus
   const eligibleAttendingMusicians = useMemo(() => {
-    return attendingMusicians.filter((m) => {
+    return committedMusicians.filter((m) => {
       const u = usersMap[m.uid];
       if (!u) return true;
       if (u.onHiatus) return false;
       if (u.status === "inactive") return false;
       return true;
     });
-  }, [attendingMusicians, usersMap]);
+  }, [committedMusicians, usersMap]);
 
   const hiatusAttendingCount = useMemo(() => {
-    return attendingMusicians.filter((m) => usersMap[m.uid]?.onHiatus).length;
-  }, [attendingMusicians, usersMap]);
+    return committedMusicians.filter((m) => usersMap[m.uid]?.onHiatus).length;
+  }, [committedMusicians, usersMap]);
 
   const attendingMusicianEmails = useMemo(() => {
     return eligibleAttendingMusicians
@@ -389,13 +394,13 @@ Questions or late changes? Contact Band Management.`;
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={attendingMusicians.length === 0}
+            disabled={committedMusicians.length === 0}
             onClick={() => setShowEmailModal(true)}
             className="bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-yellow-400/30 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow disabled:opacity-50 cursor-pointer"
-            title="Dispatch formatted email call sheet to confirmed attendees"
+            title="Dispatch formatted email call sheet to confirmed and probable attendees"
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>Email Call Sheet ({attendingMusicians.length})</span>
+            <span>Email Call Sheet ({committedMusicians.length})</span>
           </button>
 
           <button
@@ -409,7 +414,7 @@ Questions or late changes? Contact Band Management.`;
 
           <button
             type="button"
-            disabled={sending || attendingMusicians.length === 0}
+            disabled={sending || committedMusicians.length === 0}
             onClick={handleSendDispatch}
             className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow disabled:opacity-50"
           >
@@ -467,8 +472,10 @@ Questions or late changes? Contact Band Management.`;
                   <span className="font-semibold text-slate-200 truncate block mt-0.5">{selectedGig.performanceTime || "TBD"}</span>
                 </div>
                 <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Confirmed</span>
-                  <span className="font-semibold text-emerald-400 truncate block mt-0.5">{attendingMusicians.length} Musicians</span>
+                  <span className="text-[10px] text-slate-500 uppercase block font-semibold">Committed</span>
+                  <span className="font-semibold text-emerald-400 truncate block mt-0.5">
+                    {committedMusicians.length} Musicians ({attendingMusicians.length} In{probableMusicians.length > 0 ? ` + ${probableMusicians.length} Prob` : ""})
+                  </span>
                 </div>
               </div>
             </div>
@@ -530,13 +537,13 @@ Questions or late changes? Contact Band Management.`;
                   <Users className="w-5 h-5 text-yellow-400 shrink-0" />
                   <div>
                     <div className="text-xs font-bold text-white flex items-center gap-2">
-                      <span>Target Audience: Confirmed Attendees</span>
+                      <span>Target Audience: Confirmed &amp; Probable Performers</span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                         CONFIRMED ROSTER
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-400 mt-0.5">
-                      {eligibleAttendingMusicians.length} active musicians marked attending
+                      {eligibleAttendingMusicians.length} active musicians committed ({attendingMusicians.length} in, {probableMusicians.length} probable)
                       {hiatusAttendingCount > 0 && ` • ${hiatusAttendingCount} on hiatus (muted)`}
                       {tentativeMusicians.length > 0 && ` • ${tentativeMusicians.length} tentative`}
                     </div>

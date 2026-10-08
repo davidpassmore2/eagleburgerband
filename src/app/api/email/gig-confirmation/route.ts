@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Resolve confirmed attendees marked "in", excluding members on hiatus
+    // 2. Resolve confirmed attendees marked "in" or "probable", excluding members on hiatus
     let targetEmails: string[] = [];
     let hiatusCount = 0;
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         success: true,
         recipientCount: 0,
         hiatusCount,
-        message: "No confirmed attendees marked 'in' to dispatch. Mark musicians attending to send confirmation.",
+        message: "No confirmed attendees marked 'in' or 'probable' to dispatch. Mark musicians attending or probable to send confirmation.",
       });
     }
 

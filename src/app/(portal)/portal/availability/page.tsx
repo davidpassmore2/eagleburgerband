@@ -669,7 +669,7 @@ export default function MusicianAvailabilityPage() {
               } else if (hasBlackout) {
                 cellStyle = "bg-rose-500/10 border-rose-500/30 text-rose-300";
               } else if (hasGig) {
-                const isAttending = dayGigs.some((g) => userRsvps[g.id] === "attending");
+                const isAttending = dayGigs.some((g) => userRsvps[g.id] === "attending" || userRsvps[g.id] === "probable");
                 cellStyle = isAttending
                   ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200"
                   : "bg-yellow-400/15 border-yellow-400/40 text-yellow-200";

@@ -43,7 +43,8 @@ export async function GET(
       let isAttending = false;
 
       rsvpsSnap.forEach((r) => {
-        if (r.id === uid && r.data().status === "attending") {
+        const status = r.data().status;
+        if (r.id === uid && (status === "attending" || status === "probable")) {
           isAttending = true;
         }
       });
