@@ -6,34 +6,70 @@ interface ServiceAccountCredentials {
   project_id?: string;
 }
 
-function getServiceAccountCredentials(): ServiceAccountCredentials | null {
+function getServiceAccountCredentials(): { creds: ServiceAccountCredentials | null; errorDetail?: string } {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey && !process.env.FIREBASE_CLIENT_EMAIL) {
+    return {
+      creds: null,
+      errorDetail: "Environment variable FIREBASE_SERVICE_ACCOUNT_KEY is missing. If you just added it in Vercel Settings, you must trigger a Redeploy for it to take effect.",
+    };
+  }
+
   if (serviceAccountKey) {
     try {
-      const parsed = typeof serviceAccountKey === "string" 
-        ? JSON.parse(serviceAccountKey) 
-        : serviceAccountKey;
-      if (parsed.client_email && parsed.private_key) {
+      let raw = typeof serviceAccountKey === "string" ? serviceAccountKey.trim() : "";
+      
+      // Strip outer single or double quotes (e.g. from .env copy-paste)
+      if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"'))) {
+        raw = raw.slice(1, -1).trim();
+      }
+
+      // Support base64 encoded JSON
+      if (!raw.startsWith("{") && /^[A-Za-z0-9+/=]+$/.test(raw)) {
+        try {
+          const decoded = Buffer.from(raw, "base64").toString("utf-8").trim();
+          if (decoded.startsWith("{")) raw = decoded;
+        } catch {
+          // not base64
+        }
+      }
+
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (parsed && parsed.client_email && parsed.private_key) {
         return {
-          client_email: parsed.client_email,
-          private_key: parsed.private_key,
-          project_id: parsed.project_id,
+          creds: {
+            client_email: parsed.client_email,
+            private_key: parsed.private_key.replace(/\\n/g, "\n"),
+            project_id: parsed.project_id || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          },
+        };
+      } else {
+        return {
+          creds: null,
+          errorDetail: "FIREBASE_SERVICE_ACCOUNT_KEY was found, but does not contain valid client_email and private_key fields.",
         };
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error("[deleteAuthUser] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", err);
+      return {
+        creds: null,
+        errorDetail: `FIREBASE_SERVICE_ACCOUNT_KEY JSON parse failed: ${msg}. Make sure to paste the raw JSON text without surrounding quotes.`,
+      };
     }
   }
 
   if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
     return {
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      project_id: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      creds: {
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        project_id: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      },
     };
   }
 
-  return null;
+  return { creds: null };
 }
 
 async function getGoogleAccessToken(creds: ServiceAccountCredentials): Promise<string> {
@@ -95,11 +131,11 @@ export async function deleteAuthUser(uid: string): Promise<{ success: boolean; e
     }
 
     // 2. Production / Cloud mode using Service Account
-    const creds = getServiceAccountCredentials();
+    const { creds, errorDetail } = getServiceAccountCredentials();
     if (!creds) {
       return {
         success: false,
-        error: "Firebase Service Account key not configured in environment (set FIREBASE_SERVICE_ACCOUNT_KEY in Vercel to allow authentication deletions).",
+        error: errorDetail || "Firebase Service Account key not configured in environment (set FIREBASE_SERVICE_ACCOUNT_KEY in Vercel to allow authentication deletions).",
       };
     }
 
