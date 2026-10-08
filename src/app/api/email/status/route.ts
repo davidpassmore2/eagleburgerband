@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDeliverabilityConfig } from "@/lib/email/resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const config = getDeliverabilityConfig();
+    const origin = req.headers.get("origin") || req.nextUrl?.origin;
+    const config = getDeliverabilityConfig(origin);
     return NextResponse.json({
       configured: config.hasKey,
       mocked: config.isMockMode,

@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
       directorAlertEmail,
     } = parsed.data;
 
-    const config = getDeliverabilityConfig();
+    const origin = req.headers.get("origin") || req.nextUrl?.origin;
+    const config = getDeliverabilityConfig(origin);
     const directorTarget = directorAlertEmail || "manager@eagleburgerband.org";
 
     // 1. Dispatch Client Receipt

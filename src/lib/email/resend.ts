@@ -28,13 +28,31 @@ export interface SendEmailResult {
 /**
  * Returns the current runtime deliverability configuration.
  */
-export function getDeliverabilityConfig() {
+export function getDeliverabilityConfig(reqOrigin?: string | null) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || "Eagleburger Band <onboarding@resend.dev>";
   const isEmulator = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true";
   const hasKey = Boolean(apiKey && apiKey.length > 0);
   const isMockMode = isEmulator || !hasKey;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+  // Resolve canonical application base URL:
+  // 1. Explicitly configured NEXT_PUBLIC_APP_URL (if not default localhost)
+  // 2. Caller request origin (e.g. https://beta.eagleburgerband.com)
+  // 3. Vercel production domain (VERCEL_PROJECT_PRODUCTION_URL)
+  // 4. Vercel deployment preview domain (VERCEL_URL)
+  // 5. Localhost fallback
+  let appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!appUrl || appUrl === "http://localhost:3000") {
+    if (reqOrigin && reqOrigin.startsWith("http")) {
+      appUrl = reqOrigin;
+    } else if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+      appUrl = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+    } else if (process.env.VERCEL_URL) {
+      appUrl = `https://${process.env.VERCEL_URL}`;
+    } else {
+      appUrl = "http://localhost:3000";
+    }
+  }
 
   return {
     hasKey,

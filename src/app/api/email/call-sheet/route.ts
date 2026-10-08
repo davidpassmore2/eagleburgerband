@@ -57,7 +57,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const config = getDeliverabilityConfig();
+    const origin = req.headers.get("origin") || req.nextUrl?.origin;
+    const config = getDeliverabilityConfig(origin);
 
     // 2. Render branded call sheet HTML
     const { subject, html, text } = renderCallSheetEmail({

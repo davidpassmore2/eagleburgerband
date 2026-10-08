@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = getDeliverabilityConfig();
+    const origin = req.headers.get("origin") || req.nextUrl?.origin;
+    const config = getDeliverabilityConfig(origin);
 
     // 3. Render branded HTML template
     const { subject, html, text } = renderInviteEmail({
