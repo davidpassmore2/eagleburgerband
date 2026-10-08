@@ -299,3 +299,247 @@ export function wrapInBrandedEmailHtml(innerHtml: string, subject: string): stri
 </body>
 </html>`;
 }
+
+export function renderInviteEmail(params: {
+  musicianName?: string;
+  sectionName?: string;
+  instruments?: string[];
+  notes?: string;
+  token: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const claimUrl = `${appUrl}/claim?token=${encodeURIComponent(params.token)}`;
+  const name = params.musicianName?.trim() || "Musician";
+  const subject = `Welcome to the Eagleburger Band! Complete Your Registration`;
+
+  const instrumentsList = params.instruments && params.instruments.length > 0
+    ? params.instruments.join(", ")
+    : "Band Member";
+
+  const notesHtml = params.notes?.trim()
+    ? `<div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #38bdf8;">
+        <p style="margin: 0; font-size: 13px; color: #94a3b8;"><strong>Note from Band Management:</strong></p>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #f8fafc;">${params.notes}</p>
+      </div>`
+    : "";
+
+  const innerHtml = `
+    <h2>Welcome to the Eagleburger Band!</h2>
+    <p>Hey <strong>${name}</strong>,</p>
+    <p>You have been officially invited to join the <strong>Eagleburger Band</strong>! Our brass and percussion sections are thrilled to have your sound on the street with us.</p>
+    
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        ${params.sectionName ? `<tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8; width: 120px;"><strong>Section:</strong></td><td style="padding: 6px 0; color: #f59e0b; font-weight: bold;">${params.sectionName}</td></tr>` : ""}
+        <tr><td style="padding: 6px 0; color: #94a3b8; width: 120px;"><strong>Instrument(s):</strong></td><td style="padding: 6px 0; color: #f8fafc;">${instrumentsList}</td></tr>
+      </table>
+    </div>
+
+    ${notesHtml}
+
+    <p style="margin: 20px 0 10px 0; font-size: 14px; color: #cbd5e1;">Click below to activate your account and access the Musician Portal, Music Vault, and Gig Call Sheets:</p>
+    
+    <p style="text-align: center; margin: 24px 0;">
+      <a href="${claimUrl}" style="background-color: #f59e0b; color: #020617; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 15px; display: inline-block; letter-spacing: 0.02em; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+        Claim Your Spot & Activate Account &rarr;
+      </a>
+    </p>
+
+    <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; line-height: 1.5;">
+      If the button above does not work, copy and paste this link into your browser:<br />
+      <a href="${claimUrl}" style="color: #38bdf8; word-break: break-all;">${claimUrl}</a>
+    </p>
+    <p style="margin-top: 20px;">See you on the street!<br /><strong>The Eagleburger Band Directors & Section Leads</strong></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `Welcome to the Eagleburger Band!\n\nHey ${name},\n\nYou have been officially invited to join the Eagleburger Band!\nSection: ${params.sectionName || "General"}\nInstrument(s): ${instrumentsList}\n\nActivate your account by visiting:\n${claimUrl}\n\nSee you on the street!\nThe Eagleburger Band Directors`;
+
+  return { subject, html, text };
+}
+
+export function renderCallSheetEmail(params: {
+  gigId: string;
+  gigTitle: string;
+  date: string;
+  callTime?: string;
+  downbeat?: string;
+  venue?: string;
+  address?: string;
+  attire?: string;
+  notes?: string;
+  setlistUrl?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const portalGigUrl = `${appUrl}/portal/perform/${params.gigId}`;
+  const subject = `Call Sheet: ${params.gigTitle} — ${params.date}`;
+
+  const innerHtml = `
+    <h2>Performance Call Sheet: ${params.gigTitle}</h2>
+    <p>Hey Musicians,</p>
+    <p>Here are the finalized logistics for our upcoming appearance at <strong>${params.gigTitle}</strong> on <strong>${params.date}</strong>.</p>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin: 18px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8; width: 140px;"><strong>Date:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc; font-weight: bold;">${params.date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Call Time:</strong></td>
+          <td style="padding: 8px 0; color: #f59e0b; font-weight: bold; font-size: 15px;">${params.callTime || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Downbeat:</strong></td>
+          <td style="padding: 8px 0; color: #10b981; font-weight: bold;">${params.downbeat || "TBD"}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Venue:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc;">${params.venue || "TBD"}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Staging / Address:</strong></td>
+          <td style="padding: 8px 0; color: #cbd5e1;">${params.address || "See portal for GPS coordinates"}</td>
+        </tr>
+      </table>
+    </div>
+
+    ${params.attire ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; font-size: 13px; color: #f59e0b;"><strong>Attire Guidelines:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #cbd5e1;">${params.attire}</p>
+    </div>` : ""}
+
+    ${params.notes ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 13px; color: #94a3b8;"><strong>Special Instructions:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #e2e8f0;">${params.notes}</p>
+    </div>` : ""}
+
+    <p style="text-align: center; margin: 26px 0;">
+      <a href="${portalGigUrl}" style="background-color: #f59e0b; color: #020617; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        View Live Call Sheet & Setlist &rarr;
+      </a>
+    </p>
+    <p>Arrive on time, warmed up, and ready to play!<br /><strong>Gig Operations & Stage Managers</strong></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `Call Sheet: ${params.gigTitle}\nDate: ${params.date}\nCall Time: ${params.callTime || "TBD"}\nDownbeat: ${params.downbeat || "TBD"}\nVenue: ${params.venue || ""}\nAddress: ${params.address || ""}\n\nView details: ${portalGigUrl}`;
+
+  return { subject, html, text };
+}
+
+export function renderBookingClientReceipt(params: {
+  clientName: string;
+  eventTitle: string;
+  date?: string;
+  venue?: string;
+  budget?: string | number;
+  message?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Booking Inquiry Confirmation: ${params.eventTitle} — The Eagleburger Band`;
+
+  const innerHtml = `
+    <h2>We Received Your Booking Inquiry!</h2>
+    <p>Dear <strong>${params.clientName}</strong>,</p>
+    <p>Thank you for reaching out to the <strong>Eagleburger Band</strong>! We have received your performance inquiry and our booking coordinators are reviewing our schedule and instrumentation availability.</p>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #f59e0b; font-size: 14px;">Inquiry Summary:</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8; width: 130px;"><strong>Event:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.eventTitle}</td></tr>
+        ${params.date ? `<tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Requested Date:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.date}</td></tr>` : ""}
+        ${params.venue ? `<tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Location/Venue:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.venue}</td></tr>` : ""}
+        ${params.budget ? `<tr><td style="padding: 6px 0; color: #94a3b8;"><strong>Target Budget:</strong></td><td style="padding: 6px 0; color: #10b981;">$${params.budget}</td></tr>` : ""}
+      </table>
+    </div>
+
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #38bdf8;">
+      <p style="margin: 0; font-size: 13px; color: #f8fafc;"><strong>What Happens Next?</strong></p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; color: #cbd5e1;">
+        Our management team will get back to you within 24 to 48 business hours to discuss logistics, performance format, and pricing options. If you have any additional details or date changes in the meantime, simply reply directly to this email.
+      </p>
+    </div>
+
+    <p>We look forward to bringing high-energy street brass to your event!</p>
+    <p>Warm regards,<br /><strong>The Eagleburger Band Management Team</strong><br /><span style="font-size: 12px; color: #94a3b8;">manager@eagleburgerband.org</span></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `Booking Inquiry Confirmation: ${params.eventTitle}\n\nDear ${params.clientName},\n\nThank you for reaching out to the Eagleburger Band! We have received your performance inquiry and will follow up shortly.\n\nEvent: ${params.eventTitle}\nDate: ${params.date || "TBD"}\nVenue: ${params.venue || "TBD"}\n\nBest regards,\nThe Eagleburger Band Management`;
+
+  return { subject, html, text };
+}
+
+export function renderBookingDirectorAlert(params: {
+  clientName: string;
+  clientEmail: string;
+  phone?: string;
+  eventTitle: string;
+  date?: string;
+  venue?: string;
+  budget?: string | number;
+  message?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const inquiriesUrl = `${appUrl}/admin/inquiries`;
+  const subject = `🚨 New Booking Inquiry: ${params.eventTitle} (${params.clientName})`;
+
+  const innerHtml = `
+    <div style="background-color: rgba(245, 158, 11, 0.1); border: 2px solid #f59e0b; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+      <h2 style="margin: 0 0 4px 0; color: #f59e0b; font-size: 16px;">New Public Booking Lead Received</h2>
+      <p style="margin: 0; font-size: 13px; color: #fde68a;">A client submitted a new booking request via the public website.</p>
+    </div>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 16px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #ffffff; font-size: 14px;">Client Details:</h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8; width: 130px;"><strong>Client Name:</strong></td><td style="padding: 6px 0; color: #f8fafc; font-weight: bold;">${params.clientName}</td></tr>
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Email:</strong></td><td style="padding: 6px 0;"><a href="mailto:${params.clientEmail}" style="color: #38bdf8;">${params.clientEmail}</a></td></tr>
+        ${params.phone ? `<tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Phone:</strong></td><td style="padding: 6px 0; color: #f8fafc;"><a href="tel:${params.phone}" style="color: #38bdf8;">${params.phone}</a></td></tr>` : ""}
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Event:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.eventTitle}</td></tr>
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Date:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.date || "Not specified"}</td></tr>
+        <tr style="border-bottom: 1px solid #334155;"><td style="padding: 6px 0; color: #94a3b8;"><strong>Venue:</strong></td><td style="padding: 6px 0; color: #f8fafc;">${params.venue || "Not specified"}</td></tr>
+        <tr><td style="padding: 6px 0; color: #94a3b8;"><strong>Budget:</strong></td><td style="padding: 6px 0; color: #10b981;">${params.budget ? `$${params.budget}` : "Not provided"}</td></tr>
+      </table>
+    </div>
+
+    ${params.message ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 13px; color: #94a3b8;"><strong>Client Notes:</strong></p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; color: #e2e8f0; white-space: pre-wrap;">${params.message}</p>
+    </div>` : ""}
+
+    <p style="text-align: center; margin: 24px 0;">
+      <a href="${inquiriesUrl}" style="background-color: #f59e0b; color: #020617; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        Review Lead in Admin Portal &rarr;
+      </a>
+    </p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `New Booking Inquiry: ${params.eventTitle}\nClient: ${params.clientName} (${params.clientEmail}, ${params.phone || "No phone"})\nDate: ${params.date || "TBD"}\nVenue: ${params.venue || "TBD"}\nBudget: ${params.budget || "N/A"}\nMessage: ${params.message || ""}\n\nReview in portal: ${inquiriesUrl}`;
+
+  return { subject, html, text };
+}
+
+export function renderBroadcastEmail(params: {
+  subject: string;
+  htmlContent: string;
+  recipientName?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const recipientName = params.recipientName || "Musician";
+  const processedHtml = interpolateEmailVariables(params.htmlContent, {
+    recipient_name: recipientName,
+  });
+  const html = wrapInBrandedEmailHtml(processedHtml, params.subject);
+  const text = processedHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return { subject: params.subject, html, text };
+}
+

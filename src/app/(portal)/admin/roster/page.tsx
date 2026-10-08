@@ -22,6 +22,7 @@ import {
   RotateCcw, 
   Search, 
   Sparkles,
+  Loader2,
   X
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
@@ -85,6 +86,7 @@ export default function RosterAdminPage() {
     token: string;
     link: string;
   } | null>(null);
+  const [sendingInviteToken, setSendingInviteToken] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
@@ -233,6 +235,57 @@ export default function RosterAdminPage() {
     toast.success(`Claim link for ${inv.displayName || inv.email} copied to clipboard!`);
   };
 
+  const handleSendInviteEmail = async (inv: {
+    token: string;
+    email: string;
+    displayName?: string;
+    name?: string;
+    sectionId?: string | null;
+    instruments?: string[];
+    notes?: string;
+  }) => {
+    const token = inv.token;
+    const recipientEmail = inv.email;
+    const musicianName = inv.displayName || inv.name || "";
+    const sectionName = inv.sectionId
+      ? sections.find((s) => s.id === inv.sectionId)?.name || inv.sectionId
+      : "";
+    const instruments = Array.isArray(inv.instruments) ? inv.instruments : [];
+    const notes = inv.notes || "";
+
+    setSendingInviteToken(token);
+    try {
+      const res = await fetch("/api/email/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          recipientEmail,
+          musicianName,
+          sectionName,
+          instruments,
+          notes,
+          actorUid: profile?.uid,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to dispatch invitation email");
+      }
+
+      if (data.mocked) {
+        toast.success(`[Mock] Invitation email generated for ${recipientEmail}`);
+      } else {
+        toast.success(`Invitation email delivered to ${recipientEmail}`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSendingInviteToken(null);
+    }
+  };
+
   const handleRevokeInvite = async (inv: Invite) => {
     try {
       await updateDoc(doc(db, "invites", inv.token), {
@@ -346,12 +399,23 @@ export default function RosterAdminPage() {
             >
               <Copy className="w-3.5 h-3.5" /> Copy Link
             </button>
-            <Link
-              href={`/admin/notifications?template=member_invite&email=${encodeURIComponent(lastCreatedInvite.email)}&name=${encodeURIComponent(lastCreatedInvite.name)}&token=${encodeURIComponent(lastCreatedInvite.token)}`}
-              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition shadow"
+            <button
+              type="button"
+              disabled={sendingInviteToken === lastCreatedInvite.token}
+              onClick={() => handleSendInviteEmail({
+                token: lastCreatedInvite.token,
+                email: lastCreatedInvite.email,
+                displayName: lastCreatedInvite.name,
+              })}
+              className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition shadow disabled:opacity-50 cursor-pointer"
             >
-              <Mail className="w-3.5 h-3.5" /> Email Invitation
-            </Link>
+              {sendingInviteToken === lastCreatedInvite.token ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Mail className="w-3.5 h-3.5" />
+              )}
+              <span>Send Invitation Email</span>
+            </button>
           </div>
         </div>
       )}
@@ -614,6 +678,14 @@ export default function RosterAdminPage() {
                         {/* Timeline */}
                         <td className="p-4 text-[11px] text-slate-400 space-y-0.5">
                           <div>Issued: <span className="text-slate-300">{formatTimestamp(inv.createdAt)}</span></div>
+                          {inv.lastEmailSentAt ? (
+                            <div className="text-amber-400 flex items-center gap-1 font-medium">
+                              <Mail className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span>Sent: {formatTimestamp(inv.lastEmailSentAt)}</span>
+                            </div>
+                          ) : (
+                            <div className="text-slate-500 italic">Email: Not sent</div>
+                          )}
                           {inv.status === "claimed" && inv.claimedAt && (
                             <div className="text-emerald-400">
                               Claimed: <span>{formatTimestamp(inv.claimedAt)}</span>
@@ -633,21 +705,27 @@ export default function RosterAdminPage() {
                               <>
                                 <button
                                   type="button"
+                                  disabled={sendingInviteToken === inv.token}
+                                  onClick={() => handleSendInviteEmail(inv)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                  title="Dispatch official invitation email"
+                                >
+                                  {sendingInviteToken === inv.token ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Mail className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>{inv.lastEmailSentAt ? "Resend" : "Send Email"}</span>
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => handleCopyInviteLink(inv)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 text-xs font-semibold transition cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer"
                                   title="Copy Onboarding Claim Link"
                                 >
                                   <Copy className="w-3.5 h-3.5" />
-                                  <span>Copy Link</span>
+                                  <span>Link</span>
                                 </button>
-                                <Link
-                                  href={`/admin/notifications?template=member_invite&email=${encodeURIComponent(inv.email)}&name=${encodeURIComponent(inv.displayName)}&token=${encodeURIComponent(inv.token)}`}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
-                                  title="Compose Email Notification"
-                                >
-                                  <Mail className="w-3.5 h-3.5" />
-                                  <span>Email</span>
-                                </Link>
                                 <button
                                   type="button"
                                   onClick={() => handleRevokeInvite(inv)}

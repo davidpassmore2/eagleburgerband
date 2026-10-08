@@ -42,6 +42,10 @@ export const EmailLogSchema = z.object({
   relatedEntityId: z.string().nullable().default(null),
   relatedEntityType: z.enum(["gig", "contact", "invite", "general"]).default("general"),
   status: z.enum(["delivered", "simulated", "queued"]).default("delivered"),
+  provider: z.enum(["resend", "mock"]).default("mock"),
+  providerMessageId: z.string().nullable().default(null),
+  deliveryStatus: z.enum(["queued", "sent", "delivered", "failed", "mocked"]).default("delivered"),
+  errorMessage: z.string().nullable().default(null),
   sentAt: z.string().default(() => new Date().toISOString()),
 });
 

@@ -47,7 +47,12 @@ import {
   Check,
   MessageSquare,
   AlertTriangle,
-  Phone
+  Phone,
+  ShieldCheck,
+  Globe,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from "lucide-react";
 
 type TargetAudience = "all_band" | "section" | "gig_attending" | "individual" | "crm_contact" | "direct";
@@ -145,6 +150,23 @@ function EmailSuiteContent() {
   const [logSearchQuery, setLogSearchQuery] = useState<string>("");
   const [logFilterTemplate, setLogFilterTemplate] = useState<string>("all");
   const [logFilterChannel, setLogFilterChannel] = useState<string>("all");
+
+  // Deliverability Health & Provider Configuration
+  const [deliverability, setDeliverability] = useState<{
+    configured: boolean;
+    mocked: boolean;
+    isEmulator: boolean;
+    fromEmail: string;
+    appUrl: string;
+  } | null>(null);
+  const [showDnsHelp, setShowDnsHelp] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetch("/api/email/status")
+      .then((res) => res.json())
+      .then((data) => setDeliverability(data))
+      .catch((err) => console.warn("Failed to query deliverability status:", err));
+  }, []);
 
   // Realtime listeners
   useEffect(() => {
@@ -539,6 +561,10 @@ function EmailSuiteContent() {
       relatedEntityId: selectedGigId || selectedContactId || inviteToken || null,
       relatedEntityType: selectedGigId ? "gig" : selectedContactId ? "contact" : inviteToken ? "invite" : "general",
       status: "delivered",
+      provider: deliverability?.configured ? "resend" : "mock",
+      providerMessageId: null,
+      deliveryStatus: "delivered",
+      errorMessage: null,
       sentAt: new Date().toISOString(),
     };
 
@@ -563,6 +589,36 @@ function EmailSuiteContent() {
         });
       } catch (legacyErr) {
         console.warn("Notice: optional legacy notification_logs sync:", legacyErr);
+      }
+
+      // Outbound Transactional Email Dispatch via Resend Engine
+      if (selectedChannel === "email" || selectedChannel === "both") {
+        const emailRecipients = resolvedRecipients
+          .map((r) => r.email)
+          .filter((em) => Boolean(em && em.includes("@")));
+
+        if (emailRecipients.length > 0) {
+          try {
+            await fetch("/api/email/broadcast", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                subject: effectiveSubject,
+                htmlBody: htmlBody.trim(),
+                recipientEmails: emailRecipients,
+                channel: selectedChannel,
+                senderUid: profile?.uid || "",
+                senderName: profile?.displayName || "Eagleburger Administrator",
+                senderEmail: profile?.email || "",
+                templateType: selectedTemplate,
+                relatedEntityId: selectedGigId || selectedContactId || inviteToken || null,
+                relatedEntityType: selectedGigId ? "gig" : selectedContactId ? "contact" : inviteToken ? "invite" : "general",
+              }),
+            });
+          } catch (dispatchErr) {
+            console.warn("Resend email broadcast dispatch notice:", dispatchErr);
+          }
+        }
       }
 
       const channelLabel =
@@ -683,6 +739,81 @@ function EmailSuiteContent() {
             <History className="w-3.5 h-3.5" /> Delivery Logs ({emailLogs.length})
           </button>
         </div>
+      </div>
+
+      {/* Deliverability & Provider Health Banner */}
+      <div 
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-4 shadow-sm space-y-3"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl shrink-0 ${deliverability?.configured ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-300 border border-amber-500/20"}`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-white">Deliverability Engine Status</span>
+                {deliverability ? (
+                  deliverability.configured ? (
+                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      ● Resend Live Active
+                    </span>
+                  ) : (
+                    <span className="bg-amber-400/10 text-amber-300 border border-amber-400/20 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      ● Simulated / Emulator Mock
+                    </span>
+                  )
+                ) : (
+                  <span className="text-slate-400 text-xs">Checking...</span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Outbound From Address: <span className="text-slate-200 font-mono">{deliverability?.fromEmail || "Eagleburger Band <onboarding@resend.dev>"}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDnsHelp(!showDnsHelp)}
+              className="text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-yellow-400" />
+              <span>Domain Verification & DNS</span>
+              {showDnsHelp ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        {showDnsHelp && (
+          <div className="pt-3 border-t border-slate-800 text-xs text-slate-300 space-y-2 bg-slate-950/40 p-3 rounded-xl">
+            <div className="flex items-center gap-1.5 font-bold text-yellow-400">
+              <Info className="w-4 h-4" /> Custom Domain Authentication (SPF, DKIM, DMARC)
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              To send from a custom domain like <code className="text-amber-300">manager@eagleburgerband.org</code> with 100% inbox delivery and no spam filtering, add your domain in the Resend dashboard and create the provided DNS records:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+              <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg">
+                <span className="text-yellow-400 font-bold block">1. DKIM (TXT)</span>
+                <span className="text-slate-400 break-all">resend._domainkey &bull; p=...</span>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg">
+                <span className="text-yellow-400 font-bold block">2. SPF (TXT)</span>
+                <span className="text-slate-400 break-all">v=spf1 include:resend.com ~all</span>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-2 rounded-lg">
+                <span className="text-yellow-400 font-bold block">3. DMARC (TXT)</span>
+                <span className="text-slate-400 break-all">_dmarc &bull; v=DMARC1; p=none</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 pt-1">
+              Currently using test sender <code className="text-slate-400">{deliverability?.fromEmail}</code>. When deployed to Vercel, configure <code className="text-slate-400">RESEND_API_KEY</code> and <code className="text-slate-400">RESEND_FROM_EMAIL</code> in Project Settings.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Success Notification Alert */}

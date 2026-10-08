@@ -515,8 +515,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const re = reloadErr as { code?: string };
                 if (re.code === "auth/user-not-found" || re.code === "auth/user-disabled") {
                   console.warn("[Auth] Account was purged from Firebase Auth. Signing out.");
-                  await signOut();
+                  try {
+                    sessionStorage.removeItem("ebb_emulated_roles");
+                    sessionStorage.removeItem("ebb_persona_name");
+                    sessionStorage.removeItem("ebb_persona_section");
+                  } catch {
+                    // Ignore
+                  }
+                  setEmulatedRoles(null);
+                  await firebaseSignOut(auth);
                   setRawProfile(null);
+                  setFirebaseUser(null);
                   setLoading(false);
                   return;
                 }

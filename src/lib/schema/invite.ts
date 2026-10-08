@@ -17,6 +17,7 @@ export const InviteSchema = z.object({
   claimedAt: z.string().nullable().default(null),
   claimedByUid: z.string().nullable().default(null),
   revokedAt: z.string().nullable().default(null),
+  lastEmailSentAt: z.string().nullable().default(null),
 });
 
 export type Invite = z.infer<typeof InviteSchema>;

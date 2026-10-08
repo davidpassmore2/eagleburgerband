@@ -182,6 +182,28 @@ export default function BookingFormSection({
         addDoc(collection(db, "booking_leads"), leadPayload),
       ]);
 
+      // 8. Trigger Automated Client Confirmation Receipt & Director Alert
+      try {
+        fetch("/api/email/booking-receipt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientName: sanitizedClientName,
+            clientEmail: sanitizedEmail,
+            eventTitle: sanitizedEventTitle,
+            date: sanitizedDate,
+            venue: sanitizedVenue || sanitizedVenueAddress || "TBD",
+            budget: validData.budget ? Number(validData.budget) : "",
+            message: sanitizedMessage || "",
+            phone: sanitizedPhone || "",
+          }),
+        }).catch((emailErr) => {
+          console.warn("Background booking receipt dispatch notice:", emailErr);
+        });
+      } catch (e) {
+        console.warn("Could not fire booking receipt fetch:", e);
+      }
+
       // Record rate limit timestamp
       try {
         sessionStorage.setItem("ebb_last_booking_submit", Date.now().toString());

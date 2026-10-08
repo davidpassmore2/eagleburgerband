@@ -61,6 +61,9 @@ export default function DispatchStudioPage() {
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [usersMap, setUsersMap] = useState<Record<string, { email: string; displayName: string }>>({});
 
   // Event List Search & Filter State
   const [eventSearch, setEventSearch] = useState("");
@@ -71,6 +74,24 @@ export default function DispatchStudioPage() {
   const [uniformBrief, setUniformBrief] = useState("Eagleburger black t-shirt, dark trousers/jeans, comfortable brass marching shoes.");
   const [callTimeBrief, setCallTimeBrief] = useState("Call time: 45 min before downbeat for warm-up and chart run-through.");
   const [logisticsBrief, setLogisticsBrief] = useState("Instrument trunk staging near loading dock. Street parking available on side streets.");
+
+  // Listen to Users to resolve emails for confirmed musicians
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "users"), (snap) => {
+      const map: Record<string, { email: string; displayName: string }> = {};
+      snap.forEach((d) => {
+        const u = d.data();
+        if (u.email) {
+          map[d.id] = {
+            email: u.email,
+            displayName: u.displayName || u.name || "Musician",
+          };
+        }
+      });
+      setUsersMap(map);
+    });
+    return () => unsub();
+  }, []);
 
   // 1. Listen to Gigs
   useEffect(() => {
@@ -169,6 +190,12 @@ export default function DispatchStudioPage() {
   const selectedGig = gigs.find((g) => g.id === selectedGigId);
   const attendingMusicians = useMemo(() => rsvps.filter((r) => r.status === "attending"), [rsvps]);
   const tentativeMusicians = useMemo(() => rsvps.filter((r) => r.status === "tentative"), [rsvps]);
+
+  const attendingMusicianEmails = useMemo(() => {
+    return attendingMusicians
+      .map((m) => usersMap[m.uid]?.email)
+      .filter((em): em is string => Boolean(em && em.includes("@")));
+  }, [attendingMusicians, usersMap]);
 
   // Filtered & Sorted Gigs for the right-hand column selector
   const filteredGigs = useMemo(() => {
@@ -279,6 +306,47 @@ Questions or late changes? Contact Band Management.`;
     }
   };
 
+  const handleSendEmailCallSheet = async () => {
+    if (!selectedGig || attendingMusicianEmails.length === 0) return;
+    setEmailSending(true);
+    try {
+      const res = await fetch("/api/email/call-sheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: selectedGig.id,
+          gigTitle: selectedGig.title,
+          date: selectedGig.date,
+          callTime: selectedGig.callTime || callTimeBrief || "TBD",
+          downbeat: selectedGig.performanceTime || "TBD",
+          venue: selectedGig.venue || "TBD",
+          address: selectedGig.locationDetails || logisticsBrief || "",
+          attire: uniformBrief,
+          notes: logisticsBrief,
+          setlistUrl: `/portal/perform/${selectedGig.id}`,
+          recipientEmails: attendingMusicianEmails,
+          actorUid: profile?.uid,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to dispatch call sheet emails");
+      }
+
+      if (data.mocked) {
+        toast.success(`[Mock] Email call sheet simulated for ${attendingMusicianEmails.length} attendees.`);
+      } else {
+        toast.success(`Email call sheet sent to ${attendingMusicianEmails.length} musicians!`);
+      }
+      setShowEmailModal(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Banner */}
@@ -299,13 +367,16 @@ Questions or late changes? Contact Band Management.`;
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/admin/notifications?template=gig_details&gigId=${selectedGigId}`}
-            className="bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-yellow-400/30 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow"
+          <button
+            type="button"
+            disabled={attendingMusicians.length === 0}
+            onClick={() => setShowEmailModal(true)}
+            className="bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-yellow-400/30 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow disabled:opacity-50 cursor-pointer"
+            title="Dispatch formatted email call sheet to confirmed attendees"
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>Email Call Sheet</span>
-          </Link>
+            <span>Email Call Sheet ({attendingMusicians.length})</span>
+          </button>
 
           <button
             type="button"
@@ -621,6 +692,82 @@ Questions or late changes? Contact Band Management.`;
           </div>
         </div>
       </div>
+
+      {/* Email Call Sheet Modal */}
+      {showEmailModal && selectedGig && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Mail className="w-4 h-4 text-yellow-400" />
+                <span>Email Call Sheet to Confirmed Attendees</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEmailModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                <div className="font-bold text-white text-sm">{selectedGig.title}</div>
+                <div className="text-slate-400 flex items-center gap-2">
+                  <span>📅 {selectedGig.date}</span>
+                  <span>📍 {selectedGig.venue || "Venue TBD"}</span>
+                </div>
+                <div className="text-yellow-400 font-mono text-[11px] pt-1">
+                  Call: {selectedGig.callTime || "TBD"} &bull; Downbeat: {selectedGig.performanceTime || "TBD"}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1 uppercase text-[10px]">
+                  Recipients ({attendingMusicianEmails.length} with verified emails)
+                </label>
+                <div className="max-h-32 overflow-y-auto bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1 font-mono text-[11px]">
+                  {attendingMusicians.map((m) => {
+                    const email = usersMap[m.uid]?.email;
+                    return (
+                      <div key={m.uid} className="flex items-center justify-between">
+                        <span className="text-white">{m.displayName}</span>
+                        <span className={email ? "text-slate-400" : "text-rose-400"}>
+                          {email || "No email on profile"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 p-2.5 rounded-xl text-[11px] leading-relaxed">
+                ℹ️ Each confirmed musician will receive a branded HTML call sheet with staging directions, attire instructions, downbeat times, and a one-click link to the Music Vault repertoire.
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowEmailModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={emailSending || attendingMusicianEmails.length === 0}
+                onClick={handleSendEmailCallSheet}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow disabled:opacity-50 cursor-pointer"
+              >
+                {emailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>{emailSending ? "Sending Call Sheets..." : `Send to ${attendingMusicianEmails.length} Musicians`}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
