@@ -16,47 +16,57 @@ function getServiceAccountCredentials(): { creds: ServiceAccountCredentials | nu
   }
 
   if (serviceAccountKey) {
+    let raw = typeof serviceAccountKey === "string" ? serviceAccountKey.trim() : "";
+    
+    // Strip outer single or double quotes (e.g. from .env copy-paste)
+    if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"'))) {
+      raw = raw.slice(1, -1).trim();
+    }
+
+    // Support base64 encoded JSON
+    if (!raw.startsWith("{") && /^[A-Za-z0-9+/=]+$/.test(raw)) {
+      try {
+        const decoded = Buffer.from(raw, "base64").toString("utf-8").trim();
+        if (decoded.startsWith("{")) raw = decoded;
+      } catch {
+        // not base64
+      }
+    }
+
     try {
-      let raw = typeof serviceAccountKey === "string" ? serviceAccountKey.trim() : "";
-      
-      // Strip outer single or double quotes (e.g. from .env copy-paste)
-      if ((raw.startsWith("'") && raw.endsWith("'")) || (raw.startsWith('"') && raw.endsWith('"'))) {
-        raw = raw.slice(1, -1).trim();
-      }
-
-      // Support base64 encoded JSON
-      if (!raw.startsWith("{") && /^[A-Za-z0-9+/=]+$/.test(raw)) {
-        try {
-          const decoded = Buffer.from(raw, "base64").toString("utf-8").trim();
-          if (decoded.startsWith("{")) raw = decoded;
-        } catch {
-          // not base64
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (parsed && parsed.client_email && parsed.private_key) {
+          return {
+            creds: {
+              client_email: parsed.client_email,
+              private_key: parsed.private_key.replace(/\\n/g, "\n"),
+              project_id: parsed.project_id || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            },
+          };
         }
-      }
+      } catch (jsonErr) {
+        // Fallback: If JSON.parse fails due to raw unescaped newlines in private_key, extract via regex
+        const emailMatch = raw.match(/["']?client_email["']?\s*[:=]\s*["']([^"']+)["']/i);
+        const projMatch = raw.match(/["']?project_id["']?\s*[:=]\s*["']([^"']+)["']/i);
+        const keyMatch = raw.match(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/);
 
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      if (parsed && parsed.client_email && parsed.private_key) {
-        return {
-          creds: {
-            client_email: parsed.client_email,
-            private_key: parsed.private_key.replace(/\\n/g, "\n"),
-            project_id: parsed.project_id || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          },
-        };
-      } else {
+        if (emailMatch && keyMatch) {
+          return {
+            creds: {
+              client_email: emailMatch[1].trim(),
+              private_key: keyMatch[0].replace(/\\n/g, "\n").trim(),
+              project_id: projMatch ? projMatch[1].trim() : process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            },
+          };
+        }
+
+        const msg = jsonErr instanceof Error ? jsonErr.message : String(jsonErr);
+        console.error("[deleteAuthUser] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", jsonErr);
         return {
           creds: null,
-          errorDetail: "FIREBASE_SERVICE_ACCOUNT_KEY was found, but does not contain valid client_email and private_key fields.",
+          errorDetail: `FIREBASE_SERVICE_ACCOUNT_KEY JSON parse failed: ${msg}. Make sure to paste the raw JSON text without surrounding quotes.`,
         };
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[deleteAuthUser] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", err);
-      return {
-        creds: null,
-        errorDetail: `FIREBASE_SERVICE_ACCOUNT_KEY JSON parse failed: ${msg}. Make sure to paste the raw JSON text without surrounding quotes.`,
-      };
-    }
   }
 
   if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
