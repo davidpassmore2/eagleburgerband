@@ -14,13 +14,15 @@ import { Sparkles, Info, AlertTriangle, X, ArrowRight } from "lucide-react";
 const emptySubscribe = () => () => {};
 
 export default function PublicAnnouncementBanner() {
-  const [banner, setBanner] = useState<AnnouncementBanner | null>(DEFAULT_ANNOUNCEMENT_BANNER);
+  const [banner, setBanner] = useState<AnnouncementBanner | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [userDismissed, setUserDismissed] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(
       doc(db, "site_navigation", "config"),
       (snap) => {
+        setIsLoaded(true);
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success && parsed.data.announcementBanner) {
@@ -28,11 +30,12 @@ export default function PublicAnnouncementBanner() {
             return;
           }
         }
-        setBanner(DEFAULT_ANNOUNCEMENT_BANNER);
+        setBanner(null);
       },
       (err) => {
         console.warn("Announcement banner subscription notice:", err);
-        setBanner(DEFAULT_ANNOUNCEMENT_BANNER);
+        setIsLoaded(true);
+        setBanner(null);
       }
     );
 
@@ -57,7 +60,7 @@ export default function PublicAnnouncementBanner() {
     () => false
   );
 
-  if (!banner || !banner.enabled || !banner.message?.trim() || userDismissed || isSessionDismissed) {
+  if (!isLoaded || !banner || !banner.enabled || !banner.message?.trim() || userDismissed || isSessionDismissed) {
     return null;
   }
 

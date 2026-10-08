@@ -10,6 +10,7 @@ import {
   limit,
   onSnapshot,
   getDocs,
+  getDoc,
   doc,
   setDoc,
 } from "firebase/firestore";
@@ -103,6 +104,7 @@ export default function MusicianPortalOverviewPage() {
   const [tuneCount, setTuneCount] = useState<number | null>(null);
   const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
   const [loadingGigs, setLoadingGigs] = useState(true);
+  const [loadingRsvps, setLoadingRsvps] = useState(true);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
@@ -223,29 +225,56 @@ export default function MusicianPortalOverviewPage() {
   }, [profile?.uid, profile?.sectionId, profile?.roles]);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.uid) return;
+
+    if (gigs.length === 0) {
+      if (!loadingGigs) {
+        setLoadingRsvps(false);
+      }
+      return;
+    }
+
+    let isSubscribed = true;
 
     const fetchUserRsvps = async () => {
-      const map: Record<string, AttendanceStatus> = {};
-      for (const gig of gigs) {
-        try {
-          const rsvpDocSnap = await getDocs(collection(db, "gigs", gig.id, "rsvps"));
-          rsvpDocSnap.forEach((docSnap) => {
-            if (docSnap.id === profile.uid) {
-              map[gig.id] = (docSnap.data().status as AttendanceStatus) || "tentative";
+      try {
+        const entries = await Promise.all(
+          gigs.map(async (gig) => {
+            try {
+              const rsvpDocSnap = await getDoc(doc(db, "gigs", gig.id, "rsvps", profile.uid));
+              if (rsvpDocSnap.exists()) {
+                return [gig.id, (rsvpDocSnap.data().status as AttendanceStatus) || "tentative"] as const;
+              }
+              return [gig.id, null] as const;
+            } catch (err) {
+              console.error("Error fetching user rsvp for gig", gig.id, err);
+              return [gig.id, null] as const;
             }
-          });
-        } catch (err) {
-          console.error("Error fetching user rsvp for gig", gig.id, err);
+          })
+        );
+
+        if (!isSubscribed) return;
+
+        const map: Record<string, AttendanceStatus> = {};
+        for (const [id, status] of entries) {
+          if (status) {
+            map[id] = status;
+          }
+        }
+        setUserRsvps(map);
+      } finally {
+        if (isSubscribed) {
+          setLoadingRsvps(false);
         }
       }
-      setUserRsvps(map);
     };
 
-    if (gigs.length > 0) {
-      fetchUserRsvps();
-    }
-  }, [gigs, profile]);
+    fetchUserRsvps();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [gigs, profile?.uid, loadingGigs]);
 
   // Handle in-line and modal RSVP updates
   const handleRsvpChange = async (
@@ -371,7 +400,7 @@ export default function MusicianPortalOverviewPage() {
     return `${diffDays} Days, ${remainingHours} Hours`;
   }, [nextGig]);
 
-  if (authLoading || loadingGigs) {
+  if (authLoading || loadingGigs || loadingRsvps) {
     return (
       <div className="p-8 text-center text-slate-400 flex items-center justify-center min-h-[50vh]">
         <div className="space-y-2">
@@ -456,7 +485,7 @@ export default function MusicianPortalOverviewPage() {
       </div>
 
       {/* 2. Action Needed Urgent Alert (if any) - Alert Branding */}
-      {unansweredGigs.length > 0 && (
+      {!loadingRsvps && unansweredGigs.length > 0 && (
         <div
           suppressHydrationWarning
           className="border border-rose-500/40 bg-rose-950/25 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md shadow-rose-950/20"

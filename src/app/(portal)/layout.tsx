@@ -30,6 +30,7 @@ import { RoleEmulationModal } from "@/components/portal/RoleEmulationModal";
 import { PortalLoadingProvider } from "@/lib/context/PortalLoadingContext";
 import PwaInstallBanner from "@/components/common/PwaInstallBanner";
 import { PortalUsageTracker } from "@/components/portal/PortalUsageTracker";
+import ManagerNotificationBell from "@/components/portal/ManagerNotificationBell";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -274,13 +275,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/portal/notifications"
-            className="p-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 border border-slate-700 transition cursor-pointer"
-            title="Notifications & Feed"
-          >
-            <Bell className="w-5 h-5 text-yellow-400" />
-          </Link>
+          <ManagerNotificationBell align="right" />
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
@@ -357,8 +352,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Sidebar Toggle & Pin Controls */}
-            <div className="flex items-center gap-1">
+            {/* Sidebar Notifications & Pin Controls */}
+            <div className="flex items-center gap-1.5">
+              <ManagerNotificationBell align="left" />
+
               {/* Pin / Unpin Button (Desktop) */}
               <button
                 type="button"
@@ -614,8 +611,11 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               <PanelLeftOpen className="w-4 h-4 text-yellow-400" />
               <span>Navigation Menu</span>
             </button>
-            <div className="text-[11px] font-mono text-slate-500">
-              Sidebar unpinned (maximized workspace)
+            <div className="flex items-center gap-3">
+              <ManagerNotificationBell align="right" />
+              <div className="text-[11px] font-mono text-slate-500">
+                Sidebar unpinned (maximized workspace)
+              </div>
             </div>
           </div>
         )}
