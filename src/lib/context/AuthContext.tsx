@@ -508,6 +508,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await setDoc(userRef, superAdminProfile, { merge: true });
               setRawProfile(superAdminProfile as unknown as User);
             } else {
+              // Verify account is still active in Firebase Auth before auto-provisioning
+              try {
+                await user.reload();
+              } catch (reloadErr: unknown) {
+                const re = reloadErr as { code?: string };
+                if (re.code === "auth/user-not-found" || re.code === "auth/user-disabled") {
+                  console.warn("[Auth] Account was purged from Firebase Auth. Signing out.");
+                  await signOut();
+                  setRawProfile(null);
+                  setLoading(false);
+                  return;
+                }
+              }
+
               // First time sign-in: Check for matching pending invite in Firestore
               let inviteMatchedProfile: User | null = null;
               if (user.email) {
