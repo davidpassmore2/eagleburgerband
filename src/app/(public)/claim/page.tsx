@@ -113,6 +113,12 @@ function ClaimContent() {
   const finalizeClaim = async (uid: string, userEmail: string, displayName: string) => {
     if (!invite) return;
 
+    if (invite.status !== "pending") {
+      setErrorMessage(`This invitation is no longer active (status: ${invite.status}).`);
+      setIsClaiming(false);
+      return;
+    }
+
     try {
       setIsClaiming(true);
 
@@ -297,6 +303,35 @@ function ClaimContent() {
           >
             <span>Proceed to Musician Login</span>
             <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // State D2: Revoked / Cancelled Invitation
+  if (invite && invite.status === "revoked") {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold text-white">Invitation Cancelled</h1>
+        <p className="text-sm text-slate-400 mt-2">
+          This onboarding invitation for <strong className="text-white">{invite.displayName}</strong> has been cancelled or revoked by band administration.
+        </p>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full">
+          <Link
+            href="/login"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-sm text-center transition"
+          >
+            Musician Login
+          </Link>
+          <Link
+            href="/contact"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-sm font-semibold text-center transition"
+          >
+            Contact Manager
           </Link>
         </div>
       </div>
