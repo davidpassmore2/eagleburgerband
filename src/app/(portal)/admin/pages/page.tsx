@@ -41,6 +41,7 @@ import { SocialIcon } from "@/components/ui/SocialIcon";
 import { toast } from "@/lib/context/ToastContext";
 import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
 import { ResourceAsset, ResourceCategory } from "@/lib/schema/resource";
+import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import {
   Save,
   Eye,
@@ -99,6 +100,10 @@ export default function CMSPagesStudio() {
   const [globalNavTab, setGlobalNavTab] = useState<"header_nav" | "announcement" | "footer_social">("header_nav");
   const [simulatedActiveRoute, setSimulatedActiveRoute] = useState<string>("/gigs");
   const [activeTab, setActiveTab] = useState<"builder" | "banner" | "preview" | "seo" | "settings">("builder");
+
+  // Saved baselines for dirty-state detection and discard/revert
+  const [savedPagesState, setSavedPagesState] = useState<Record<string, string>>({});
+  const [savedNavState, setSavedNavState] = useState<string>("");
 
   // Site Navigation & Announcement Banner State
   const [siteNav, setSiteNav] = useState<SiteNavigation>(() => SiteNavigationSchema.parse({}));
@@ -163,6 +168,15 @@ export default function CMSPagesStudio() {
         });
 
         setPages(loadedPages);
+        setSavedPagesState((prev) => {
+          const next = { ...prev };
+          loadedPages.forEach((p) => {
+            if (!next[p.id]) {
+              next[p.id] = JSON.stringify(p);
+            }
+          });
+          return next;
+        });
         setLoading(false);
       },
       (err) => {
@@ -178,6 +192,7 @@ export default function CMSPagesStudio() {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
           if (parsed.success) {
             setSiteNav(parsed.data);
+            setSavedNavState((prev) => prev || JSON.stringify(parsed.data));
           }
         }
       },
@@ -439,6 +454,8 @@ export default function CMSPagesStudio() {
         updatedAt: new Date().toISOString(),
       });
       await setDoc(doc(db, "site_navigation", "config"), validated);
+      const serialized = JSON.stringify(validated);
+      setSavedNavState(serialized);
       setNavSavedSuccess(true);
       toast.success("Site navigation saved!");
       setTimeout(() => setNavSavedSuccess(false), 3000);
@@ -701,8 +718,10 @@ export default function CMSPagesStudio() {
       });
 
       await setDoc(doc(db, "content_pages", activePage.id), validated, { merge: true });
+      const serialized = JSON.stringify(validated);
+      setSavedPagesState((prev) => ({ ...prev, [activePage.id]: serialized }));
       setSavedSuccess(true);
-      toast.success("Page saved successfully!");
+      toast.success(`Page "${activePage.title}" saved successfully!`);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       toast.error("Failed to save CMS Page: " + (err instanceof Error ? err.message : String(err)));
@@ -710,6 +729,58 @@ export default function CMSPagesStudio() {
       setIsSaving(false);
     }
   };
+
+  // Discard Handlers
+  const handleDiscardPageChanges = () => {
+    const savedJson = savedPagesState[activePage.id];
+    if (savedJson) {
+      try {
+        const parsed = JSON.parse(savedJson);
+        setPages((prev) => prev.map((p) => (p.id === activePage.id ? parsed : p)));
+        toast.info(`Discarded unsaved changes for "${activePage.title}".`);
+      } catch (err) {
+        console.error("Failed to discard page changes:", err);
+      }
+    }
+  };
+
+  const handleDiscardNavChanges = () => {
+    if (savedNavState) {
+      try {
+        const parsed = JSON.parse(savedNavState);
+        setSiteNav(parsed);
+        toast.info("Discarded unsaved changes for global navigation.");
+      } catch (err) {
+        console.error("Failed to discard nav changes:", err);
+      }
+    }
+  };
+
+  // Compute Dirty State for active scope
+  const isPageDirty = useMemo(() => {
+    const savedJson = savedPagesState[activePage.id];
+    if (!savedJson) return false;
+    return JSON.stringify(activePage) !== savedJson;
+  }, [activePage, savedPagesState]);
+
+  const isNavDirty = useMemo(() => {
+    if (!savedNavState) return false;
+    return JSON.stringify(siteNav) !== savedNavState;
+  }, [siteNav, savedNavState]);
+
+  const isCurrentDirty = studioScope === "global" ? isNavDirty : isPageDirty;
+  const isCurrentSaving = studioScope === "global" ? isSavingNav : isSaving;
+
+  // Accidental window unload protection
+  useEffect(() => {
+    if (!isPageDirty && !isNavDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isPageDirty, isNavDirty]);
 
   // Create Page
   const handleCreatePage = async (e: React.FormEvent) => {
@@ -834,6 +905,7 @@ export default function CMSPagesStudio() {
     try {
       const validated = ContentPageSchema.parse(newPage);
       await setDoc(doc(db, "content_pages", pageId), validated);
+      setSavedPagesState((prev) => ({ ...prev, [pageId]: JSON.stringify(validated) }));
       setPages((prev) => {
         const map = new Map(prev.map((p) => [p.id, p]));
         map.set(pageId, validated);
@@ -874,6 +946,11 @@ export default function CMSPagesStudio() {
 
     try {
       await deleteDoc(doc(db, "content_pages", activePage.id));
+      setSavedPagesState((prev) => {
+        const next = { ...prev };
+        delete next[activePage.id];
+        return next;
+      });
       setPages((prev) => prev.filter((p) => p.id !== activePage.id));
       setSelectedPageId("home");
       toast.success(`Page "${activePage.title}" deleted.`);
@@ -901,7 +978,7 @@ export default function CMSPagesStudio() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className={`p-4 sm:p-6 max-w-7xl mx-auto space-y-6 transition-all ${isCurrentDirty ? "pb-28 sm:pb-32" : ""}`}>
       {/* Studio Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
@@ -932,10 +1009,14 @@ export default function CMSPagesStudio() {
           <button
             type="button"
             onClick={studioScope === "global" ? handleSaveNavigation : handleSavePage}
-            disabled={studioScope === "global" ? isSavingNav : isSaving}
-            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 disabled:opacity-50"
+            disabled={isCurrentSaving || !isCurrentDirty}
+            className={`inline-flex items-center gap-2 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg ${
+              !isCurrentDirty
+                ? "bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed shadow-none"
+                : "bg-yellow-400 hover:bg-yellow-300 text-slate-950 cursor-pointer shadow-yellow-400/20"
+            }`}
           >
-            {(studioScope === "global" ? isSavingNav : isSaving) ? (
+            {isCurrentSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (studioScope === "global" ? navSavedSuccess : savedSuccess) ? (
               <Check className="w-4 h-4 text-emerald-950" />
@@ -944,12 +1025,20 @@ export default function CMSPagesStudio() {
             )}
             <span>
               {studioScope === "global"
-                ? navSavedSuccess
+                ? isSavingNav
+                  ? "Saving Global Config..."
+                  : navSavedSuccess
                   ? "Global Config Saved!"
-                  : "Save Global Nav & Alerts"
+                  : isNavDirty
+                  ? "Save Global Nav & Alerts"
+                  : "Global Nav Saved"
+                : isSaving
+                ? "Saving Page..."
                 : savedSuccess
                 ? "Page Saved!"
-                : `Save Page: ${activePage.title}`}
+                : isPageDirty
+                ? `Save Page: ${activePage.title}`
+                : `Saved: ${activePage.title}`}
             </span>
           </button>
         </div>
@@ -961,7 +1050,7 @@ export default function CMSPagesStudio() {
           <button
             type="button"
             onClick={() => setStudioScope("pages")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 relative ${
               studioScope === "pages"
                 ? "bg-yellow-400 text-slate-950 font-black shadow-md shadow-yellow-400/20 ring-2 ring-yellow-400/40"
                 : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
@@ -969,6 +1058,9 @@ export default function CMSPagesStudio() {
           >
             <FileText className="w-4 h-4" />
             <span>Page Content Studio</span>
+            {isPageDirty && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="Unsaved page changes" />
+            )}
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 font-mono">
               Individual Pages
             </span>
@@ -977,7 +1069,7 @@ export default function CMSPagesStudio() {
           <button
             type="button"
             onClick={() => setStudioScope("global")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 relative ${
               studioScope === "global"
                 ? "bg-yellow-400 text-slate-950 font-black shadow-md shadow-yellow-400/20 ring-2 ring-yellow-400/40"
                 : "bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
@@ -985,6 +1077,9 @@ export default function CMSPagesStudio() {
           >
             <Globe className="w-4 h-4" />
             <span>Global Public Site Nav &amp; Alerts</span>
+            {isNavDirty && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="Unsaved global navigation changes" />
+            )}
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-yellow-400 font-mono font-bold">
               Global Header &amp; Alerts
             </span>
@@ -1027,6 +1122,7 @@ export default function CMSPagesStudio() {
             <div className="flex flex-wrap items-center gap-2">
               {uniquePages.map((p) => {
                 const isSelected = p.id === selectedPageId;
+                const pageHasUnsaved = Boolean(savedPagesState[p.id] && JSON.stringify(p) !== savedPagesState[p.id]);
                 return (
                   <button
                     key={p.id}
@@ -1042,6 +1138,12 @@ export default function CMSPagesStudio() {
                   >
                     <FileText className={`w-3.5 h-3.5 ${isSelected ? "text-slate-950" : "text-yellow-400"}`} />
                     <span className="tracking-wide">{p.title}</span>
+                    {pageHasUnsaved && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-400/30 animate-pulse"
+                        title="Unsaved changes in memory"
+                      />
+                    )}
                     <span
                       className={`w-2 h-2 rounded-full ${
                         p.isPublished ? "bg-emerald-500" : "bg-slate-500"
@@ -4986,6 +5088,35 @@ export default function CMSPagesStudio() {
             ? "Media & Resource Library"
             : "Choose Section Media"
         }
+      />
+
+      {/* Sticky Bottom Bar for Unsaved Changes */}
+      <UnsavedChangesBar
+        isDirty={isCurrentDirty}
+        isSaving={isCurrentSaving}
+        onSave={studioScope === "global" ? handleSaveNavigation : handleSavePage}
+        onDiscard={studioScope === "global" ? handleDiscardNavChanges : handleDiscardPageChanges}
+        message={
+          studioScope === "global"
+            ? "Unsaved global navigation & alert changes"
+            : `Unsaved changes on "${activePage.title}"`
+        }
+        subMessage={
+          studioScope === "global"
+            ? "Save your site-wide navigation links and announcement banner updates, or discard to restore."
+            : "Save your page content layout or discard to restore the last saved version."
+        }
+        saveLabel={
+          studioScope === "global"
+            ? "Save Global Nav & Alerts"
+            : `Save Page: ${activePage.title}`
+        }
+        savingLabel={
+          studioScope === "global"
+            ? "Saving Global Config..."
+            : "Saving Page..."
+        }
+        discardLabel="Discard Changes"
       />
     </div>
   );
