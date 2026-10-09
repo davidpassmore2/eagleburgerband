@@ -2,10 +2,11 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { User } from "@/lib/schema/user";
+import { Section, SectionSchema } from "@/lib/schema/section";
 import { logAdminAction } from "@/lib/logging/adminLogger";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -28,9 +29,9 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Lock,
   Info,
   Undo2,
+  Check,
 } from "lucide-react";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
@@ -41,6 +42,8 @@ interface ProfileFormProps {
 
 interface FormValues {
   displayName: string;
+  realName: string;
+  selectedInstrument: string;
   phone: string;
   smsConsent: boolean;
   hideEmailInRoster: boolean;
@@ -55,6 +58,8 @@ interface FormValues {
 function getInitialValues(p: User): FormValues {
   return {
     displayName: p.displayName || "",
+    realName: p.realName || "",
+    selectedInstrument: p.selectedInstrument || p.instruments?.[0] || "",
     phone: p.phone || "",
     smsConsent: Boolean(p.smsConsent),
     hideEmailInRoster: Boolean(p.hideEmailInRoster),
@@ -71,6 +76,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const [savedValues, setSavedValues] = useState<FormValues>(() => getInitialValues(profile));
 
   const [displayName, setDisplayName] = useState(savedValues.displayName);
+  const [realName, setRealName] = useState(savedValues.realName);
+  const [selectedInstrument, setSelectedInstrument] = useState(savedValues.selectedInstrument);
   const [phone, setPhone] = useState(savedValues.phone);
   const [smsConsent, setSmsConsent] = useState(savedValues.smsConsent);
   const [hideEmailInRoster, setHideEmailInRoster] = useState(savedValues.hideEmailInRoster);
@@ -81,6 +88,48 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const [zelleIdentifier, setZelleIdentifier] = useState(savedValues.zelleIdentifier);
   const [payoutNotes, setPayoutNotes] = useState(savedValues.payoutNotes);
 
+  const [userSection, setUserSection] = useState<Section | null>(null);
+
+  // Subscribe to member's section to get real-time instrument catalog
+  useEffect(() => {
+    const sectionId = profile.sectionId;
+    if (!sectionId) return;
+
+    const unsub = onSnapshot(doc(db, "sections", sectionId), (d) => {
+      if (d.exists()) {
+        const parsed = SectionSchema.safeParse({ id: d.id, ...d.data() });
+        if (parsed.success) {
+          setUserSection(parsed.data);
+        }
+      }
+    });
+
+    return () => {
+      unsub();
+      setUserSection(null);
+    };
+  }, [profile.sectionId]);
+
+  // Available instruments combining section catalog and member qualifications
+  const availableInstruments = useMemo(() => {
+    const list: string[] = [];
+    const seen = new Set<string>();
+
+    const add = (inst: string) => {
+      const clean = (inst || "").trim();
+      if (clean && !seen.has(clean)) {
+        seen.add(clean);
+        list.push(clean);
+      }
+    };
+
+    (userSection?.instruments || []).forEach(add);
+    (profile.instruments || []).forEach(add);
+    if (selectedInstrument) add(selectedInstrument);
+
+    return list;
+  }, [userSection, profile.instruments, selectedInstrument]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -89,6 +138,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const isDirty = useMemo(() => {
     return (
       displayName !== savedValues.displayName ||
+      realName !== savedValues.realName ||
+      selectedInstrument !== savedValues.selectedInstrument ||
       phone !== savedValues.phone ||
       smsConsent !== savedValues.smsConsent ||
       hideEmailInRoster !== savedValues.hideEmailInRoster ||
@@ -101,6 +152,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
     );
   }, [
     displayName,
+    realName,
+    selectedInstrument,
     phone,
     smsConsent,
     hideEmailInRoster,
@@ -127,6 +180,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
   // Discard changes and revert back to last saved baseline
   const handleDiscardChanges = () => {
     setDisplayName(savedValues.displayName);
+    setRealName(savedValues.realName);
+    setSelectedInstrument(savedValues.selectedInstrument);
     setPhone(savedValues.phone);
     setSmsConsent(savedValues.smsConsent);
     setHideEmailInRoster(savedValues.hideEmailInRoster);
@@ -194,10 +249,19 @@ function ProfileForm({ profile }: ProfileFormProps) {
       const trimmedPhone = phone.trim();
       const updatedTimestamp = new Date().toISOString();
       const nextDisplayName = displayName.trim() || profile.displayName || "Musician";
+      const nextRealName = realName.trim();
+      const nextSelectedInstrument = selectedInstrument.trim();
+
+      const updatedInstruments = nextSelectedInstrument
+        ? Array.from(new Set([nextSelectedInstrument, ...(profile.instruments || [])]))
+        : profile.instruments || [];
 
       // Ensure validation via schema
       const partialUpdate: Partial<User> = {
         displayName: nextDisplayName,
+        realName: nextRealName,
+        selectedInstrument: nextSelectedInstrument,
+        instruments: updatedInstruments,
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
         smsConsentUpdatedAt: updatedTimestamp,
@@ -218,6 +282,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
       // Advance baseline snapshot to newly saved values
       const newSavedValues: FormValues = {
         displayName: nextDisplayName,
+        realName: nextRealName,
+        selectedInstrument: nextSelectedInstrument,
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
         hideEmailInRoster: Boolean(hideEmailInRoster),
@@ -231,6 +297,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
 
       setSavedValues(newSavedValues);
       setDisplayName(newSavedValues.displayName);
+      setRealName(newSavedValues.realName);
+      setSelectedInstrument(newSavedValues.selectedInstrument);
       setPhone(newSavedValues.phone);
       setSmsConsent(newSavedValues.smsConsent);
       setVenmoHandle(newSavedValues.venmoHandle);
@@ -314,7 +382,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Display Name *
+                Display Name * (Stage Moniker / Portal Handle)
               </label>
               <input
                 type="text"
@@ -325,50 +393,123 @@ function ProfileForm({ profile }: ProfileFormProps) {
                 style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
                 className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
               />
-              <p className="text-[10px] text-slate-500 mt-1">This name appears on call sheets, attendance roll calls, and setlists.</p>
+              <p className="text-[10px] text-slate-500 mt-1">This name appears throughout the portal, call sheets, attendance roll calls, and setlists.</p>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Authentication Email
+                Real Name (Legal / Full Name)
               </label>
-              <div 
+              <input
+                type="text"
+                value={realName}
+                onChange={(e) => setRealName(e.target.value)}
+                placeholder="e.g. Jordan Alexander Davis"
                 style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
-                className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-slate-400 flex items-center gap-2"
-              >
-                <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-                <span className="truncate">{profile.email}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">Primary email used for sign-in and formal band broadcasts.</p>
+                className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Your legal name for management rosters, tax receipts, and direct payout verifications.</p>
             </div>
           </div>
 
-          {/* Section & RBAC Roles Info Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t" style={{ borderColor: "var(--ebb-border)" }}>
-            <div className="space-y-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Assigned Section & Instruments
-              </label>
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Authentication Email
+            </label>
+            <div 
+              style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+              className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-slate-400 flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4 text-slate-500 shrink-0" />
+              <span className="truncate">{profile.email}</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">Primary email used for sign-in and formal band broadcasts.</p>
+          </div>
+
+          {/* Section & Active Gig Instrument Selection */}
+          <div className="space-y-4 pt-4 border-t" style={{ borderColor: "var(--ebb-border)" }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Music className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Assigned Section &amp; Active Gig Instrument</span>
+                </label>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Select your active instrument from your section. You can switch this at any time for different gigs.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400">Section:</span>
                 <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-amber-400/10 text-amber-400 border border-amber-400/20 flex items-center gap-1">
                   <Music className="w-3 h-3" />
-                  {profile.sectionId ? profile.sectionId.toUpperCase() : "General Ensemble"}
+                  {userSection?.name || (profile.sectionId ? profile.sectionId.toUpperCase() : "General Ensemble")}
                 </span>
-                {profile.instruments?.map((inst, idx) => (
-                  <span key={idx} className="text-xs px-2 py-0.5 rounded-lg font-medium text-slate-300 bg-slate-800/80 border border-slate-700/60">
-                    {inst}
-                  </span>
-                ))}
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Active Portal Permissions (RBAC)
-              </label>
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {/* Instrument Selection Pills */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-300">
+                  Select Active Instrument for Gigs:
+                </span>
+                {selectedInstrument && (
+                  <span className="text-[11px] text-amber-400 font-medium">
+                    Current: <strong className="text-white">{selectedInstrument}</strong>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {availableInstruments.map((inst) => {
+                  const isSelected = selectedInstrument === inst;
+                  return (
+                    <button
+                      key={inst}
+                      type="button"
+                      onClick={() => setSelectedInstrument(inst)}
+                      className={`text-xs px-3 py-2 rounded-xl border flex items-center gap-2 transition cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-400/15 border-amber-400 text-amber-300 font-bold shadow-xs ring-1 ring-amber-400/30"
+                          : "bg-black/20 hover:bg-white/5 border-slate-700/80 text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
+                          isSelected
+                            ? "bg-amber-400 border-amber-400 text-slate-950"
+                            : "border-slate-600"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-2.5 h-2.5 stroke-3" />}
+                      </div>
+                      <span>{inst}</span>
+                      {isSelected && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300">
+                          Active
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {availableInstruments.length === 0 && (
+                  <div className="text-xs text-slate-400 bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex items-center gap-2 w-full">
+                    <Info className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      No instruments configured in your section catalog yet. Your section leader or an administrator can add instruments in the Section Studio.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RBAC Roles Info Chips */}
+            <div className="pt-2 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-400">Active Portal Permissions (RBAC):</span>
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(profile.roles || ["member"]).map((r, idx) => (
-                  <span key={idx} className="text-xs px-2 py-0.5 rounded-lg font-bold capitalize bg-slate-800 text-slate-200 border border-slate-700">
+                  <span key={idx} className="text-[11px] px-2 py-0.5 rounded-md font-bold capitalize bg-slate-800 text-slate-200 border border-slate-700">
                     {r.replace("_", " ")}
                   </span>
                 ))}

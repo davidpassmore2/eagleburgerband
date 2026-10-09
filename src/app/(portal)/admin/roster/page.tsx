@@ -5,7 +5,6 @@ import { collection, onSnapshot, doc, updateDoc, setDoc, deleteDoc } from "fireb
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageRoster } from "@/lib/auth/permissions";
-import Link from "next/link";
 import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { Invite, InviteSchema, InviteStatus } from "@/lib/schema/invite";
@@ -485,8 +484,13 @@ export default function RosterAdminPage() {
               {users.map((u) => (
                 <tr key={u.uid} className="hover:bg-slate-800/30 transition">
                   <td className="p-4">
-                    <div className="font-bold text-white flex items-center gap-1.5">
+                    <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
                       <span>{u.displayName}</span>
+                      {u.realName && u.realName !== u.displayName && (
+                        <span className="text-xs text-slate-400 font-normal">
+                          ({u.realName})
+                        </span>
+                      )}
                       {(u.hideEmailInRoster || u.hidePhoneInRoster) && (
                         <span
                           title={`Directory privacy enabled: ${[u.hideEmailInRoster && "Email hidden", u.hidePhoneInRoster && "Phone hidden"].filter(Boolean).join(", ")}`}
@@ -512,7 +516,16 @@ export default function RosterAdminPage() {
                       </div>
                     )}
                     <div className="text-[10px] text-yellow-400/80 font-mono mt-0.5">
-                      {u.instruments.join(", ") || "No instruments logged"}
+                      {u.selectedInstrument ? (
+                        <span>
+                          <span className="text-yellow-300 font-semibold">★ {u.selectedInstrument}</span>
+                          {u.instruments.filter((i) => i !== u.selectedInstrument).length > 0 && (
+                            <span className="text-slate-400"> (also: {u.instruments.filter((i) => i !== u.selectedInstrument).join(", ")})</span>
+                          )}
+                        </span>
+                      ) : (
+                        u.instruments.join(", ") || "No instruments logged"
+                      )}
                     </div>
                   </td>
                   <td className="p-4">

@@ -19,3 +19,12 @@ export const SectionSchema = z.object({
 });
 
 export type Section = z.infer<typeof SectionSchema>;
+
+export const DEFAULT_SECTION_INSTRUMENTS: Record<string, string[]> = {
+  percussion: ["Snare Drum", "Bass Drum", "Cymbals", "Quad / Tenor Drums", "Auxiliary Percussion"],
+  sousaphones: ["Sousaphone", "Tuba", "Helicon"],
+  trombones: ["Tenor Trombone", "Bass Trombone", "Valve Trombone"],
+  trumpets: ["Bb Trumpet", "Flugelhorn", "Piccolo Trumpet", "Cornet"],
+  saxophones: ["Alto Saxophone", "Tenor Saxophone", "Baritone Saxophone", "Soprano Saxophone", "Clarinet"],
+  auxiliary: ["Tambourine", "Cowbell", "Shaker", "Megaphone", "Banner"],
+};

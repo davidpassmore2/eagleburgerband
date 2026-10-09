@@ -23,9 +23,11 @@ type MemberRecord = {
   uid: string;
   email: string;
   displayName?: string;
+  realName?: string;
   roles?: string[];
   sectionId?: string;
   instruments?: string[];
+  selectedInstrument?: string;
   phone?: string;
   hideEmailInRoster?: boolean;
   hidePhoneInRoster?: boolean;
@@ -50,9 +52,11 @@ export default function MemberRosterPage() {
           uid: raw.uid || d.id,
           email: raw.email || "",
           displayName: raw.displayName || "",
+          realName: typeof raw.realName === "string" ? raw.realName : "",
           roles: Array.isArray(raw.roles) ? raw.roles : [],
           sectionId: raw.sectionId || "",
           instruments: Array.isArray(raw.instruments) ? raw.instruments : [],
+          selectedInstrument: typeof raw.selectedInstrument === "string" ? raw.selectedInstrument : "",
           phone: typeof raw.phone === "string" ? raw.phone : undefined,
           hideEmailInRoster: Boolean(raw.hideEmailInRoster),
           hidePhoneInRoster: Boolean(raw.hidePhoneInRoster),
@@ -120,10 +124,10 @@ export default function MemberRosterPage() {
     const isSelf = profile.uid === u.uid;
     const canSearchContact = isLeaderViewer || isSelf;
 
-    const matchesName = name.toLowerCase().includes(query);
+    const matchesName = name.toLowerCase().includes(query) || (u.realName || "").toLowerCase().includes(query);
     const matchesEmail = (!u.hideEmailInRoster || canSearchContact) && email.toLowerCase().includes(query);
     const matchesPhone = Boolean(u.phone) && (!u.hidePhoneInRoster || canSearchContact) && (u.phone?.toLowerCase().includes(query) ?? false);
-    const matchesInstruments = instruments.some((inst) => inst.toLowerCase().includes(query));
+    const matchesInstruments = instruments.some((inst) => inst.toLowerCase().includes(query)) || (u.selectedInstrument || "").toLowerCase().includes(query);
 
     const matchesSearch = matchesName || matchesEmail || matchesPhone || matchesInstruments;
 
@@ -196,8 +200,8 @@ export default function MemberRosterPage() {
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="font-bold text-base text-white flex items-center gap-1.5">
-                        {member.displayName || "Unnamed Performer"}
+                      <div className="font-bold text-base text-white flex items-center gap-1.5 flex-wrap">
+                        <span>{member.displayName || "Unnamed Performer"}</span>
                         {member.roles?.includes("admin") && (
                           <span title="Band Administrator">
                             <Shield className="w-3.5 h-3.5 text-yellow-400" />
@@ -212,6 +216,11 @@ export default function MemberRosterPage() {
                           </span>
                         )}
                       </div>
+                      {member.realName && member.realName !== member.displayName && (
+                        <div className="text-xs text-slate-400 font-normal mt-0.5">
+                          Legal: {member.realName}
+                        </div>
+                      )}
                       <span className="text-[11px] font-mono text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 inline-block mt-1">
                         {sectionName}
                       </span>
@@ -231,15 +240,25 @@ export default function MemberRosterPage() {
                   {/* Instruments */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {memberInstruments.length > 0 ? (
-                      memberInstruments.map((inst, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-slate-950 text-slate-300 text-[11px] px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1"
-                        >
-                          <Music className="w-3 h-3 text-slate-500" />
-                          {inst}
-                        </span>
-                      ))
+                      memberInstruments.map((inst, idx) => {
+                        const isSelected = inst === member.selectedInstrument;
+                        return (
+                          <span
+                            key={idx}
+                            className={`text-[11px] px-2 py-0.5 rounded border flex items-center gap-1 ${
+                              isSelected
+                                ? "bg-yellow-400/10 border-yellow-400/30 text-yellow-300 font-semibold"
+                                : "bg-slate-950 text-slate-300 border-slate-800"
+                            }`}
+                          >
+                            <Music className={`w-3 h-3 ${isSelected ? "text-yellow-400" : "text-slate-500"}`} />
+                            <span>{inst}</span>
+                            {isSelected && (
+                              <span className="text-[9px] text-yellow-400/80 font-mono">(Active)</span>
+                            )}
+                          </span>
+                        );
+                      })
                     ) : (
                       <span className="text-xs text-slate-600 italic">
                         No instruments listed

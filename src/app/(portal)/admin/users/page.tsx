@@ -91,7 +91,9 @@ export default function UsersAdminPage() {
       const email = u.email || "";
       const query = searchQuery.toLowerCase();
       const matchesSearch =
-        name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
+        name.toLowerCase().includes(query) ||
+        (u.realName || "").toLowerCase().includes(query) ||
+        email.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
 
@@ -444,6 +446,11 @@ export default function UsersAdminPage() {
                   <div>
                     <div className="font-bold text-base text-white flex items-center gap-2.5 flex-wrap">
                       <span>{member.displayName || "Unnamed Performer"}</span>
+                      {member.realName && member.realName !== member.displayName && (
+                        <span className="text-xs text-slate-400 font-normal">
+                          (Legal: {member.realName})
+                        </span>
+                      )}
                       <span className="text-xs font-mono text-slate-400 font-normal">
                         ({member.email})
                       </span>
