@@ -13,6 +13,8 @@ export interface ParsedRosterMember {
   instruments: string[];
   roles: Role[];
   phone: string;
+  hideEmailInRoster?: boolean;
+  hidePhoneInRoster?: boolean;
   status: "active" | "inactive" | "pending";
   payoutMethod?: "venmo" | "paypal" | "zelle" | "check" | "other";
   venmoHandle?: string;
@@ -37,6 +39,8 @@ export interface RosterExportPackage {
     instruments: string[];
     roles: Role[];
     phone: string;
+    hideEmailInRoster?: boolean;
+    hidePhoneInRoster?: boolean;
     status: string;
     payoutPreferences?: {
       preferredMethod?: string;
@@ -96,6 +100,8 @@ export function exportRosterToCsv(users: User[], sections: Section[]): string {
     "Phone",
     "Status",
     "UID",
+    "Hide Email",
+    "Hide Phone",
     "Payout Method",
     "Venmo Handle",
     "PayPal Email",
@@ -121,6 +127,8 @@ export function exportRosterToCsv(users: User[], sections: Section[]): string {
       u.phone || "",
       u.status || "active",
       u.uid || "",
+      u.hideEmailInRoster ? "true" : "false",
+      u.hidePhoneInRoster ? "true" : "false",
       payout.preferredMethod || "",
       payout.venmoHandle || "",
       payout.paypalEmail || "",
@@ -157,6 +165,8 @@ export function exportRosterToJson(users: User[], sections: Section[]): string {
       instruments: u.instruments || [],
       roles: u.roles || ["member"],
       phone: u.phone || "",
+      hideEmailInRoster: Boolean(u.hideEmailInRoster),
+      hidePhoneInRoster: Boolean(u.hidePhoneInRoster),
       status: u.status || "active",
       payoutPreferences: u.payoutPreferences,
       createdAt: u.createdAt,
@@ -237,6 +247,8 @@ export function parseCsvRows(csvText: string): string[][] {
  */
 function normalizeHeaderKey(header: string): string {
   const clean = header.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (clean.includes("hideemail") || clean.includes("emailprivate")) return "hideEmailInRoster";
+  if (clean.includes("hidephone") || clean.includes("phoneprivate")) return "hidePhoneInRoster";
   if (clean.includes("name") && !clean.includes("section") && !clean.includes("venmo")) return "displayName";
   if (clean.includes("email") && !clean.includes("paypal")) return "email";
   if (clean === "sectionid" || clean === "secid") return "sectionId";
@@ -392,6 +404,11 @@ export function parseRosterFromCsv(csvText: string, sections: Section[]): Parsed
       payoutMethod = rawPayout as "venmo" | "paypal" | "zelle" | "check" | "other";
     }
 
+    const hideEmailVal = (data.hideEmailInRoster || "").toLowerCase().trim();
+    const hidePhoneVal = (data.hidePhoneInRoster || "").toLowerCase().trim();
+    const hideEmailInRoster = hideEmailVal === "true" || hideEmailVal === "1" || hideEmailVal === "yes";
+    const hidePhoneInRoster = hidePhoneVal === "true" || hidePhoneVal === "1" || hidePhoneVal === "yes";
+
     parsedMembers.push({
       uid: data.uid ? data.uid.trim() : undefined,
       email,
@@ -401,6 +418,8 @@ export function parseRosterFromCsv(csvText: string, sections: Section[]): Parsed
       instruments,
       roles,
       phone: (data.phone || "").trim(),
+      hideEmailInRoster,
+      hidePhoneInRoster,
       status,
       payoutMethod,
       venmoHandle: (data.venmoHandle || "").trim(),
@@ -492,6 +511,8 @@ export function parseRosterFromJson(jsonText: string, sections: Section[]): Pars
       instruments,
       roles,
       phone: String(row.phone || "").trim(),
+      hideEmailInRoster: Boolean(row.hideEmailInRoster),
+      hidePhoneInRoster: Boolean(row.hidePhoneInRoster),
       status,
       payoutMethod: (payout.preferredMethod as "venmo" | "paypal" | "zelle" | "check" | "other") || undefined,
       venmoHandle: String(payout.venmoHandle || row.venmoHandle || "").trim(),

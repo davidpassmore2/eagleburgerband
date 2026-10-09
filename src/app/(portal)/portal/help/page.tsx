@@ -59,6 +59,7 @@ import {
   Inbox,
   CheckSquare,
   Workflow,
+  EyeOff,
 } from "lucide-react";
 
 export type HelpCategory =
@@ -1718,6 +1719,8 @@ export default function PortalHelpCenterPage() {
               phone: raw.phone || "",
               smsConsent: Boolean(raw.smsConsent),
               smsConsentUpdatedAt: raw.smsConsentUpdatedAt || "",
+              hideEmailInRoster: Boolean(raw.hideEmailInRoster),
+              hidePhoneInRoster: Boolean(raw.hidePhoneInRoster),
               payoutPreferences: raw.payoutPreferences || {
                 preferredMethod: "venmo",
                 venmoHandle: "",
@@ -2778,34 +2781,84 @@ export default function PortalHelpCenterPage() {
                                       </div>
 
                                       {/* Contact Buttons */}
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        {member.email && (
-                                          <a
-                                            href={`mailto:${member.email}`}
-                                            title={`Email ${member.displayName} (${member.email})`}
-                                            className="p-1.5 rounded-lg border text-slate-400 hover:text-white transition"
-                                            style={{
-                                              backgroundColor: "var(--ebb-surface-muted)",
-                                              borderColor: "var(--ebb-border)",
-                                            }}
-                                          >
-                                            <Mail className="w-3.5 h-3.5" />
-                                          </a>
-                                        )}
-                                        {member.phone && (
-                                          <a
-                                            href={`tel:${member.phone}`}
-                                            title={`Call ${member.displayName} (${member.phone})`}
-                                            className="p-1.5 rounded-lg border text-slate-400 hover:text-white transition"
-                                            style={{
-                                              backgroundColor: "var(--ebb-surface-muted)",
-                                              borderColor: "var(--ebb-border)",
-                                            }}
-                                          >
-                                            <Phone className="w-3.5 h-3.5" />
-                                          </a>
-                                        )}
-                                      </div>
+                                      {(() => {
+                                        const isLeaderViewer = Boolean(
+                                          profile && (
+                                            profile.roles?.some((r) =>
+                                              ["admin", "gig_manager", "section_leader", "membership_manager"].includes(r)
+                                            )
+                                          )
+                                        );
+                                        const isSelf = profile?.uid === member.uid;
+                                        const canViewPrivate = isLeaderViewer || isSelf;
+
+                                        const showEmail = member.email && (!member.hideEmailInRoster || canViewPrivate);
+                                        const showPhone = member.phone && (!member.hidePhoneInRoster || canViewPrivate);
+                                        const isEmailPrivate = Boolean(member.hideEmailInRoster);
+                                        const isPhonePrivate = Boolean(member.hidePhoneInRoster);
+
+                                        return (
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            {showEmail ? (
+                                              <a
+                                                href={`mailto:${member.email}`}
+                                                title={`Email ${member.displayName} (${member.email})${isEmailPrivate ? " [Private to members]" : ""}`}
+                                                className={`p-1.5 rounded-lg border transition ${
+                                                  isEmailPrivate
+                                                    ? "text-amber-400 border-amber-500/30 hover:text-amber-300"
+                                                    : "text-slate-400 hover:text-white"
+                                                }`}
+                                                style={{
+                                                  backgroundColor: "var(--ebb-surface-muted)",
+                                                  borderColor: isEmailPrivate ? "rgba(245, 158, 11, 0.3)" : "var(--ebb-border)",
+                                                }}
+                                              >
+                                                <Mail className="w-3.5 h-3.5" />
+                                              </a>
+                                            ) : member.email && isEmailPrivate ? (
+                                              <span
+                                                title="Email is set to private by this member"
+                                                className="p-1.5 rounded-lg border text-slate-600 cursor-not-allowed"
+                                                style={{
+                                                  backgroundColor: "var(--ebb-surface-muted)",
+                                                  borderColor: "var(--ebb-border)",
+                                                }}
+                                              >
+                                                <EyeOff className="w-3.5 h-3.5" />
+                                              </span>
+                                            ) : null}
+
+                                            {showPhone ? (
+                                              <a
+                                                href={`tel:${member.phone}`}
+                                                title={`Call ${member.displayName} (${member.phone})${isPhonePrivate ? " [Private to members]" : ""}`}
+                                                className={`p-1.5 rounded-lg border transition ${
+                                                  isPhonePrivate
+                                                    ? "text-amber-400 border-amber-500/30 hover:text-amber-300"
+                                                    : "text-slate-400 hover:text-white"
+                                                }`}
+                                                style={{
+                                                  backgroundColor: "var(--ebb-surface-muted)",
+                                                  borderColor: isPhonePrivate ? "rgba(245, 158, 11, 0.3)" : "var(--ebb-border)",
+                                                }}
+                                              >
+                                                <Phone className="w-3.5 h-3.5" />
+                                              </a>
+                                            ) : member.phone && isPhonePrivate ? (
+                                              <span
+                                                title="Phone number is set to private by this member"
+                                                className="p-1.5 rounded-lg border text-slate-600 cursor-not-allowed"
+                                                style={{
+                                                  backgroundColor: "var(--ebb-surface-muted)",
+                                                  borderColor: "var(--ebb-border)",
+                                                }}
+                                              >
+                                                <EyeOff className="w-3.5 h-3.5" />
+                                              </span>
+                                            ) : null}
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                   );
                                 })}

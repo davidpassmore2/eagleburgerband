@@ -44,6 +44,8 @@ export const UserSchema = z.object({
   phone: z.string().default(""),
   smsConsent: z.boolean().default(false),
   smsConsentUpdatedAt: z.string().default(""),
+  hideEmailInRoster: z.boolean().default(false),
+  hidePhoneInRoster: z.boolean().default(false),
   payoutPreferences: PayoutPreferencesSchema.default({
     preferredMethod: "venmo",
     venmoHandle: "",

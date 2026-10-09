@@ -27,6 +27,7 @@ import {
   Download,
   Upload,
   Palmtree,
+  EyeOff,
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
 import RosterExportModal from "@/components/portal/RosterExportModal";
@@ -482,8 +483,32 @@ export default function RosterAdminPage() {
               {users.map((u) => (
                 <tr key={u.uid} className="hover:bg-slate-800/30 transition">
                   <td className="p-4">
-                    <div className="font-bold text-white">{u.displayName}</div>
-                    <div className="text-[11px] text-slate-500">{u.email}</div>
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <span>{u.displayName}</span>
+                      {(u.hideEmailInRoster || u.hidePhoneInRoster) && (
+                        <span
+                          title={`Directory privacy enabled: ${[u.hideEmailInRoster && "Email hidden", u.hidePhoneInRoster && "Phone hidden"].filter(Boolean).join(", ")}`}
+                          className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono font-normal flex items-center gap-1"
+                        >
+                          <EyeOff className="w-2.5 h-2.5" />
+                          <span>Private</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <span>{u.email}</span>
+                      {u.hideEmailInRoster && (
+                        <span className="text-[9px] text-purple-400/80 font-mono">(email hidden in roster)</span>
+                      )}
+                    </div>
+                    {u.phone && (
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5 font-mono">
+                        <span>{u.phone}</span>
+                        {u.hidePhoneInRoster && (
+                          <span className="text-[9px] text-purple-400/80 font-mono">(phone hidden in roster)</span>
+                        )}
+                      </div>
+                    )}
                     <div className="text-[10px] text-yellow-400/80 font-mono mt-0.5">
                       {u.instruments.join(", ") || "No instruments logged"}
                     </div>

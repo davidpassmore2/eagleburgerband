@@ -24,6 +24,11 @@ import {
   AlertTriangle,
   UserMinus,
   X,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Lock,
+  Info,
 } from "lucide-react";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 
@@ -35,6 +40,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const [displayName, setDisplayName] = useState(() => profile.displayName || "");
   const [phone, setPhone] = useState(() => profile.phone || "");
   const [smsConsent, setSmsConsent] = useState(() => Boolean(profile.smsConsent));
+  const [hideEmailInRoster, setHideEmailInRoster] = useState(() => Boolean(profile.hideEmailInRoster));
+  const [hidePhoneInRoster, setHidePhoneInRoster] = useState(() => Boolean(profile.hidePhoneInRoster));
   const [preferredMethod, setPreferredMethod] = useState(
     () => profile.payoutPreferences?.preferredMethod || "venmo"
   );
@@ -115,6 +122,8 @@ function ProfileForm({ profile }: ProfileFormProps) {
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
         smsConsentUpdatedAt: updatedTimestamp,
+        hideEmailInRoster: Boolean(hideEmailInRoster),
+        hidePhoneInRoster: Boolean(hidePhoneInRoster),
         payoutPreferences: {
           preferredMethod: preferredMethod as "venmo" | "paypal" | "zelle" | "check" | "other",
           venmoHandle: venmoHandle.trim(),
@@ -381,6 +390,182 @@ function ProfileForm({ profile }: ProfileFormProps) {
                 <div className="text-[9px] text-slate-500 text-right mt-1 font-mono">
                   Delivered via SMS
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section: Directory Privacy & Contact Visibility */}
+        <div 
+          style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3 border-b pb-4" style={{ borderColor: "var(--ebb-border)" }}>
+            <div className="flex items-start gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Directory Privacy & Contact Visibility</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                    hideEmailInRoster && hidePhoneInRoster
+                      ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
+                      : hideEmailInRoster || hidePhoneInRoster
+                      ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                      : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  }`}>
+                    {hideEmailInRoster && hidePhoneInRoster 
+                      ? "Fully Private" 
+                      : hideEmailInRoster || hidePhoneInRoster 
+                      ? "Partially Private" 
+                      : "Directory Visible"}
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Control whether your email address and phone number are visible to fellow musicians in the Member Directory (<Link href="/portal/roster" className="text-amber-400 hover:underline">/portal/roster</Link>).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Leadership Access Guarantee Banner */}
+            <div
+              className="p-3.5 rounded-xl border flex items-start gap-2.5 text-xs text-slate-300"
+              style={{
+                backgroundColor: "rgba(59, 130, 246, 0.08)",
+                borderColor: "rgba(59, 130, 246, 0.25)",
+              }}
+            >
+              <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-semibold text-sky-300">Leadership Access Notice:</span>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Band administrators, section leaders, and gig coordinators always retain administrative access to your verified contact information so they can send official downbeat call sheets and emergency schedule changes.
+                </p>
+              </div>
+            </div>
+
+            {/* Privacy Toggles Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Toggle 1: Email Address Privacy */}
+              <div
+                style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                className="border rounded-xl p-4 flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Email Privacy</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setHideEmailInRoster(!hideEmailInRoster)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        hideEmailInRoster ? "bg-purple-600" : "bg-slate-700"
+                      }`}
+                      role="switch"
+                      aria-checked={hideEmailInRoster}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          hideEmailInRoster ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Hide your email address from fellow band members in the member directory and help documents.
+                  </p>
+                </div>
+
+                <div className="text-[10px] font-mono pt-2 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-slate-500">Directory status:</span>
+                  <span className={hideEmailInRoster ? "text-purple-400 font-bold" : "text-emerald-400 font-medium"}>
+                    {hideEmailInRoster ? "Hidden (Private)" : "Visible to Members"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Toggle 2: Phone Number Privacy */}
+              <div
+                style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                className="border rounded-xl p-4 flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Phone Privacy</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setHidePhoneInRoster(!hidePhoneInRoster)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        hidePhoneInRoster ? "bg-purple-600" : "bg-slate-700"
+                      }`}
+                      role="switch"
+                      aria-checked={hidePhoneInRoster}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          hidePhoneInRoster ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Hide your phone number from the member roster. You will still receive SMS alerts if opted into SMS above.
+                  </p>
+                </div>
+
+                <div className="text-[10px] font-mono pt-2 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-slate-500">Directory status:</span>
+                  <span className={hidePhoneInRoster ? "text-purple-400 font-bold" : "text-emerald-400 font-medium"}>
+                    {hidePhoneInRoster ? "Hidden (Private)" : "Visible to Members"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Directory Preview Box */}
+            <div
+              className="p-3.5 rounded-xl border bg-slate-950/60 border-slate-800 space-y-2 text-xs"
+            >
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Preview: What Fellow Band Members See In /portal/roster</span>
+                </span>
+                <span className="font-mono text-[10px] text-slate-500">Live Preview</span>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-800/80 bg-slate-900/90 space-y-1.5 font-mono text-xs">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  {hideEmailInRoster ? (
+                    <span className="text-slate-500 italic flex items-center gap-1 font-sans">
+                      <span>Email Private</span>
+                      <EyeOff className="w-3 h-3 text-slate-600" />
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">{profile.email}</span>
+                  )}
+                </div>
+                {phone.trim() ? (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    {hidePhoneInRoster ? (
+                      <span className="text-slate-500 italic flex items-center gap-1 font-sans">
+                        <span>Phone Private</span>
+                        <EyeOff className="w-3 h-3 text-slate-600" />
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">{phone}</span>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

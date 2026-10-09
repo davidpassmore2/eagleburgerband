@@ -234,6 +234,8 @@ export default function RosterImportModal({
           phone: member.phone || existingUser?.phone || "",
           smsConsent: existingUser?.smsConsent ?? false,
           smsConsentUpdatedAt: existingUser?.smsConsentUpdatedAt || "",
+          hideEmailInRoster: member.hideEmailInRoster ?? existingUser?.hideEmailInRoster ?? false,
+          hidePhoneInRoster: member.hidePhoneInRoster ?? existingUser?.hidePhoneInRoster ?? false,
           payoutPreferences: {
             preferredMethod:
               member.payoutMethod ||

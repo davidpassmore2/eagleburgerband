@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -13,6 +14,8 @@ import {
   Shield,
   Music,
   BadgeCheck,
+  EyeOff,
+  ShieldCheck,
 } from "lucide-react";
 
 type MemberRecord = {
@@ -23,6 +26,8 @@ type MemberRecord = {
   sectionId?: string;
   instruments?: string[];
   phone?: string;
+  hideEmailInRoster?: boolean;
+  hidePhoneInRoster?: boolean;
   onboardingStatus?: string;
   status?: string;
   [key: string]: unknown;
@@ -48,6 +53,8 @@ export default function MemberRosterPage() {
           sectionId: raw.sectionId || "",
           instruments: Array.isArray(raw.instruments) ? raw.instruments : [],
           phone: typeof raw.phone === "string" ? raw.phone : undefined,
+          hideEmailInRoster: Boolean(raw.hideEmailInRoster),
+          hidePhoneInRoster: Boolean(raw.hidePhoneInRoster),
           onboardingStatus:
             typeof raw.onboardingStatus === "string"
               ? raw.onboardingStatus
@@ -88,19 +95,36 @@ export default function MemberRosterPage() {
 
   const sectionMap = new Map(sections.map((s) => [s.id, s.name]));
 
+  const isLeaderViewer = Boolean(
+    profile && (
+      profile.roles?.some((r) =>
+        ["admin", "gig_manager", "section_leader", "membership_manager"].includes(r)
+      )
+    )
+  );
+
   const filteredUsers = users.filter((u) => {
     const name = u.displayName || "";
     const email = u.email || "";
     const instruments = u.instruments || [];
-    const query = searchQuery.toLowerCase();
-
-    const matchesSearch =
-      name.toLowerCase().includes(query) ||
-      email.toLowerCase().includes(query) ||
-      instruments.some((inst) => inst.toLowerCase().includes(query));
+    const query = searchQuery.toLowerCase().trim();
 
     const matchesSection =
       selectedSection === "all" || u.sectionId === selectedSection;
+
+    if (!query) {
+      return matchesSection;
+    }
+
+    const isSelf = profile.uid === u.uid;
+    const canSearchContact = isLeaderViewer || isSelf;
+
+    const matchesName = name.toLowerCase().includes(query);
+    const matchesEmail = (!u.hideEmailInRoster || canSearchContact) && email.toLowerCase().includes(query);
+    const matchesPhone = Boolean(u.phone) && (!u.hidePhoneInRoster || canSearchContact) && (u.phone?.toLowerCase().includes(query) ?? false);
+    const matchesInstruments = instruments.some((inst) => inst.toLowerCase().includes(query));
+
+    const matchesSearch = matchesName || matchesEmail || matchesPhone || matchesInstruments;
 
     return matchesSearch && matchesSection;
   });
@@ -159,6 +183,8 @@ export default function MemberRosterPage() {
               member.onboardingStatus === "completed" ||
               member.status === "active";
             const memberInstruments = member.instruments || [];
+            const isSelf = profile.uid === member.uid;
+            const canViewPrivateDetails = isLeaderViewer || isSelf;
 
             return (
               <div
@@ -173,6 +199,14 @@ export default function MemberRosterPage() {
                         {member.roles?.includes("admin") && (
                           <span title="Band Administrator">
                             <Shield className="w-3.5 h-3.5 text-yellow-400" />
+                          </span>
+                        )}
+                        {(member.hideEmailInRoster || member.hidePhoneInRoster) && (
+                          <span
+                            title="Member has privacy enabled for contact details in directory"
+                            className="text-slate-500"
+                          >
+                            <EyeOff className="w-3 h-3 text-slate-500" />
                           </span>
                         )}
                       </div>
@@ -213,19 +247,79 @@ export default function MemberRosterPage() {
                 </div>
 
                 <div className="space-y-1.5 pt-3 border-t border-slate-800 text-xs text-slate-400 font-mono">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-500" />
-                    <a
-                      href={`mailto:${member.email}`}
-                      className="hover:text-yellow-400 transition truncate"
-                    >
-                      {member.email}
-                    </a>
-                  </div>
+                  {/* Email row */}
+                  {member.hideEmailInRoster && !canViewPrivateDetails ? (
+                    <div className="flex items-center gap-2 text-slate-500 italic">
+                      <Mail className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                      <span className="flex items-center gap-1 font-sans text-[11px]">
+                        <span>Email Private</span>
+                        <EyeOff className="w-3 h-3 text-slate-600" />
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-2 truncate">
+                        <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="hover:text-yellow-400 transition truncate"
+                        >
+                          {member.email}
+                        </a>
+                      </div>
+                      {member.hideEmailInRoster && canViewPrivateDetails && (
+                        <span
+                          title="This member set their email as private in the directory. Visible to you as leadership/self."
+                          className="text-[9px] font-sans font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1"
+                        >
+                          <EyeOff className="w-2.5 h-2.5" />
+                          <span>Private</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Phone row */}
                   {member.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{member.phone}</span>
+                    member.hidePhoneInRoster && !canViewPrivateDetails ? (
+                      <div className="flex items-center gap-2 text-slate-500 italic">
+                        <Phone className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                        <span className="flex items-center gap-1 font-sans text-[11px]">
+                          <span>Phone Private</span>
+                          <EyeOff className="w-3 h-3 text-slate-600" />
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <a href={`tel:${member.phone}`} className="hover:text-yellow-400 transition">
+                            {member.phone}
+                          </a>
+                        </div>
+                        {member.hidePhoneInRoster && canViewPrivateDetails && (
+                          <span
+                            title="This member set their phone as private in the directory. Visible to you as leadership/self."
+                            className="text-[9px] font-sans font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1"
+                          >
+                            <EyeOff className="w-2.5 h-2.5" />
+                            <span>Private</span>
+                          </span>
+                        )}
+                      </div>
+                    )
+                  )}
+
+                  {/* Self Quick Link to Profile */}
+                  {isSelf && (
+                    <div className="pt-1 flex items-center justify-end">
+                      <Link
+                        href="/portal/profile"
+                        className="text-[10px] text-amber-400/80 hover:text-amber-300 font-sans flex items-center gap-1 transition"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Edit My Privacy</span>
+                      </Link>
                     </div>
                   )}
                 </div>
