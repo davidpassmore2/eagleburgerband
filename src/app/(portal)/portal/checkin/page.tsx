@@ -15,12 +15,9 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs, canManageSections, isAdmin } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
-import {
-  CheckInSchema,
-  CheckInRecord,
-  CheckInStatus,
-} from "@/lib/schema/attendance";
+import { CheckInSchema, CheckInRecord, CheckInStatus } from "@/lib/schema/attendance";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   CheckCircle2,
   Clock,
@@ -262,6 +259,7 @@ export default function MemberSelfCheckInPage() {
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
         <div className="space-y-1">
+          <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
               Downbeat Operations

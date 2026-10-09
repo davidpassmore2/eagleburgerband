@@ -18,6 +18,7 @@ import {
   GeneralInquiryStatus,
 } from "@/lib/schema/generalInquiry";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   Mail,
   User as UserIcon,
@@ -179,6 +180,7 @@ export default function ContactInboxAdminStudio() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Studio Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

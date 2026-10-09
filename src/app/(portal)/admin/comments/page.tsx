@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import AccessDenied from "@/components/portal/AccessDenied";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 export default function CommentsAdminPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -118,6 +119,7 @@ export default function CommentsAdminPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">

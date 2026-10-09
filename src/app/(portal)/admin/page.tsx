@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import { hasAnyRole } from "@/lib/auth/permissions";
 import { Shield, ArrowRight, Sparkles } from "lucide-react";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 const CATEGORIES: ToolCategory[] = [
   "Performances & Logistics",
@@ -29,6 +30,7 @@ export default function AdminHubPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <PortalBreadcrumb className="mb-2" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div className="flex items-center gap-3">

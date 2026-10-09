@@ -15,6 +15,7 @@ import { User, UserSchema, RoleEnum } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { logAdminAction } from "@/lib/logging/adminLogger";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   ShieldAlert,
   Check,
@@ -305,6 +306,7 @@ export default function UsersAdminPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Studio Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5">
         <div>

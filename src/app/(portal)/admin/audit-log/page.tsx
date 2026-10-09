@@ -27,6 +27,7 @@ import {
   Clock,
   User,
 } from "lucide-react";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 const CATEGORIES: { id: AdminLogCategory | "all"; label: string }[] = [
   { id: "all", label: "All Categories" },
@@ -202,6 +203,7 @@ export default function AdminAuditLogPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5">
         <div>

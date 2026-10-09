@@ -21,6 +21,7 @@ import {
 } from "@/lib/schema/inventory";
 import { toast } from "@/lib/context/ToastContext";
 import AccessDenied from "@/components/portal/AccessDenied";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Package, 
   Plus, 
@@ -247,6 +248,7 @@ export default function InventoryAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">

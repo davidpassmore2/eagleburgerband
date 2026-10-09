@@ -44,6 +44,7 @@ import {
   CloudinaryUploadResultInfo,
 } from "@/lib/cloudinary/widget";
 import CloudinaryConfigModal from "@/components/cms/CloudinaryConfigModal";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 export default function MediaResourcesStudioPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -337,6 +338,7 @@ export default function MediaResourcesStudioPage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16" suppressHydrationWarning>
+      <PortalBreadcrumb className="mb-2" />
       {/* Top Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
         <div className="space-y-2">

@@ -9,6 +9,7 @@ import { User } from "@/lib/schema/user";
 import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from "@/lib/schema/theme";
 import { toast } from "@/lib/context/ToastContext";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Save, 
   Check, 
@@ -160,6 +161,7 @@ export default function ThemeCustomizerPage() {
 
   return (
     <div className={`p-4 sm:p-6 max-w-6xl mx-auto space-y-6 ${isDirty ? "pb-24" : ""}`}>
+      <PortalBreadcrumb className="mb-2" />
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">

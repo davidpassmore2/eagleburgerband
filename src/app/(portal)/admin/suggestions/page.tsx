@@ -48,6 +48,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 interface SuggestionItem {
   id: string;
@@ -541,6 +542,7 @@ export default function SuggestionTriagePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Header Banner */}
       <div 
         suppressHydrationWarning

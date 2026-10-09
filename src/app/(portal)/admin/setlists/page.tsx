@@ -24,6 +24,7 @@ import {
 } from "@/lib/schema/setlist";
 import { toast } from "@/lib/context/ToastContext";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Music, 
   Plus, 
@@ -605,6 +606,7 @@ export default function SetlistStudioPage() {
 
   return (
     <div className={`p-4 sm:p-6 max-w-7xl mx-auto space-y-6 ${isGigDirty ? "pb-24" : ""}`}>
+      <PortalBreadcrumb className="mb-2" />
       {/* Header */}
       <div 
         style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}

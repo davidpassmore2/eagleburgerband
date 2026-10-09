@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { User } from "@/lib/schema/user";
 import { logAdminAction } from "@/lib/logging/adminLogger";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   User as UserIcon, 
   Phone, 
@@ -254,11 +255,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
     <div className={`p-4 sm:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in transition-all ${isDirty ? "pb-28 sm:pb-32" : ""}`}>
       {/* Top Header & Breadcrumb */}
       <div className="space-y-1">
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <Link href="/portal" className="hover:text-amber-400 transition">Musician Portal</Link>
-          <ChevronRight className="w-3 h-3 text-slate-600" />
-          <span className="text-white font-medium">My Profile & SMS Settings</span>
-        </div>
+        <PortalBreadcrumb />
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
           <UserIcon className="w-7 h-7 text-amber-400" />
           <span>Musician Profile & SMS Preferences</span>

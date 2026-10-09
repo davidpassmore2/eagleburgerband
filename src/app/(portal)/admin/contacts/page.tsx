@@ -14,6 +14,7 @@ import { canManageGigs } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { toast } from "@/lib/context/ToastContext";
 import Link from "next/link";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Users2, 
   Mail, 
@@ -182,6 +183,7 @@ export default function ContactsCRMAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">

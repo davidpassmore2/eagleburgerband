@@ -43,6 +43,7 @@ import {
   Filter,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 const CATEGORY_LABELS: Record<DonationCategory, { label: string; color: string }> = {
   arts_music: { label: "Arts & Music Access", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
@@ -262,6 +263,7 @@ export default function CharitableGivingAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Top Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">

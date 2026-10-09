@@ -34,6 +34,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 const CATEGORY_LABELS: Record<string, string> = {
   gear_repairs: "Gear & Repairs",
@@ -314,6 +315,7 @@ export default function MemberReimbursementsPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Top Header */}
       <div
         suppressHydrationWarning

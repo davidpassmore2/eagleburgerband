@@ -42,6 +42,7 @@ import { GigRsvpSchema, type GigRsvp } from "@/lib/schema/rsvp";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { toast } from "@/lib/context/ToastContext";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
 interface SetlistItem {
   id: string;
@@ -386,6 +387,8 @@ export default function MusicianGigDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+      <PortalBreadcrumb subPage={gig.internalLogistics?.title || gig.publicDetails?.title || "Call Sheet"} />
+
       {/* Return Navigation */}
       <div className="flex items-center justify-between gap-4">
         <button

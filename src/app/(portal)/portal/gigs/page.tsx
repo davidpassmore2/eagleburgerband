@@ -15,6 +15,7 @@ import PortalMonthCalendar, { MonthCalendarGig } from "@/components/portal/Porta
 import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   Calendar,
   CalendarDays,
@@ -258,6 +259,7 @@ export default function PortalGigsListPage() {
         className="border rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl transition-colors"
       >
         <div>
+          <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-2">
             <span
               suppressHydrationWarning

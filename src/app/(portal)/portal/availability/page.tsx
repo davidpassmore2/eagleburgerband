@@ -19,6 +19,7 @@ import { BlackoutDateSchema, BlackoutDate } from "@/lib/schema/blackout";
 import { toast } from "@/lib/context/ToastContext";
 import ConfirmDialog from "@/components/portal/ConfirmDialog";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   CalendarOff, 
   Plus, 
@@ -324,6 +325,7 @@ export default function MusicianAvailabilityPage() {
       {/* Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
+          <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-2">
             <Link
               href="/portal"

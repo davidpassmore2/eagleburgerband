@@ -17,6 +17,7 @@ import {
   AuditionStatus,
 } from "@/lib/schema/audition";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   UserPlus,
   Music,
@@ -166,6 +167,7 @@ export default function AuditionsAdminStudio() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2.5">

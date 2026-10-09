@@ -22,6 +22,7 @@ import {
 import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
 import CalendarHeatMap from "@/components/portal/CalendarHeatMap";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Activity, 
   Eye, 
@@ -309,13 +310,7 @@ export default function PortalUsageMetricsPage() {
       {/* Top Breadcrumb & Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
-            <Link href="/admin/audit-log" className="hover:text-yellow-400 transition-colors">
-              Business & Admin
-            </Link>
-            <span>/</span>
-            <span className="text-slate-200">Portal Usage Metrics</span>
-          </div>
+          <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-600/20 border border-yellow-400/30 flex items-center justify-center text-yellow-400 shadow-lg">
               <Activity className="w-5 h-5" />

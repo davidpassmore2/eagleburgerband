@@ -42,6 +42,7 @@ import { toast } from "@/lib/context/ToastContext";
 import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
 import { ResourceAsset, ResourceCategory } from "@/lib/schema/resource";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   Save,
   Eye,
@@ -979,6 +980,7 @@ export default function CMSPagesStudio() {
 
   return (
     <div className={`p-4 sm:p-6 max-w-7xl mx-auto space-y-6 transition-all ${isCurrentDirty ? "pb-28 sm:pb-32" : ""}`}>
+      <PortalBreadcrumb className="mb-2" />
       {/* Studio Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">

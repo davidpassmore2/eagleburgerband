@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -1934,6 +1935,7 @@ export default function PortalHelpCenterPage() {
         }}
       >
         <div className="relative z-10 space-y-3 max-w-3xl">
+          <PortalBreadcrumb className="mb-2" />
           <div 
             suppressHydrationWarning
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold uppercase tracking-wider"

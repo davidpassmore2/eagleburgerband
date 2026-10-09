@@ -15,6 +15,7 @@ import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { SetlistTuneItem, isReusableSetlistTemplate } from "@/lib/schema/setlist";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   Calendar, 
   MapPin, 
@@ -937,6 +938,7 @@ export default function GigsAdminStudioPage() {
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
+          <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
               Admin Studio

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   Workflow,
   Layers,
@@ -382,23 +383,7 @@ export default function StatusMatrixGuidePage() {
     <div className="space-y-8 pb-16 max-w-7xl mx-auto px-4 sm:px-6">
       {/* Top Breadcrumb & Navigation */}
       <div className="flex items-center justify-between gap-4 pt-2">
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <Link
-            href="/portal"
-            className="hover:text-slate-200 transition flex items-center gap-1"
-          >
-            Portal
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-          <Link
-            href="/portal/help"
-            className="hover:text-slate-200 transition"
-          >
-            Help & Documentation
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
-          <span className="text-amber-400 font-medium">Status Matrix</span>
-        </div>
+        <PortalBreadcrumb />
 
         <div className="flex items-center gap-2">
           <Link

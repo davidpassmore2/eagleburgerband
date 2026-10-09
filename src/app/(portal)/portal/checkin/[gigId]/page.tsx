@@ -26,6 +26,7 @@ import {
   MapPin
 } from "lucide-react";
 import { toast } from "@/lib/context/ToastContext";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
   CheckInSchema, 
   type CheckInRecord, 
@@ -252,6 +253,7 @@ export default function DayOfCheckInKioskPage({
       {/* Header Bar */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xl">
         <div className="space-y-1">
+          <PortalBreadcrumb section="Personnel & Attendance" pageTitle="My Attendance & Check-In" pageHref="/portal/checkin" subPage={gigTitle || "Day-of-Show Check-In"} className="mb-2" />
           <div className="flex items-center gap-2">
             <Link
               href="/admin/checkin"

@@ -30,6 +30,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
+import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import RosterExportModal from "@/components/portal/RosterExportModal";
 import RosterImportModal from "@/components/portal/RosterImportModal";
 import { z } from "zod";
@@ -350,6 +351,7 @@ export default function RosterAdminPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <PortalBreadcrumb className="mb-2" />
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
