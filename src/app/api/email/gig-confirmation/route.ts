@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { SendGigConfirmationEmailSchema } from "@/lib/schema/email";
 import { renderGigConfirmedEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
-import { resolveGigConfirmedRecipients } from "@/lib/portal/gigDispatchEngine";
+import { resolveGigConfirmedRecipients, resolveGigAvailabilityRecipients } from "@/lib/portal/gigDispatchEngine";
+import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
       actorUid,
     } = parsed.data;
 
+    let actorName = "Eagleburger Gig Operations";
+    let actorEmail: string | undefined;
+
     // 1. RBAC Guard: Verify gig coordinator or admin role
     if (actorUid) {
       const actorDoc = await getDoc(doc(db, "users", actorUid));
@@ -43,6 +47,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Actor profile not found." }, { status: 401 });
       }
       const actorData = actorDoc.data();
+      actorName = actorData.displayName || actorName;
+      actorEmail = actorData.email;
       const roles: string[] = Array.isArray(actorData.roles) ? actorData.roles : [];
       const hasPerm =
         roles.includes("admin") ||
@@ -58,7 +64,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Resolve confirmed attendees marked "in" or "probable", excluding members on hiatus
+    // 2. Resolve confirmed attendees marked "in" or "probable", excluding members on hiatus.
+    // If no RSVPs exist yet, fallback to all eligible members for this date so they know it's happening.
     let targetEmails: string[] = [];
     let hiatusCount = 0;
 
@@ -66,8 +73,14 @@ export async function POST(req: NextRequest) {
       targetEmails = explicitEmails;
     } else {
       const resolution = await resolveGigConfirmedRecipients(gigId);
-      targetEmails = resolution.confirmedRecipients.map((r) => r.email);
-      hiatusCount = resolution.excludedHiatusCount;
+      if (resolution.confirmedRecipients.length > 0) {
+        targetEmails = resolution.confirmedRecipients.map((r) => r.email);
+        hiatusCount = resolution.excludedHiatusCount;
+      } else {
+        const availResolution = await resolveGigAvailabilityRecipients(date);
+        targetEmails = availResolution.eligibleRecipients.map((r) => r.email);
+        hiatusCount = availResolution.excludedHiatusCount;
+      }
     }
 
     if (targetEmails.length === 0) {
@@ -75,7 +88,7 @@ export async function POST(req: NextRequest) {
         success: true,
         recipientCount: 0,
         hiatusCount,
-        message: "No confirmed attendees marked 'in' or 'probable' to dispatch. Mark musicians attending or probable to send confirmation.",
+        message: "No eligible recipients to notify for gig confirmation.",
       });
     }
 
@@ -107,7 +120,7 @@ export async function POST(req: NextRequest) {
       relatedEntityId: gigId,
       relatedEntityType: "gig",
       senderUid: actorUid || "system",
-      senderName: "Eagleburger Gig Operations",
+      senderName: actorName,
     });
 
     if (!result.success) {
@@ -116,6 +129,28 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       );
     }
+
+    // 5. Universal logging: write to gigs/${gigId}/dispatches and admin_logs
+    await logDispatchExecution({
+      gigId,
+      subject,
+      dispatchType: "gig_confirmation",
+      recipientCount: targetEmails.length,
+      actorUid,
+      actorName,
+      actorEmail,
+      uniformBrief: attire,
+      callTimeBrief: callTime,
+      logisticsBrief: venue,
+      details: {
+        gigTitle,
+        date,
+        downbeat,
+        hiatusCount,
+        logId: result.logId,
+        mocked: result.mocked,
+      },
+    });
 
     return NextResponse.json({
       success: true,

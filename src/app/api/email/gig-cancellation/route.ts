@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SendGigAvailabilityEmailSchema } from "@/lib/schema/email";
-import { renderGigAvailabilityRequestEmail } from "@/lib/email/templates";
+import { SendGigCancellationEmailSchema } from "@/lib/schema/email";
+import { renderGigCancellationEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
-import { resolveGigAvailabilityRecipients } from "@/lib/portal/gigDispatchEngine";
+import { resolveGigConfirmedRecipients, resolveGigAvailabilityRecipients } from "@/lib/portal/gigDispatchEngine";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc } from "firebase/firestore";
@@ -13,11 +13,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const parsed = SendGigAvailabilityEmailSchema.safeParse(body);
+    const parsed = SendGigCancellationEmailSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid gig availability payload", details: parsed.error.format() },
+        { error: "Invalid gig cancellation payload", details: parsed.error.format() },
         { status: 400 }
       );
     }
@@ -27,10 +27,8 @@ export async function POST(req: NextRequest) {
       gigTitle,
       date,
       callTime,
-      downbeat,
       venue,
-      address,
-      notes,
+      reason,
       recipientEmails: explicitEmails,
       actorUid,
     } = parsed.data;
@@ -56,59 +54,58 @@ export async function POST(req: NextRequest) {
 
       if (!hasPerm) {
         return NextResponse.json(
-          { error: "Unauthorized: Gig coordinator or administrator clearance required to dispatch availability requests." },
+          { error: "Unauthorized: Gig coordinator or administrator clearance required to dispatch cancellation notices." },
           { status: 403 }
         );
       }
     }
 
-    // 2. Resolve recipients applying blackout dates & hiatus exclusions
+    // 2. Resolve target recipients:
+    // First priority: musicians who RSVP'd attending (in) or probable for this gig.
+    // Fallback: If no RSVPs exist yet, resolve all active band members for this date.
     let targetEmails: string[] = [];
-    let blackedOutCount = 0;
-    let hiatusCount = 0;
 
     if (explicitEmails && explicitEmails.length > 0) {
       targetEmails = explicitEmails;
     } else {
-      const resolution = await resolveGigAvailabilityRecipients(date);
-      targetEmails = resolution.eligibleRecipients.map((r) => r.email);
-      blackedOutCount = resolution.excludedBlackoutCount;
-      hiatusCount = resolution.excludedHiatusCount;
+      const confirmedResolution = await resolveGigConfirmedRecipients(gigId);
+      if (confirmedResolution.confirmedRecipients.length > 0) {
+        targetEmails = confirmedResolution.confirmedRecipients.map((r) => r.email);
+      } else {
+        const availResolution = await resolveGigAvailabilityRecipients(date);
+        targetEmails = availResolution.eligibleRecipients.map((r) => r.email);
+      }
     }
 
     if (targetEmails.length === 0) {
       return NextResponse.json({
         success: true,
         recipientCount: 0,
-        blackedOutCount,
-        hiatusCount,
-        message: "No eligible recipients found. All active members may be on hiatus or have this date blacked out.",
+        message: "No committed or eligible attendees to notify for cancellation.",
       });
     }
 
     const origin = req.headers.get("origin") || req.nextUrl?.origin;
     const config = getDeliverabilityConfig(origin);
 
-    // 3. Render availability request HTML
-    const { subject, html, text } = renderGigAvailabilityRequestEmail({
+    // 3. Render cancellation email template
+    const { subject, html, text } = renderGigCancellationEmail({
       gigId,
       gigTitle,
       date,
       callTime,
-      downbeat,
       venue,
-      address,
-      notes,
+      reason,
       appUrl: config.appUrl,
     });
 
-    // 4. Send transactional emails
+    // 4. Dispatch transactional cancellation email
     const result = await sendTransactionalEmail({
       to: targetEmails,
       subject,
       html,
       text,
-      templateType: "rsvp_request",
+      templateType: "gig_cancellation",
       relatedEntityId: gigId,
       relatedEntityType: "gig",
       senderUid: actorUid || "system",
@@ -117,27 +114,26 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || "Failed to dispatch availability request emails" },
+        { error: result.error || "Failed to dispatch cancellation emails" },
         { status: 502 }
       );
     }
 
-    // Universal logging: write to gigs/${gigId}/dispatches and admin_logs
+    // 5. Universal logging to gigs subcollection and admin_logs
     await logDispatchExecution({
       gigId,
       subject,
-      dispatchType: "availability_request",
+      dispatchType: "gig_cancellation",
       recipientCount: targetEmails.length,
       actorUid,
       actorName,
       actorEmail,
-      callTimeBrief: callTime,
       logisticsBrief: venue,
+      callTimeBrief: callTime,
       details: {
         gigTitle,
         date,
-        blackedOutCount,
-        hiatusCount,
+        reason,
         logId: result.logId,
         mocked: result.mocked,
       },
@@ -146,13 +142,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       recipientCount: targetEmails.length,
-      blackedOutCount,
-      hiatusCount,
       mocked: result.mocked,
       logId: result.logId,
     });
   } catch (err) {
-    console.error("API /api/email/gig-availability error:", err);
+    console.error("API /api/email/gig-cancellation error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Internal server error" },
       { status: 500 }

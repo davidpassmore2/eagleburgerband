@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SendInviteEmailSchema } from "@/lib/schema/email";
 import { renderInviteEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
+import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -89,6 +90,23 @@ export async function POST(req: NextRequest) {
     } catch (updateErr) {
       console.warn("Could not update lastEmailSentAt on invite:", updateErr);
     }
+
+    // Universal logging: record invite dispatch in admin_logs
+    await logDispatchExecution({
+      subject,
+      dispatchType: "invite",
+      recipientCount: 1,
+      actorUid,
+      actorName: "Eagleburger Band Personnel",
+      details: {
+        token,
+        recipientEmail,
+        musicianName,
+        sectionName,
+        logId: result.logId,
+        mocked: result.mocked,
+      },
+    });
 
     return NextResponse.json({
       success: true,

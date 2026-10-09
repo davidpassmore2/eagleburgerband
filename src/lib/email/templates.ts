@@ -217,6 +217,25 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateType, TemplateDefinition> = {
     suggestedAudience: "all_band",
     supportedTokens: ["{{recipient_name}}", "{{band_name}}"],
   },
+
+  gig_cancellation: {
+    type: "gig_cancellation",
+    title: "Gig Cancellation Notice",
+    badge: "Cancellation Alert",
+    badgeColor: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+    description: "Official cancellation alert informing musicians that a confirmed performance has been called off.",
+    defaultSubject: "CANCELLATION: {{gig_title}} ({{gig_date}})",
+    defaultHtmlBody: `<div style="background-color: rgba(244, 63, 94, 0.1); border: 2px solid #f43f5e; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+  <h2 style="margin: 0 0 6px 0; color: #f43f5e; font-size: 18px;">Performance Cancelled</h2>
+  <p style="margin: 0; font-size: 13px; color: #fecdd3;">The scheduled performance for <strong>{{gig_title}}</strong> on <strong>{{gig_date}}</strong> has been cancelled.</p>
+</div>
+<p>Hey <strong>{{recipient_name}}</strong>,</p>
+<p>Please note on your calendar that this previously confirmed performance will no longer take place.</p>`,
+    defaultSmsBody: "EBB NOTICE: {{gig_title}} on {{gig_date}} has been CANCELLED. Please update your calendar.",
+    smsRecommended: true,
+    suggestedAudience: "gig_attending",
+    supportedTokens: ["{{recipient_name}}", "{{gig_title}}", "{{gig_date}}", "{{venue}}"],
+  },
 };
 
 export interface TokenValues {
@@ -693,6 +712,73 @@ export function renderGigConfirmedEmail(params: {
 
   const html = wrapInBrandedEmailHtml(innerHtml, subject);
   const text = `🎉 Gig Confirmed: ${params.gigTitle}\nDate: ${params.date}\nCall: ${params.callTime || "TBD"} | Downbeat: ${params.downbeat || "TBD"}\nVenue: ${params.venue || "TBD"}\nStaging: ${params.address || "TBD"}\n\nView details: ${portalGigUrl}`;
+
+  return { subject, html, text };
+}
+
+export function renderGigCancellationEmail(params: {
+  gigId: string;
+  gigTitle: string;
+  date: string;
+  callTime?: string;
+  venue?: string;
+  reason?: string;
+  recipientName?: string;
+  appUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const appUrl = params.appUrl || (process.env.NEXT_PUBLIC_APP_URL || "https://eagleburgerband.org");
+  const portalGigUrl = `${appUrl}/portal/gigs`;
+  const subject = `🚫 Performance Cancelled: ${params.gigTitle} (${params.date})`;
+  const musicianName = params.recipientName || "Musician";
+
+  const innerHtml = `
+    <div style="background-color: rgba(244, 63, 94, 0.1); border: 2px solid #f43f5e; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+      <h2 style="margin: 0 0 6px 0; color: #f43f5e; font-size: 18px;">🚫 Performance Cancelled</h2>
+      <p style="margin: 0; font-size: 13px; color: #fecdd3;">The scheduled appearance for <strong>${params.gigTitle}</strong> on <strong>${params.date}</strong> has been cancelled and called off.</p>
+    </div>
+
+    <p>Hey <strong>${musicianName}</strong>,</p>
+    <p>Please note on your calendar that this previously confirmed performance will no longer take place. You are receiving this notification because you were on the active roster for this gig.</p>
+
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 18px; border-radius: 8px; margin: 18px 0;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8; width: 140px;"><strong>Performance:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc; font-weight: bold;">${params.gigTitle}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Original Date:</strong></td>
+          <td style="padding: 8px 0; color: #f8fafc;">${params.date}</td>
+        </tr>
+        ${params.venue ? `
+        <tr style="border-bottom: 1px solid #334155;">
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Venue / Location:</strong></td>
+          <td style="padding: 8px 0; color: #cbd5e1;">${params.venue}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="padding: 8px 0; color: #94a3b8;"><strong>Status:</strong></td>
+          <td style="padding: 8px 0; color: #f43f5e; font-weight: bold;">Cancelled / Called Off</td>
+        </tr>
+      </table>
+    </div>
+
+    ${params.reason ? `
+    <div style="background-color: #1e293b; padding: 14px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #f43f5e;">
+      <p style="margin: 0; font-size: 13px; color: #f43f5e;"><strong>Reason / Organizer Note:</strong></p>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #e2e8f0;">${params.reason}</p>
+    </div>` : ""}
+
+    <p style="text-align: center; margin: 26px 0;">
+      <a href="${portalGigUrl}" style="background-color: #f43f5e; color: #ffffff; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        View Updated Gig Central Schedule &rarr;
+      </a>
+    </p>
+
+    <p>Thank you for your flexibility and dedication to the band!<br /><strong>The Eagleburger Band Directors & Gig Operations</strong></p>
+  `;
+
+  const html = wrapInBrandedEmailHtml(innerHtml, subject);
+  const text = `🚫 GIG CANCELLED: ${params.gigTitle}\nOriginal Date: ${params.date}\nVenue: ${params.venue || "TBD"}\nStatus: Cancelled\n\nReason: ${params.reason || "Performance called off."}\n\nView schedule: ${portalGigUrl}`;
 
   return { subject, html, text };
 }

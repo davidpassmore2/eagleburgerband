@@ -85,4 +85,16 @@ export const SendGigConfirmationEmailSchema = z.object({
 });
 export type SendGigConfirmationEmailPayload = z.infer<typeof SendGigConfirmationEmailSchema>;
 
+export const SendGigCancellationEmailSchema = z.object({
+  gigId: z.string().min(1, "Gig ID is required"),
+  gigTitle: z.string().min(1, "Gig title is required"),
+  date: z.string().default("Upcoming Date"),
+  callTime: z.string().default("TBD"),
+  venue: z.string().default(""),
+  reason: z.string().default(""),
+  recipientEmails: z.array(z.string().email()).default([]),
+  actorUid: z.string().optional(),
+});
+export type SendGigCancellationEmailPayload = z.infer<typeof SendGigCancellationEmailSchema>;
+
 

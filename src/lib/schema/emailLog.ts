@@ -7,6 +7,7 @@ export const EmailTemplateTypeEnum = z.enum([
   "gig_details",
   "rsvp_request",
   "gig_update",
+  "gig_cancellation",
   "custom_broadcast",
 ]);
 

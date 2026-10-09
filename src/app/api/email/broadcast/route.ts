@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SendBroadcastEmailSchema } from "@/lib/schema/email";
 import { wrapInBrandedEmailHtml } from "@/lib/email/templates";
 import { sendTransactionalEmail } from "@/lib/email/resend";
+import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { db } from "@/lib/firebase/client";
 import { doc, getDoc } from "firebase/firestore";
 import { EmailTemplateType } from "@/lib/schema/emailLog";
@@ -79,6 +80,24 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       );
     }
+
+    // Universal logging to gigs subcollection (if gigId) and admin_logs
+    await logDispatchExecution({
+      gigId: relatedEntityId && relatedEntityType === "gig" ? relatedEntityId : null,
+      subject,
+      dispatchType: "broadcast",
+      recipientCount: recipientEmails.length,
+      actorUid: senderUid,
+      actorName: senderName,
+      actorEmail: senderEmail,
+      details: {
+        templateType,
+        relatedEntityId,
+        relatedEntityType,
+        logId: result.logId,
+        mocked: result.mocked,
+      },
+    });
 
     return NextResponse.json({
       success: true,
