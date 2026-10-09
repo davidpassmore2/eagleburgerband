@@ -38,6 +38,7 @@ import {
 import { Role } from "@/lib/auth/permissions";
 
 export type ToolCategory =
+  | "Help, Guides & Docs"
   | "Performances & Logistics"
   | "Personnel & Attendance"
   | "Music & Repertoire"
@@ -55,6 +56,24 @@ export interface WorkspaceTool {
 }
 
 export const WORKSPACE_TOOLS: WorkspaceTool[] = [
+  // --- Help, Guides & Docs ---
+  {
+    id: "help",
+    title: "Help & Guides",
+    href: "/portal/help",
+    icon: BookOpen,
+    requiredRoles: ["member", "guest"],
+    category: "Help, Guides & Docs",
+  },
+  {
+    id: "status-matrix",
+    title: "Status Matrix & Lifecycle Guide",
+    href: "/portal/status-matrix",
+    icon: Workflow,
+    requiredRoles: ["member", "guest"],
+    category: "Help, Guides & Docs",
+  },
+
   // --- Performances & Logistics ---
   {
     id: "member-gigs",
@@ -69,14 +88,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Musician Availability & Blackouts",
     href: "/portal/availability",
     icon: CalendarOff,
-    requiredRoles: ["member", "guest"],
-    category: "Performances & Logistics",
-  },
-  {
-    id: "status-matrix",
-    title: "Status Matrix & Lifecycle Guide",
-    href: "/portal/status-matrix",
-    icon: Workflow,
     requiredRoles: ["member", "guest"],
     category: "Performances & Logistics",
   },
@@ -344,14 +355,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/analytics/usage",
     icon: Activity,
     requiredRoles: ["admin"],
-    category: "Business & Admin",
-  },
-  {
-    id: "help",
-    title: "Help & Documentation",
-    href: "/portal/help",
-    icon: BookOpen,
-    requiredRoles: ["member", "guest"],
     category: "Business & Admin",
   },
 ];

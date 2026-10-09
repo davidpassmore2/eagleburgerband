@@ -66,6 +66,7 @@ function getSidebarPinnedServerSnapshot(): boolean {
 }
 
 const CATEGORY_ORDER: ToolCategory[] = [
+  "Help, Guides & Docs",
   "Performances & Logistics",
   "Personnel & Attendance",
   "Music & Repertoire",
@@ -133,12 +134,11 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const authorizedTools = useMemo(() => {
     if (!mounted) return [];
     return WORKSPACE_TOOLS.filter((tool) =>
-      tool.id !== "help" && tool.requiredRoles.some((role) => hasRole(profile, role))
+      tool.requiredRoles.some((role) => hasRole(profile, role))
     );
   }, [mounted, profile]);
 
   const isPortalActive = pathname === "/portal";
-  const isHelpActive = pathname === "/portal/help" || pathname.startsWith("/portal/help/");
 
   if (!mounted || loading) {
     return (
@@ -403,20 +403,6 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               >
                 <Compass className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="leading-snug break-words whitespace-normal flex-1 text-left">Home Base</span>
-              </Link>
-
-              <Link
-                href="/portal/help"
-                suppressHydrationWarning
-                style={isHelpActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-                  isHelpActive
-                    ? "text-slate-950 font-bold shadow"
-                    : "text-slate-300 hover:bg-slate-800"
-                }`}
-              >
-                <BookOpen className="w-4 h-4 shrink-0 mt-0.5" />
-                <span className="leading-snug break-words whitespace-normal flex-1 text-left">Help & Guides</span>
               </Link>
             </div>
 
