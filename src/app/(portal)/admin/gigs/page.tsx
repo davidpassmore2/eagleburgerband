@@ -203,6 +203,17 @@ export default function GigsAdminStudioPage() {
     toast.success(`Selected "${asset.name}" as gig header image.`);
   };
 
+  // Lock body scroll when edit modal or setlist modal is open
+  useEffect(() => {
+    if (editingGig || managingSetlistGig) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [editingGig, managingSetlistGig]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -1388,23 +1399,28 @@ export default function GigsAdminStudioPage() {
 
       {/* Edit Gig Modal */}
       {editingGig && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden">
           <form
             onSubmit={handleUpdateGig}
-            className="bg-slate-900 border border-yellow-400/40 rounded-2xl p-5 space-y-4 shadow-2xl max-w-2xl w-full my-8"
+            className="bg-slate-900 border border-yellow-400/40 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-yellow-400" /> Edit Performance: {editingGig.id}
+            {/* Modal Header (Pinned at Top) */}
+            <div className="flex items-center justify-between border-b border-slate-800 p-4 sm:p-5 bg-slate-950/60 shrink-0">
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-yellow-400" /> Edit Performance: {editingGig.publicDetails?.title || editingGig.internalLogistics?.title || editingGig.id}
               </h2>
               <button
                 type="button"
                 onClick={() => setEditingGig(null)}
-                className="text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                aria-label="Close edit modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-yellow-400/60">
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
@@ -1897,19 +1913,21 @@ export default function GigsAdminStudioPage() {
                 </div>
               </div>
             )}
+          </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          {/* Modal Footer (Pinned at Bottom) */}
+            <div className="flex justify-end gap-2.5 p-4 border-t border-slate-800 bg-slate-950/80 shrink-0">
               <button
                 type="button"
                 onClick={() => setEditingGig(null)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition"
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1 transition disabled:opacity-50"
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow-md cursor-pointer"
               >
                 {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 {isSaving ? "Saving..." : "Save Changes"}
