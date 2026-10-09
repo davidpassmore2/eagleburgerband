@@ -23,6 +23,7 @@ import {
   isDuplicateSetlistTitle
 } from "@/lib/schema/setlist";
 import { toast } from "@/lib/context/ToastContext";
+import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import { 
   Music, 
   Plus, 
@@ -89,6 +90,7 @@ export default function SetlistStudioPage() {
   // Selection & Active Gig State
   const [selectedGigId, setSelectedGigId] = useState<string>("");
   const [gigSetlistTunes, setGigSetlistTunes] = useState<SetlistTuneItem[]>([]);
+  const [savedGigSetlistTunes, setSavedGigSetlistTunes] = useState<SetlistTuneItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -241,8 +243,10 @@ export default function SetlistStudioPage() {
           const data = snap.data();
           const rawTunes = Array.isArray(data.tunes) ? data.tunes : Array.isArray(data.items) ? data.items : [];
           setGigSetlistTunes(rawTunes);
+          setSavedGigSetlistTunes(rawTunes);
         } else {
           setGigSetlistTunes([]);
+          setSavedGigSetlistTunes([]);
         }
       },
       (err) => console.warn("Notice: gig setlist snapshot note:", err)
@@ -529,53 +533,33 @@ export default function SetlistStudioPage() {
   };
 
   // Save current gig sequence as a new Reusable Setlist
-  const handleSaveGigAsReusableSetlist = async () => {
+  const handleSaveGigAsReusableSetlist = () => {
     if (gigSetlistTunes.length === 0) {
       toast.error("Add at least one tune to save as a reusable setlist.");
       return;
     }
     const selectedGig = gigs.find((g) => g.id === selectedGigId);
     const suggestedName = selectedGig ? `${selectedGig.title} Sequence` : "New Reusable Setlist";
-    const name = prompt("Enter a name for this reusable setlist:", suggestedName);
-    if (!name?.trim()) return;
-
-    const trimmedName = name.trim();
-    if (isDuplicateSetlistTitle(trimmedName, savedSetlists)) {
-      toast.error(`A setlist named "${trimmedName}" already exists in the reusable library. Please choose a unique title.`);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const newId = generateUniqueId("setlist");
-      const newSetlist: Setlist = {
-        id: newId,
-        name: trimmedName,
-        title: trimmedName,
-        description: `Curated for ${selectedGig?.title || "Band performance"}`,
-        category: "parade",
-        tunes: gigSetlistTunes,
-        items: gigSetlistTunes,
-        targetDurationMinutes: 45,
-        tags: ["Gig Sequence"],
-        assignedGigIds: selectedGigId ? [selectedGigId] : [],
-        usageCount: selectedGigId ? 1 : 0,
-        lastUsedDate: selectedGig?.date || null,
-        isTemplate: true,
-        gigId: "",
-        createdByUid: profile?.uid || "",
-        createdByName: profile?.displayName || "Setlist Manager",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      await setDoc(doc(db, "setlists", newId), newSetlist);
-      showToast(`Saved "${name}" into the Reusable Setlist Library!`);
-    } catch (err) {
-      toast.error("Failed to save setlist: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setSaving(false);
-    }
+    setEditingSetlist({
+      id: generateUniqueId("setlist"),
+      name: suggestedName,
+      title: suggestedName,
+      description: `Curated for ${selectedGig?.title || "Band performance"}`,
+      category: "parade",
+      tunes: [...gigSetlistTunes],
+      items: [...gigSetlistTunes],
+      targetDurationMinutes: 45,
+      tags: ["Gig Sequence"],
+      assignedGigIds: selectedGigId ? [selectedGigId] : [],
+      usageCount: selectedGigId ? 1 : 0,
+      lastUsedDate: selectedGig?.date || null,
+      isTemplate: true,
+      gigId: "",
+      createdByUid: profile?.uid || "",
+      createdByName: profile?.displayName || "Setlist Manager",
+    });
+    setSearchCatalogQuery("");
+    setIsEditorOpen(true);
   };
 
   // Save Gig Setlist directly to Firestore
@@ -599,6 +583,7 @@ export default function SetlistStudioPage() {
         updatedAt: new Date().toISOString(),
       });
 
+      setSavedGigSetlistTunes(gigSetlistTunes);
       setSavedSuccess(true);
       showToast("Saved setlist directly to gig call sheet and stage view!");
       setTimeout(() => setSavedSuccess(false), 2500);
@@ -609,10 +594,17 @@ export default function SetlistStudioPage() {
     }
   };
 
+  const handleDiscardGigSetlist = () => {
+    setGigSetlistTunes(savedGigSetlistTunes);
+    toast.info("Reverted unsaved sequence changes.");
+  };
+
+  const isGigDirty = activeTab === "gigs" && Boolean(selectedGigId) && JSON.stringify(gigSetlistTunes) !== JSON.stringify(savedGigSetlistTunes);
+
   const selectedGig = gigs.find((g) => g.id === selectedGigId);
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className={`p-4 sm:p-6 max-w-7xl mx-auto space-y-6 ${isGigDirty ? "pb-24" : ""}`}>
       {/* Header */}
       <div 
         style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
@@ -1027,12 +1019,16 @@ export default function SetlistStudioPage() {
 
               <button
                 type="button"
-                disabled={saving}
+                disabled={saving || !isGigDirty}
                 onClick={handleSaveGigSetlist}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow disabled:opacity-50 cursor-pointer"
+                className={`font-bold px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow cursor-pointer ${
+                  isGigDirty
+                    ? "bg-yellow-400 hover:bg-yellow-300 text-slate-950"
+                    : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-60"
+                }`}
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                <span>{savedSuccess ? "Saved!" : "Save Gig Setlist"}</span>
+                <span>{savedSuccess ? "Saved!" : isGigDirty ? "Save Gig Setlist" : "Saved"}</span>
               </button>
             </div>
           </div>
@@ -1562,6 +1558,17 @@ export default function SetlistStudioPage() {
           </div>
         </div>
       )}
+
+      {/* Sticky Bottom Save / Discard Bar for Active Gig Sequence */}
+      <UnsavedChangesBar
+        isDirty={isGigDirty}
+        isSaving={saving}
+        onSave={handleSaveGigSetlist}
+        onDiscard={handleDiscardGigSetlist}
+        saveLabel="Save Gig Setlist"
+        message="Unsaved Setlist Changes"
+        subMessage={`You have unsaved sequence changes for ${selectedGig?.title || "this gig"}.`}
+      />
     </div>
   );
 }

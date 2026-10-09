@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   doc,
@@ -19,6 +20,7 @@ import {
   DollarSign,
   ArrowLeft,
   Check,
+  CheckCircle2,
   X,
   HelpCircle,
   Loader2,
@@ -467,6 +469,17 @@ export default function MusicianGigDetailPage() {
               <X className="w-3.5 h-3.5" /> Out
             </button>
           </div>
+
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+            <span className="text-slate-400">Day of show?</span>
+            <Link
+              href={`/portal/checkin/${gig.id}`}
+              className="text-yellow-400 hover:text-yellow-300 font-bold flex items-center gap-1 transition"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Roll Call & Check-In →</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -818,6 +831,12 @@ export default function MusicianGigDetailPage() {
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <Link
+                href={`/portal/checkin/${gig.id}`}
+                className="bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Check-In
+              </Link>
               <a
                 href={`/portal/perform/${gig.id}`}
                 target="_blank"

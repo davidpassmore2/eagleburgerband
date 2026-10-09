@@ -22,7 +22,8 @@ import {
   Plus, 
   UserMinus, 
   Users, 
-  Radio
+  Radio,
+  MapPin
 } from "lucide-react";
 import { toast } from "@/lib/context/ToastContext";
 import { 
@@ -56,7 +57,8 @@ export default function DayOfCheckInKioskPage({
 }) {
   const resolvedParams = use(params);
   const gigId = resolvedParams.gigId;
-  const { loading: authLoading } = useAuth();
+  const { profile, firebaseUser, loading: authLoading } = useAuth();
+  const currentUid = firebaseUser?.uid || profile?.uid || "";
 
   const [gigTitle, setGigTitle] = useState("Performance Roll Call");
   const [gigDate, setGigDate] = useState("");
@@ -67,6 +69,8 @@ export default function DayOfCheckInKioskPage({
   const [loading, setLoading] = useState(true);
   const [selectedSection, setSelectedSection] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const myCheckin = currentUid ? checkins[currentUid] : undefined;
 
   // Sub Form State
   const [isAddingSub, setIsAddingSub] = useState(false);
@@ -148,11 +152,14 @@ export default function DayOfCheckInKioskPage({
 
       const record: Record<string, unknown> = {
         uid: targetUid,
+        gigId,
         displayName,
         section,
         status: newStatus,
         checkInTime: isPresent ? now : deleteField(),
         isSub,
+        checkInMethod: targetUid === currentUid ? "self_kiosk" : "section_leader",
+        updatedAt: new Date().toISOString(),
       };
 
       await setDoc(doc(db, "gigs", gigId, "checkins", targetUid), record, { merge: true });
@@ -287,6 +294,95 @@ export default function DayOfCheckInKioskPage({
         </div>
       </div>
 
+      {/* Self-Service Check-In Banner for Current User */}
+      {currentUid && (
+        <div className="space-y-2">
+          {!myCheckin || myCheckin.status === "no_show" ? (
+            <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/15 to-yellow-500/10 border-2 border-yellow-400/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-yellow-400" />
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-yellow-400">
+                    Day-of-Show Self Check-In
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-white">
+                  Are you on site, {profile?.displayName || "Musician"}?
+                </h2>
+                <p className="text-xs text-slate-300">
+                  Tap to confirm your arrival with section leaders and log attendance for today&apos;s call ({callTime}).
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSetStatus(
+                      currentUid,
+                      profile?.displayName || "Musician",
+                      profile?.sectionId || "General",
+                      "checked_in"
+                    )
+                  }
+                  className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>I&apos;M ON SITE</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSetStatus(
+                      currentUid,
+                      profile?.displayName || "Musician",
+                      profile?.sectionId || "General",
+                      "late"
+                    )
+                  }
+                  className="bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold px-3.5 py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-700 transition cursor-pointer"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>RUNNING LATE</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+                    <span>You Are Checked In</span>
+                    <span className="text-[10px] bg-emerald-900/60 border border-emerald-700/60 px-2 py-0.5 rounded-full font-bold">
+                      ✓ CONFIRMED
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-200 font-medium mt-0.5">
+                    Logged as {myCheckin.status === "late" ? "Late Arrival" : "On Site"} at {myCheckin.checkInTime || "Call Time"} • Section: {myCheckin.section}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  handleSetStatus(
+                    currentUid,
+                    profile?.displayName || "Musician",
+                    profile?.sectionId || "General",
+                    "no_show"
+                  )
+                }
+                className="text-[11px] font-mono text-slate-400 hover:text-rose-400 transition underline underline-offset-2"
+              >
+                Undo check-in
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Inline Sub Form */}
       {isAddingSub && (
         <form
@@ -371,18 +467,23 @@ export default function DayOfCheckInKioskPage({
         {filteredAttendees.map((musician) => {
           const currentRecord = checkins[musician.uid];
           const status = currentRecord?.status;
+          const isCurrentUser = musician.uid === currentUid;
 
           return (
             <div
               key={musician.uid}
-              className={`bg-slate-900 border rounded-xl p-3 flex items-center justify-between gap-3 transition ${
+              className={`border rounded-xl p-3 flex items-center justify-between gap-3 transition ${
+                isCurrentUser ? "ring-1 ring-yellow-400/30 " : ""
+              }${
                 status === "checked_in"
                   ? "border-emerald-500/40 bg-slate-900/90"
                   : status === "late"
-                  ? "border-amber-500/40"
+                  ? "border-amber-500/40 bg-slate-900/90"
                   : status === "no_show"
-                  ? "border-rose-500/40"
-                  : "border-slate-800"
+                  ? "border-rose-500/40 bg-slate-900/70 opacity-75"
+                  : isCurrentUser
+                  ? "border-yellow-400/40 bg-slate-900"
+                  : "border-slate-800 bg-slate-900"
               }`}
             >
               <div className="min-w-0">
@@ -390,6 +491,11 @@ export default function DayOfCheckInKioskPage({
                   <span className="font-bold text-white text-xs sm:text-sm truncate">
                     {musician.displayName}
                   </span>
+                  {isCurrentUser && (
+                    <span className="text-[9px] font-mono font-bold text-yellow-400 bg-yellow-400/20 px-1.5 py-0.5 rounded border border-yellow-400/40">
+                      YOU
+                    </span>
+                  )}
                   {musician.isSub && (
                     <span className="text-[9px] font-mono font-bold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded border border-yellow-400/30">
                       SUB

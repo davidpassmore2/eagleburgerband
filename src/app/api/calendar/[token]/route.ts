@@ -30,6 +30,9 @@ export async function GET(
     const uid = userDoc.id;
     const performerName = userData.displayName || userData.name || "Performer";
 
+    const mode = req.nextUrl.searchParams.get("mode") || "mine";
+    const origin = req.nextUrl.origin || "https://eagleburgerband.com";
+
     // 2. Fetch all gigs
     const gigsSnap = await getDocs(collection(db, "gigs"));
     const eventsIcal: string[] = [];
@@ -38,18 +41,25 @@ export async function GET(
       const gigData = gigDoc.data();
       const gigId = gigDoc.id;
 
-      // Check attendance
-      const rsvpsSnap = await getDocs(collection(db, "gigs", gigId, "rsvps"));
-      let isAttending = false;
+      // Skip cancelled or archived gigs if any
+      if (gigData.status === "cancelled" || gigData.status === "archived") {
+        continue;
+      }
 
-      rsvpsSnap.forEach((r) => {
-        const status = r.data().status;
-        if (r.id === uid && (status === "attending" || status === "probable")) {
-          isAttending = true;
-        }
-      });
+      // Check attendance if in "mine" mode
+      if (mode === "mine") {
+        const rsvpsSnap = await getDocs(collection(db, "gigs", gigId, "rsvps"));
+        let isAttending = false;
 
-      if (!isAttending) continue;
+        rsvpsSnap.forEach((r) => {
+          const status = r.data().status;
+          if (r.id === uid && (status === "attending" || status === "probable")) {
+            isAttending = true;
+          }
+        });
+
+        if (!isAttending) continue;
+      }
 
       const title = gigData.internalLogistics?.title || gigData.publicDetails?.title || "Eagleburger Gig";
       const dateStr = gigData.date;
@@ -58,6 +68,7 @@ export async function GET(
       const location = gigData.internalLogistics?.unloadingAddress || gigData.publicDetails?.venueAddress || "Pittsburgh, PA";
       const attire = gigData.internalLogistics?.attire || "Eagleburger Yellows & Black";
       const notes = gigData.internalLogistics?.parkingNotes || "";
+      const portalUrl = `${origin}/portal/gigs/${gigId}`;
 
       const start = parseDateTime(dateStr, callTime !== "TBD" ? callTime : downbeat);
       const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
@@ -68,6 +79,7 @@ export async function GET(
         `Downbeat: ${downbeat}`,
         `Uniform: ${attire}`,
         notes ? `Parking/Logistics: ${notes}` : "",
+        `Call Sheet Details: ${portalUrl}`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -81,6 +93,7 @@ export async function GET(
         `SUMMARY:${escapeIcalText(title)}`,
         `LOCATION:${escapeIcalText(location)}`,
         `DESCRIPTION:${escapeIcalText(description)}`,
+        `URL:${portalUrl}`,
         "STATUS:CONFIRMED",
         "END:VEVENT",
       ].join("\r\n");
@@ -88,13 +101,15 @@ export async function GET(
       eventsIcal.push(eventBlock);
     }
 
+    const calName = mode === "all" ? "Eagleburger Band - Full Schedule" : `Eagleburger - ${performerName}`;
+
     const icalData = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//Eagleburger Band//Gig Dispatch System//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
-      `X-WR-CALNAME:Eagleburger - ${performerName}`,
+      `X-WR-CALNAME:${calName}`,
       "X-WR-TIMEZONE:America/New_York",
       ...eventsIcal,
       "END:VCALENDAR",

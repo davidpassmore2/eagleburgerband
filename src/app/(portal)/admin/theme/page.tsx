@@ -8,6 +8,7 @@ import { canManageTheme } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from "@/lib/schema/theme";
 import { toast } from "@/lib/context/ToastContext";
+import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import { 
   Save, 
   Check, 
@@ -33,6 +34,7 @@ type TabType = "public" | "portal" | "identity";
 export default function ThemeCustomizerPage() {
   const { profile, loading: authLoading } = useAuth();
   const [theme, setTheme] = useState<ThemeConfig>(DEFAULT_THEME);
+  const [savedTheme, setSavedTheme] = useState<ThemeConfig | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("public");
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,10 +50,15 @@ export default function ThemeCustomizerPage() {
           const parsed = ThemeSchema.safeParse(snap.data());
           if (parsed.success) {
             setTheme(parsed.data);
+            setSavedTheme(parsed.data);
           } else {
             console.warn("Theme parsing issue, using defaults:", parsed.error);
-            setTheme({ ...DEFAULT_THEME, ...snap.data() } as ThemeConfig);
+            const fallback = { ...DEFAULT_THEME, ...snap.data() } as ThemeConfig;
+            setTheme(fallback);
+            setSavedTheme(fallback);
           }
+        } else {
+          setSavedTheme(DEFAULT_THEME);
         }
         setLoading(false);
       },
@@ -112,8 +119,10 @@ export default function ThemeCustomizerPage() {
     }
   };
 
-  const handleSaveTheme = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const isDirty = Boolean(savedTheme && JSON.stringify(theme) !== JSON.stringify(savedTheme));
+
+  const handleSaveTheme = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSaving(true);
     setSavedSuccess(false);
 
@@ -131,6 +140,7 @@ export default function ThemeCustomizerPage() {
       const validated = ThemeSchema.parse(payloadToValidate);
       await setDoc(doc(db, "theme", "config"), validated, { merge: true });
 
+      setSavedTheme(validated);
       setSavedSuccess(true);
       toast.success("Theme settings saved successfully!");
       setTimeout(() => setSavedSuccess(false), 3000);
@@ -141,8 +151,15 @@ export default function ThemeCustomizerPage() {
     }
   };
 
+  const handleDiscard = () => {
+    if (savedTheme) {
+      setTheme(savedTheme);
+      toast.info("Theme modifications reverted to saved state.");
+    }
+  };
+
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+    <div className={`p-4 sm:p-6 max-w-6xl mx-auto space-y-6 ${isDirty ? "pb-24" : ""}`}>
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
         <div className="space-y-1">
@@ -163,18 +180,22 @@ export default function ThemeCustomizerPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={handleSaveTheme}
-            disabled={isSaving}
-            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow-md"
+            onClick={(e) => handleSaveTheme(e)}
+            disabled={isSaving || !isDirty}
+            className={`font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow-md ${
+              isDirty
+                ? "bg-yellow-400 hover:bg-yellow-300 text-slate-950"
+                : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-60"
+            }`}
           >
             {isSaving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : savedSuccess ? (
-              <Check className="w-3.5 h-3.5 text-emerald-950" />
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
               <Save className="w-3.5 h-3.5" />
             )}
-            <span>{isSaving ? "Saving..." : savedSuccess ? "Settings Saved!" : "Save Brand Settings"}</span>
+            <span>{isSaving ? "Saving..." : savedSuccess ? "Settings Saved!" : isDirty ? "Save Brand Settings" : "Saved"}</span>
           </button>
         </div>
       </div>
@@ -1002,6 +1023,17 @@ export default function ThemeCustomizerPage() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Bottom Save / Discard Bar */}
+      <UnsavedChangesBar
+        isDirty={isDirty}
+        isSaving={isSaving}
+        onSave={() => handleSaveTheme()}
+        onDiscard={handleDiscard}
+        saveLabel="Save Brand Settings"
+        message="Unsaved Brand Theme Changes"
+        subMessage="You have pending changes to the public or portal color schemes."
+      />
     </div>
   );
 }
