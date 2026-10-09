@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -29,37 +29,114 @@ import {
   EyeOff,
   Lock,
   Info,
+  Undo2,
 } from "lucide-react";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
+import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 
 interface ProfileFormProps {
   profile: User;
 }
 
+interface FormValues {
+  displayName: string;
+  phone: string;
+  smsConsent: boolean;
+  hideEmailInRoster: boolean;
+  hidePhoneInRoster: boolean;
+  preferredMethod: "venmo" | "paypal" | "zelle" | "check" | "other";
+  venmoHandle: string;
+  paypalEmail: string;
+  zelleIdentifier: string;
+  payoutNotes: string;
+}
+
+function getInitialValues(p: User): FormValues {
+  return {
+    displayName: p.displayName || "",
+    phone: p.phone || "",
+    smsConsent: Boolean(p.smsConsent),
+    hideEmailInRoster: Boolean(p.hideEmailInRoster),
+    hidePhoneInRoster: Boolean(p.hidePhoneInRoster),
+    preferredMethod: (p.payoutPreferences?.preferredMethod || "venmo") as FormValues["preferredMethod"],
+    venmoHandle: p.payoutPreferences?.venmoHandle || "",
+    paypalEmail: p.payoutPreferences?.paypalEmail || "",
+    zelleIdentifier: p.payoutPreferences?.zelleIdentifier || "",
+    payoutNotes: p.payoutPreferences?.notes || "",
+  };
+}
+
 function ProfileForm({ profile }: ProfileFormProps) {
-  const [displayName, setDisplayName] = useState(() => profile.displayName || "");
-  const [phone, setPhone] = useState(() => profile.phone || "");
-  const [smsConsent, setSmsConsent] = useState(() => Boolean(profile.smsConsent));
-  const [hideEmailInRoster, setHideEmailInRoster] = useState(() => Boolean(profile.hideEmailInRoster));
-  const [hidePhoneInRoster, setHidePhoneInRoster] = useState(() => Boolean(profile.hidePhoneInRoster));
-  const [preferredMethod, setPreferredMethod] = useState(
-    () => profile.payoutPreferences?.preferredMethod || "venmo"
-  );
-  const [venmoHandle, setVenmoHandle] = useState(
-    () => profile.payoutPreferences?.venmoHandle || ""
-  );
-  const [paypalEmail, setPaypalEmail] = useState(
-    () => profile.payoutPreferences?.paypalEmail || ""
-  );
-  const [zelleIdentifier, setZelleIdentifier] = useState(
-    () => profile.payoutPreferences?.zelleIdentifier || ""
-  );
-  const [payoutNotes, setPayoutNotes] = useState(
-    () => profile.payoutPreferences?.notes || ""
-  );
+  const [savedValues, setSavedValues] = useState<FormValues>(() => getInitialValues(profile));
+
+  const [displayName, setDisplayName] = useState(savedValues.displayName);
+  const [phone, setPhone] = useState(savedValues.phone);
+  const [smsConsent, setSmsConsent] = useState(savedValues.smsConsent);
+  const [hideEmailInRoster, setHideEmailInRoster] = useState(savedValues.hideEmailInRoster);
+  const [hidePhoneInRoster, setHidePhoneInRoster] = useState(savedValues.hidePhoneInRoster);
+  const [preferredMethod, setPreferredMethod] = useState(savedValues.preferredMethod);
+  const [venmoHandle, setVenmoHandle] = useState(savedValues.venmoHandle);
+  const [paypalEmail, setPaypalEmail] = useState(savedValues.paypalEmail);
+  const [zelleIdentifier, setZelleIdentifier] = useState(savedValues.zelleIdentifier);
+  const [payoutNotes, setPayoutNotes] = useState(savedValues.payoutNotes);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Compute dirty state by comparing current form values against last saved baseline
+  const isDirty = useMemo(() => {
+    return (
+      displayName !== savedValues.displayName ||
+      phone !== savedValues.phone ||
+      smsConsent !== savedValues.smsConsent ||
+      hideEmailInRoster !== savedValues.hideEmailInRoster ||
+      hidePhoneInRoster !== savedValues.hidePhoneInRoster ||
+      preferredMethod !== savedValues.preferredMethod ||
+      venmoHandle !== savedValues.venmoHandle ||
+      paypalEmail !== savedValues.paypalEmail ||
+      zelleIdentifier !== savedValues.zelleIdentifier ||
+      payoutNotes !== savedValues.payoutNotes
+    );
+  }, [
+    displayName,
+    phone,
+    smsConsent,
+    hideEmailInRoster,
+    hidePhoneInRoster,
+    preferredMethod,
+    venmoHandle,
+    paypalEmail,
+    zelleIdentifier,
+    payoutNotes,
+    savedValues,
+  ]);
+
+  // Protect against accidental window closing/navigation when changes are unsaved
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Discard changes and revert back to last saved baseline
+  const handleDiscardChanges = () => {
+    setDisplayName(savedValues.displayName);
+    setPhone(savedValues.phone);
+    setSmsConsent(savedValues.smsConsent);
+    setHideEmailInRoster(savedValues.hideEmailInRoster);
+    setHidePhoneInRoster(savedValues.hidePhoneInRoster);
+    setPreferredMethod(savedValues.preferredMethod);
+    setVenmoHandle(savedValues.venmoHandle);
+    setPaypalEmail(savedValues.paypalEmail);
+    setZelleIdentifier(savedValues.zelleIdentifier);
+    setPayoutNotes(savedValues.payoutNotes);
+    toast.info("Unsaved changes discarded.");
+  };
 
   // Membership Status & Departure State
   const [currentStatus, setCurrentStatus] = useState(() => profile.status || "active");
@@ -104,9 +181,9 @@ function ProfileForm({ profile }: ProfileFormProps) {
     }
   };
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile.uid) return;
+  const handleSaveProfile = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!profile.uid || !isDirty || isSaving) return;
 
     setIsSaving(true);
     setErrorMessage(null);
@@ -115,17 +192,18 @@ function ProfileForm({ profile }: ProfileFormProps) {
     try {
       const trimmedPhone = phone.trim();
       const updatedTimestamp = new Date().toISOString();
+      const nextDisplayName = displayName.trim() || profile.displayName || "Musician";
 
       // Ensure validation via schema
       const partialUpdate: Partial<User> = {
-        displayName: displayName.trim() || profile.displayName || "Musician",
+        displayName: nextDisplayName,
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
         smsConsentUpdatedAt: updatedTimestamp,
         hideEmailInRoster: Boolean(hideEmailInRoster),
         hidePhoneInRoster: Boolean(hidePhoneInRoster),
         payoutPreferences: {
-          preferredMethod: preferredMethod as "venmo" | "paypal" | "zelle" | "check" | "other",
+          preferredMethod: preferredMethod as FormValues["preferredMethod"],
           venmoHandle: venmoHandle.trim(),
           paypalEmail: paypalEmail.trim(),
           zelleIdentifier: zelleIdentifier.trim(),
@@ -135,18 +213,45 @@ function ProfileForm({ profile }: ProfileFormProps) {
       };
 
       await updateDoc(doc(db, "users", profile.uid), partialUpdate);
+
+      // Advance baseline snapshot to newly saved values
+      const newSavedValues: FormValues = {
+        displayName: nextDisplayName,
+        phone: trimmedPhone,
+        smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
+        hideEmailInRoster: Boolean(hideEmailInRoster),
+        hidePhoneInRoster: Boolean(hidePhoneInRoster),
+        preferredMethod: preferredMethod as FormValues["preferredMethod"],
+        venmoHandle: venmoHandle.trim(),
+        paypalEmail: paypalEmail.trim(),
+        zelleIdentifier: zelleIdentifier.trim(),
+        payoutNotes: payoutNotes.trim(),
+      };
+
+      setSavedValues(newSavedValues);
+      setDisplayName(newSavedValues.displayName);
+      setPhone(newSavedValues.phone);
+      setSmsConsent(newSavedValues.smsConsent);
+      setVenmoHandle(newSavedValues.venmoHandle);
+      setPaypalEmail(newSavedValues.paypalEmail);
+      setZelleIdentifier(newSavedValues.zelleIdentifier);
+      setPayoutNotes(newSavedValues.payoutNotes);
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 4000);
+      toast.success("Profile & SMS preferences saved successfully!");
     } catch (err) {
       console.error("Failed to update profile:", err);
-      setErrorMessage(err instanceof Error ? err.message : "Failed to update profile preferences.");
+      const msg = err instanceof Error ? err.message : "Failed to update profile preferences.";
+      setErrorMessage(msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
+    <div className={`p-4 sm:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in transition-all ${isDirty ? "pb-28 sm:pb-32" : ""}`}>
       {/* Top Header & Breadcrumb */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -185,7 +290,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
         </div>
       )}
 
-      <form onSubmit={handleSaveProfile} className="space-y-6">
+      <form id="profileForm" onSubmit={handleSaveProfile} className="space-y-6">
         {/* Section 1: Performer Information */}
         <div 
           style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
@@ -711,23 +816,41 @@ function ProfileForm({ profile }: ProfileFormProps) {
             &larr; Return to Musician Portal
           </Link>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 transition shadow-md disabled:opacity-50"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Saving Preferences...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Save Profile & SMS Preferences</span>
-              </>
+          <div className="flex items-center gap-3">
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleDiscardChanges}
+                disabled={isSaving}
+                className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                <span>Discard Changes</span>
+              </button>
             )}
-          </button>
+
+            <button
+              type="submit"
+              disabled={!isDirty || isSaving}
+              className={`font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 transition shadow-md ${
+                !isDirty
+                  ? "bg-slate-800 text-slate-500 border border-slate-700/60 cursor-not-allowed"
+                  : "bg-amber-400 hover:bg-amber-300 text-slate-950 cursor-pointer shadow-amber-500/20"
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving Preferences...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{isDirty ? "Save Profile & SMS Preferences" : "Saved (No Changes)"}</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
 
@@ -876,6 +999,20 @@ function ProfileForm({ profile }: ProfileFormProps) {
           </div>
         </div>
       )}
+
+      {/* Sticky Bottom Bar for Unsaved Changes */}
+      <UnsavedChangesBar
+        isDirty={isDirty}
+        isSaving={isSaving}
+        onSave={() => handleSaveProfile()}
+        onDiscard={handleDiscardChanges}
+        formId="profileForm"
+        message="You have unsaved profile changes"
+        subMessage="Save your updates or discard to restore saved settings."
+        saveLabel="Save Profile Preferences"
+        savingLabel="Saving Profile..."
+        discardLabel="Discard"
+      />
     </div>
   );
 }
