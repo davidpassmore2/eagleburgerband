@@ -91,6 +91,20 @@ export function canManageShirtSizes(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "community_manager"]);
 }
 
+export function canViewChangelog(user: User | null): boolean {
+  return hasAnyRole(user, [
+    "admin",
+    "web_manager",
+    "gig_manager",
+    "catalog_manager",
+    "community_manager",
+    "treasurer",
+    "membership_manager",
+    "section_leader",
+    "member",
+  ]);
+}
+
 export function isSectionLeader(user: User | null, sectionId?: string): boolean {
   if (!user || !user.roles) return false;
   const userRoles = user.roles as readonly string[];

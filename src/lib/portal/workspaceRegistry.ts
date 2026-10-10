@@ -35,6 +35,7 @@ import {
   Activity,
   Workflow,
   Shirt,
+  History,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -364,6 +365,24 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/analytics/usage",
     icon: Activity,
     requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "changelog",
+    title: "Stage Changelog",
+    href: "/admin/changelog",
+    icon: History,
+    requiredRoles: [
+      "admin",
+      "web_manager",
+      "gig_manager",
+      "catalog_manager",
+      "community_manager",
+      "treasurer",
+      "membership_manager",
+      "section_leader",
+      "member",
+    ],
     category: "Business & Admin",
   },
 ];
