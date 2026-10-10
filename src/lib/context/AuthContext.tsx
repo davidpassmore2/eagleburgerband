@@ -183,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: email || "member@eagleburger.org",
     displayName: displayName || (email ? email.split("@")[0] : "Musician"),
     realName: "",
+    shirtSize: "",
     roles: ["member"],
     sectionId: null,
     instruments: [],

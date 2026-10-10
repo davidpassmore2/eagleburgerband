@@ -87,6 +87,10 @@ export function canManageContactInbox(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "web_manager", "community_manager", "gig_manager"]);
 }
 
+export function canManageShirtSizes(user: User | null): boolean {
+  return hasAnyRole(user, ["admin", "community_manager"]);
+}
+
 export function isSectionLeader(user: User | null, sectionId?: string): boolean {
   if (!user || !user.roles) return false;
   const userRoles = user.roles as readonly string[];

@@ -1709,6 +1709,7 @@ export default function PortalHelpCenterPage() {
               email: raw.email || "",
               displayName: raw.displayName || "Band Member",
               realName: raw.realName || "",
+              shirtSize: raw.shirtSize || "",
               roles: Array.isArray(raw.roles) ? raw.roles : ["member"],
               sectionId: raw.sectionId || null,
               instruments: Array.isArray(raw.instruments) ? raw.instruments : [],

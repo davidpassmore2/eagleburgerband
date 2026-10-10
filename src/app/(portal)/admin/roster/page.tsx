@@ -27,6 +27,9 @@ import {
   Upload,
   Palmtree,
   EyeOff,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import AccessDenied from "@/components/portal/AccessDenied";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -166,6 +169,100 @@ export default function RosterAdminPage() {
       return true;
     });
   }, [invites, inviteFilter, inviteSearch, sections]);
+
+  // Invitations Sorting State & Logic
+  type SortDirection = "asc" | "desc";
+  type InviteSortField = "recipient" | "section" | "status" | "timeline";
+  type UserSortField = "performer" | "section" | "status";
+
+  const [inviteSortField, setInviteSortField] = useState<InviteSortField>("timeline");
+  const [inviteSortDirection, setInviteSortDirection] = useState<SortDirection>("desc");
+
+  const [userSortField, setUserSortField] = useState<UserSortField>("performer");
+  const [userSortDirection, setUserSortDirection] = useState<SortDirection>("asc");
+
+  const handleToggleInviteSort = (field: InviteSortField) => {
+    if (inviteSortField === field) {
+      setInviteSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setInviteSortField(field);
+      setInviteSortDirection(field === "timeline" ? "desc" : "asc");
+    }
+  };
+
+  const sortedInvites = useMemo(() => {
+    const list = [...filteredInvites];
+    list.sort((a, b) => {
+      let comparison = 0;
+      if (inviteSortField === "recipient") {
+        const nameA = (a.displayName || a.email || "").toLowerCase();
+        const nameB = (b.displayName || b.email || "").toLowerCase();
+        comparison = nameA.localeCompare(nameB);
+        if (comparison === 0) {
+          comparison = (a.email || "").localeCompare(b.email || "");
+        }
+      } else if (inviteSortField === "section") {
+        const secA = (sections.find((s) => s.id === a.sectionId)?.name || (a.sectionId ? a.sectionId : "General Roster")).toLowerCase();
+        const secB = (sections.find((s) => s.id === b.sectionId)?.name || (b.sectionId ? b.sectionId : "General Roster")).toLowerCase();
+        comparison = secA.localeCompare(secB);
+        if (comparison === 0) {
+          const instA = (a.instruments?.[0] || "").toLowerCase();
+          const instB = (b.instruments?.[0] || "").toLowerCase();
+          comparison = instA.localeCompare(instB);
+        }
+      } else if (inviteSortField === "status") {
+        const priorityMap: Record<string, number> = {
+          pending: 1,
+          claimed: 2,
+          revoked: 3,
+          expired: 4,
+        };
+        const pA = priorityMap[a.status] || 99;
+        const pB = priorityMap[b.status] || 99;
+        comparison = pA - pB;
+        if (comparison === 0) {
+          comparison = (a.displayName || "").localeCompare(b.displayName || "");
+        }
+      } else if (inviteSortField === "timeline") {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        comparison = timeA - timeB;
+      }
+      return inviteSortDirection === "asc" ? comparison : -comparison;
+    });
+    return list;
+  }, [filteredInvites, inviteSortField, inviteSortDirection, sections]);
+
+  const handleToggleUserSort = (field: UserSortField) => {
+    if (userSortField === field) {
+      setUserSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setUserSortField(field);
+      setUserSortDirection("asc");
+    }
+  };
+
+  const sortedUsers = useMemo(() => {
+    const list = [...users];
+    list.sort((a, b) => {
+      let comparison = 0;
+      if (userSortField === "performer") {
+        const nameA = (a.displayName || a.email || "").toLowerCase();
+        const nameB = (b.displayName || b.email || "").toLowerCase();
+        comparison = nameA.localeCompare(nameB);
+      } else if (userSortField === "section") {
+        const secA = (sections.find((s) => s.id === a.sectionId)?.name || (a.sectionId ? a.sectionId : "Unassigned")).toLowerCase();
+        const secB = (sections.find((s) => s.id === b.sectionId)?.name || (b.sectionId ? b.sectionId : "Unassigned")).toLowerCase();
+        comparison = secA.localeCompare(secB);
+      } else if (userSortField === "status") {
+        const statusA = (a.onHiatus || a.status === "hiatus" ? "hiatus" : a.status || "active").toLowerCase();
+        const statusB = (b.onHiatus || b.status === "hiatus" ? "hiatus" : b.status || "active").toLowerCase();
+        comparison = statusA.localeCompare(statusB);
+      }
+      return userSortDirection === "asc" ? comparison : -comparison;
+    });
+    return list;
+  }, [users, userSortField, userSortDirection, sections]);
 
   if (authLoading) return <div className="p-8 text-slate-400">Verifying credentials...</div>;
   if (!canManageRoster(profile)) {
@@ -474,14 +571,71 @@ export default function RosterAdminPage() {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Performer</th>
-                <th className="p-4">Assigned Section</th>
+                <th
+                  onClick={() => handleToggleUserSort("performer")}
+                  className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                  title="Sort by Performer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={userSortField === "performer" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                      Performer
+                    </span>
+                    {userSortField === "performer" ? (
+                      userSortDirection === "asc" ? (
+                        <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleToggleUserSort("section")}
+                  className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                  title="Sort by Assigned Section"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={userSortField === "section" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                      Assigned Section
+                    </span>
+                    {userSortField === "section" ? (
+                      userSortDirection === "asc" ? (
+                        <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                    )}
+                  </div>
+                </th>
                 <th className="p-4">Stacked Roles (RBAC)</th>
-                <th className="p-4">Status</th>
+                <th
+                  onClick={() => handleToggleUserSort("status")}
+                  className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                  title="Sort by Status"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={userSortField === "status" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                      Status
+                    </span>
+                    {userSortField === "status" ? (
+                      userSortDirection === "asc" ? (
+                        <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                    )}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {users.map((u) => (
+              {sortedUsers.map((u) => (
                 <tr key={u.uid} className="hover:bg-slate-800/30 transition">
                   <td className="p-4">
                     <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
@@ -730,15 +884,91 @@ export default function RosterAdminPage() {
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                   <tr>
-                    <th className="p-4">Recipient</th>
-                    <th className="p-4">Section & Instruments</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Timeline</th>
+                    <th
+                      onClick={() => handleToggleInviteSort("recipient")}
+                      className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                      title="Sort by Recipient"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={inviteSortField === "recipient" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                          Recipient
+                        </span>
+                        {inviteSortField === "recipient" ? (
+                          inviteSortDirection === "asc" ? (
+                            <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          ) : (
+                            <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleInviteSort("section")}
+                      className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                      title="Sort by Section & Instruments"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={inviteSortField === "section" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                          Section &amp; Instruments
+                        </span>
+                        {inviteSortField === "section" ? (
+                          inviteSortDirection === "asc" ? (
+                            <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          ) : (
+                            <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleInviteSort("status")}
+                      className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                      title="Sort by Status"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={inviteSortField === "status" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                          Status
+                        </span>
+                        {inviteSortField === "status" ? (
+                          inviteSortDirection === "asc" ? (
+                            <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          ) : (
+                            <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleToggleInviteSort("timeline")}
+                      className="p-4 cursor-pointer hover:bg-slate-900 transition select-none group"
+                      title="Sort by Timeline"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className={inviteSortField === "timeline" ? "text-yellow-400 font-bold" : "group-hover:text-white"}>
+                          Timeline
+                        </span>
+                        {inviteSortField === "timeline" ? (
+                          inviteSortDirection === "asc" ? (
+                            <ArrowUp className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          ) : (
+                            <ArrowDown className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 opacity-60 group-hover:opacity-100 transition shrink-0" />
+                        )}
+                      </div>
+                    </th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {filteredInvites.map((inv) => {
+                  {sortedInvites.map((inv) => {
                     const sectionName =
                       sections.find((s) => s.id === inv.sectionId)?.name ||
                       (inv.sectionId ? inv.sectionId.toUpperCase() : "General Roster");

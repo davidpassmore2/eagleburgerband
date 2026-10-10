@@ -27,12 +27,16 @@ export const PayoutPreferencesSchema = z.object({
 
 export type PayoutPreferences = z.infer<typeof PayoutPreferencesSchema>;
 
+export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+export type ShirtSize = (typeof SHIRT_SIZES)[number];
+
 export const UserSchema = z.object({
   schemaVersion: z.number().default(1),
   uid: z.string(),
   email: z.string().email(),
   displayName: z.string().min(1),
   realName: z.string().default(""),
+  shirtSize: z.string().default(""),
   sectionId: z.string().nullable().default(null),
   instruments: z.array(z.string()).default([]),
   selectedInstrument: z.string().default(""),

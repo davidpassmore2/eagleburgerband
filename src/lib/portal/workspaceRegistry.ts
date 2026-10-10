@@ -34,6 +34,7 @@ import {
   FolderOpen,
   Activity,
   Workflow,
+  Shirt,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -203,6 +204,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/users",
     icon: UserCog,
     requiredRoles: ["admin"],
+    category: "Personnel & Attendance",
+  },
+  {
+    id: "shirt-sizes",
+    title: "Member Shirt Sizes",
+    href: "/admin/shirt-sizes",
+    icon: Shirt,
+    requiredRoles: ["admin", "community_manager"],
     category: "Personnel & Attendance",
   },
 

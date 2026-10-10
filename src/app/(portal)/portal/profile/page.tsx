@@ -5,7 +5,7 @@ import Link from "next/link";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { User } from "@/lib/schema/user";
+import { User, SHIRT_SIZES } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { logAdminAction } from "@/lib/logging/adminLogger";
 import { toast } from "@/lib/context/ToastContext";
@@ -32,6 +32,7 @@ import {
   Info,
   Undo2,
   Check,
+  Shirt,
 } from "lucide-react";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
@@ -43,6 +44,7 @@ interface ProfileFormProps {
 interface FormValues {
   displayName: string;
   realName: string;
+  shirtSize: string;
   selectedInstrument: string;
   phone: string;
   smsConsent: boolean;
@@ -59,6 +61,7 @@ function getInitialValues(p: User): FormValues {
   return {
     displayName: p.displayName || "",
     realName: p.realName || "",
+    shirtSize: p.shirtSize || "",
     selectedInstrument: p.selectedInstrument || p.instruments?.[0] || "",
     phone: p.phone || "",
     smsConsent: Boolean(p.smsConsent),
@@ -77,6 +80,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
 
   const [displayName, setDisplayName] = useState(savedValues.displayName);
   const [realName, setRealName] = useState(savedValues.realName);
+  const [shirtSize, setShirtSize] = useState(savedValues.shirtSize);
   const [selectedInstrument, setSelectedInstrument] = useState(savedValues.selectedInstrument);
   const [phone, setPhone] = useState(savedValues.phone);
   const [smsConsent, setSmsConsent] = useState(savedValues.smsConsent);
@@ -139,6 +143,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
     return (
       displayName !== savedValues.displayName ||
       realName !== savedValues.realName ||
+      shirtSize !== savedValues.shirtSize ||
       selectedInstrument !== savedValues.selectedInstrument ||
       phone !== savedValues.phone ||
       smsConsent !== savedValues.smsConsent ||
@@ -153,6 +158,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
   }, [
     displayName,
     realName,
+    shirtSize,
     selectedInstrument,
     phone,
     smsConsent,
@@ -181,6 +187,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const handleDiscardChanges = () => {
     setDisplayName(savedValues.displayName);
     setRealName(savedValues.realName);
+    setShirtSize(savedValues.shirtSize);
     setSelectedInstrument(savedValues.selectedInstrument);
     setPhone(savedValues.phone);
     setSmsConsent(savedValues.smsConsent);
@@ -260,6 +267,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
       const partialUpdate: Partial<User> = {
         displayName: nextDisplayName,
         realName: nextRealName,
+        shirtSize: shirtSize.trim(),
         selectedInstrument: nextSelectedInstrument,
         instruments: updatedInstruments,
         phone: trimmedPhone,
@@ -283,6 +291,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
       const newSavedValues: FormValues = {
         displayName: nextDisplayName,
         realName: nextRealName,
+        shirtSize: shirtSize.trim(),
         selectedInstrument: nextSelectedInstrument,
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
@@ -298,6 +307,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
       setSavedValues(newSavedValues);
       setDisplayName(newSavedValues.displayName);
       setRealName(newSavedValues.realName);
+      setShirtSize(newSavedValues.shirtSize);
       setSelectedInstrument(newSavedValues.selectedInstrument);
       setPhone(newSavedValues.phone);
       setSmsConsent(newSavedValues.smsConsent);
@@ -501,6 +511,67 @@ function ProfileForm({ profile }: ProfileFormProps) {
                     </span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Band Apparel & Shirt Size Preference */}
+            <div className="space-y-3 pt-4 border-t" style={{ borderColor: "var(--ebb-border)" }}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <Shirt className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Band Apparel &amp; Shirt Size Preference</span>
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Select your shirt size for band t-shirts, uniforms, and official tour merchandise.
+                  </p>
+                </div>
+
+                {shirtSize && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400">Selected:</span>
+                    <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-amber-400/10 text-amber-400 border border-amber-400/20 font-mono">
+                      {shirtSize}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShirtSize("")}
+                      className="text-[11px] text-slate-400 hover:text-rose-400 underline cursor-pointer ml-1"
+                      title="Clear shirt size preference"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {SHIRT_SIZES.map((size) => {
+                  const isSelected = shirtSize === size;
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setShirtSize(isSelected ? "" : size)}
+                      className={`text-xs px-3.5 py-2 rounded-xl border flex items-center gap-2 transition cursor-pointer font-medium ${
+                        isSelected
+                          ? "bg-amber-400/15 border-amber-400 text-amber-300 font-bold shadow-xs ring-1 ring-amber-400/30"
+                          : "bg-black/20 hover:bg-white/5 border-slate-700/80 text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
+                          isSelected
+                            ? "bg-amber-400 border-amber-400 text-slate-950"
+                            : "border-slate-600"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-2.5 h-2.5 stroke-3" />}
+                      </div>
+                      <span className="font-mono font-bold">{size}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
