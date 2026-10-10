@@ -102,6 +102,7 @@ export function canViewChangelog(user: User | null): boolean {
     "membership_manager",
     "section_leader",
     "member",
+    "guest",
   ]);
 }
 

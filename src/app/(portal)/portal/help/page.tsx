@@ -179,7 +179,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "Home Base", path: "/portal" },
       { title: "Status Matrix & Lifecycle Guide", path: "/portal/status-matrix" },
-      { title: "Stage Changelog", path: "/admin/changelog" }
+      { title: "Stage Changelog", path: "/portal/changelog" }
     ]
   },
   {
@@ -1553,15 +1553,15 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "Admin Action Audit Log", path: "/admin/audit-log" },
       { title: "Email & Broadcast Suite", path: "/admin/notifications" },
-      { title: "Stage Changelog", path: "/admin/changelog" }
+      { title: "Stage Changelog", path: "/portal/changelog" }
     ]
   },
   {
-    id: "admin-changelog",
+    id: "portal-changelog",
     title: "Stage Changelog & Release Milestones",
-    path: "/admin/changelog",
-    category: "Business & Admin",
-    roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "treasurer", "membership_manager", "section_leader", "member"],
+    path: "/portal/changelog",
+    category: "Musician Essentials",
+    roles: ["member", "guest", "admin"],
     badge: "Release History",
     iconName: "History",
     summary: "Chronological implementation history, stage accomplishments, and architectural milestones across all completed stages.",
@@ -1574,7 +1574,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Expand All and Collapse All stage cards for easy skimming."
     ],
     howToUse: [
-      "Open Stage Changelog (/admin/changelog) under Business & Admin.",
+      "Open Stage Changelog (/portal/changelog) under Help, Guides & Docs.",
       "Search for any feature keyword (e.g. 'shirt size', 'ical', 'resend', 'breadcrumb') to see when and how it was implemented.",
       "Use the category filter or expand/collapse buttons to explore the platform roadmap."
     ],
@@ -1584,7 +1584,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Help & Guides", path: "/portal/help" },
-      { title: "Admin Action Audit Log", path: "/admin/audit-log" }
+      { title: "Status Matrix & Lifecycle Guide", path: "/portal/status-matrix" }
     ]
   }
 ];
@@ -2020,7 +2020,7 @@ const FAQS = [
   },
   {
     q: "Where can I view the system changelog and latest platform updates?",
-    a: "Visit the Stage Changelog (/admin/changelog) under Business & Admin to review chronological implementation records, search features by keyword, and see what capabilities were added in each stage."
+    a: "Visit the Stage Changelog (/portal/changelog) under Help, Guides & Docs to review chronological implementation records, search features by keyword, and see what capabilities were added in each stage."
   }
 ];
 

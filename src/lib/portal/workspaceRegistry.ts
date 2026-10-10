@@ -75,6 +75,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     requiredRoles: ["member", "guest"],
     category: "Help, Guides & Docs",
   },
+  {
+    id: "changelog",
+    title: "Stage Changelog",
+    href: "/portal/changelog",
+    icon: History,
+    requiredRoles: ["member", "guest"],
+    category: "Help, Guides & Docs",
+  },
 
   // --- Performances & Logistics ---
   {
@@ -365,24 +373,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/admin/analytics/usage",
     icon: Activity,
     requiredRoles: ["admin"],
-    category: "Business & Admin",
-  },
-  {
-    id: "changelog",
-    title: "Stage Changelog",
-    href: "/admin/changelog",
-    icon: History,
-    requiredRoles: [
-      "admin",
-      "web_manager",
-      "gig_manager",
-      "catalog_manager",
-      "community_manager",
-      "treasurer",
-      "membership_manager",
-      "section_leader",
-      "member",
-    ],
     category: "Business & Admin",
   },
 ];
