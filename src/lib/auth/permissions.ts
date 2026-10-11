@@ -91,6 +91,10 @@ export function canManageShirtSizes(user: User | null): boolean {
   return hasAnyRole(user, ["admin", "community_manager"]);
 }
 
+export function canManageNavigation(user: User | null): boolean {
+  return hasAnyRole(user, ["admin"]);
+}
+
 export function canViewChangelog(user: User | null): boolean {
   return hasAnyRole(user, [
     "admin",

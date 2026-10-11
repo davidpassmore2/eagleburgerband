@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useSyncExternalStore, useMemo, useState, useEffect } from "react";
+import React, { useSyncExternalStore, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
-import { WORKSPACE_TOOLS, ToolCategory } from "@/lib/portal/workspaceRegistry";
+import { SidebarNavProvider, useSidebarNav } from "@/lib/context/SidebarNavContext";
 import { hasRole } from "@/lib/auth/permissions";
 import { 
   LogIn, 
   LogOut, 
   Compass, 
-  BookOpen, 
   Palette, 
   SlidersHorizontal, 
   Smartphone, 
@@ -21,8 +20,7 @@ import {
   Pin, 
   PinOff, 
   Menu, 
-  X,
-  Bell
+  X
 } from "lucide-react";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import { RoleEmulationBanner } from "@/components/portal/RoleEmulationBanner";
@@ -65,16 +63,6 @@ function getSidebarPinnedServerSnapshot(): boolean {
   return true;
 }
 
-const CATEGORY_ORDER: ToolCategory[] = [
-  "Help, Guides & Docs",
-  "Performances & Logistics",
-  "Personnel & Attendance",
-  "Music & Repertoire",
-  "Website & Intake",
-  "Finance",
-  "Business & Admin",
-];
-
 function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -89,6 +77,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
     emulatedRoles 
   } = useAuth();
   const { theme, getScopedStyles, activePortalScheme, activePortalMode } = useTheme();
+  const { sections: configuredSections } = useSidebarNav();
   const mounted = useMounted();
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isEmulationModalOpen, setIsEmulationModalOpen] = useState(false);
@@ -130,13 +119,6 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [loading, firebaseUser, mounted, pathname, router]);
-
-  const authorizedTools = useMemo(() => {
-    if (!mounted) return [];
-    return WORKSPACE_TOOLS.filter((tool) =>
-      tool.requiredRoles.some((role) => hasRole(profile, role))
-    );
-  }, [mounted, profile]);
 
   const isPortalActive = pathname === "/portal";
 
@@ -406,27 +388,33 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
 
-            {mounted && authorizedTools.length > 0 && (
+            {mounted && (
               <div className="space-y-4">
-                {CATEGORY_ORDER.map((category) => {
-                  const groupTools = authorizedTools.filter((tool) => tool.category === category);
-                  if (groupTools.length === 0) return null;
+                {configuredSections.map((section) => {
+                  if (!section.isVisible) return null;
+
+                  const visibleAuthorizedLinks = section.links.filter(
+                    (link) => link.isVisible && link.tool.requiredRoles.some((role) => hasRole(profile, role))
+                  );
+
+                  if (visibleAuthorizedLinks.length === 0) return null;
 
                   return (
-                    <div key={category} className="space-y-1">
+                    <div key={section.id} className="space-y-1">
                       <div 
                         style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
                         className="px-3 pt-2 pb-0.5 text-[11px] font-arvo font-bold uppercase tracking-wider"
                       >
-                        {category}
+                        {section.title || section.id}
                       </div>
                       <div className="space-y-0.5">
-                        {groupTools.map((tool) => {
+                        {visibleAuthorizedLinks.map((link) => {
+                          const tool = link.tool;
                           const Icon = tool.icon;
                           const isActive = pathname === tool.href || pathname.startsWith(`${tool.href}/`);
                           return (
                             <Link
-                              key={tool.id}
+                              key={link.id}
                               href={tool.href}
                               suppressHydrationWarning
                               style={isActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
@@ -438,7 +426,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                             >
                               <Icon className="w-4 h-4 shrink-0 mt-0.5" />
                               <span className="leading-snug break-words whitespace-normal flex-1 text-left">
-                                {tool.title}
+                                {link.title || tool.title}
                               </span>
                             </Link>
                           );
@@ -637,9 +625,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <AuthProvider>
       <ThemeProvider>
-        <PortalLoadingProvider>
-          <PortalNavigationShell>{children}</PortalNavigationShell>
-        </PortalLoadingProvider>
+        <SidebarNavProvider>
+          <PortalLoadingProvider>
+            <PortalNavigationShell>{children}</PortalNavigationShell>
+          </PortalLoadingProvider>
+        </SidebarNavProvider>
       </ThemeProvider>
     </AuthProvider>
   );

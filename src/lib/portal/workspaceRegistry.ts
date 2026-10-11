@@ -36,6 +36,7 @@ import {
   Workflow,
   Shirt,
   History,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -372,6 +373,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Portal Usage Metrics",
     href: "/admin/analytics/usage",
     icon: Activity,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "sidebar-navigation",
+    title: "Sidebar Navigation Studio",
+    href: "/admin/navigation",
+    icon: SlidersHorizontal,
     requiredRoles: ["admin"],
     category: "Business & Admin",
   },

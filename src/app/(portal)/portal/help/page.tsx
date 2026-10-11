@@ -67,6 +67,7 @@ import {
   Activity,
   History,
   UserCog,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export type HelpCategory =
@@ -142,6 +143,7 @@ function getRouteIcon(iconName: string) {
     case "Activity": return <Activity className="w-4 h-4" />;
     case "History": return <History className="w-4 h-4" />;
     case "UserCog": return <UserCog className="w-4 h-4" />;
+    case "SlidersHorizontal": return <SlidersHorizontal className="w-4 h-4" />;
     case "BookOpen": return <BookOpen className="w-4 h-4" />;
     default: return <Compass className="w-4 h-4" />;
   }
@@ -1553,7 +1555,43 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "Admin Action Audit Log", path: "/admin/audit-log" },
       { title: "Email & Broadcast Suite", path: "/admin/notifications" },
+      { title: "Sidebar Navigation Studio", path: "/admin/navigation" },
       { title: "Stage Changelog", path: "/portal/changelog" }
+    ]
+  },
+  {
+    id: "admin-navigation",
+    title: "Sidebar Navigation Studio",
+    path: "/admin/navigation",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Navigation Customizer",
+    iconName: "SlidersHorizontal",
+    summary: "Manage section display hierarchy, tool order, and visibility toggles across the musician portal sidebar.",
+    description: "The Sidebar Navigation Studio enables administrators to customize the structural arrangement of navigation sections and their constituent workspace tools. Reorder categories and links via up/down controls, toggle visibility for entire categories or individual tools, and verify the resulting layout with real-time role-based sidebar simulations.",
+    keyFeatures: [
+      "Intuitive reordering of top-level navigation sections with immediate upward/downward priority shifting.",
+      "Fine-grained tool ordering within each section to place high-frequency features first.",
+      "Visibility toggling for entire sections or individual tool links.",
+      "Draft editing mode with unsaved change detection, discard, and system defaults reset.",
+      "Interactive Live Sidebar Simulation previewing views as Admin, Member, Guest, or Section Leader."
+    ],
+    howToUse: [
+      "Open Sidebar Navigation Studio (/admin/navigation) under Business & Admin.",
+      "Use the up and down arrow buttons next to any section or tool to adjust its position.",
+      "Click the Visibility switch to hide or reveal sections or tools across the member portal.",
+      "Switch to the Live Sidebar Preview tab to inspect how the navigation renders across different user roles.",
+      "Click Save Navigation to persist the updated configuration live to all band members."
+    ],
+    proTips: [
+      "Hiding a section automatically hides all tools grouped within it from regular member sidebars.",
+      "If a new tool is added to the codebase, the system automatically appends it to its assigned section without disrupting custom ordering.",
+      "You can safely click Reset Defaults at any time to restore the standard band navigation layout."
+    ],
+    relatedRoutes: [
+      { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Portal Usage Metrics", path: "/admin/analytics/usage" }
     ]
   },
   {
