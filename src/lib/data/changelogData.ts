@@ -7,6 +7,19 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 54,
+    title: "Sidebar Navigation Customizer & Member Changelog Hub",
+    category: "Admin & Navigation",
+    accomplishments: [
+      "Built Stage Changelog hub under Help, Guides & Docs (/portal/changelog) accessible to all members and guests with keyword search, category filters, and chronological sort toggles.",
+      "Created Sidebar Navigation Studio (/admin/navigation) allowing admins to customize top-level section display order and tool link ordering within sections.",
+      "Added section and link visibility toggles, enabling selective hiding of tools from member sidebars while preserving direct access.",
+      "Implemented interactive Live Sidebar Simulation in the admin studio previewing sidebar layout across different band roles (Admin, Member, Guest, Section Leader, etc.).",
+      "Defined SidebarNavigationConfigSchema with resilient auto-merging that gracefully adapts to newly registered tools and schema changes.",
+      "Integrated real-time Firestore persistence (navigation_config/sidebar) with audit logging to the Admin Action Log.",
+    ],
+  },
+  {
     stage: 53,
     title: "Universal Navigation Breadcrumbs, Section Instruments & Apparel Fulfillment",
     category: "Personnel & Navigation",
