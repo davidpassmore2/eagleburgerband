@@ -95,6 +95,10 @@ export function canManageNavigation(user: User | null): boolean {
   return hasAnyRole(user, ["admin"]);
 }
 
+export function canManageIntegrations(user: User | null): boolean {
+  return hasAnyRole(user, ["admin"]);
+}
+
 export function canViewChangelog(user: User | null): boolean {
   return hasAnyRole(user, [
     "admin",

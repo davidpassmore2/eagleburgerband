@@ -68,6 +68,7 @@ import {
   History,
   UserCog,
   SlidersHorizontal,
+  KeyRound,
 } from "lucide-react";
 
 export type HelpCategory =
@@ -144,6 +145,7 @@ function getRouteIcon(iconName: string) {
     case "History": return <History className="w-4 h-4" />;
     case "UserCog": return <UserCog className="w-4 h-4" />;
     case "SlidersHorizontal": return <SlidersHorizontal className="w-4 h-4" />;
+    case "KeyRound": return <KeyRound className="w-4 h-4" />;
     case "BookOpen": return <BookOpen className="w-4 h-4" />;
     default: return <Compass className="w-4 h-4" />;
   }
@@ -1591,7 +1593,42 @@ const ROUTE_DOCS: RouteDoc[] = [
     relatedRoutes: [
       { title: "Brand & Palette", path: "/admin/theme" },
       { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Environment & Integrations", path: "/admin/integrations" },
       { title: "Portal Usage Metrics", path: "/admin/analytics/usage" }
+    ]
+  },
+  {
+    id: "admin-integrations",
+    title: "Environment & Integrations Studio",
+    path: "/admin/integrations",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "API Keys & Production Readiness",
+    iconName: "KeyRound",
+    summary: "Audit third-party service tokens, inspect runtime environment variables, test transactional deliverability, and guide production migration.",
+    description: "The Environment & Integrations Studio gives administrators complete visibility into all third-party integrations required by the Eagleburger Band platform. Inspect Firebase Client/Admin SDK status, Resend deliverability modes, Cloudinary presets, and Slack/Discord webhooks, compare Dev/Beta/Prod environment files, trigger live test dispatches, and track production migration readiness.",
+    keyFeatures: [
+      "Real-time Service Health Matrix covering Firebase Client, Firebase Admin SDK, Resend, Cloudinary, Webhooks, and Calendar feeds.",
+      "Interactive Live .env Inspector with secret masking/revealing, Dev/Beta/Prod presets, and one-click copy/download.",
+      "Live Diagnostic Test Triggers to send test emails, verify Admin SDK service account credentials, and ping incident webhooks.",
+      "Interactive Production Migration Checklist tracked in Firestore with completion timestamps and progress metrics."
+    ],
+    howToUse: [
+      "Open Environment & Integrations Studio (/admin/integrations) under Business & Admin.",
+      "Review the Service Health Matrix to verify active credentials and connection modes.",
+      "Click Test Send or Verify Service Credentials to confirm end-to-end deliverability.",
+      "Switch to the Live .env Inspector tab to export environment configurations for Vercel or local development.",
+      "Check off items in the Production Migration Checklist as production infrastructure is provisioned."
+    ],
+    proTips: [
+      "In offline development, Resend automatically runs in simulated mode to log transmissions without consuming email quota.",
+      "Verify that the project ID in FIREBASE_SERVICE_ACCOUNT_KEY matches NEXT_PUBLIC_FIREBASE_PROJECT_ID before deploying to Vercel.",
+      "Use the one-click Copy .env Block button when setting up production variables in Vercel Project Settings."
+    ],
+    relatedRoutes: [
+      { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Sidebar Navigation Studio", path: "/admin/navigation" }
     ]
   },
   {

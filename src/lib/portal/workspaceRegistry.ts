@@ -37,6 +37,7 @@ import {
   Shirt,
   History,
   SlidersHorizontal,
+  KeyRound,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -381,6 +382,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Sidebar Navigation Studio",
     href: "/admin/navigation",
     icon: SlidersHorizontal,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "integrations",
+    title: "Environment & Integrations",
+    href: "/admin/integrations",
+    icon: KeyRound,
     requiredRoles: ["admin"],
     category: "Business & Admin",
   },
