@@ -22,16 +22,16 @@
   font-family: var(--font-poppins), sans-serif;
 }
 
-/* Public Site Typography: Poppins for body text, Arvo for titles and CTAs */
+/* Public Site Typography: Dynamic Theme Token Support with Arvo / Poppins fallbacks */
 .public-site {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--ebb-font-body, var(--font-poppins, sans-serif));
 }
 
 .public-site input,
 .public-site textarea,
 .public-site select,
 .public-site button:not(.btn-cta):not([type="submit"]) {
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--ebb-font-body, var(--font-poppins, sans-serif));
 }
 
 .public-site h1,
@@ -40,12 +40,14 @@
 .public-site h4,
 .public-title,
 .font-arvo-title {
-  font-family: var(--font-arvo), serif;
+  font-family: var(--ebb-font-heading, var(--font-arvo, serif));
+  letter-spacing: var(--ebb-tracking-heading, normal);
+  text-transform: var(--ebb-transform-heading, none);
   font-weight: 700;
 }
 
 .font-arvo-bold {
-  font-family: var(--font-arvo), serif;
+  font-family: var(--ebb-font-heading, var(--font-arvo, serif));
   font-weight: 700;
 }
 

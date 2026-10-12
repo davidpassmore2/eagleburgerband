@@ -51,58 +51,98 @@ import {
 
 const HEADING_FONT_CONFIG: Record<
   TypographyConfig["headingFont"],
-  { name: string; family: string; subtitle: string; preview: string }
+  { name: string; family: string; subtitle: string; preview: string; category: "slab" | "sans" | "serif" }
 > = {
+  arvo: {
+    name: "Arvo",
+    family: "'Arvo', serif",
+    subtitle: "Bold Geometric Slab Serif",
+    preview: "BRASS POWER",
+    category: "slab",
+  },
+  rokkitt: {
+    name: "Rokkitt",
+    family: "'Rokkitt', serif",
+    subtitle: "Vintage Heavy Industrial Slab",
+    preview: "STREET BEAT",
+    category: "slab",
+  },
   montserrat: {
     name: "Montserrat",
     family: "'Montserrat', sans-serif",
     subtitle: "Bold Classic & Balanced Brass",
     preview: "BRASS ANTHEM",
+    category: "sans",
   },
   oswald: {
     name: "Oswald",
     family: "'Oswald', sans-serif",
     subtitle: "Punchy Condensed Street Beat",
-    preview: "STREET BEAT",
-  },
-  cinzel: {
-    name: "Cinzel",
-    family: "'Cinzel', serif",
-    subtitle: "Regal & Ceremonial Fanfare",
-    preview: "FANFARE VIBE",
+    preview: "HIGH OCTANE",
+    category: "sans",
   },
   "bebas-neue": {
     name: "Bebas Neue",
     family: "'Bebas Neue', sans-serif",
-    subtitle: "Tall Impact Display Headline",
-    preview: "HIGH OCTANE",
+    subtitle: "Tall Display Headline Impact",
+    preview: "PITTSBURGH",
+    category: "sans",
   },
   inter: {
     name: "Inter",
     family: "'Inter', sans-serif",
     subtitle: "Modern Clean Precision",
     preview: "PRECISION",
+    category: "sans",
+  },
+  cinzel: {
+    name: "Cinzel",
+    family: "'Cinzel', serif",
+    subtitle: "Regal & Ceremonial Fanfare",
+    preview: "FANFARE VIBE",
+    category: "serif",
   },
 };
 
 const BODY_FONT_CONFIG: Record<
   TypographyConfig["bodyFont"],
-  { name: string; family: string; subtitle: string }
+  { name: string; family: string; subtitle: string; category: "sans" | "serif" }
 > = {
   inter: {
     name: "Inter",
     family: "'Inter', sans-serif",
     subtitle: "Crisp High Legibility (Default)",
+    category: "sans",
+  },
+  poppins: {
+    name: "Poppins",
+    family: "'Poppins', sans-serif",
+    subtitle: "Geometric Friendly Modern Sans",
+    category: "sans",
   },
   roboto: {
     name: "Roboto",
     family: "'Roboto', sans-serif",
     subtitle: "Clean Geometric Everyday Sans",
+    category: "sans",
   },
   "space-grotesk": {
     name: "Space Grotesk",
     family: "'Space Grotesk', sans-serif",
     subtitle: "Distinctive Groove & Tech Edge",
+    category: "sans",
+  },
+  merriweather: {
+    name: "Merriweather",
+    family: "'Merriweather', serif",
+    subtitle: "Warm Editorial Classic Book Serif",
+    category: "serif",
+  },
+  lora: {
+    name: "Lora",
+    family: "'Lora', serif",
+    subtitle: "Contemporary Flowing Literary Serif",
+    category: "serif",
   },
 };
 
@@ -194,6 +234,8 @@ export default function ThemeCustomizerPage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [identityScope, setIdentityScope] = useState<"public" | "portal">("public");
+  const [simulatorScope, setSimulatorScope] = useState<"public" | "portal">("public");
 
   useEffect(() => {
     if (authLoading) return;
@@ -273,37 +315,46 @@ export default function ThemeCustomizerPage() {
         logoUrl: DEFAULT_THEME.logoUrl,
         faviconUrl: DEFAULT_THEME.faviconUrl,
         activeSeason: DEFAULT_THEME.activeSeason,
-        typography: DEFAULT_THEME.typography,
-        visualPolish: DEFAULT_THEME.visualPolish,
+        publicTypography: DEFAULT_THEME.publicTypography,
+        publicVisualPolish: DEFAULT_THEME.publicVisualPolish,
+        portalTypography: DEFAULT_THEME.portalTypography,
+        portalVisualPolish: DEFAULT_THEME.portalVisualPolish,
       }));
       toast.info("Reset brand identity, typography, and visual polish to defaults.");
     }
   };
 
-  const updateTypography = (patch: Partial<TypographyConfig>) => {
+  const getEffectiveTypography = (scope: "public" | "portal"): TypographyConfig => {
+    if (scope === "public") {
+      return theme.publicTypography || theme.typography || DEFAULT_THEME.publicTypography;
+    }
+    return theme.portalTypography || theme.typography || DEFAULT_THEME.portalTypography;
+  };
+
+  const getEffectiveVisualPolish = (scope: "public" | "portal"): VisualPolishConfig => {
+    if (scope === "public") {
+      return theme.publicVisualPolish || theme.visualPolish || DEFAULT_THEME.publicVisualPolish;
+    }
+    return theme.portalVisualPolish || theme.visualPolish || DEFAULT_THEME.portalVisualPolish;
+  };
+
+  const updateScopedTypography = (scope: "public" | "portal", patch: Partial<TypographyConfig>) => {
+    const key = scope === "public" ? "publicTypography" : "portalTypography";
     setTheme((prev) => ({
       ...prev,
-      typography: {
-        ...(prev.typography || {
-          headingFont: "montserrat",
-          bodyFont: "inter",
-          headingTracking: "wide",
-          headingUppercase: true,
-        }),
+      [key]: {
+        ...getEffectiveTypography(scope),
         ...patch,
       },
     }));
   };
 
-  const updateVisualPolish = (patch: Partial<VisualPolishConfig>) => {
+  const updateScopedVisualPolish = (scope: "public" | "portal", patch: Partial<VisualPolishConfig>) => {
+    const key = scope === "public" ? "publicVisualPolish" : "portalVisualPolish";
     setTheme((prev) => ({
       ...prev,
-      visualPolish: {
-        ...(prev.visualPolish || {
-          borderRadius: "modern",
-          glowIntensity: "subtle",
-          backgroundTexture: "solid",
-        }),
+      [key]: {
+        ...getEffectiveVisualPolish(scope),
         ...patch,
       },
     }));
@@ -1580,262 +1631,347 @@ export default function ThemeCustomizerPage() {
                 </div>
               </div>
 
-              {/* Card 2: Typography & Lettering */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Type className="w-4 h-4 text-yellow-400" /> Typography & Lettering
-                    </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Control primary headline font families, body paragraph legibility, uppercase transforms, and letter tracking.
-                    </p>
-                  </div>
+              {/* Scope Switcher: Public Site Tone vs Musician Portal Tone */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-yellow-400" /> Aesthetic Tone Scope
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Customize independent styles: punchy street marketing for the public site vs functional focus for the musician portal.
+                  </p>
                 </div>
 
-                {/* Headings Font Family */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-slate-300 block">
-                    Headings Font Family
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {(Object.keys(HEADING_FONT_CONFIG) as Array<TypographyConfig["headingFont"]>).map((fontKey) => {
-                      const cfg = HEADING_FONT_CONFIG[fontKey];
-                      const isSelected = (theme.typography?.headingFont || "montserrat") === fontKey;
-                      return (
-                        <button
-                          key={fontKey}
-                          type="button"
-                          onClick={() => updateTypography({ headingFont: fontKey })}
-                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-xs font-bold text-white">{cfg.name}</span>
-                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                          </div>
-                          <div
-                            className="text-base text-yellow-400 font-bold truncate tracking-wide"
-                            style={{ fontFamily: cfg.family }}
-                          >
-                            {cfg.preview}
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIdentityScope("public");
+                      setSimulatorScope("public");
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      identityScope === "public"
+                        ? "bg-yellow-400 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Public Site Tone</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIdentityScope("portal");
+                      setSimulatorScope("portal");
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      identityScope === "portal"
+                        ? "bg-yellow-400 text-slate-950 shadow"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Musician Portal Tone</span>
+                  </button>
                 </div>
+              </div>
 
-                {/* Body Font Family */}
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                  <label className="text-[11px] font-semibold text-slate-300 block">
-                    Body Copy Font Family
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {(Object.keys(BODY_FONT_CONFIG) as Array<TypographyConfig["bodyFont"]>).map((fontKey) => {
-                      const cfg = BODY_FONT_CONFIG[fontKey];
-                      const isSelected = (theme.typography?.bodyFont || "inter") === fontKey;
-                      return (
-                        <button
-                          key={fontKey}
-                          type="button"
-                          onClick={() => updateTypography({ bodyFont: fontKey })}
-                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-xs font-bold text-white">{cfg.name}</span>
-                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                          </div>
-                          <div
-                            className="text-xs text-slate-300 line-clamp-2"
-                            style={{ fontFamily: cfg.family }}
-                          >
-                            Street brass melodies & rhythm
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+              {/* Card 2: Typography & Lettering (Scoped) */}
+              {(() => {
+                const currentTypo = getEffectiveTypography(identityScope);
+                return (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                            <Type className="w-4 h-4 text-yellow-400" /> Typography & Lettering
+                          </h2>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 uppercase font-bold">
+                            {identityScope === "public" ? "Public Site" : "Musician Portal"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Configure headline fonts (including slab serifs like Arvo), body copy (including Poppins & serifs), uppercase transforms, and letter tracking.
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Tracking & Uppercase Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
-                      Headings Letter Tracking
-                    </label>
-                    <div className="flex gap-2">
-                      {(Object.keys(TRACKING_CONFIG) as Array<TypographyConfig["headingTracking"]>).map((trackKey) => {
-                        const track = TRACKING_CONFIG[trackKey];
-                        const isSelected = (theme.typography?.headingTracking || "wide") === trackKey;
-                        return (
-                          <button
-                            key={trackKey}
-                            type="button"
-                            onClick={() => updateTypography({ headingTracking: trackKey })}
-                            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-medium border transition ${
-                              isSelected
-                                ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
-                                : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700"
-                            }`}
-                          >
-                            {track.label}
-                          </button>
-                        );
-                      })}
+                    {/* Headings Font Family */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-300">
+                          Headings Font Family
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          Active: {HEADING_FONT_CONFIG[currentTypo.headingFont].name} ({HEADING_FONT_CONFIG[currentTypo.headingFont].category})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {(Object.keys(HEADING_FONT_CONFIG) as Array<TypographyConfig["headingFont"]>).map((fontKey) => {
+                          const cfg = HEADING_FONT_CONFIG[fontKey];
+                          const isSelected = currentTypo.headingFont === fontKey;
+                          return (
+                            <button
+                              key={fontKey}
+                              type="button"
+                              onClick={() => updateScopedTypography(identityScope, { headingFont: fontKey })}
+                              className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                isSelected
+                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-white">{cfg.name}</span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
+                                    {cfg.category}
+                                  </span>
+                                </div>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <div
+                                className="text-base text-yellow-400 font-bold truncate tracking-wide"
+                                style={{ fontFamily: cfg.family }}
+                              >
+                                {cfg.preview}
+                              </div>
+                              <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Body Font Family */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-slate-300">
+                          Body Copy Font Family
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          Active: {BODY_FONT_CONFIG[currentTypo.bodyFont].name} ({BODY_FONT_CONFIG[currentTypo.bodyFont].category})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {(Object.keys(BODY_FONT_CONFIG) as Array<TypographyConfig["bodyFont"]>).map((fontKey) => {
+                          const cfg = BODY_FONT_CONFIG[fontKey];
+                          const isSelected = currentTypo.bodyFont === fontKey;
+                          return (
+                            <button
+                              key={fontKey}
+                              type="button"
+                              onClick={() => updateScopedTypography(identityScope, { bodyFont: fontKey })}
+                              className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                isSelected
+                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-white">{cfg.name}</span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
+                                    {cfg.category}
+                                  </span>
+                                </div>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <div
+                                className="text-xs text-slate-300 line-clamp-2"
+                                style={{ fontFamily: cfg.family }}
+                              >
+                                Street brass melodies, drums & rhythm
+                              </div>
+                              <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Tracking & Uppercase Controls */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+                          Headings Letter Tracking
+                        </label>
+                        <div className="flex gap-2">
+                          {(Object.keys(TRACKING_CONFIG) as Array<TypographyConfig["headingTracking"]>).map((trackKey) => {
+                            const track = TRACKING_CONFIG[trackKey];
+                            const isSelected = currentTypo.headingTracking === trackKey;
+                            return (
+                              <button
+                                key={trackKey}
+                                type="button"
+                                onClick={() => updateScopedTypography(identityScope, { headingTracking: trackKey })}
+                                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-medium border transition ${
+                                  isSelected
+                                    ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
+                                    : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700"
+                                }`}
+                              >
+                                {track.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+                          Headings Lettercase
+                        </label>
+                        <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                          <input
+                            type="checkbox"
+                            checked={currentTypo.headingUppercase}
+                            onChange={(e) => updateScopedTypography(identityScope, { headingUppercase: e.target.checked })}
+                            className="w-4 h-4 rounded text-yellow-400 bg-slate-900 border-slate-700 focus:ring-yellow-400 focus:ring-offset-slate-900"
+                          />
+                          <span className="text-xs text-white font-medium select-none">
+                            Force uppercase for {identityScope === "public" ? "public titles & headlines" : "portal headers"}
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </div>
+                );
+              })()}
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
-                      Headings Lettercase
-                    </label>
-                    <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
-                      <input
-                        type="checkbox"
-                        checked={theme.typography?.headingUppercase ?? true}
-                        onChange={(e) => updateTypography({ headingUppercase: e.target.checked })}
-                        className="w-4 h-4 rounded text-yellow-400 bg-slate-900 border-slate-700 focus:ring-yellow-400 focus:ring-offset-slate-900"
-                      />
-                      <span className="text-xs text-white font-medium select-none">
-                        Force uppercase for titles & headlines
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+              {/* Card 3: Visual Polish & Atmosphere (Scoped) */}
+              {(() => {
+                const currentPolish = getEffectiveVisualPolish(identityScope);
+                return (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                            <Sliders className="w-4 h-4 text-yellow-400" /> Visual Polish & Atmosphere
+                          </h2>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 uppercase font-bold">
+                            {identityScope === "public" ? "Public Site" : "Musician Portal"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Configure corner geometry profiles, ambient glow radiance, and atmospheric background textures.
+                        </p>
+                      </div>
+                    </div>
 
-              {/* Card 3: Visual Polish & Atmosphere */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-yellow-400" /> Visual Polish & Atmosphere
-                    </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Configure corner geometry profiles, ambient glow radiance, and atmospheric background textures.
-                    </p>
-                  </div>
-                </div>
+                    {/* Corner Radius Profile */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-semibold text-slate-300 block">
+                        Corner Radius Profile
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {(Object.keys(BORDER_RADIUS_CONFIG) as Array<VisualPolishConfig["borderRadius"]>).map((radKey) => {
+                          const rad = BORDER_RADIUS_CONFIG[radKey];
+                          const isSelected = currentPolish.borderRadius === radKey;
+                          return (
+                            <button
+                              key={radKey}
+                              type="button"
+                              onClick={() => updateScopedVisualPolish(identityScope, { borderRadius: radKey })}
+                              className={`p-3 text-left border transition relative flex flex-col justify-between ${
+                                isSelected
+                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              } ${rad.classCard}`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-2">
+                                <span className="text-xs font-bold text-white">{rad.label}</span>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-7 h-7 bg-yellow-400/20 border border-yellow-400/60"
+                                  style={{ borderRadius: rad.styleRadius }}
+                                />
+                                <span className="text-[10px] text-slate-400">{rad.description}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                {/* Corner Radius Profile */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-slate-300 block">
-                    Corner Radius Profile
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {(Object.keys(BORDER_RADIUS_CONFIG) as Array<VisualPolishConfig["borderRadius"]>).map((radKey) => {
-                      const rad = BORDER_RADIUS_CONFIG[radKey];
-                      const isSelected = (theme.visualPolish?.borderRadius || "modern") === radKey;
-                      return (
-                        <button
-                          key={radKey}
-                          type="button"
-                          onClick={() => updateVisualPolish({ borderRadius: radKey })}
-                          className={`p-3 text-left border transition relative flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
-                          } ${rad.classCard}`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-2">
-                            <span className="text-xs font-bold text-white">{rad.label}</span>
-                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-7 h-7 bg-yellow-400/20 border border-yellow-400/60"
-                              style={{ borderRadius: rad.styleRadius }}
-                            />
-                            <span className="text-[10px] text-slate-400">{rad.description}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                    {/* Accent Glow Intensity */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                      <label className="text-[11px] font-semibold text-slate-300 block">
+                        Accent Glow Intensity
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {(Object.keys(GLOW_CONFIG) as Array<VisualPolishConfig["glowIntensity"]>).map((glowKey) => {
+                          const glow = GLOW_CONFIG[glowKey];
+                          const isSelected = currentPolish.glowIntensity === glowKey;
+                          return (
+                            <button
+                              key={glowKey}
+                              type="button"
+                              onClick={() => updateScopedVisualPolish(identityScope, { glowIntensity: glowKey })}
+                              className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                isSelected
+                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-xs font-bold text-white">{glow.label}</span>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div
+                                  className="w-3.5 h-3.5 rounded-full bg-yellow-400 shrink-0"
+                                  style={{ boxShadow: glow.shadow }}
+                                />
+                                <span className="text-[10px] text-slate-400">{glow.description}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                {/* Accent Glow Intensity */}
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                  <label className="text-[11px] font-semibold text-slate-300 block">
-                    Accent Glow Intensity
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {(Object.keys(GLOW_CONFIG) as Array<VisualPolishConfig["glowIntensity"]>).map((glowKey) => {
-                      const glow = GLOW_CONFIG[glowKey];
-                      const isSelected = (theme.visualPolish?.glowIntensity || "subtle") === glowKey;
-                      return (
-                        <button
-                          key={glowKey}
-                          type="button"
-                          onClick={() => updateVisualPolish({ glowIntensity: glowKey })}
-                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-xs font-bold text-white">{glow.label}</span>
-                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div
-                              className="w-3.5 h-3.5 rounded-full bg-yellow-400 shrink-0"
-                              style={{ boxShadow: glow.shadow }}
-                            />
-                            <span className="text-[10px] text-slate-400">{glow.description}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                    {/* Background Texture / Pattern */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                      <label className="text-[11px] font-semibold text-slate-300 block">
+                        Background Texture & Atmosphere
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        {(Object.keys(TEXTURE_CONFIG) as Array<VisualPolishConfig["backgroundTexture"]>).map((texKey) => {
+                          const tex = TEXTURE_CONFIG[texKey];
+                          const isSelected = currentPolish.backgroundTexture === texKey;
+                          return (
+                            <button
+                              key={texKey}
+                              type="button"
+                              onClick={() => updateScopedVisualPolish(identityScope, { backgroundTexture: texKey })}
+                              className={`p-2.5 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                isSelected
+                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-2">
+                                <span className="text-xs font-bold text-white">{tex.label}</span>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <div
+                                className="w-full h-10 rounded-lg border border-slate-800 mb-1.5"
+                                style={tex.getStyle(theme.public.primaryColor)}
+                              />
+                              <div className="text-[10px] text-slate-400">{tex.description}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Background Texture / Pattern */}
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                  <label className="text-[11px] font-semibold text-slate-300 block">
-                    Background Texture & Atmosphere
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {(Object.keys(TEXTURE_CONFIG) as Array<VisualPolishConfig["backgroundTexture"]>).map((texKey) => {
-                      const tex = TEXTURE_CONFIG[texKey];
-                      const isSelected = (theme.visualPolish?.backgroundTexture || "solid") === texKey;
-                      return (
-                        <button
-                          key={texKey}
-                          type="button"
-                          onClick={() => updateVisualPolish({ backgroundTexture: texKey })}
-                          className={`p-2.5 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-2">
-                            <span className="text-xs font-bold text-white">{tex.label}</span>
-                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                          </div>
-                          <div
-                            className="w-full h-10 rounded-lg border border-slate-800 mb-1.5"
-                            style={tex.getStyle(theme.public.primaryColor)}
-                          />
-                          <div className="text-[10px] text-slate-400">{tex.description}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -2140,195 +2276,248 @@ export default function ThemeCustomizerPage() {
               </div>
             )}
 
-            {activeTab === "identity" && (
-              <div className="space-y-4">
-                {/* Dynamically link external Google Fonts for accurate specimen rendering */}
-                <link
-                  rel="stylesheet"
-                  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@600;700;900&family=Montserrat:wght@600;700;900&family=Oswald:wght@600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
-                />
+            {activeTab === "identity" && (() => {
+              const simTypo = getEffectiveTypography(simulatorScope);
+              const simPolish = getEffectiveVisualPolish(simulatorScope);
+              const simPrimaryColor = simulatorScope === "public"
+                ? (theme.public.primaryColor || "#facc15")
+                : (selectedPortalTheme.primaryColor || "#facc15");
+              const simBgColor = simulatorScope === "public"
+                ? (theme.public.backgroundColor || "#020617")
+                : (selectedPortalTheme.backgroundColor || "#0a0802");
+              const simBorderColor = simulatorScope === "public"
+                ? (theme.public.borderColor || "#334155")
+                : (selectedPortalTheme.borderColor || "#382c0f");
+              const simTextColor = simulatorScope === "public"
+                ? (theme.public.textColor || "#f8fafc")
+                : (selectedPortalTheme.textColor || "#fefce8");
 
-                {/* Identity Header Specimen */}
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center gap-3.5 shadow-md">
-                  <div
-                    className="w-14 h-14 font-black text-lg flex items-center justify-center shrink-0 font-mono transition-all duration-300"
-                    style={{
-                      backgroundColor: theme.public.primaryColor || "#facc15",
-                      color: theme.public.backgroundColor || "#0a0802",
-                      borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
-                      boxShadow: GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].shadow,
-                    }}
-                  >
-                    {theme.monogram || "EBB"}
-                  </div>
-                  <div className="min-w-0">
-                    <h3
-                      className="text-base font-extrabold text-white leading-tight truncate transition-all duration-200"
-                      style={{
-                        fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
-                        letterSpacing: TRACKING_CONFIG[theme.typography?.headingTracking || "wide"].value,
-                        textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
-                      }}
+              return (
+                <div className="space-y-4">
+                  {/* Google Fonts stylesheet with slab serifs, classic serifs, and modern sans */}
+                  <link
+                    rel="stylesheet"
+                    href="https://fonts.googleapis.com/css2?family=Arvo:wght@400;700&family=Bebas+Neue&family=Cinzel:wght@600;700;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700;900&family=Oswald:wght@600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rokkitt:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+                  />
+
+                  {/* Simulator Scope Switcher */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setSimulatorScope("public")}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        simulatorScope === "public"
+                          ? "bg-yellow-400 text-slate-950 shadow font-extrabold"
+                          : "text-slate-400 hover:text-white"
+                      }`}
                     >
-                      {theme.bandName}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 font-bold">
-                        {theme.activeSeason}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-500">
-                        {BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].label} Profile
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Typography Specimens Card */}
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
-                    <span className="flex items-center gap-1.5 text-yellow-400 font-bold">
-                      <Type className="w-3.5 h-3.5" /> Typography Specimens
-                    </span>
-                    <span className="text-slate-500">
-                      {HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].name} +{" "}
-                      {BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].name}
-                    </span>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Public Fan Tone Preview</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSimulatorScope("portal")}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        simulatorScope === "portal"
+                          ? "bg-yellow-400 text-slate-950 shadow font-extrabold"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      <span>Portal Tone Preview</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono text-slate-400">Heading 1 Display</div>
+                  {/* Identity Header Specimen */}
+                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center gap-3.5 shadow-md">
                     <div
-                      className="text-base sm:text-lg font-black leading-snug transition-all duration-200"
+                      className="w-14 h-14 font-black text-lg flex items-center justify-center shrink-0 font-mono transition-all duration-300"
                       style={{
-                        color: theme.public.primaryColor || "#facc15",
-                        fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
-                        letterSpacing: TRACKING_CONFIG[theme.typography?.headingTracking || "wide"].value,
-                        textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
+                        backgroundColor: simPrimaryColor,
+                        color: simBgColor,
+                        borderRadius: BORDER_RADIUS_CONFIG[simPolish.borderRadius].styleRadius,
+                        boxShadow: GLOW_CONFIG[simPolish.glowIntensity].shadow,
                       }}
                     >
-                      Pittsburgh Street Brass & Battery
+                      {theme.monogram || "EBB"}
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2 border-t border-slate-900">
-                    <div className="text-[10px] font-mono text-slate-400">Body Copy & Legibility</div>
-                    <p
-                      className="text-xs text-slate-300 leading-relaxed transition-all duration-200"
-                      style={{
-                        fontFamily: BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].family,
-                      }}
-                    >
-                      The Eagleburger Band delivers raw, acoustic funk grooves, second-line anthems, and thunderous percussion across Pittsburgh festivals, parades, and street corners.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Atmosphere & Texture Specimen Card */}
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                    <span className="text-yellow-400 font-bold flex items-center gap-1">
-                      <Layers className="w-3 h-3" /> Atmosphere & Surface Specimen
-                    </span>
-                    <span>{TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].label}</span>
-                  </div>
-                  <div
-                    className="p-4 border transition-all duration-300 space-y-3"
-                    style={{
-                      ...TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].getStyle(
-                        theme.public.primaryColor
-                      ),
-                      borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
-                      borderColor: theme.public.borderColor || "#334155",
-                      boxShadow: GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].shadow,
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-xs font-bold text-white tracking-wide"
+                    <div className="min-w-0">
+                      <h3
+                        className="text-base font-extrabold text-white leading-tight truncate transition-all duration-200"
                         style={{
-                          fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
-                          textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
+                          fontFamily: HEADING_FONT_CONFIG[simTypo.headingFont].family,
+                          letterSpacing: TRACKING_CONFIG[simTypo.headingTracking].value,
+                          textTransform: simTypo.headingUppercase ? "uppercase" : "none",
                         }}
                       >
-                        Bloomfield Parade Warmup
+                        {theme.bandName}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 font-bold">
+                          {theme.activeSeason}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {simulatorScope === "public" ? "Public Marketing" : "Musician Portal"} • {BORDER_RADIUS_CONFIG[simPolish.borderRadius].label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Typography Specimens Card */}
+                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+                      <span className="flex items-center gap-1.5 text-yellow-400 font-bold">
+                        <Type className="w-3.5 h-3.5" /> Typography Specimens
                       </span>
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        Confirmed
+                      <span className="text-slate-400 font-semibold">
+                        {HEADING_FONT_CONFIG[simTypo.headingFont].name} + {BODY_FONT_CONFIG[simTypo.bodyFont].name}
                       </span>
                     </div>
-                    <p
-                      className="text-[11px] text-slate-300"
-                      style={{
-                        fontFamily: BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].family,
-                      }}
-                    >
-                      Full battery roll-off at Liberty Ave staging zone. Repertoire charts active in portal.
-                    </p>
-                    <div className="flex items-center justify-between pt-1">
-                      <button
-                        type="button"
-                        className="text-[10px] font-bold px-3 py-1 bg-yellow-400 text-slate-950 transition"
+
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Heading Display ({HEADING_FONT_CONFIG[simTypo.headingFont].category})
+                      </div>
+                      <div
+                        className="text-base sm:text-lg font-black leading-snug transition-all duration-200"
                         style={{
-                          borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
+                          color: simPrimaryColor,
+                          fontFamily: HEADING_FONT_CONFIG[simTypo.headingFont].family,
+                          letterSpacing: TRACKING_CONFIG[simTypo.headingTracking].value,
+                          textTransform: simTypo.headingUppercase ? "uppercase" : "none",
                         }}
                       >
-                        View Setlist
-                      </button>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        Glow: {GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].label}
-                      </span>
+                        {simulatorScope === "public"
+                          ? "Pittsburgh Street Brass & Battery"
+                          : "Repertoire Setlist & Gig Operations"}
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Identity Asset Specs Table */}
-                <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2 text-xs text-slate-300">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 font-bold">
-                    Active Identity & Asset Tokens
+                    <div className="space-y-1.5 pt-2 border-t border-slate-900">
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Body Copy ({BODY_FONT_CONFIG[simTypo.bodyFont].category})
+                      </div>
+                      <p
+                        className="text-xs text-slate-300 leading-relaxed transition-all duration-200"
+                        style={{
+                          fontFamily: BODY_FONT_CONFIG[simTypo.bodyFont].family,
+                        }}
+                      >
+                        {simulatorScope === "public"
+                          ? "The Eagleburger Band delivers raw, acoustic funk grooves, second-line anthems, and thunderous percussion across Pittsburgh festivals, parades, and street corners."
+                          : "Rehearsal call time: 18:30 at Liberty Ave staging area. Horn section warm-up begins at 18:45 sharp. Access sheet music charts and recordings below."}
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Monogram:</span>
-                      <span className="font-mono text-yellow-400 font-bold">{theme.monogram || "EBB"}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Season:</span>
-                      <span className="font-mono text-slate-300">{theme.activeSeason}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Heading Font:</span>
-                      <span className="font-mono text-slate-300">
-                        {HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].name}
+
+                  {/* Atmosphere & Texture Specimen Card */}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                      <span className="text-yellow-400 font-bold flex items-center gap-1">
+                        <Layers className="w-3 h-3" /> Atmosphere & Surface Specimen
                       </span>
+                      <span>{TEXTURE_CONFIG[simPolish.backgroundTexture].label}</span>
                     </div>
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Body Font:</span>
-                      <span className="font-mono text-slate-300">
-                        {BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].name}
-                      </span>
+                    <div
+                      className="p-4 border transition-all duration-300 space-y-3"
+                      style={{
+                        ...TEXTURE_CONFIG[simPolish.backgroundTexture].getStyle(simPrimaryColor),
+                        borderRadius: BORDER_RADIUS_CONFIG[simPolish.borderRadius].styleRadius,
+                        borderColor: simBorderColor,
+                        boxShadow: GLOW_CONFIG[simPolish.glowIntensity].shadow,
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-xs font-bold text-white tracking-wide"
+                          style={{
+                            fontFamily: HEADING_FONT_CONFIG[simTypo.headingFont].family,
+                            textTransform: simTypo.headingUppercase ? "uppercase" : "none",
+                          }}
+                        >
+                          {simulatorScope === "public" ? "Featured Festival Show" : "Bloomfield Parade Warmup"}
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          {simulatorScope === "public" ? "Upcoming" : "Confirmed"}
+                        </span>
+                      </div>
+                      <p
+                        className="text-[11px] text-slate-300"
+                        style={{
+                          fontFamily: BODY_FONT_CONFIG[simTypo.bodyFont].family,
+                        }}
+                      >
+                        {simulatorScope === "public"
+                          ? "Catch the full 24-piece mobile hornline and battery live at Three Rivers Arts Festival."
+                          : "Full battery roll-off at Liberty Ave staging zone. Repertoire charts active in portal."}
+                      </p>
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          type="button"
+                          className="text-[10px] font-bold px-3 py-1 bg-yellow-400 text-slate-950 transition shadow"
+                          style={{
+                            borderRadius: BORDER_RADIUS_CONFIG[simPolish.borderRadius].styleRadius,
+                          }}
+                        >
+                          {simulatorScope === "public" ? "Get Directions" : "View Setlist"}
+                        </button>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          Glow: {GLOW_CONFIG[simPolish.glowIntensity].label}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Radius:</span>
-                      <span className="font-mono text-slate-300">
-                        {BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].label}
-                      </span>
+                  </div>
+
+                  {/* Identity Asset Specs Table */}
+                  <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2 text-xs text-slate-300">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 font-bold flex items-center justify-between">
+                      <span>Active Tokens ({simulatorScope === "public" ? "Public Site" : "Musician Portal"})</span>
+                      <span className="text-yellow-400 font-mono text-[9px]">{simulatorScope.toUpperCase()}</span>
                     </div>
-                    <div className="flex justify-between py-0.5 border-b border-slate-900">
-                      <span className="text-slate-500">Texture:</span>
-                      <span className="font-mono text-slate-300">
-                        {TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].label}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-0.5 col-span-2">
-                      <span className="text-slate-500">Logo URI:</span>
-                      <span className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">
-                        {theme.logoUrl}
-                      </span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Monogram:</span>
+                        <span className="font-mono text-yellow-400 font-bold">{theme.monogram || "EBB"}</span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Season:</span>
+                        <span className="font-mono text-slate-300">{theme.activeSeason}</span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Heading Font:</span>
+                        <span className="font-mono text-slate-300">
+                          {HEADING_FONT_CONFIG[simTypo.headingFont].name}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Body Font:</span>
+                        <span className="font-mono text-slate-300">
+                          {BODY_FONT_CONFIG[simTypo.bodyFont].name}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Radius:</span>
+                        <span className="font-mono text-slate-300">
+                          {BORDER_RADIUS_CONFIG[simPolish.borderRadius].label}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Texture:</span>
+                        <span className="font-mono text-slate-300">
+                          {TEXTURE_CONFIG[simPolish.backgroundTexture].label}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 col-span-2">
+                        <span className="text-slate-500">Logo URI:</span>
+                        <span className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">
+                          {theme.logoUrl}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
               <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />

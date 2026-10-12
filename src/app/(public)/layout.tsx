@@ -31,6 +31,10 @@ export default function PublicLayout({
   return (
     <AuthProvider>
       <PublicThemeShell>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Arvo:wght@400;700&family=Bebas+Neue&family=Cinzel:wght@600;700;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700;900&family=Oswald:wght@600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rokkitt:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+        />
         <PublicLoadingProvider>
           {/* Dynamic Site Announcement Banner */}
           <PublicAnnouncementBanner />

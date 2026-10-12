@@ -300,6 +300,63 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ? "#ffffff"
         : "#0f172a";
 
+    const activeTypography = isPortal
+      ? theme.portalTypography || theme.typography || {
+          headingFont: "inter" as const,
+          bodyFont: "inter" as const,
+          headingTracking: "normal" as const,
+          headingUppercase: false,
+        }
+      : theme.publicTypography || theme.typography || {
+          headingFont: "montserrat" as const,
+          bodyFont: "inter" as const,
+          headingTracking: "wide" as const,
+          headingUppercase: true,
+        };
+
+    const activeVisualPolish = isPortal
+      ? theme.portalVisualPolish || theme.visualPolish || {
+          borderRadius: "modern" as const,
+          glowIntensity: "none" as const,
+          backgroundTexture: "solid" as const,
+        }
+      : theme.publicVisualPolish || theme.visualPolish || {
+          borderRadius: "modern" as const,
+          glowIntensity: "subtle" as const,
+          backgroundTexture: "solid" as const,
+        };
+
+    const headingFontFamilyMap: Record<string, string> = {
+      montserrat: "'Montserrat', sans-serif",
+      oswald: "'Oswald', sans-serif",
+      arvo: "'Arvo', serif",
+      rokkitt: "'Rokkitt', serif",
+      cinzel: "'Cinzel', serif",
+      "bebas-neue": "'Bebas Neue', sans-serif",
+      inter: "'Inter', sans-serif",
+    };
+
+    const bodyFontFamilyMap: Record<string, string> = {
+      inter: "'Inter', sans-serif",
+      poppins: "'Poppins', sans-serif",
+      roboto: "'Roboto', sans-serif",
+      "space-grotesk": "'Space Grotesk', sans-serif",
+      merriweather: "'Merriweather', serif",
+      lora: "'Lora', serif",
+    };
+
+    const radiusMap: Record<string, string> = {
+      sharp: "4px",
+      modern: "16px",
+      pill: "28px",
+    };
+
+    const trackingMap: Record<string, string> = {
+      normal: "0",
+      wide: "0.05em",
+      wider: "0.10em",
+    };
+
     return {
       ["--ebb-primary" as string]: scopeConfig.primaryColor,
       ["--ebb-primary-text" as string]: primaryTextColor,
@@ -311,6 +368,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       ["--ebb-border" as string]: isPortal ? activePortalScheme.borderColor : scopeConfig.borderColor || "#334155",
       ["--ebb-text" as string]: scopeConfig.textColor,
       ["--ebb-mode" as string]: isPortal ? activePortalMode : "dark",
+      ["--ebb-font-heading" as string]: headingFontFamilyMap[activeTypography.headingFont] || "'Montserrat', sans-serif",
+      ["--ebb-font-body" as string]: bodyFontFamilyMap[activeTypography.bodyFont] || "'Inter', sans-serif",
+      ["--ebb-tracking-heading" as string]: trackingMap[activeTypography.headingTracking] || "0.05em",
+      ["--ebb-transform-heading" as string]: activeTypography.headingUppercase ? "uppercase" : "none",
+      ["--ebb-radius" as string]: radiusMap[activeVisualPolish.borderRadius] || "16px",
+      ["--ebb-glow-intensity" as string]: activeVisualPolish.glowIntensity,
     } as React.CSSProperties;
   };
 

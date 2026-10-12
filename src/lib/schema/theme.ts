@@ -382,8 +382,23 @@ export const DEFAULT_PORTAL_THEMES: PortalThemeOption[] = PORTAL_COLOR_SCHEMES.m
 }));
 
 export const TypographyConfigSchema = z.object({
-  headingFont: z.enum(["montserrat", "oswald", "cinzel", "bebas-neue", "inter"]).default("montserrat"),
-  bodyFont: z.enum(["inter", "roboto", "space-grotesk"]).default("inter"),
+  headingFont: z.enum([
+    "montserrat",
+    "oswald",
+    "arvo",
+    "rokkitt",
+    "cinzel",
+    "bebas-neue",
+    "inter",
+  ]).default("montserrat"),
+  bodyFont: z.enum([
+    "inter",
+    "poppins",
+    "roboto",
+    "space-grotesk",
+    "merriweather",
+    "lora",
+  ]).default("inter"),
   headingTracking: z.enum(["normal", "wide", "wider"]).default("wide"),
   headingUppercase: z.boolean().default(true),
 });
@@ -406,20 +421,35 @@ export const ThemeSchema = z.object({
   faviconUrl: z.string().default("/favicon.ico"),
   activeSeason: z.string().default("2026 Season"),
 
-  // Typography & Lettering
-  typography: TypographyConfigSchema.default({
+  // Independent Public Site Typography & Visual Atmosphere
+  publicTypography: TypographyConfigSchema.default({
     headingFont: "montserrat",
     bodyFont: "inter",
     headingTracking: "wide",
     headingUppercase: true,
   }),
-
-  // Visual Polish & Effects
-  visualPolish: VisualPolishConfigSchema.default({
+  publicVisualPolish: VisualPolishConfigSchema.default({
     borderRadius: "modern",
     glowIntensity: "subtle",
     backgroundTexture: "solid",
   }),
+
+  // Independent Musician Portal Typography & Visual Atmosphere
+  portalTypography: TypographyConfigSchema.default({
+    headingFont: "inter",
+    bodyFont: "inter",
+    headingTracking: "normal",
+    headingUppercase: false,
+  }),
+  portalVisualPolish: VisualPolishConfigSchema.default({
+    borderRadius: "modern",
+    glowIntensity: "none",
+    backgroundTexture: "solid",
+  }),
+
+  // Legacy / fallback fields for backwards compatibility
+  typography: TypographyConfigSchema.optional(),
+  visualPolish: VisualPolishConfigSchema.optional(),
 
   socialLinks: ThemeSocialLinksSchema.default(() => ({
     youtube: "https://www.youtube.com/watch?v=v0x-fut30wE",
