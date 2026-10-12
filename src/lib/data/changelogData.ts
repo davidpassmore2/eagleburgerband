@@ -11,7 +11,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
     title: "Scoped Brand & Theme Studio & Backend Security Lockdown",
     category: "Branding & Security",
     accomplishments: [
-      "Built multi-scope Brand & Palette Customizer (/admin/theme) with independent controls for Public Fan Site and Musician Portal schemes.",
+      "Built multi-scope Brand & Palette Customizer (/admin/theme) with independent controls for Public Fan Site and Musician Portal themes.",
       "Added custom preset generation, 8-token palette editing, factory defaults resets, and CSS mask-image dynamic logo tinting.",
       "Engineered independent Public vs. Portal aesthetic tone controls, enabling punchy street marketing for the public site and focused functional styling for the portal.",
       "Integrated expanded typography library featuring slab serifs (Arvo, Rokkitt), modern sans (Poppins, Montserrat, Oswald, Bebas Neue, Inter), and classic serifs (Cinzel, Merriweather, Lora).",
@@ -309,7 +309,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
     title: "Portal Theme System & Role Emulation Suite",
     category: "Theme & Security",
     accomplishments: [
-      "Created ThemeContext offering 6 preset portal theme schemes (Classic Brass, Dark Mode, etc.).",
+      "Created ThemeContext offering 6 preset portal themes (Classic Brass, Dark Mode, etc.).",
       "Built RoleEmulationModal allowing admins to preview portal views as any band role.",
       "Saved theme preferences to local storage with seamless switching.",
     ],

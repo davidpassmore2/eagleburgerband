@@ -124,7 +124,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                 style={{ color: isLight ? "#64748b" : "#94a3b8" }}
                 className="text-xs mt-0.5 leading-relaxed"
               >
-                Choose an atmospheric scheme and toggle between light or dark mode. Preferences persist to your musician profile.
+                Choose an atmospheric theme and toggle between light or dark mode. Preferences persist to your musician profile.
               </p>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
           </div>
         </div>
 
-        {/* Scheme List */}
+        {/* Theme List */}
         <div className="p-6 overflow-y-auto space-y-3.5 flex-1 [scrollbar-width:thin]">
           <div 
             style={{ color: isLight ? "#64748b" : "#94a3b8" }}
@@ -233,7 +233,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                       : "hover:border-slate-400 dark:hover:border-slate-500 hover:opacity-100 opacity-95"
                   }`}
                 >
-                  {/* Left: Scheme Info & Swatches */}
+                  {/* Left: Theme Info & Swatches */}
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2.5">
                       {/* Swatch dots for current mode */}

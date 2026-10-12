@@ -1816,16 +1816,16 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     title: "Web & Digital Content Manager",
     badge: "Public Marketing & CMS",
     target: "Webmasters, Digital Marketers & Creative Directors",
-    summary: "Oversees the public-facing brand, content marketing, and visual design systems. Designs and publishes dynamic web pages using the Headless CMS Studio, manages search engine optimization (SEO), and customizes theme color schemes.",
+    summary: "Oversees the public-facing brand, content marketing, and visual design systems. Designs and publishes dynamic web pages using the Headless CMS Studio, manages search engine optimization (SEO), and customizes theme palettes and branding.",
     responsibilities: [
       "Author and publish dynamic public pages (Story, Media, Book Us) using the CMS Section Builder.",
       "Format public copy using the secure WYSIWYG rich text editor with sanitized HTML.",
       "Configure meta titles, OpenGraph share cards, and JSON-LD structured data in the SEO Studio.",
-      "Maintain visual brand harmony by customizing public and musician portal color schemes."
+      "Maintain visual brand harmony by customizing public and musician portal color themes."
     ],
     authorities: [
       "Full create/read/update/delete control over CMS pages in the CMS Page Studio (/admin/pages).",
-      "Modify global brand logos, typography, and color schemes in the Theme Studio (/admin/theme).",
+      "Modify global brand logos, typography, and color themes in the Theme Studio (/admin/theme).",
       "Moderate public community comments and contact inquiries (/admin/comments)."
     ],
     routes: [

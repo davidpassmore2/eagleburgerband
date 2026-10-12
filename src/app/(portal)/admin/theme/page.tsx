@@ -67,6 +67,27 @@ const HEADING_FONT_CONFIG: Record<
     preview: "STREET BEAT",
     category: "slab",
   },
+  "alfa-slab-one": {
+    name: "Alfa Slab One",
+    family: "'Alfa Slab One', serif",
+    subtitle: "Ultra-Heavy Bold Poster Slab",
+    preview: "BIG SOUND",
+    category: "slab",
+  },
+  "crete-round": {
+    name: "Crete Round",
+    family: "'Crete Round', serif",
+    subtitle: "Warm Curved Balanced Slab",
+    preview: "FANFARE",
+    category: "slab",
+  },
+  "bree-serif": {
+    name: "Bree Serif",
+    family: "'Bree Serif', serif",
+    subtitle: "Punchy Upright Character Slab",
+    preview: "GROOVE",
+    category: "slab",
+  },
   montserrat: {
     name: "Montserrat",
     family: "'Montserrat', sans-serif",
@@ -88,6 +109,41 @@ const HEADING_FONT_CONFIG: Record<
     preview: "PITTSBURGH",
     category: "sans",
   },
+  anton: {
+    name: "Anton",
+    family: "'Anton', sans-serif",
+    subtitle: "Heavyweight Festival Headline",
+    preview: "BRASS FEST",
+    category: "sans",
+  },
+  teko: {
+    name: "Teko",
+    family: "'Teko', sans-serif",
+    subtitle: "Ultra-Tall Compressed Display",
+    preview: "STREET MARCH",
+    category: "sans",
+  },
+  righteous: {
+    name: "Righteous",
+    family: "'Righteous', sans-serif",
+    subtitle: "Retro Groove & Funky Rhythm",
+    preview: "FUNK VIBE",
+    category: "sans",
+  },
+  syne: {
+    name: "Syne",
+    family: "'Syne', sans-serif",
+    subtitle: "Expressive Avant-Garde Sans",
+    preview: "ELECTRIC",
+    category: "sans",
+  },
+  "archivo-black": {
+    name: "Archivo Black",
+    family: "'Archivo Black', sans-serif",
+    subtitle: "Maximum Impact Solid Sans",
+    preview: "IMPACT",
+    category: "sans",
+  },
   inter: {
     name: "Inter",
     family: "'Inter', sans-serif",
@@ -98,8 +154,29 @@ const HEADING_FONT_CONFIG: Record<
   cinzel: {
     name: "Cinzel",
     family: "'Cinzel', serif",
-    subtitle: "Regal & Ceremonial Fanfare",
+    subtitle: "Regal Ceremonial Fanfare",
     preview: "FANFARE VIBE",
+    category: "serif",
+  },
+  "playfair-display": {
+    name: "Playfair Display",
+    family: "'Playfair Display', serif",
+    subtitle: "High-Contrast Editorial Serif",
+    preview: "SYMPHONY",
+    category: "serif",
+  },
+  fraunces: {
+    name: "Fraunces",
+    family: "'Fraunces', serif",
+    subtitle: "Expressive Vintage Old-Style",
+    preview: "SECOND LINE",
+    category: "serif",
+  },
+  "abril-fatface": {
+    name: "Abril Fatface",
+    family: "'Abril Fatface', serif",
+    subtitle: "Dramatic Titling Fatface",
+    preview: "REVELRY",
     category: "serif",
   },
 };
@@ -120,6 +197,30 @@ const BODY_FONT_CONFIG: Record<
     subtitle: "Geometric Friendly Modern Sans",
     category: "sans",
   },
+  "plus-jakarta-sans": {
+    name: "Plus Jakarta Sans",
+    family: "'Plus Jakarta Sans', sans-serif",
+    subtitle: "Contemporary Refined Geometric",
+    category: "sans",
+  },
+  "dm-sans": {
+    name: "DM Sans",
+    family: "'DM Sans', sans-serif",
+    subtitle: "Precise Low-Contrast Modern Sans",
+    category: "sans",
+  },
+  outfit: {
+    name: "Outfit",
+    family: "'Outfit', sans-serif",
+    subtitle: "Polished Accessible Clean Sans",
+    category: "sans",
+  },
+  "work-sans": {
+    name: "Work Sans",
+    family: "'Work Sans', sans-serif",
+    subtitle: "Sturdy Screen-Optimized Sans",
+    category: "sans",
+  },
   roboto: {
     name: "Roboto",
     family: "'Roboto', sans-serif",
@@ -132,6 +233,18 @@ const BODY_FONT_CONFIG: Record<
     subtitle: "Distinctive Groove & Tech Edge",
     category: "sans",
   },
+  "open-sans": {
+    name: "Open Sans",
+    family: "'Open Sans', sans-serif",
+    subtitle: "Universal Neutral Open Sans",
+    category: "sans",
+  },
+  raleway: {
+    name: "Raleway",
+    family: "'Raleway', sans-serif",
+    subtitle: "Elegant Sophisticated Sans",
+    category: "sans",
+  },
   merriweather: {
     name: "Merriweather",
     family: "'Merriweather', serif",
@@ -142,6 +255,30 @@ const BODY_FONT_CONFIG: Record<
     name: "Lora",
     family: "'Lora', serif",
     subtitle: "Contemporary Flowing Literary Serif",
+    category: "serif",
+  },
+  bitter: {
+    name: "Bitter",
+    family: "'Bitter', serif",
+    subtitle: "Contemporary Reading Slab Serif",
+    category: "serif",
+  },
+  "pt-serif": {
+    name: "PT Serif",
+    family: "'PT Serif', serif",
+    subtitle: "Classic Universal Text Serif",
+    category: "serif",
+  },
+  "source-serif-4": {
+    name: "Source Serif 4",
+    family: "'Source Serif 4', serif",
+    subtitle: "Sturdy Digital Reading Serif",
+    category: "serif",
+  },
+  "eb-garamond": {
+    name: "EB Garamond",
+    family: "'EB Garamond', serif",
+    subtitle: "Classic Renaissance Humanist Serif",
     category: "serif",
   },
 };
@@ -236,6 +373,8 @@ export default function ThemeCustomizerPage() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [identityScope, setIdentityScope] = useState<"public" | "portal">("public");
   const [simulatorScope, setSimulatorScope] = useState<"public" | "portal">("public");
+  const [headingCategoryFilter, setHeadingCategoryFilter] = useState<"all" | "slab" | "sans" | "serif">("all");
+  const [bodyCategoryFilter, setBodyCategoryFilter] = useState<"all" | "sans" | "serif">("all");
 
   useEffect(() => {
     if (authLoading) return;
@@ -552,7 +691,7 @@ export default function ThemeCustomizerPage() {
     const newId = `custom-portal-${Date.now()}`;
     const newTheme: PortalThemeOption = {
       id: newId,
-      name: `Custom Scheme ${portalThemes.length + 1}`,
+      name: `Custom Theme ${portalThemes.length + 1}`,
       description: "Custom atmospheric theme for musician portal operations.",
       tagline: "",
       isDefault: false,
@@ -581,7 +720,7 @@ export default function ThemeCustomizerPage() {
 
   const handleDeletePortalTheme = (id: string) => {
     if (id === "eagleburger-gold") {
-      toast.error("The default Eagleburger Gold portal scheme cannot be deleted.");
+      toast.error("The default Eagleburger Gold portal theme cannot be deleted.");
       return;
     }
     const updatedList = portalThemes.filter((t) => t.id !== id);
@@ -702,7 +841,7 @@ export default function ThemeCustomizerPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Brand & Palette Customizer</h1>
           <p className="text-xs text-slate-400">
-            Define independent style schemes for the Public Fan Site and Musician Portal, alongside global ensemble identity tokens.
+            Define independent style themes for the Public Fan Site and Musician Portal, alongside global ensemble identity tokens.
           </p>
         </div>
 
@@ -741,7 +880,7 @@ export default function ThemeCustomizerPage() {
           }`}
         >
           <Globe className="w-4 h-4" />
-          <span>Public Website Scheme</span>
+          <span>Public Website Theme</span>
         </button>
 
         <button
@@ -754,7 +893,7 @@ export default function ThemeCustomizerPage() {
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
-          <span>Musician Portal Scheme</span>
+          <span>Musician Portal Theme</span>
         </button>
 
         <button
@@ -784,7 +923,7 @@ export default function ThemeCustomizerPage() {
                       <Globe className="w-4 h-4 text-yellow-400" /> Public Site Themes & Palettes
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      Select, generate, and edit style presets for the public fan site. The default scheme preserves the signature Eagleburger look.
+                      Select, generate, and edit style presets for the public fan site. The default theme preserves the signature Eagleburger look.
                     </p>
                   </div>
                   <button
@@ -834,7 +973,7 @@ export default function ThemeCustomizerPage() {
                                 )}
                               </div>
                               <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                                {option.description || "Public site color scheme"}
+                                {option.description || "Public site color theme"}
                               </p>
                             </div>
 
@@ -1154,15 +1293,15 @@ export default function ThemeCustomizerPage() {
 
           {activeTab === "portal" && (
             <div className="space-y-4">
-              {/* Portal Schemes Gallery Card */}
+              {/* Portal Themes Gallery Card */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div>
                     <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                      <LayoutDashboard className="w-4 h-4 text-yellow-400" /> Musician Portal Schemes & Presets
+                      <LayoutDashboard className="w-4 h-4 text-yellow-400" /> Musician Portal Themes & Presets
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      Manage color schemes available to band members in their personal Portal Theme chooser. Create new options, customize palette tokens, and set the ensemble default.
+                      Manage color themes available to band members in their personal Portal Theme chooser. Create new options, customize palette tokens, and set the ensemble default.
                     </p>
                   </div>
                   <button
@@ -1171,15 +1310,15 @@ export default function ThemeCustomizerPage() {
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/20 transition self-start sm:self-auto"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Create Portal Scheme</span>
+                    <span>Create Portal Theme</span>
                   </button>
                 </div>
 
-                {/* Schemes Grid */}
+                {/* Themes Grid */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                      Available Schemes ({portalThemes.length})
+                      Available Themes ({portalThemes.length})
                     </span>
                     <span className="text-[10px] text-slate-500">
                       Click to edit or preview
@@ -1212,7 +1351,7 @@ export default function ThemeCustomizerPage() {
                                 )}
                               </div>
                               <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                                {option.description || "Musician portal scheme"}
+                                {option.description || "Musician portal theme"}
                               </p>
                             </div>
 
@@ -1263,13 +1402,13 @@ export default function ThemeCustomizerPage() {
                 </div>
               </div>
 
-              {/* Portal Scheme Customizer Form */}
+              {/* Portal Theme Customizer Form */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                        Scheme Editor
+                        Theme Editor
                       </span>
                       <span className="text-xs font-bold text-white">
                         {selectedPortalTheme.name}
@@ -1311,7 +1450,7 @@ export default function ThemeCustomizerPage() {
                       <button
                         type="button"
                         onClick={() => handleDeletePortalTheme(selectedPortalTheme.id)}
-                        title="Delete custom scheme"
+                        title="Delete custom theme"
                         className="text-xs text-rose-400 hover:text-rose-300 px-2.5 py-1.5 rounded-xl border border-rose-900/40 hover:border-rose-800 flex items-center gap-1 transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1331,7 +1470,7 @@ export default function ThemeCustomizerPage() {
                     </div>
                   </div>
 
-                  {/* Scheme Info Fields */}
+                  {/* Theme Info Fields */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-semibold text-slate-300 block mb-1">
@@ -1707,40 +1846,70 @@ export default function ThemeCustomizerPage() {
                           Active: {HEADING_FONT_CONFIG[currentTypo.headingFont].name} ({HEADING_FONT_CONFIG[currentTypo.headingFont].category})
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                        {(Object.keys(HEADING_FONT_CONFIG) as Array<TypographyConfig["headingFont"]>).map((fontKey) => {
-                          const cfg = HEADING_FONT_CONFIG[fontKey];
-                          const isSelected = currentTypo.headingFont === fontKey;
+
+                      {/* Headings Category Filter Pills */}
+                      <div className="flex flex-wrap gap-1.5 pb-1">
+                        {(["all", "slab", "sans", "serif"] as const).map((cat) => {
+                          const count =
+                            cat === "all"
+                              ? Object.keys(HEADING_FONT_CONFIG).length
+                              : Object.values(HEADING_FONT_CONFIG).filter((f) => f.category === cat).length;
+                          const label =
+                            cat === "all" ? "All Fonts" : cat === "slab" ? "Slab Serif" : cat === "sans" ? "Sans-Serif" : "Classic Serif";
+                          const isActive = headingCategoryFilter === cat;
                           return (
                             <button
-                              key={fontKey}
+                              key={cat}
                               type="button"
-                              onClick={() => updateScopedTypography(identityScope, { headingFont: fontKey })}
-                              className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                                isSelected
-                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              onClick={() => setHeadingCategoryFilter(cat)}
+                              className={`text-[10px] font-medium px-2 py-0.5 rounded-md transition ${
+                                isActive
+                                  ? "bg-yellow-400 text-slate-950 font-bold shadow-sm"
+                                  : "bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
                               }`}
                             >
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-white">{cfg.name}</span>
-                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
-                                    {cfg.category}
-                                  </span>
-                                </div>
-                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                              </div>
-                              <div
-                                className="text-base text-yellow-400 font-bold truncate tracking-wide"
-                                style={{ fontFamily: cfg.family }}
-                              >
-                                {cfg.preview}
-                              </div>
-                              <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                              {label} ({count})
                             </button>
                           );
                         })}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {(Object.keys(HEADING_FONT_CONFIG) as Array<TypographyConfig["headingFont"]>)
+                          .filter((fontKey) => headingCategoryFilter === "all" || HEADING_FONT_CONFIG[fontKey].category === headingCategoryFilter)
+                          .map((fontKey) => {
+                            const cfg = HEADING_FONT_CONFIG[fontKey];
+                            const isSelected = currentTypo.headingFont === fontKey;
+                            return (
+                              <button
+                                key={fontKey}
+                                type="button"
+                                onClick={() => updateScopedTypography(identityScope, { headingFont: fontKey })}
+                                className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                  isSelected
+                                    ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                    : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1 mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-white">{cfg.name}</span>
+                                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
+                                      {cfg.category}
+                                    </span>
+                                  </div>
+                                  {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                                </div>
+                                <div
+                                  className="text-base text-yellow-400 font-bold truncate tracking-wide"
+                                  style={{ fontFamily: cfg.family }}
+                                >
+                                  {cfg.preview}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                              </button>
+                            );
+                          })}
                       </div>
                     </div>
 
@@ -1754,40 +1923,70 @@ export default function ThemeCustomizerPage() {
                           Active: {BODY_FONT_CONFIG[currentTypo.bodyFont].name} ({BODY_FONT_CONFIG[currentTypo.bodyFont].category})
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                        {(Object.keys(BODY_FONT_CONFIG) as Array<TypographyConfig["bodyFont"]>).map((fontKey) => {
-                          const cfg = BODY_FONT_CONFIG[fontKey];
-                          const isSelected = currentTypo.bodyFont === fontKey;
+
+                      {/* Body Category Filter Pills */}
+                      <div className="flex flex-wrap gap-1.5 pb-1">
+                        {(["all", "sans", "serif"] as const).map((cat) => {
+                          const count =
+                            cat === "all"
+                              ? Object.keys(BODY_FONT_CONFIG).length
+                              : Object.values(BODY_FONT_CONFIG).filter((f) => f.category === cat).length;
+                          const label =
+                            cat === "all" ? "All Fonts" : cat === "sans" ? "Sans-Serif" : "Reading Serif";
+                          const isActive = bodyCategoryFilter === cat;
                           return (
                             <button
-                              key={fontKey}
+                              key={cat}
                               type="button"
-                              onClick={() => updateScopedTypography(identityScope, { bodyFont: fontKey })}
-                              className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
-                                isSelected
-                                  ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
-                                  : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                              onClick={() => setBodyCategoryFilter(cat)}
+                              className={`text-[10px] font-medium px-2 py-0.5 rounded-md transition ${
+                                isActive
+                                  ? "bg-yellow-400 text-slate-950 font-bold shadow-sm"
+                                  : "bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
                               }`}
                             >
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-bold text-white">{cfg.name}</span>
-                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
-                                    {cfg.category}
-                                  </span>
-                                </div>
-                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
-                              </div>
-                              <div
-                                className="text-xs text-slate-300 line-clamp-2"
-                                style={{ fontFamily: cfg.family }}
-                              >
-                                Street brass melodies, drums & rhythm
-                              </div>
-                              <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                              {label} ({count})
                             </button>
                           );
                         })}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {(Object.keys(BODY_FONT_CONFIG) as Array<TypographyConfig["bodyFont"]>)
+                          .filter((fontKey) => bodyCategoryFilter === "all" || BODY_FONT_CONFIG[fontKey].category === bodyCategoryFilter)
+                          .map((fontKey) => {
+                            const cfg = BODY_FONT_CONFIG[fontKey];
+                            const isSelected = currentTypo.bodyFont === fontKey;
+                            return (
+                              <button
+                                key={fontKey}
+                                type="button"
+                                onClick={() => updateScopedTypography(identityScope, { bodyFont: fontKey })}
+                                className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                                  isSelected
+                                    ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                                    : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1 mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-white">{cfg.name}</span>
+                                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase">
+                                      {cfg.category}
+                                    </span>
+                                  </div>
+                                  {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                                </div>
+                                <div
+                                  className="text-xs text-slate-300 line-clamp-2"
+                                  style={{ fontFamily: cfg.family }}
+                                >
+                                  Street brass melodies, drums & rhythm
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                              </button>
+                            );
+                          })}
                       </div>
                     </div>
 
@@ -2297,7 +2496,7 @@ export default function ThemeCustomizerPage() {
                   {/* Google Fonts stylesheet with slab serifs, classic serifs, and modern sans */}
                   <link
                     rel="stylesheet"
-                    href="https://fonts.googleapis.com/css2?family=Arvo:wght@400;700&family=Bebas+Neue&family=Cinzel:wght@600;700;900&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700;900&family=Oswald:wght@600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Rokkitt:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+                    href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Black&family=Arvo:wght@400;700&family=Bebas+Neue&family=Bitter:wght@400;500;600&family=Bree+Serif&family=Cinzel:wght@600;700;900&family=Crete+Round&family=DM+Sans:wght@400;500;700&family=EB+Garamond:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700;900&family=Open+Sans:wght@400;600&family=Oswald:wght@600;700&family=Outfit:wght@400;500;600&family=Playfair+Display:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=PT+Serif:wght@400;700&family=Raleway:wght@400;500;600&family=Righteous&family=Roboto:wght@400;500;700&family=Rokkitt:wght@600;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Space+Grotesk:wght@400;500;700&family=Syne:wght@600;700;800&family=Teko:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap"
                   />
 
                   {/* Simulator Scope Switcher */}
@@ -2537,7 +2736,7 @@ export default function ThemeCustomizerPage() {
         onDiscard={handleDiscard}
         saveLabel="Save Brand Settings"
         message="Unsaved Brand Theme Changes"
-        subMessage="You have pending changes to the public or portal color schemes."
+        subMessage="You have pending changes to the public or portal color themes."
       />
     </div>
   );

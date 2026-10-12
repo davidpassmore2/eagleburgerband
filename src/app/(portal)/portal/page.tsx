@@ -1099,7 +1099,7 @@ export default function MusicianPortalOverviewPage() {
               >
                 <span className="flex items-center gap-2">
                   <Palette className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Visual Theme Scheme</span>
+                  <span>Portal Visual Theme</span>
                 </span>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
               </button>

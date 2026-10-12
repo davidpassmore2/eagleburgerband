@@ -180,7 +180,7 @@ textarea:disabled,
 /* ==========================================================================
    Musician Portal Dynamic Theme Synchronization & Atmospheric Tokens
    Automatically brings all portal and admin screens into harmony with
-   the user's chosen theme color scheme and light/dark mode.
+   the user's chosen theme palette and light/dark mode.
    ========================================================================== */
 
 [data-ebb-mode] {
