@@ -34,6 +34,7 @@ import {
   Activity,
   Zap,
 } from "lucide-react";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 interface StatusResponse {
   environment: {
@@ -109,7 +110,7 @@ export default function IntegrationsStudioPage() {
   const fetchStatus = async () => {
     setLoadingStatus(true);
     try {
-      const res = await fetch("/api/admin/integrations/status");
+      const res = await authedFetch("/api/admin/integrations/status");
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -123,7 +124,7 @@ export default function IntegrationsStudioPage() {
 
   useEffect(() => {
     let ignore = false;
-    fetch("/api/admin/integrations/status")
+    authedFetch("/api/admin/integrations/status")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load status");
         return res.json();
@@ -203,7 +204,7 @@ export default function IntegrationsStudioPage() {
       setTestingService(action);
       setTestResult(null);
 
-      const res = await fetch("/api/admin/integrations/test", {
+      const res = await authedFetch("/api/admin/integrations/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...payload }),

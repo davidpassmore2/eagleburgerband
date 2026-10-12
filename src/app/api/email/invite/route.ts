@@ -3,14 +3,21 @@ import { SendInviteEmailSchema } from "@/lib/schema/email";
 import { renderInviteEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
-import { db } from "@/lib/firebase/client";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { requireCaller } from "@/lib/auth/serverAuth";
+import { getDocument, updateDocument } from "@/lib/firebase/serverFirestore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await requireCaller(
+      req,
+      ["membership_manager"],
+      "Unauthorized: Administrator clearance required to dispatch invitations."
+    );
+    if (caller instanceof NextResponse) return caller;
+
     const body = await req.json();
     const parsed = SendInviteEmailSchema.safeParse(body);
 
@@ -21,29 +28,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { token, recipientEmail, musicianName, sectionName, instruments, notes, actorUid } = parsed.data;
-
-    // 1. RBAC Guard: If actorUid is supplied, verify administrator or membership manager privileges
-    if (actorUid) {
-      const actorDoc = await getDoc(doc(db, "users", actorUid));
-      if (!actorDoc.exists()) {
-        return NextResponse.json({ error: "Actor profile not found." }, { status: 401 });
-      }
-      const actorData = actorDoc.data();
-      const roles: string[] = Array.isArray(actorData.roles) ? actorData.roles : [];
-      const hasPerm = roles.includes("admin") || roles.includes("membership_manager") || actorData.role === "admin";
-      if (!hasPerm) {
-        return NextResponse.json(
-          { error: "Unauthorized: Administrator clearance required to dispatch invitations." },
-          { status: 403 }
-        );
-      }
-    }
+    const { token, recipientEmail, musicianName, sectionName, instruments, notes } = parsed.data;
+    const actorUid = caller.uid;
 
     // 2. Fetch or verify the invite document
-    const inviteRef = doc(db, "invites", token);
-    const inviteSnap = await getDoc(inviteRef);
-    if (!inviteSnap.exists()) {
+    const invitePath = `invites/${token}`;
+    if (!(await getDocument(invitePath))) {
       return NextResponse.json(
         { error: "Invite token record not found in system." },
         { status: 404 }
@@ -86,7 +76,7 @@ export async function POST(req: NextRequest) {
     // 5. Update lastEmailSentAt timestamp on the invite document
     const nowIso = new Date().toISOString();
     try {
-      await updateDoc(inviteRef, { lastEmailSentAt: nowIso });
+      await updateDocument(invitePath, { lastEmailSentAt: nowIso });
     } catch (updateErr) {
       console.warn("Could not update lastEmailSentAt on invite:", updateErr);
     }

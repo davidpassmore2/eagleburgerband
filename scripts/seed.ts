@@ -27,7 +27,7 @@ const localApp = initializeApp({
 
 const db = getFirestore(localApp);
 
-connectFirestoreEmulator(db, "127.0.0.1", 8080);
+connectFirestoreEmulator(db, "127.0.0.1", 8080, { mockUserToken: "owner" });
 
 async function runSeed() {
   console.log("🌱 Connecting directly to local Firestore emulator (127.0.0.1:8080)...");

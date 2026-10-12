@@ -131,6 +131,7 @@ function ClaimContent() {
 
     try {
       setIsClaiming(true);
+      await auth.currentUser?.getIdToken(true);
 
       // Create / update users profile
       const userProfilePayload = {

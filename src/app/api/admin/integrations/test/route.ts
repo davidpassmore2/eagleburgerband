@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendTransactionalEmail } from "@/lib/email/resend";
+import { requireCaller } from "@/lib/auth/serverAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await requireCaller(req, ["admin"], "Administrator clearance required to manage integrations.");
+    if (caller instanceof NextResponse) return caller;
+
     const body = await req.json();
     const { action, recipientEmail, customWebhookUrl } = body;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldDiff } from "@/lib/logistics/diff";
+import { requireCaller } from "@/lib/auth/serverAuth";
 
 type BroadcastPayload = {
   gigId: string;
@@ -7,13 +8,16 @@ type BroadcastPayload = {
   gigDate: string;
   diffs: FieldDiff[];
   confirmedRecipientsCount: number;
-  initiatedBy: string;
 };
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await requireCaller(req, ["gig_manager", "web_manager"], "Gig coordinator or administrator clearance required.");
+    if (caller instanceof NextResponse) return caller;
+
     const body = (await req.json()) as BroadcastPayload;
-    const { gigId, gigTitle, gigDate, diffs, confirmedRecipientsCount, initiatedBy } = body;
+    const { gigId, gigTitle, gigDate, diffs, confirmedRecipientsCount } = body;
+    const initiatedBy = caller.displayName || caller.email;
 
     if (!gigId || !diffs || diffs.length === 0) {
       return new NextResponse("Invalid broadcast payload.", { status: 400 });

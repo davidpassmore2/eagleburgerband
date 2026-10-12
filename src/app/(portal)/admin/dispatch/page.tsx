@@ -35,6 +35,7 @@ import {
   ExternalLink,
   Palmtree,
 } from "lucide-react";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 interface GigSummary {
   id: string;
@@ -336,7 +337,7 @@ Questions or late changes? Contact Band Management.`;
     if (!selectedGig || attendingMusicianEmails.length === 0) return;
     setEmailSending(true);
     try {
-      const res = await fetch("/api/email/call-sheet", {
+      const res = await authedFetch("/api/email/call-sheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -351,7 +352,6 @@ Questions or late changes? Contact Band Management.`;
           notes: logisticsBrief,
           setlistUrl: `/portal/perform/${selectedGig.id}`,
           recipientEmails: attendingMusicianEmails,
-          actorUid: profile?.uid,
         }),
       });
 

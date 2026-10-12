@@ -3,8 +3,7 @@ import { SendBroadcastEmailSchema } from "@/lib/schema/email";
 import { wrapInBrandedEmailHtml } from "@/lib/email/templates";
 import { sendTransactionalEmail } from "@/lib/email/resend";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
-import { db } from "@/lib/firebase/client";
-import { doc, getDoc } from "firebase/firestore";
+import { requireCaller } from "@/lib/auth/serverAuth";
 import { EmailTemplateType } from "@/lib/schema/emailLog";
 
 export const runtime = "nodejs";
@@ -12,6 +11,13 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await requireCaller(
+      req,
+      ["community_manager", "gig_manager"],
+      "Unauthorized: Administrator or communications manager clearance required to broadcast."
+    );
+    if (caller instanceof NextResponse) return caller;
+
     const body = await req.json();
     const parsed = SendBroadcastEmailSchema.safeParse(body);
 
@@ -26,35 +32,14 @@ export async function POST(req: NextRequest) {
       subject,
       htmlBody,
       recipientEmails,
-      senderUid,
-      senderName,
-      senderEmail,
       templateType,
       relatedEntityId,
       relatedEntityType,
     } = parsed.data;
 
-    // 1. RBAC Guard: Verify broadcaster or administrator permissions
-    if (senderUid) {
-      const actorDoc = await getDoc(doc(db, "users", senderUid));
-      if (!actorDoc.exists()) {
-        return NextResponse.json({ error: "Sender profile not found." }, { status: 401 });
-      }
-      const actorData = actorDoc.data();
-      const roles: string[] = Array.isArray(actorData.roles) ? actorData.roles : [];
-      const hasPerm =
-        roles.includes("admin") ||
-        roles.includes("community_manager") ||
-        roles.includes("gig_manager") ||
-        actorData.role === "admin";
-
-      if (!hasPerm) {
-        return NextResponse.json(
-          { error: "Unauthorized: Administrator or communications manager clearance required to broadcast." },
-          { status: 403 }
-        );
-      }
-    }
+    const senderUid = caller.uid;
+    const senderName = caller.displayName || "Eagleburger Administrator";
+    const senderEmail = caller.email;
 
     // 2. Wrap the HTML in the band's branded design
     const brandedHtml = wrapInBrandedEmailHtml(htmlBody, subject);

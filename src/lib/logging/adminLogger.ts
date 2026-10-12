@@ -22,10 +22,10 @@ export interface LogAdminActionParams {
   metadata?: Record<string, unknown>;
 }
 
-export async function logAdminAction(params: LogAdminActionParams): Promise<string> {
+export function buildAdminLog(params: LogAdminActionParams): AdminLog {
   const logId = `admin_log_${Date.now()}_${Math.random().toString(36).substring(3, 8)}`;
 
-  const payload: AdminLog = {
+  return AdminLogSchema.parse({
     id: logId,
     action: params.action,
     category: params.category || "personnel",
@@ -37,10 +37,14 @@ export async function logAdminAction(params: LogAdminActionParams): Promise<stri
     description: params.description,
     metadata: params.metadata || {},
     timestamp: new Date().toISOString(),
-  };
+  });
+}
 
+export async function logAdminAction(params: LogAdminActionParams): Promise<string> {
+  let logId = "";
   try {
-    const validated = AdminLogSchema.parse(payload);
+    const validated = buildAdminLog(params);
+    logId = validated.id;
     await setDoc(doc(db, "admin_logs", logId), validated);
 
     // Also dispatch to usage telemetry

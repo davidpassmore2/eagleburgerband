@@ -55,6 +55,7 @@ import {
   ChevronUp,
   Info
 } from "lucide-react";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 type TargetAudience = "all_band" | "section" | "gig_attending" | "individual" | "crm_contact" | "direct";
 
@@ -600,7 +601,7 @@ function EmailSuiteContent() {
 
         if (emailRecipients.length > 0) {
           try {
-            await fetch("/api/email/broadcast", {
+            await authedFetch("/api/email/broadcast", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -608,9 +609,6 @@ function EmailSuiteContent() {
                 htmlBody: htmlBody.trim(),
                 recipientEmails: emailRecipients,
                 channel: selectedChannel,
-                senderUid: profile?.uid || "",
-                senderName: profile?.displayName || "Eagleburger Administrator",
-                senderEmail: profile?.email || "",
                 templateType: selectedTemplate,
                 relatedEntityId: selectedGigId || selectedContactId || inviteToken || null,
                 relatedEntityType: selectedGigId ? "gig" : selectedContactId ? "contact" : inviteToken ? "invite" : "general",

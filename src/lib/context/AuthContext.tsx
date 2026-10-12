@@ -31,6 +31,7 @@ import {
 import { auth, db } from "@/lib/firebase/client";
 import { User } from "@/lib/schema/user";
 import { Role } from "@/lib/auth/permissions";
+import { SUPER_ADMIN_EMAIL } from "@/lib/auth/superAdmin";
 
 export interface AuthContextValue {
   firebaseUser: FirebaseUser | null;
@@ -90,7 +91,6 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 });
 
-export const SUPER_ADMIN_EMAIL = "davidpassmore@gmail.com";
 export const SUPER_ADMIN_ROLES: Role[] = [
   "admin", 
   "web_manager",
@@ -354,36 +354,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // In strict invite-only mode, verify account exists in users or has pending invite
-      const isSuper = trimmedEmail === SUPER_ADMIN_EMAIL;
-      if (!isSuper) {
-        const userQuery = query(
-          collection(db, "users"), 
-          where("email", "==", trimmedEmail)
-        );
-        const userSnap = await getDocs(userQuery);
-
-        if (userSnap.empty) {
-          // Check if there is an unclaimed pending invite
-          const inviteQuery = query(
-            collection(db, "invites"), 
-            where("email", "==", trimmedEmail)
-          );
-          const inviteSnap = await getDocs(inviteQuery);
-          const hasPending = inviteSnap.docs.some((d) => d.data().status === "pending");
-
-          if (hasPending) {
-            return { 
-              error: "An invitation has been sent to this email address but has not been claimed yet. Please check your inbox for your invitation link to activate your account." 
-            };
-          }
-
-          return { 
-            error: "No member account found with this email address. Portal access is strictly by invitation only." 
-          };
-        }
-      }
-
       await sendPasswordResetEmail(auth, trimmedEmail);
       return { success: true };
     } catch (err: unknown) {
@@ -414,21 +384,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Check if user is registered or has pending invite
-      const isSuper = trimmedEmail === SUPER_ADMIN_EMAIL;
-      if (!isSuper) {
-        const userSnap = await getDocs(query(collection(db, "users"), where("email", "==", trimmedEmail)));
-        if (userSnap.empty) {
-          const inviteSnap = await getDocs(query(collection(db, "invites"), where("email", "==", trimmedEmail)));
-          const hasPending = inviteSnap.docs.some((d) => d.data().status === "pending");
-          if (!hasPending) {
-            return {
-              error: "No member account or pending invitation found for this email address. Portal access is strictly by invitation only.",
-            };
-          }
-        }
-      }
-
       const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
       const actionCodeSettings = {
         url: `${origin}/login?email=${encodeURIComponent(trimmedEmail)}&redirect=${encodeURIComponent(targetRedirect)}&magic=true`,
@@ -633,9 +588,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     if (inv.status === "pending" && !inviteMatchedProfile) {
                       inviteMatchedProfile = {
                         uid: user.uid,
-                        email: user.email!,
+                        email: user.email!.toLowerCase().trim(),
                         displayName: user.displayName || inv.displayName || "Musician",
                         roles: Array.isArray(inv.roles) && inv.roles.length > 0 ? inv.roles : ["member"],
+                        role: "member",
+                        claimedInviteToken: d.id,
                         sectionId: inv.sectionId || null,
                         instruments: inv.instruments || [],
                         portalThemeSchemeId: "eagleburger-gold",
@@ -662,6 +619,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (inviteMatchedProfile) {
                 await setDoc(userRef, inviteMatchedProfile, { merge: true });
                 setRawProfile(inviteMatchedProfile as unknown as User);
+              } else if (window.location.pathname.startsWith("/claim")) {
+                // The claim page creates the profile itself from the invite token.
+                setRawProfile(null);
               } else {
                 // Option C: Strict invite-only. Uninvited accounts cannot access or auto-create profiles.
                 console.warn(`[Auth] Blocked uninvited sign-in attempt for ${user.email} (${user.uid}). Portal access is invite-only.`);
