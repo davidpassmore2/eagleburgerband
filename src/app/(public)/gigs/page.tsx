@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
+import { onSnapshot, doc, type DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { 
   Calendar, 
@@ -55,55 +55,39 @@ export default function PublicGigsPage() {
       },
       (err) => console.warn("CMS Gigs page notice:", err)
     );
-    // Query confirmed and completed public gigs
-    const gigsQuery = query(
-      collection(db, "gigs"),
-      where("status", "in", ["confirmed", "completed"])
-    );
-
-    const unsub = onSnapshot(
-      gigsQuery,
-      (snap) => {
-        const list: PublicGig[] = [];
-        snap.forEach((doc) => {
-          const data = doc.data();
+    fetch("/api/public/gigs")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ gigs: DocumentData[] }>;
+      })
+      .then(({ gigs: rows }) => {
+        const list: PublicGig[] = rows.map((data) => {
           const pub = data.publicDetails || {};
-          // Strict Privacy Boundary: never expose internal logistics, call sheets, or musician pay
-          if (pub.isPublic !== false) {
-            const rawEventUrl = (pub.eventUrl || pub.facebookEventUrl || "").trim();
-            list.push({
-              id: doc.id,
-              date: data.date || "",
-              title: pub.title || "Eagleburger Performance",
-              venue: pub.venue || "TBA",
-              city: pub.city || "Pittsburgh, PA",
-              description: pub.description || "",
-              admission: pub.admission || "Free",
-              eventUrl: rawEventUrl,
-              facebookEventUrl: rawEventUrl,
-              ticketUrl: pub.ticketUrl || "",
-              status: data.status || "confirmed",
-              headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
-              headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
-            });
-          }
+          const rawEventUrl = (pub.eventUrl || pub.facebookEventUrl || "").trim();
+          return {
+            id: data.id,
+            date: data.date || "",
+            title: pub.title || "Eagleburger Performance",
+            venue: pub.venue || "TBA",
+            city: pub.city || "Pittsburgh, PA",
+            description: pub.description || "",
+            admission: pub.admission || "Free",
+            eventUrl: rawEventUrl,
+            facebookEventUrl: rawEventUrl,
+            ticketUrl: pub.ticketUrl || "",
+            status: data.status || "confirmed",
+            headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
+            headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
+          };
         });
 
-        // Sort by date ascending
         list.sort((a, b) => (a.date > b.date ? 1 : -1));
         setGigs(list);
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("Error loading public gigs:", err);
-        setLoading(false);
-      }
-    );
+      })
+      .catch((err) => console.warn("Error loading public gigs:", err))
+      .finally(() => setLoading(false));
 
-    return () => {
-      unsub();
-      unsubPage();
-    };
+    return () => unsubPage();
   }, []);
 
   const todayStr = new Date().toISOString().split("T")[0];

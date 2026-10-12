@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import type { DocumentData } from "firebase/firestore";
 import { ContentSection } from "@/lib/schema/page";
 import { sanitizeHtml } from "@/components/cms/WysiwygEditor";
 import BookingFormSection from "@/components/public/BookingFormSection";
@@ -498,26 +497,20 @@ function GigFeedSectionComponent({
   useEffect(() => {
     const loadGigs = async () => {
       try {
-        const q = query(
-          collection(db, "gigs"),
-          where("status", "==", "confirmed"),
-          limit(config.maxItems || 3)
-        );
-        const snap = await getDocs(q);
-        const list: PublicGigSummary[] = [];
-        snap.forEach((d) => {
-          const data = d.data();
-          if (data.publicDetails && data.publicDetails.isPublic !== false) {
-            list.push({
-              id: d.id,
-              date: data.date || "TBA",
-              title: data.publicDetails.title || "Eagleburger Performance",
-              venue: data.publicDetails.venue || "TBA",
-              city: data.publicDetails.city || "Pittsburgh, PA",
-              admission: data.publicDetails.admission || "Free",
-            });
-          }
-        });
+        const res = await fetch("/api/public/gigs");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { gigs } = (await res.json()) as { gigs: DocumentData[] };
+        const list: PublicGigSummary[] = gigs
+          .filter((data) => data.status === "confirmed" && data.publicDetails)
+          .slice(0, config.maxItems || 3)
+          .map((data) => ({
+            id: data.id,
+            date: data.date || "TBA",
+            title: data.publicDetails.title || "Eagleburger Performance",
+            venue: data.publicDetails.venue || "TBA",
+            city: data.publicDetails.city || "Pittsburgh, PA",
+            admission: data.publicDetails.admission || "Free",
+          }));
         setUpcomingGigs(list);
       } catch (err) {
         console.warn("Could not load preview gigs:", err);
