@@ -120,6 +120,7 @@ export const DEFAULT_PUBLIC_THEMES: PublicThemeOption[] = [
 export interface PortalThemeTokens {
   primaryColor: string;
   accentColor: string;
+  logoColor?: string;            // Exact logo emblem tint
   backgroundColor: string;       // Ambient background
   surfaceColor: string;          // Sidebar and primary card surfaces
   mutedSurfaceColor: string;     // Inner wells, search inputs, active badges
@@ -332,6 +333,7 @@ export const PORTAL_COLOR_SCHEMES: PortalColorScheme[] = [
 export const PortalThemeTokensSchema = z.object({
   primaryColor: z.string().default("#facc15"),
   accentColor: z.string().default("#f59e0b"),
+  logoColor: z.string().optional(),
   backgroundColor: z.string().default("#0a0802"),
   surfaceColor: z.string().default("#151105"),
   mutedSurfaceColor: z.string().default("#1e1808"),
@@ -533,6 +535,7 @@ export function getPortalColorScheme(
   const tokens = base.modes?.[mode] || base.modes?.dark || {
     primaryColor: base.primaryColor,
     accentColor: base.accentColor,
+    logoColor: base.logoColor,
     backgroundColor: base.backgroundColor,
     surfaceColor: base.surfaceColor,
     mutedSurfaceColor: base.mutedSurfaceColor,
@@ -540,9 +543,15 @@ export function getPortalColorScheme(
     textColor: base.textColor,
     previewSwatches: base.previewSwatches,
   };
+
+  const effectiveLogoColor = (mode === "light" && base.logoColor === base.primaryColor)
+    ? tokens.primaryColor
+    : (tokens.logoColor || base.logoColor || tokens.primaryColor);
+
   return {
     ...base,
     ...tokens,
+    logoColor: effectiveLogoColor,
     mode,
   };
 }

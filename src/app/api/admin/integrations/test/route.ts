@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendTransactionalEmail } from "@/lib/email/resend";
 import { requireCaller } from "@/lib/auth/serverAuth";
+import { getDocument } from "@/lib/firebase/serverFirestore";
+import { CloudinaryConfigSchema } from "@/lib/schema/integrationConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,13 +103,38 @@ export async function POST(req: NextRequest) {
 
     // 4. Test Cloudinary
     if (action === "test_cloudinary") {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+      let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      let preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !preset) {
+        try {
+          const cDoc = await getDocument("system_config/cloudinary");
+          if (cDoc?.data) {
+            const parsed = CloudinaryConfigSchema.safeParse(cDoc.data);
+            if (parsed.success && parsed.data.cloudName && parsed.data.uploadPreset) {
+              cloudName = parsed.data.cloudName;
+              preset = parsed.data.uploadPreset;
+            }
+          }
+          if (!cloudName) {
+            const iDoc = await getDocument("system_config/integrations");
+            if (iDoc?.data?.cloudinary) {
+              const parsed = CloudinaryConfigSchema.safeParse(iDoc.data.cloudinary);
+              if (parsed.success && parsed.data.cloudName && parsed.data.uploadPreset) {
+                cloudName = parsed.data.cloudName;
+                preset = parsed.data.uploadPreset;
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       if (!cloudName || !preset) {
         return NextResponse.json({
           success: false,
-          error: "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME or NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET is missing.",
+          error: "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME or NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET is missing and no persistent Firestore config found.",
         });
       }
 

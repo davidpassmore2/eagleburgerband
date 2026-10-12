@@ -30,6 +30,7 @@ import {
   isCloudinaryConfigured,
   formatBytes,
   CloudinaryUploadResultInfo,
+  fetchPersistentCloudinaryConfig,
 } from "@/lib/cloudinary/widget";
 import CloudinaryConfigModal from "@/components/cms/CloudinaryConfigModal";
 
@@ -78,6 +79,8 @@ export default function ResourceAssetPickerModal({
   // Firestore listener
   useEffect(() => {
     if (!isOpen) return;
+
+    fetchPersistentCloudinaryConfig().catch(() => {});
 
     const unsub = onSnapshot(
       collection(db, "resources"),

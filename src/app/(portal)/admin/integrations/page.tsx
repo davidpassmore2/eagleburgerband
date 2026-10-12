@@ -78,6 +78,8 @@ interface StatusResponse {
       hasUploadPreset: boolean;
       uploadPreset: string;
       configured: boolean;
+      isPersisted?: boolean;
+      source?: string;
     };
     webhooks: {
       hasSlack: boolean;
@@ -184,15 +186,15 @@ export default function IntegrationsStudioPage() {
     setChecklist(updated);
 
     try {
-      const payload: SystemIntegrationsConfig = {
+      const payload: SystemIntegrationsConfig = SystemIntegrationsConfigSchema.parse({
         schemaVersion: 1,
         updatedAt: new Date().toISOString(),
         updatedBy: profile?.displayName || firebaseUser?.displayName || "Admin",
         notes: "",
         checklist: updated,
         customWebhookUrl: "",
-      };
-      await setDoc(doc(db, "system_config", "integrations"), payload);
+      });
+      await setDoc(doc(db, "system_config", "integrations"), payload, { merge: true });
     } catch (err) {
       console.error("Failed to update checklist in Firestore:", err);
     }
@@ -745,12 +747,18 @@ DISCORD_WEBHOOK_URL=${s?.webhooks?.discordMasked || ""}`;
                 </div>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                    status?.services?.cloudinary?.configured
+                    status?.services?.cloudinary?.isPersisted
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : status?.services?.cloudinary?.configured
+                      ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
                       : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                   }`}
                 >
-                  {status?.services?.cloudinary?.configured ? "Configured" : "Unset"}
+                  {status?.services?.cloudinary?.isPersisted
+                    ? "Firestore Persisted"
+                    : status?.services?.cloudinary?.configured
+                    ? "Env Configured"
+                    : "Unset"}
                 </span>
               </div>
 
@@ -765,6 +773,16 @@ DISCORD_WEBHOOK_URL=${s?.webhooks?.discordMasked || ""}`;
                   <span className="text-slate-400">Upload Preset</span>
                   <span className="font-mono text-slate-300 text-[11px]">
                     {status?.services?.cloudinary?.uploadPreset || "None"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-800">
+                  <span className="text-slate-400">Storage Persistence</span>
+                  <span className="font-mono text-slate-300 text-[11px]">
+                    {status?.services?.cloudinary?.isPersisted
+                      ? "Cloud Firestore (system_config)"
+                      : status?.services?.cloudinary?.configured
+                      ? "Environment (.env.local)"
+                      : "Not Persisted"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-800">

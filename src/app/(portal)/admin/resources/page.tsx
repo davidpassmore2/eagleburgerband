@@ -36,13 +36,20 @@ import {
   Cloud,
   Settings,
   Link2,
+  Database,
 } from "lucide-react";
 import {
   openCloudinaryUploadWidget,
   isCloudinaryConfigured,
   formatBytes,
   CloudinaryUploadResultInfo,
+  getCloudinaryConfig,
+  setCachedCloudinaryConfig,
+  savePersistentCloudinaryConfig,
+  fetchPersistentCloudinaryConfig,
+  CloudinaryStoredConfig,
 } from "@/lib/cloudinary/widget";
+import { CloudinaryConfigSchema } from "@/lib/schema/integrationConfig";
 import CloudinaryConfigModal from "@/components/cms/CloudinaryConfigModal";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 
@@ -83,7 +90,11 @@ export default function MediaResourcesStudioPage() {
     tags: "",
   });
 
-  // Firestore Listener
+  // Cloudinary Integration State
+  const [cloudinaryConfig, setCloudinaryConfig] = useState<CloudinaryStoredConfig>(() => getCloudinaryConfig());
+  const [isSyncingEnv, setIsSyncingEnv] = useState(false);
+
+  // Firestore Listener for Resources Catalog
   useEffect(() => {
     if (authLoading) return;
 
@@ -113,6 +124,72 @@ export default function MediaResourcesStudioPage() {
 
     return () => unsub();
   }, [authLoading]);
+
+  // Cloudinary Config Firestore Listener & Env Auto-Sync
+  useEffect(() => {
+    if (authLoading) return;
+
+    fetchPersistentCloudinaryConfig().then((cfg) => {
+      setCloudinaryConfig(cfg);
+      // Auto-sync environment variables to Firestore if not yet persisted
+      const envCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
+      const envPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+      if (envCloud && envPreset && !cfg.isPersisted) {
+        savePersistentCloudinaryConfig(
+          { cloudName: envCloud, uploadPreset: envPreset },
+          profile?.email || "env_auto_sync"
+        ).then(() => {
+          setCloudinaryConfig(getCloudinaryConfig());
+        }).catch((err) => console.warn("Auto-sync env cloudinary error:", err));
+      }
+    });
+
+    const unsubCloudinary = onSnapshot(
+      doc(db, "system_config", "cloudinary"),
+      (snap) => {
+        if (snap.exists()) {
+          const parsed = CloudinaryConfigSchema.safeParse(snap.data());
+          if (parsed.success && parsed.data.cloudName && parsed.data.uploadPreset) {
+            setCachedCloudinaryConfig({
+              cloudName: parsed.data.cloudName,
+              uploadPreset: parsed.data.uploadPreset,
+              folder: parsed.data.folder,
+              source: "firestore",
+              isPersisted: true,
+            });
+            setCloudinaryConfig(getCloudinaryConfig());
+          }
+        }
+      },
+      (err) => {
+        console.warn("Cloudinary config listener error:", err);
+      }
+    );
+
+    return () => unsubCloudinary();
+  }, [authLoading, profile?.email]);
+
+  const handleSyncEnvToFirestore = async () => {
+    setIsSyncingEnv(true);
+    try {
+      const envCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || cloudinaryConfig.cloudName;
+      const envPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || cloudinaryConfig.uploadPreset;
+      if (!envCloud || !envPreset) {
+        toast.error("No Cloudinary credentials found to persist.");
+        return;
+      }
+      const res = await savePersistentCloudinaryConfig(
+        { cloudName: envCloud, uploadPreset: envPreset },
+        profile?.email || "admin"
+      );
+      setCloudinaryConfig(getCloudinaryConfig());
+      toast.success(res.message || "Cloudinary configuration saved persistently to Cloud Firestore!");
+    } catch (err) {
+      toast.error("Failed to persist credentials: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSyncingEnv(false);
+    }
+  };
 
   // Filtered Assets
   const filteredResources = useMemo(() => {
@@ -393,6 +470,78 @@ export default function MediaResourcesStudioPage() {
           >
             <Plus className="w-4 h-4" />
             <span>Add External URL</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Cloudinary Integration Status Bar */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+              isCloudinaryConfigured()
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+            }`}
+          >
+            <Cloud className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-white">
+                {isCloudinaryConfigured()
+                  ? `Cloudinary Connected: ${cloudinaryConfig.cloudName}`
+                  : "Cloudinary Media Integration: Not Configured"}
+              </span>
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                  cloudinaryConfig.isPersisted || cloudinaryConfig.source === "firestore"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : isCloudinaryConfigured()
+                    ? "bg-sky-500/10 text-sky-400 border-sky-500/30"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                }`}
+              >
+                {cloudinaryConfig.isPersisted || cloudinaryConfig.source === "firestore"
+                  ? "Persisted in Cloud Firestore"
+                  : isCloudinaryConfigured()
+                  ? "Environment Variables Active"
+                  : "Setup Required"}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {isCloudinaryConfigured()
+                ? `Upload preset '${cloudinaryConfig.uploadPreset}' • Direct asset uploads ready across all CMS pages.`
+                : "Configure Cloudinary credentials to enable direct uploads of hero banners, flyers, and sheet music."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+          {!cloudinaryConfig.isPersisted && isCloudinaryConfigured() && (
+            <button
+              type="button"
+              onClick={handleSyncEnvToFirestore}
+              disabled={isSyncingEnv}
+              className="px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow disabled:opacity-50"
+              title="Save current credentials persistently to Firestore so all users share them"
+            >
+              {isSyncingEnv ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Database className="w-3.5 h-3.5" />
+              )}
+              <span>Persist to Database</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsConfigModalOpen(true)}
+            className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 shadow"
+          >
+            <Settings className="w-3.5 h-3.5 text-yellow-400" />
+            <span>Manage Integration</span>
           </button>
         </div>
       </div>
@@ -1044,6 +1193,7 @@ export default function MediaResourcesStudioPage() {
       <CloudinaryConfigModal
         isOpen={isConfigModalOpen}
         onClose={() => setIsConfigModalOpen(false)}
+        onConfigSaved={() => setCloudinaryConfig(getCloudinaryConfig())}
       />
     </div>
   );

@@ -87,6 +87,28 @@ export const DEFAULT_MIGRATION_CHECKLIST: MigrationChecklistItem[] = [
   },
 ];
 
+export const CloudinaryConfigSchema = z.object({
+  cloudName: z.string().default(""),
+  uploadPreset: z.string().default(""),
+  folder: z.string().default("eagleburgerband_media"),
+  enabled: z.boolean().default(true),
+  source: z.enum(["env", "firestore", "local", "unconfigured"]).default("unconfigured"),
+  updatedAt: z.string().default(() => new Date().toISOString()),
+  updatedBy: z.string().default("system"),
+});
+
+export type CloudinaryConfig = z.infer<typeof CloudinaryConfigSchema>;
+
+export const DEFAULT_CLOUDINARY_CONFIG: CloudinaryConfig = {
+  cloudName: "",
+  uploadPreset: "",
+  folder: "eagleburgerband_media",
+  enabled: true,
+  source: "unconfigured",
+  updatedAt: new Date().toISOString(),
+  updatedBy: "system",
+};
+
 export const SystemIntegrationsConfigSchema = z.object({
   schemaVersion: z.number().default(1),
   updatedAt: z.string().default(() => new Date().toISOString()),
@@ -94,6 +116,10 @@ export const SystemIntegrationsConfigSchema = z.object({
   notes: z.string().default(""),
   checklist: z.array(MigrationChecklistItemSchema).default(() => DEFAULT_MIGRATION_CHECKLIST),
   customWebhookUrl: z.string().default(""),
+  cloudinary: CloudinaryConfigSchema.default(() => ({
+    ...DEFAULT_CLOUDINARY_CONFIG,
+    updatedAt: new Date().toISOString(),
+  })),
 });
 
 export type SystemIntegrationsConfig = z.infer<typeof SystemIntegrationsConfigSchema>;

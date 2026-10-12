@@ -3,6 +3,14 @@
  * Dynamically loads the widget script and handles asset uploads.
  */
 
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
+import { authedFetch } from "@/lib/firebase/authedFetch";
+import {
+  CloudinaryConfig,
+  CloudinaryConfigSchema,
+} from "@/lib/schema/integrationConfig";
+
 export interface CloudinaryUploadResultInfo {
   secure_url: string;
   url: string;
@@ -79,8 +87,32 @@ export function loadCloudinaryScript(): Promise<void> {
   });
 }
 
+export interface CloudinaryStoredConfig {
+  cloudName: string;
+  uploadPreset: string;
+  folder?: string;
+  source: "firestore" | "env" | "local" | "unconfigured";
+  isPersisted?: boolean;
+}
+
+let cachedCloudinaryConfig: CloudinaryStoredConfig | null = null;
+
 /**
- * Returns whether Cloudinary credentials are configured in env or browser storage.
+ * Sets runtime cached Cloudinary config (e.g. from Firestore listener or API response).
+ */
+export function setCachedCloudinaryConfig(config: Partial<CloudinaryStoredConfig>): void {
+  const current = getCloudinaryConfig();
+  cachedCloudinaryConfig = {
+    cloudName: config.cloudName !== undefined ? config.cloudName : current.cloudName,
+    uploadPreset: config.uploadPreset !== undefined ? config.uploadPreset : current.uploadPreset,
+    folder: config.folder || current.folder || "eagleburgerband_media",
+    source: config.source || "firestore",
+    isPersisted: config.isPersisted !== undefined ? config.isPersisted : true,
+  };
+}
+
+/**
+ * Returns whether Cloudinary credentials are configured in env, Firestore, or browser storage.
  */
 export function isCloudinaryConfigured(): boolean {
   const config = getCloudinaryConfig();
@@ -88,26 +120,56 @@ export function isCloudinaryConfigured(): boolean {
 }
 
 /**
- * Gets Cloudinary credentials from environment variables with localStorage fallback.
+ * Gets Cloudinary credentials with priority:
+ * 1. Runtime cache (hydrated from Firestore)
+ * 2. Environment variables (.env.local)
+ * 3. Browser localStorage fallback
  */
-export function getCloudinaryConfig(): { cloudName: string; uploadPreset: string } {
-  let cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
-  let uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+export function getCloudinaryConfig(): CloudinaryStoredConfig {
+  // 1. Cached in memory (e.g. hydrated from Firestore or API)
+  if (cachedCloudinaryConfig && cachedCloudinaryConfig.cloudName && cachedCloudinaryConfig.uploadPreset) {
+    return cachedCloudinaryConfig;
+  }
 
+  // 2. Client environment variables
+  const envCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
+  const envPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+  if (envCloud && envPreset) {
+    return {
+      cloudName: envCloud,
+      uploadPreset: envPreset,
+      folder: "eagleburgerband_media",
+      source: "env",
+      isPersisted: false,
+    };
+  }
+
+  // 3. LocalStorage fallback
   if (typeof window !== "undefined") {
-    if (!cloudName) {
-      cloudName = localStorage.getItem("eb_cloudinary_cloud_name") || "";
-    }
-    if (!uploadPreset) {
-      uploadPreset = localStorage.getItem("eb_cloudinary_preset") || "";
+    const localCloud = localStorage.getItem("eb_cloudinary_cloud_name") || "";
+    const localPreset = localStorage.getItem("eb_cloudinary_preset") || "";
+    if (localCloud || localPreset) {
+      return {
+        cloudName: localCloud || envCloud,
+        uploadPreset: localPreset || envPreset,
+        folder: "eagleburgerband_media",
+        source: "local",
+        isPersisted: false,
+      };
     }
   }
 
-  return { cloudName, uploadPreset };
+  return {
+    cloudName: envCloud,
+    uploadPreset: envPreset,
+    folder: "eagleburgerband_media",
+    source: "unconfigured",
+    isPersisted: false,
+  };
 }
 
 /**
- * Saves Cloudinary credentials to browser storage (useful for local testing without restart).
+ * Saves Cloudinary credentials to browser storage (useful for local fallback).
  */
 export function setLocalCloudinaryConfig(cloudName: string, uploadPreset: string): void {
   if (typeof window !== "undefined") {
@@ -123,6 +185,141 @@ export function setLocalCloudinaryConfig(cloudName: string, uploadPreset: string
       localStorage.removeItem("eb_cloudinary_preset");
     }
   }
+}
+
+/**
+ * Saves Cloudinary credentials persistently to Cloud Firestore (system_config)
+ * and updates localStorage & runtime cache so all portal users share the configuration.
+ */
+export async function savePersistentCloudinaryConfig(
+  config: { cloudName: string; uploadPreset: string; folder?: string },
+  userEmail?: string
+): Promise<{ success: boolean; message?: string }> {
+  const cleanCloud = config.cloudName.trim();
+  const cleanPreset = config.uploadPreset.trim();
+  const cleanFolder = (config.folder || "eagleburgerband_media").trim();
+
+  // 1. Update local storage & runtime cache immediately
+  setLocalCloudinaryConfig(cleanCloud, cleanPreset);
+  setCachedCloudinaryConfig({
+    cloudName: cleanCloud,
+    uploadPreset: cleanPreset,
+    folder: cleanFolder,
+    source: "firestore",
+    isPersisted: true,
+  });
+
+  // 2. Try Firestore Client SDK setDoc
+  let clientSaved = false;
+  try {
+    const payload = CloudinaryConfigSchema.parse({
+      cloudName: cleanCloud,
+      uploadPreset: cleanPreset,
+      folder: cleanFolder,
+      enabled: true,
+      source: "firestore",
+      updatedAt: new Date().toISOString(),
+      updatedBy: userEmail || "portal_user",
+    });
+
+    await setDoc(doc(db, "system_config", "cloudinary"), payload, { merge: true });
+    await setDoc(doc(db, "system_config", "integrations"), { cloudinary: payload }, { merge: true });
+    clientSaved = true;
+  } catch (err) {
+    console.warn("Client Firestore write to system_config failed (will try server API):", err);
+  }
+
+  // 3. Call server API to ensure server-side persistence & bypass any restrictive client rules
+  try {
+    const res = await authedFetch("/api/admin/integrations/cloudinary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cloudName: cleanCloud,
+        uploadPreset: cleanPreset,
+        folder: cleanFolder,
+      }),
+    });
+    if (res.ok) {
+      return { success: true, message: "Persisted to Cloud Firestore." };
+    }
+  } catch (err) {
+    console.warn("API route write failed:", err);
+  }
+
+  if (clientSaved) {
+    return { success: true, message: "Persisted to Cloud Firestore via client." };
+  }
+
+  return { success: true, message: "Saved to browser storage." };
+}
+
+/**
+ * Checks if environment variables exist, and syncs them into persistent Firestore storage.
+ */
+export async function syncEnvCloudinaryConfigToFirestore(userEmail?: string): Promise<boolean> {
+  const envCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
+  const envPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+
+  if (!envCloud || !envPreset) return false;
+
+  try {
+    await savePersistentCloudinaryConfig(
+      { cloudName: envCloud, uploadPreset: envPreset },
+      userEmail || "env_sync"
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fetches the active Cloudinary configuration from Firestore or the server API,
+ * ensuring client cache is hydrated.
+ */
+export async function fetchPersistentCloudinaryConfig(): Promise<CloudinaryStoredConfig> {
+  // Try client Firestore read first (fast)
+  try {
+    const snap = await getDoc(doc(db, "system_config", "cloudinary"));
+    if (snap.exists()) {
+      const parsed = CloudinaryConfigSchema.safeParse(snap.data());
+      if (parsed.success && parsed.data.cloudName && parsed.data.uploadPreset) {
+        setCachedCloudinaryConfig({
+          cloudName: parsed.data.cloudName,
+          uploadPreset: parsed.data.uploadPreset,
+          folder: parsed.data.folder,
+          source: "firestore",
+          isPersisted: true,
+        });
+        return getCloudinaryConfig();
+      }
+    }
+  } catch (err) {
+    console.warn("Could not read system_config/cloudinary client-side:", err);
+  }
+
+  // Fallback to API route
+  try {
+    const res = await authedFetch("/api/admin/integrations/cloudinary");
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.config?.cloudName && data?.config?.uploadPreset) {
+        setCachedCloudinaryConfig({
+          cloudName: data.config.cloudName,
+          uploadPreset: data.config.uploadPreset,
+          folder: data.config.folder,
+          source: data.isPersisted ? "firestore" : data.config.source || "env",
+          isPersisted: data.isPersisted,
+        });
+        return getCloudinaryConfig();
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch cloudinary config from API:", err);
+  }
+
+  return getCloudinaryConfig();
 }
 
 /**

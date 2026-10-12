@@ -238,7 +238,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         className="md:hidden flex items-center justify-between px-4 py-3 border-b shrink-0 z-30 sticky top-0"
       >
         <div className="flex items-center gap-2.5">
-          <EbbLogo className="w-7 h-7" />
+          <EbbLogo className="w-7 h-7" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
           <span 
             style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
             className="font-arvo font-bold text-xs truncate tracking-tight"
@@ -301,7 +301,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
             className="flex items-center justify-between pb-4 border-b shrink-0"
           >
             <div className="flex items-center gap-3">
-              <EbbLogo className="w-9 h-9" />
+              <EbbLogo className="w-9 h-9" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
               <div>
                 <div 
                   style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}

@@ -111,9 +111,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ? (opt.previewSwatches as [string, string, string, string])
         : [opt.primaryColor, opt.accentColor, opt.surfaceColor, opt.backgroundColor];
 
+      const isDefaultConfig = opt.id === (theme.portal?.schemeId || "eagleburger-gold");
+      const configuredLogo = (isDefaultConfig && theme.portal?.logoColor) ? theme.portal.logoColor : opt.logoColor;
+
       const darkTokens = opt.modes?.dark ? {
         primaryColor: opt.modes.dark.primaryColor || opt.primaryColor,
         accentColor: opt.modes.dark.accentColor || opt.accentColor,
+        logoColor: opt.modes.dark.logoColor || configuredLogo || opt.primaryColor,
         backgroundColor: opt.modes.dark.backgroundColor || opt.backgroundColor,
         surfaceColor: opt.modes.dark.surfaceColor || opt.surfaceColor,
         mutedSurfaceColor: opt.modes.dark.mutedSurfaceColor || opt.mutedSurfaceColor,
@@ -123,6 +127,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       } : {
         primaryColor: opt.primaryColor,
         accentColor: opt.accentColor,
+        logoColor: configuredLogo || opt.primaryColor,
         backgroundColor: opt.backgroundColor,
         surfaceColor: opt.surfaceColor,
         mutedSurfaceColor: opt.mutedSurfaceColor,
@@ -134,6 +139,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const lightTokens = opt.modes?.light ? {
         primaryColor: opt.modes.light.primaryColor || opt.primaryColor,
         accentColor: opt.modes.light.accentColor || opt.accentColor,
+        logoColor: opt.modes.light.logoColor || (configuredLogo === opt.primaryColor ? (opt.modes.light.primaryColor || opt.primaryColor) : (configuredLogo || opt.primaryColor)),
         backgroundColor: opt.modes.light.backgroundColor || "#f8fafc",
         surfaceColor: opt.modes.light.surfaceColor || "#ffffff",
         mutedSurfaceColor: opt.modes.light.mutedSurfaceColor || "#f1f5f9",
@@ -143,6 +149,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       } : {
         primaryColor: opt.primaryColor,
         accentColor: opt.accentColor,
+        logoColor: configuredLogo || opt.primaryColor,
         backgroundColor: "#f8fafc",
         surfaceColor: "#ffffff",
         mutedSurfaceColor: "#f1f5f9",
@@ -156,7 +163,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         name: opt.name,
         tagline: opt.tagline || "",
         description: opt.description || "",
-        logoColor: opt.logoColor || opt.primaryColor,
+        logoColor: configuredLogo || opt.primaryColor,
         primaryColor: opt.primaryColor,
         accentColor: opt.accentColor,
         backgroundColor: opt.backgroundColor,
@@ -171,7 +178,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         },
       };
     });
-  }, [theme.portalThemes]);
+  }, [theme.portalThemes, theme.portal?.schemeId, theme.portal?.logoColor]);
 
   // Derive activePortalSchemeId: override > profile preference > localStorage > ensemble default > fallback
   const activePortalSchemeId: PortalColorSchemeId = useMemo(() => {
@@ -278,19 +285,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const portalTheme: ThemeScopeConfig = useMemo(() => {
+    const isEnsembleDefault = activePortalScheme.id === (theme.portal?.schemeId || "eagleburger-gold");
+    const activeLogoColor =
+      activePortalScheme.logoColor ||
+      (isEnsembleDefault ? theme.portal?.logoColor : undefined) ||
+      activePortalScheme.primaryColor ||
+      theme.portal?.logoColor ||
+      "#facc15";
+
     return {
       schemeId: activePortalScheme.id,
       primaryColor: activePortalScheme.primaryColor,
       accentColor: activePortalScheme.accentColor,
-      logoColor: theme.portal?.logoColor || activePortalScheme.primaryColor,
+      logoColor: activeLogoColor,
       backgroundColor: activePortalScheme.backgroundColor,
       surfaceColor: activePortalScheme.surfaceColor,
       mutedSurfaceColor: activePortalScheme.mutedSurfaceColor,
       borderColor: activePortalScheme.borderColor,
       textColor: activePortalScheme.textColor,
-      tagline: theme.portal?.tagline || activePortalScheme.tagline,
+      tagline: activePortalScheme.tagline || theme.portal?.tagline,
     };
-  }, [activePortalScheme, theme.portal?.tagline, theme.portal?.logoColor]);
+  }, [activePortalScheme, theme.portal?.schemeId, theme.portal?.tagline, theme.portal?.logoColor]);
 
   const getScopedStyles = (scope: "public" | "portal"): React.CSSProperties => {
     const scopeConfig = scope === "public" ? theme.public : portalTheme;

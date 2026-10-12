@@ -2490,6 +2490,9 @@ export default function ThemeCustomizerPage() {
               const simTextColor = simulatorScope === "public"
                 ? (theme.public.textColor || "#f8fafc")
                 : (selectedPortalTheme.textColor || "#fefce8");
+              const simLogoColor = simulatorScope === "public"
+                ? (selectedTheme.logoColor || theme.public.logoColor || theme.public.primaryColor || "#facc15")
+                : (selectedPortalTheme.logoColor || selectedPortalTheme.primaryColor || "#facc15");
 
               return (
                 <div className="space-y-4">
@@ -2529,16 +2532,19 @@ export default function ThemeCustomizerPage() {
 
                   {/* Identity Header Specimen */}
                   <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center gap-3.5 shadow-md">
-                    <div
-                      className="w-14 h-14 font-black text-lg flex items-center justify-center shrink-0 font-mono transition-all duration-300"
-                      style={{
-                        backgroundColor: simPrimaryColor,
-                        color: simBgColor,
-                        borderRadius: BORDER_RADIUS_CONFIG[simPolish.borderRadius].styleRadius,
-                        boxShadow: GLOW_CONFIG[simPolish.glowIntensity].shadow,
-                      }}
-                    >
-                      {theme.monogram || "EBB"}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div
+                        className="w-12 h-12 font-black text-base flex items-center justify-center font-mono transition-all duration-300"
+                        style={{
+                          backgroundColor: simPrimaryColor,
+                          color: simBgColor,
+                          borderRadius: BORDER_RADIUS_CONFIG[simPolish.borderRadius].styleRadius,
+                          boxShadow: GLOW_CONFIG[simPolish.glowIntensity].shadow,
+                        }}
+                      >
+                        {theme.monogram || "EBB"}
+                      </div>
+                      <EbbLogo className="w-9 h-9 shrink-0 transition-colors duration-300" color={simLogoColor} />
                     </div>
                     <div className="min-w-0">
                       <h3
@@ -2704,6 +2710,13 @@ export default function ThemeCustomizerPage() {
                         <span className="text-slate-500">Texture:</span>
                         <span className="font-mono text-slate-300">
                           {TEXTURE_CONFIG[simPolish.backgroundTexture].label}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Logo Tint:</span>
+                        <span className="font-mono text-slate-300 flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full border border-slate-700 shrink-0" style={{ backgroundColor: simLogoColor }} />
+                          <span className="text-[10px]">{simLogoColor}</span>
                         </span>
                       </div>
                       <div className="flex justify-between py-0.5 col-span-2">

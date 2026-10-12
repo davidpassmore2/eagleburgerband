@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "@/lib/context/ThemeContext";
 import { PortalColorScheme, PortalThemeMode } from "@/lib/schema/theme";
+import EbbLogo from "@/components/common/EbbLogo";
 import { 
   Palette, 
   X, 
@@ -99,11 +100,10 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
               style={{
                 backgroundColor: activePortalScheme.mutedSurfaceColor,
                 borderColor: activePortalScheme.borderColor,
-                color: activePortalScheme.primaryColor,
               }}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 shadow-sm"
+              className="w-10 h-10 rounded-2xl border flex items-center justify-center shrink-0 shadow-sm transition-colors duration-300"
             >
-              <Palette className="w-5 h-5" />
+              <EbbLogo className="w-6 h-6" color={activePortalScheme.logoColor || activePortalScheme.primaryColor} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -248,6 +248,11 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                         ))}
                       </div>
 
+                      <EbbLogo 
+                        className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" 
+                        color={schemeTokens.logoColor || scheme.logoColor || schemeTokens.primaryColor} 
+                      />
+
                       <span 
                         style={{ color: schemeTokens.textColor }}
                         className="font-extrabold text-sm group-hover:opacity-85 transition"
@@ -283,6 +288,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                       <span>Ambient: <code className="font-semibold">{schemeTokens.backgroundColor}</code></span>
                       <span>Surface: <code className="font-semibold">{schemeTokens.surfaceColor}</code></span>
                       <span>Accent: <code className="font-semibold">{schemeTokens.primaryColor}</code></span>
+                      <span>Logo: <code className="font-semibold" style={{ color: schemeTokens.logoColor || scheme.logoColor || schemeTokens.primaryColor }}>{schemeTokens.logoColor || scheme.logoColor || schemeTokens.primaryColor}</code></span>
                     </div>
                   </div>
 

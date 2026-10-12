@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDeliverabilityConfig } from "@/lib/email/resend";
 import { requireCaller } from "@/lib/auth/serverAuth";
+import { getDocument } from "@/lib/firebase/serverFirestore";
+import { CloudinaryConfigSchema } from "@/lib/schema/integrationConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -107,14 +109,45 @@ export async function GET(req: NextRequest) {
     };
 
     // 5. Cloudinary Storage
-    const cloudinaryCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
-    const cloudinaryPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+    let firestoreCloud = "";
+    let firestorePreset = "";
+    try {
+      const cDoc = await getDocument("system_config/cloudinary");
+      if (cDoc?.data) {
+        const parsed = CloudinaryConfigSchema.safeParse(cDoc.data);
+        if (parsed.success && parsed.data.cloudName) {
+          firestoreCloud = parsed.data.cloudName;
+          firestorePreset = parsed.data.uploadPreset;
+        }
+      }
+      if (!firestoreCloud) {
+        const iDoc = await getDocument("system_config/integrations");
+        if (iDoc?.data?.cloudinary) {
+          const parsed = CloudinaryConfigSchema.safeParse(iDoc.data.cloudinary);
+          if (parsed.success && parsed.data.cloudName) {
+            firestoreCloud = parsed.data.cloudName;
+            firestorePreset = parsed.data.uploadPreset;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    const envCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
+    const envPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
+
+    const activeCloud = firestoreCloud || envCloud;
+    const activePreset = firestorePreset || envPreset;
+
     const cloudinary = {
-      hasCloudName: Boolean(cloudinaryCloud),
-      cloudName: cloudinaryCloud,
-      hasUploadPreset: Boolean(cloudinaryPreset),
-      uploadPreset: cloudinaryPreset,
-      configured: Boolean(cloudinaryCloud && cloudinaryPreset),
+      hasCloudName: Boolean(activeCloud),
+      cloudName: activeCloud,
+      hasUploadPreset: Boolean(activePreset),
+      uploadPreset: activePreset,
+      configured: Boolean(activeCloud && activePreset),
+      isPersisted: Boolean(firestoreCloud && firestorePreset),
+      source: firestoreCloud ? "firestore" : envCloud ? "env" : "unconfigured",
     };
 
     // 6. Alert Webhooks (Slack/Discord)
