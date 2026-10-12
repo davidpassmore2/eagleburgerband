@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { firebaseProjectId, isFirebaseEmulator } from "@/lib/firebase/emulator";
 
 interface ServiceAccountCredentials {
   client_email: string;
@@ -82,13 +83,13 @@ function getServiceAccountCredentials(): { creds: ServiceAccountCredentials | nu
   return { creds: null };
 }
 
-async function getGoogleAccessToken(creds: ServiceAccountCredentials): Promise<string> {
+async function getGoogleAccessToken(creds: ServiceAccountCredentials): Promise<{ accessToken: string; expiresIn: number }> {
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
   const payload = Buffer.from(
     JSON.stringify({
       iss: creds.client_email,
-      scope: "https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/firebase",
+      scope: "https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/firebase https://www.googleapis.com/auth/datastore",
       aud: "https://oauth2.googleapis.com/token",
       exp: now + 3600,
       iat: now,
@@ -114,8 +115,28 @@ async function getGoogleAccessToken(creds: ServiceAccountCredentials): Promise<s
     throw new Error(`Google OAuth2 token exchange failed (${res.status}): ${errText}`);
   }
 
-  const data = (await res.json()) as { access_token: string };
-  return data.access_token;
+  const data = (await res.json()) as { access_token: string; expires_in: number };
+  return { accessToken: data.access_token, expiresIn: data.expires_in };
+}
+
+let cachedAccessToken: { value: string; expiresAt: number } | null = null;
+
+/**
+ * Bearer token for server-side Google API calls (Identity Toolkit, Firestore REST).
+ * Resolves to the emulator's "owner" token when running against local emulators.
+ */
+export async function getServiceAccessToken(): Promise<string> {
+  if (isFirebaseEmulator()) return "owner";
+  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
+    return cachedAccessToken.value;
+  }
+  const { creds, errorDetail } = getServiceAccountCredentials();
+  if (!creds) {
+    throw new Error(errorDetail || "Firebase service account is not configured (set FIREBASE_SERVICE_ACCOUNT_KEY).");
+  }
+  const { accessToken, expiresIn } = await getGoogleAccessToken(creds);
+  cachedAccessToken = { value: accessToken, expiresAt: Date.now() + expiresIn * 1000 };
+  return accessToken;
 }
 
 /**
@@ -126,10 +147,9 @@ async function getGoogleAccessToken(creds: ServiceAccountCredentials): Promise<s
 export async function deleteAuthUser(uid: string): Promise<{ success: boolean; error?: string }> {
   try {
     // 1. Emulator mode fallback
-    if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
+    if (isFirebaseEmulator()) {
       const emulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099";
-      const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "eagleburger-band-dev";
-      const emuUrl = `http://${emulatorHost}/identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:delete`;
+      const emuUrl = `http://${emulatorHost}/identitytoolkit.googleapis.com/v1/projects/${firebaseProjectId}/accounts:delete`;
       const res = await fetch(emuUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,7 +169,7 @@ export async function deleteAuthUser(uid: string): Promise<{ success: boolean; e
       };
     }
 
-    const accessToken = await getGoogleAccessToken(creds);
+    const accessToken = await getServiceAccessToken();
     const deleteUrl = "https://identitytoolkit.googleapis.com/v1/accounts:delete";
 
     const res = await fetch(deleteUrl, {

@@ -51,6 +51,7 @@ import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentM
 import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
 import { ResourceAsset } from "@/lib/schema/resource";
 import { GigCompensationType } from "@/lib/schema/gig";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 interface GigItem {
   id: string;
@@ -438,7 +439,7 @@ export default function GigsAdminStudioPage() {
       // Dispatch initial availability request email if requested
       if (formData.dispatchAvailability) {
         try {
-          const dispRes = await fetch("/api/email/gig-availability", {
+          const dispRes = await authedFetch("/api/email/gig-availability", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -450,7 +451,6 @@ export default function GigsAdminStudioPage() {
               venue: formData.venue.trim(),
               address: formData.venueAddress.trim() || formData.venue.trim(),
               notes: formData.description.trim(),
-              actorUid: profile?.uid,
             }),
           });
           const dispData = await dispRes.json();
@@ -728,7 +728,7 @@ export default function GigsAdminStudioPage() {
 
       if (isNowConfirmed && !wasConfirmed) {
         try {
-          const confRes = await fetch("/api/email/gig-confirmation", {
+          const confRes = await authedFetch("/api/email/gig-confirmation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -741,7 +741,6 @@ export default function GigsAdminStudioPage() {
               address: editFormData.venueAddress.trim() || editFormData.venue.trim(),
               attire: editFormData.attire.trim(),
               notes: editFormData.description.trim(),
-              actorUid: profile?.uid,
             }),
           });
           const confData = await confRes.json();
@@ -764,7 +763,7 @@ export default function GigsAdminStudioPage() {
       // Trigger 3: If a confirmed gig is canceled, notify members it's not happening.
       if (wasConfirmed && isNowCancelled) {
         try {
-          const cancelRes = await fetch("/api/email/gig-cancellation", {
+          const cancelRes = await authedFetch("/api/email/gig-cancellation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -774,7 +773,6 @@ export default function GigsAdminStudioPage() {
               callTime: editFormData.callTime || "TBD",
               venue: editFormData.venue.trim(),
               reason: editFormData.description.trim() || "The performance has been called off.",
-              actorUid: profile?.uid,
             }),
           });
           const cancelData = await cancelRes.json();
@@ -802,7 +800,7 @@ export default function GigsAdminStudioPage() {
     setDispatchingConfirmationId(gig.id);
     try {
       const gigTitle = gig.internalLogistics?.title || gig.publicDetails?.title || "Gig";
-      const res = await fetch("/api/email/gig-confirmation", {
+      const res = await authedFetch("/api/email/gig-confirmation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -815,7 +813,6 @@ export default function GigsAdminStudioPage() {
           address: gig.publicDetails?.venueAddress || gig.publicDetails?.venue || "",
           attire: gig.internalLogistics?.attire || "",
           notes: gig.publicDetails?.description || gig.internalLogistics?.parkingNotes || "",
-          actorUid: profile?.uid,
         }),
       });
       const data = await res.json();
@@ -849,7 +846,7 @@ export default function GigsAdminStudioPage() {
       // Trigger 3: If deleting a confirmed gig, notify members so they know it's called off
       if (wasConfirmed && targetGig) {
         try {
-          await fetch("/api/email/gig-cancellation", {
+          await authedFetch("/api/email/gig-cancellation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -858,7 +855,6 @@ export default function GigsAdminStudioPage() {
               date: targetGig.date || "",
               venue: targetGig.publicDetails?.venue || "",
               reason: "Performance has been removed from the calendar.",
-              actorUid: profile?.uid,
             }),
           });
         } catch (cErr) {

@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { isFirebaseEmulator } from "@/lib/firebase/emulator";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "local-api-key",
@@ -19,14 +20,7 @@ const storage = getStorage(app);
 
 let isEmulated = false;
 
-// Determine whether to connect to local emulators:
-// - Explicitly requested via NEXT_PUBLIC_USE_FIREBASE_EMULATOR="true"
-// - Or default in local dev when no live cloud API key is configured
-const shouldUseEmulator =
-  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" ||
-  (process.env.NODE_ENV === "development" &&
-    process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR !== "false" &&
-    (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "local-api-key"));
+const shouldUseEmulator = isFirebaseEmulator();
 
 if (typeof window !== "undefined" && shouldUseEmulator) {
   if (!isEmulated) {

@@ -2,149 +2,299 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user has admin privileges
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember() {
+      return isSignedIn() && exists(userPath(request.auth.uid));
+    }
+
+    function myProfile() {
+      return get(userPath(request.auth.uid)).data;
+    }
+
+    function hasVerifiedEmail(email) {
+      return isSignedIn()
+        && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '').lower() == email.lower();
+    }
+
+    function isSuperAdmin() {
+      return hasVerifiedEmail('davidpassmore@gmail.com');
+    }
+
     function isAdmin() {
-      return request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        'admin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles
-      );
+      return isSuperAdmin() || (isMember() && (
+        myProfile().get('role', '') == 'admin' ||
+        myProfile().get('roles', []).hasAny(['admin'])
+      ));
     }
 
-    // Allow development and authenticated access across collections
-    match /{document=**} {
-      allow read, write: if true; // Set to true for local emulator development
+    function hasAnyRole(roles) {
+      return isAdmin() || (isMember() && myProfile().get('roles', []).hasAny(roles));
     }
 
-    // Specific collection rules for production readiness:
+    function canManageRoster() {
+      return hasAnyRole(['membership_manager']);
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function inviteRoles(invite) {
+      return invite.get('roles', []).size() > 0 ? invite.roles : ['member'];
+    }
+
+    function isMemberOnlyInvite(invite) {
+      return inviteRoles(invite) == ['member'];
+    }
+
+    function canClaimInvite(invite) {
+      return (invite.status == 'pending' || (invite.status == 'claimed' && invite.get('claimedByUid', '') == request.auth.uid))
+        && (isMemberOnlyInvite(invite) || hasVerifiedEmail(invite.email));
+    }
+
+    function profileMatchesInvite(invitePath) {
+      return exists(invitePath)
+        && canClaimInvite(get(invitePath).data)
+        && request.resource.data.get('roles', ['member']) == inviteRoles(get(invitePath).data)
+        && request.resource.data.get('role', 'member') == 'member';
+    }
+
+    function isProfileFromInvite() {
+      let token = request.resource.data.get('claimedInviteToken', '');
+      return token is string && token != ''
+        && profileMatchesInvite(/databases/$(database)/documents/invites/$(token));
+    }
+
+    function isAllowedSelfStatusChange() {
+      let before = resource.data.get('status', 'active');
+      let after = request.resource.data.get('status', 'active');
+      return before == after
+        || (before in ['active', 'hiatus'] && after in ['active', 'hiatus', 'inactive']);
+    }
+
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read: if isMember() || (isSignedIn() && request.auth.uid == userId);
+      allow create: if canManageRoster()
+        || (isSignedIn() && request.auth.uid == userId && isProfileFromInvite());
+      allow update: if canManageRoster()
+        || (isSignedIn() && request.auth.uid == userId
+            && !changedKeys().hasAny(['roles', 'role', 'uid', 'claimedInviteToken'])
+            && isAllowedSelfStatusChange())
+        || (hasAnyRole(['section_leader'])
+            && changedKeys().hasOnly(['sectionId', 'instruments', 'selectedInstrument', 'section', 'primarySection', 'updatedAt']));
+      allow delete: if isAdmin();
+
+      match /blackouts/{blackoutId} {
+        allow write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /{path=**}/blackouts/{blackoutId} {
+      allow read: if isMember();
+    }
+
+    match /invites/{token} {
+      allow get: if true;
+      allow list: if canManageRoster()
+        || (isSignedIn()
+            && request.auth.token.get('email_verified', false) == true
+            && resource.data.email == request.auth.token.email.lower());
+      allow create: if canManageRoster();
+      allow update: if canManageRoster()
+        || (isSignedIn()
+            && changedKeys().hasOnly(['status', 'claimedAt', 'claimedByUid'])
+            && request.resource.data.status == 'claimed'
+            && request.resource.data.claimedByUid == request.auth.uid
+            && canClaimInvite(resource.data));
+      allow delete: if canManageRoster();
     }
 
     match /sections/{sectionId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /songs/{songId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /tunes/{tuneId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /setlists/{setlistId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /gigs/{gigId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
 
       match /rsvps/{userId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isMember();
       }
 
       match /dispatch_history/{dispatchId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isMember();
+      }
+
+      match /checkins/{userId} {
+        allow read, write: if isMember();
+      }
+
+      match /dispatches/{dispatchId} {
+        allow read, write: if isMember();
       }
     }
 
     match /contacts/{contactId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /suggestions/{suggestionId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /comments/{commentId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /theme/{themeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /content_pages/{pageId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
+    }
+
+    match /site_navigation/{configId} {
+      allow read: if true;
+      allow write: if isMember();
     }
 
     match /resources/{resourceId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null;
+      allow create, update, delete: if isMember();
     }
 
     match /inquiries/{inquiryId} {
       allow create: if request.resource.data.clientName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.date is string;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if isMember();
     }
 
     match /booking_leads/{leadId} {
       allow create: if request.resource.data.clientName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.date is string;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if isMember();
     }
 
     match /donations/{donationId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isMember();
     }
 
     match /testimonials/{testimonialId} {
       allow create: if request.resource.data.authorName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.quote is string;
-      allow read: if resource.data.status in ['approved', 'featured'] || request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read: if resource.data.status in ['approved', 'featured'] || isMember();
+      allow update, delete: if isMember();
     }
 
     match /auditions/{auditionId} {
       allow create: if request.resource.data.name is string &&
                     request.resource.data.email is string &&
                     request.resource.data.primaryInstrument is string;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if isMember();
     }
 
     match /contact_messages/{messageId} {
       allow create: if request.resource.data.name is string &&
                     request.resource.data.email is string &&
                     request.resource.data.message is string;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if isMember();
+    }
+
+    match /reimbursements/{reimbursementId} {
+      allow read, write: if isMember();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if isMember();
+    }
+
+    match /transactions/{transactionId} {
+      allow read, write: if isMember();
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if isMember();
+    }
+
+    match /inventory/{itemId} {
+      allow read, write: if isMember();
+    }
+
+    match /vault_tracks/{trackId} {
+      allow read, write: if isMember();
+    }
+
+    match /gig_ledgers/{ledgerId} {
+      allow read, write: if isMember();
+    }
+
+    match /email_logs/{logId} {
+      allow read, write: if isMember();
+    }
+
+    match /notification_logs/{logId} {
+      allow read, write: if isMember();
+    }
+
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isMember() && request.resource.data.actorUid == request.auth.uid;
     }
 
     match /navigation_config/{configId} {
-      allow read: if request.auth != null;
+      allow read: if isMember();
       allow write: if isAdmin();
     }
 
     match /portal_metrics_config/{configId} {
-      allow read: if request.auth != null;
+      allow read: if isMember();
       allow write: if isAdmin();
     }
 
     match /system_config/{configId} {
-      allow read: if request.auth != null;
+      allow read: if isMember();
       allow write: if isAdmin();
     }
 
     match /portal_metrics_events/{eventId} {
-      allow create: if request.auth != null;
+      allow create: if isMember();
       allow read, update, delete: if isAdmin();
     }
   }

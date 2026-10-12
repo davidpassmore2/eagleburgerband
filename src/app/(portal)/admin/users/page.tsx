@@ -31,6 +31,7 @@ import {
   History,
   Users,
 } from "lucide-react";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 type UserRecord = User & {
   status?: "active" | "inactive" | "pending";
@@ -270,12 +271,11 @@ export default function UsersAdminPage() {
       const targetUid = purgeTarget.uid;
       const targetName = purgeTarget.displayName || purgeTarget.email;
 
-      const res = await fetch("/api/admin/users/purge", {
+      const res = await authedFetch("/api/admin/users/purge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           targetUid,
-          actorUid: profile.uid,
         }),
       });
 

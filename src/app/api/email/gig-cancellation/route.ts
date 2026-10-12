@@ -4,14 +4,20 @@ import { renderGigCancellationEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
 import { resolveGigConfirmedRecipients, resolveGigAvailabilityRecipients } from "@/lib/portal/gigDispatchEngine";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
-import { db } from "@/lib/firebase/client";
-import { doc, getDoc } from "firebase/firestore";
+import { requireCaller } from "@/lib/auth/serverAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const caller = await requireCaller(
+      req,
+      ["gig_manager", "web_manager"],
+      "Unauthorized: Gig coordinator or administrator clearance required to dispatch cancellation notices."
+    );
+    if (caller instanceof NextResponse) return caller;
+
     const body = await req.json();
     const parsed = SendGigCancellationEmailSchema.safeParse(body);
 
@@ -30,35 +36,11 @@ export async function POST(req: NextRequest) {
       venue,
       reason,
       recipientEmails: explicitEmails,
-      actorUid,
     } = parsed.data;
 
-    let actorName = "Eagleburger Gig Operations";
-    let actorEmail: string | undefined;
-
-    // 1. RBAC Guard: Verify gig coordinator, manager, or admin clearance
-    if (actorUid) {
-      const actorDoc = await getDoc(doc(db, "users", actorUid));
-      if (!actorDoc.exists()) {
-        return NextResponse.json({ error: "Actor profile not found." }, { status: 401 });
-      }
-      const actorData = actorDoc.data();
-      actorName = actorData.displayName || actorName;
-      actorEmail = actorData.email;
-      const roles: string[] = Array.isArray(actorData.roles) ? actorData.roles : [];
-      const hasPerm =
-        roles.includes("admin") ||
-        roles.includes("gig_manager") ||
-        roles.includes("web_manager") ||
-        actorData.role === "admin";
-
-      if (!hasPerm) {
-        return NextResponse.json(
-          { error: "Unauthorized: Gig coordinator or administrator clearance required to dispatch cancellation notices." },
-          { status: 403 }
-        );
-      }
-    }
+    const actorUid = caller.uid;
+    const actorName = caller.displayName || "Eagleburger Gig Operations";
+    const actorEmail = caller.email || undefined;
 
     // 2. Resolve target recipients:
     // First priority: musicians who RSVP'd attending (in) or probable for this gig.

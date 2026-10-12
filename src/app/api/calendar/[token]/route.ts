@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import type { DocumentData } from "firebase/firestore";
+import { findDocuments, listDocuments } from "@/lib/firebase/serverFirestore";
 import { formatIcalDate, parseDateTime, escapeIcalText } from "@/lib/calendar/ical";
 
 export async function GET(
@@ -17,16 +17,15 @@ export async function GET(
 
   try {
     // 1. Locate user by calendar token
-    const usersQuery = query(collection(db, "users"), where("calendarToken", "==", token));
-    const userSnap = await getDocs(usersQuery);
+    const matchingUsers = await findDocuments("users", "calendarToken", token);
 
-    if (userSnap.empty) {
+    if (matchingUsers.length === 0) {
       console.warn(`[Calendar API] No user found with token: ${token}`);
       return new NextResponse(`Calendar feed not found for token: ${token}`, { status: 404 });
     }
 
-    const userDoc = userSnap.docs[0];
-    const userData = userDoc.data();
+    const userDoc = matchingUsers[0];
+    const userData: DocumentData = userDoc.data;
     const uid = userDoc.id;
     const performerName = userData.displayName || userData.name || "Performer";
 
@@ -34,11 +33,11 @@ export async function GET(
     const origin = req.nextUrl.origin || "https://eagleburgerband.com";
 
     // 2. Fetch all gigs
-    const gigsSnap = await getDocs(collection(db, "gigs"));
+    const gigs = await listDocuments("gigs");
     const eventsIcal: string[] = [];
 
-    for (const gigDoc of gigsSnap.docs) {
-      const gigData = gigDoc.data();
+    for (const gigDoc of gigs) {
+      const gigData: DocumentData = gigDoc.data;
       const gigId = gigDoc.id;
 
       // Skip cancelled or archived gigs if any
@@ -48,11 +47,11 @@ export async function GET(
 
       // Check attendance if in "mine" mode
       if (mode === "mine") {
-        const rsvpsSnap = await getDocs(collection(db, "gigs", gigId, "rsvps"));
+        const rsvps = await listDocuments(`gigs/${gigId}/rsvps`);
         let isAttending = false;
 
-        rsvpsSnap.forEach((r) => {
-          const status = r.data().status;
+        rsvps.forEach((r) => {
+          const status = r.data.status;
           if (r.id === uid && (status === "attending" || status === "probable")) {
             isAttending = true;
           }

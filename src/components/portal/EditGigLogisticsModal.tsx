@@ -17,13 +17,13 @@ import {
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import { toast } from "@/lib/context/ToastContext";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 type Props = {
   gigId: string;
   initialDate: string;
   initialLogistics: LogisticsFields & { title?: string };
   confirmedCount: number;
-  managerName: string;
   isOpen: boolean;
   onClose: () => void;
   onSaved?: () => void;
@@ -34,7 +34,6 @@ export default function EditGigLogisticsModal({
   initialDate,
   initialLogistics,
   confirmedCount,
-  managerName,
   isOpen,
   onClose,
   onSaved,
@@ -117,7 +116,7 @@ export default function EditGigLogisticsModal({
       });
 
       if (broadcast && diffsToBroadcast.length > 0) {
-        await fetch("/api/webhooks/logistics-alert", {
+        await authedFetch("/api/webhooks/logistics-alert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -126,7 +125,6 @@ export default function EditGigLogisticsModal({
             gigDate: date,
             diffs: diffsToBroadcast,
             confirmedRecipientsCount: confirmedCount,
-            initiatedBy: managerName,
           }),
         });
       }

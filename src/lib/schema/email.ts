@@ -2,13 +2,12 @@ import { z } from "zod";
 import { BroadcastChannelEnum } from "./emailLog";
 
 export const SendInviteEmailSchema = z.object({
-  token: z.string().min(1, "Invite token is required"),
+  token: z.string().min(1, "Invite token is required").regex(/^[^/]+$/, "Invalid invite token"),
   recipientEmail: z.string().email("Valid recipient email is required"),
   musicianName: z.string().default(""),
   sectionName: z.string().default(""),
   instruments: z.array(z.string()).default([]),
   notes: z.string().default(""),
-  actorUid: z.string().optional(),
 });
 export type SendInviteEmailPayload = z.infer<typeof SendInviteEmailSchema>;
 
@@ -24,7 +23,6 @@ export const SendCallSheetEmailSchema = z.object({
   notes: z.string().default(""),
   setlistUrl: z.string().default(""),
   recipientEmails: z.array(z.string().email()).min(1, "At least one recipient email is required"),
-  actorUid: z.string().optional(),
 });
 export type SendCallSheetEmailPayload = z.infer<typeof SendCallSheetEmailSchema>;
 
@@ -46,9 +44,6 @@ export const SendBroadcastEmailSchema = z.object({
   htmlBody: z.string().min(1, "HTML body is required"),
   recipientEmails: z.array(z.string().email()).min(1, "At least one recipient is required"),
   channel: BroadcastChannelEnum.default("email"),
-  senderUid: z.string().default(""),
-  senderName: z.string().default("Eagleburger Band"),
-  senderEmail: z.string().default(""),
   templateType: z.string().default("custom_broadcast"),
   relatedEntityId: z.string().nullable().default(null),
   relatedEntityType: z.enum(["gig", "contact", "invite", "general"]).default("general"),
@@ -65,7 +60,6 @@ export const SendGigAvailabilityEmailSchema = z.object({
   address: z.string().default(""),
   notes: z.string().default(""),
   recipientEmails: z.array(z.string().email()).default([]),
-  actorUid: z.string().optional(),
 });
 export type SendGigAvailabilityEmailPayload = z.infer<typeof SendGigAvailabilityEmailSchema>;
 
@@ -81,7 +75,6 @@ export const SendGigConfirmationEmailSchema = z.object({
   notes: z.string().default(""),
   setlistUrl: z.string().default(""),
   recipientEmails: z.array(z.string().email()).default([]),
-  actorUid: z.string().optional(),
 });
 export type SendGigConfirmationEmailPayload = z.infer<typeof SendGigConfirmationEmailSchema>;
 
@@ -93,7 +86,6 @@ export const SendGigCancellationEmailSchema = z.object({
   venue: z.string().default(""),
   reason: z.string().default(""),
   recipientEmails: z.array(z.string().email()).default([]),
-  actorUid: z.string().optional(),
 });
 export type SendGigCancellationEmailPayload = z.infer<typeof SendGigCancellationEmailSchema>;
 

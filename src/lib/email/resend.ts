@@ -1,6 +1,6 @@
 import { Resend } from "resend";
-import { db } from "@/lib/firebase/client";
-import { doc, setDoc } from "firebase/firestore";
+import { setDocument } from "@/lib/firebase/serverFirestore";
+import { isFirebaseEmulator } from "@/lib/firebase/emulator";
 import { EmailLogSchema, EmailRecipient, EmailTemplateType } from "@/lib/schema/emailLog";
 
 export interface SendEmailOptions {
@@ -31,7 +31,7 @@ export interface SendEmailResult {
 export function getDeliverabilityConfig(reqOrigin?: string | null) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || "Eagleburger Band <onboarding@resend.dev>";
-  const isEmulator = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true";
+  const isEmulator = isFirebaseEmulator();
   const hasKey = Boolean(apiKey && apiKey.length > 0);
   const isMockMode = isEmulator || !hasKey;
 
@@ -120,7 +120,7 @@ export async function sendTransactionalEmail(options: SendEmailOptions): Promise
       };
 
       const validatedLog = EmailLogSchema.parse(logPayload);
-      await setDoc(doc(db, "email_logs", logId), validatedLog);
+      await setDocument(`email_logs/${logId}`, validatedLog);
     } catch (logErr) {
       console.warn("⚠️ Warning: Could not persist mock email log to Firestore:", logErr);
     }
@@ -173,7 +173,7 @@ export async function sendTransactionalEmail(options: SendEmailOptions): Promise
           errorMessage: error.message || "Failed to dispatch via Resend",
           sentAt: new Date().toISOString(),
         };
-        await setDoc(doc(db, "email_logs", logId), EmailLogSchema.parse(failurePayload));
+        await setDocument(`email_logs/${logId}`, EmailLogSchema.parse(failurePayload));
       } catch (logErr) {
         console.warn("⚠️ Warning: Could not record failed email log to Firestore:", logErr);
       }
@@ -214,7 +214,7 @@ export async function sendTransactionalEmail(options: SendEmailOptions): Promise
         errorMessage: null,
         sentAt: new Date().toISOString(),
       };
-      await setDoc(doc(db, "email_logs", logId), EmailLogSchema.parse(successPayload));
+      await setDocument(`email_logs/${logId}`, EmailLogSchema.parse(successPayload));
     } catch (logErr) {
       console.warn("⚠️ Warning: Could not record successful email log to Firestore:", logErr);
     }

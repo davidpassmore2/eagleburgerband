@@ -36,6 +36,7 @@ import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import RosterExportModal from "@/components/portal/RosterExportModal";
 import RosterImportModal from "@/components/portal/RosterImportModal";
 import { z } from "zod";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 type Role = z.infer<typeof RoleEnum>;
 
@@ -90,7 +91,7 @@ export default function RosterAdminPage() {
   const [inviteSection, setInviteSection] = useState("");
   const [inviteInstruments, setInviteInstruments] = useState("");
   const [inviteNotes, setInviteNotes] = useState("");
-  const [inviteRoles] = useState<Role[]>(["member"]);
+  const [inviteRoles, setInviteRoles] = useState<Role[]>(["member"]);
   const [lastCreatedInvite, setLastCreatedInvite] = useState<{
     email: string;
     name: string;
@@ -310,6 +311,13 @@ export default function RosterAdminPage() {
     }
   };
 
+  const handleToggleInviteRole = (role: Role) => {
+    setInviteRoles((prev) => {
+      const next = prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role];
+      return next.length > 0 ? next : ["member"];
+    });
+  };
+
   const handleCreateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !inviteName.trim()) return;
@@ -346,6 +354,7 @@ export default function RosterAdminPage() {
       setInviteSection("");
       setInviteInstruments("");
       setInviteNotes("");
+      setInviteRoles(["member"]);
       toast.success("Onboarding link generated!");
     } catch (err) {
       toast.error("Failed to generate invite: " + (err instanceof Error ? err.message : String(err)));
@@ -378,7 +387,7 @@ export default function RosterAdminPage() {
 
     setSendingInviteToken(token);
     try {
-      const res = await fetch("/api/email/invite", {
+      const res = await authedFetch("/api/email/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -388,7 +397,6 @@ export default function RosterAdminPage() {
           sectionName,
           instruments,
           notes,
-          actorUid: profile?.uid,
         }),
       });
 
@@ -1194,6 +1202,29 @@ export default function RosterAdminPage() {
                   placeholder="e.g. Tenor Trombone, Bass Trombone"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Roles</label>
+                <div className="flex flex-wrap gap-1">
+                  {ALL_ROLES.map((r) => {
+                    const selected = inviteRoles.includes(r);
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => handleToggleInviteRole(r)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer ${
+                          selected
+                            ? "bg-yellow-400 text-slate-950 font-bold"
+                            : "bg-slate-800 text-slate-500 hover:text-slate-300"
+                        }`}
+                      >
+                        {r} {selected && "✓"}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>

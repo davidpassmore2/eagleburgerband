@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDeliverabilityConfig } from "@/lib/email/resend";
+import { requireCaller } from "@/lib/auth/serverAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,9 @@ function maskSecret(val?: string | null, keepStart = 4, keepEnd = 4): string {
 
 export async function GET(req: NextRequest) {
   try {
+    const caller = await requireCaller(req, ["admin"], "Administrator clearance required to manage integrations.");
+    if (caller instanceof NextResponse) return caller;
+
     const origin = req.headers.get("origin") || req.nextUrl?.origin;
     const deliverability = getDeliverabilityConfig(origin);
 

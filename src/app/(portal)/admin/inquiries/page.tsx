@@ -34,6 +34,7 @@ import {
   Archive,
   ChevronRight,
 } from "lucide-react";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 
 export interface BookingInquiry {
   id: string;
@@ -260,7 +261,7 @@ export default function InquiriesAdminPage() {
 
       // Dispatch initial availability request email (filtering blackouts & hiatus)
       try {
-        const dispatchRes = await fetch("/api/email/gig-availability", {
+        const dispatchRes = await authedFetch("/api/email/gig-availability", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -272,7 +273,6 @@ export default function InquiriesAdminPage() {
             venue: inq.venue,
             address: inq.venueAddress || inq.venue || "",
             notes: inq.message || "",
-            actorUid: profile?.uid,
           }),
         });
         const dispatchData = await dispatchRes.json();

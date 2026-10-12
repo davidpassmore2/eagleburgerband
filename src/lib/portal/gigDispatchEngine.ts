@@ -1,6 +1,5 @@
 // src/lib/portal/gigDispatchEngine.ts
-import { collection, collectionGroup, getDocs, doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { getDocument, listCollectionGroup, listDocuments } from "@/lib/firebase/serverFirestore";
 import { User } from "@/lib/schema/user";
 import { BlackoutDate } from "@/lib/schema/blackout";
 
@@ -45,23 +44,18 @@ export async function resolveGigAvailabilityRecipients(
   const normalizedGigDate = (gigDate || "").split("T")[0].trim();
 
   // 1. Fetch all band members
-  const usersSnap = await getDocs(collection(db, "users"));
-  const allUsers: User[] = [];
-  usersSnap.forEach((d) => {
-    const data = d.data() as User;
-    allUsers.push({
-      ...data,
-      uid: d.id,
-    });
-  });
+  const allUsers: User[] = (await listDocuments("users")).map((d) => ({
+    ...(d.data as User),
+    uid: d.id,
+  }));
 
   // 2. Fetch all blackouts across all users
   const blackedOutMap = new Map<string, { uid: string; reason?: string }>();
   try {
-    const blackoutsSnap = await getDocs(collectionGroup(db, "blackouts"));
-    blackoutsSnap.forEach((d) => {
-      const data = d.data() as Partial<BlackoutDate>;
-      const uid = data.uid || d.ref.parent?.parent?.id;
+    const blackouts = await listCollectionGroup("blackouts");
+    blackouts.forEach((d) => {
+      const data = d.data as Partial<BlackoutDate>;
+      const uid = data.uid || d.path.split("/")[1];
       if (!uid) return;
 
       const start = (data.startDate || "").split("T")[0].trim();
@@ -146,13 +140,13 @@ export async function resolveGigAvailabilityRecipients(
 export async function resolveGigConfirmedRecipients(
   gigId: string
 ): Promise<ConfirmedResolutionResult> {
-  const rsvpsSnap = await getDocs(collection(db, "gigs", gigId, "rsvps"));
+  const rsvps = await listDocuments(`gigs/${gigId}/rsvps`);
   const attendingUids: string[] = [];
   const probableUids: string[] = [];
   const committedUids: string[] = [];
 
-  rsvpsSnap.forEach((d) => {
-    const data = d.data();
+  rsvps.forEach((d) => {
+    const data = d.data;
     if (data.status === "attending") {
       attendingUids.push(d.id);
       committedUids.push(d.id);
@@ -168,10 +162,10 @@ export async function resolveGigConfirmedRecipients(
   // Query each committed user (attending or probable) to verify active and non-hiatus status
   for (const uid of committedUids) {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (!userDoc.exists()) continue;
+      const userDoc = await getDocument(`users/${uid}`);
+      if (!userDoc) continue;
 
-      const user = userDoc.data() as User;
+      const user = userDoc.data as User;
       if (!user.email || !user.email.includes("@")) continue;
       if (user.status === "inactive") continue;
 

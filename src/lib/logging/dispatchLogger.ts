@@ -1,7 +1,6 @@
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { addDocument, setDocument } from "@/lib/firebase/serverFirestore";
 import { DispatchSchema, DispatchRecord } from "@/lib/schema/dispatch";
-import { logAdminAction } from "@/lib/logging/adminLogger";
+import { buildAdminLog } from "@/lib/logging/adminLogger";
 
 export interface LogDispatchExecutionParams {
   gigId?: string | null;
@@ -40,7 +39,7 @@ export async function logDispatchExecution(params: LogDispatchExecutionParams): 
         recipientCount: params.recipientCount,
       };
       const validated = DispatchSchema.parse(dispatchRecord);
-      await addDoc(collection(db, "gigs", params.gigId, "dispatches"), validated);
+      await addDocument(`gigs/${params.gigId}/dispatches`, validated);
     } catch (dispErr) {
       console.warn("Notice: Could not write to gigs subcollection dispatches:", dispErr);
     }
@@ -48,7 +47,7 @@ export async function logDispatchExecution(params: LogDispatchExecutionParams): 
 
   // 2. Write to admin_logs
   try {
-    await logAdminAction({
+    const adminLog = buildAdminLog({
       action: "broadcast_dispatched",
       category: "logistics",
       actor: {
@@ -67,6 +66,7 @@ export async function logDispatchExecution(params: LogDispatchExecutionParams): 
         ...params.details,
       },
     });
+    await setDocument(`admin_logs/${adminLog.id}`, adminLog);
   } catch (adminErr) {
     console.warn("Notice: Could not write admin log for dispatch:", adminErr);
   }
