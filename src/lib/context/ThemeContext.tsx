@@ -100,20 +100,93 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const profilePortalThemeSchemeId = profile?.portalThemeSchemeId;
   const portalConfigSchemeId = theme.portal?.schemeId;
 
+  // Available portal themes dynamically merged from Firestore theme.portalThemes
+  const availablePortalSchemes: PortalColorScheme[] = useMemo(() => {
+    const list = theme.portalThemes && theme.portalThemes.length > 0
+      ? theme.portalThemes
+      : PORTAL_COLOR_SCHEMES;
+
+    return list.map((opt) => {
+      const swatches: [string, string, string, string] = opt.previewSwatches && opt.previewSwatches.length === 4
+        ? (opt.previewSwatches as [string, string, string, string])
+        : [opt.primaryColor, opt.accentColor, opt.surfaceColor, opt.backgroundColor];
+
+      const darkTokens = opt.modes?.dark ? {
+        primaryColor: opt.modes.dark.primaryColor || opt.primaryColor,
+        accentColor: opt.modes.dark.accentColor || opt.accentColor,
+        backgroundColor: opt.modes.dark.backgroundColor || opt.backgroundColor,
+        surfaceColor: opt.modes.dark.surfaceColor || opt.surfaceColor,
+        mutedSurfaceColor: opt.modes.dark.mutedSurfaceColor || opt.mutedSurfaceColor,
+        borderColor: opt.modes.dark.borderColor || opt.borderColor,
+        textColor: opt.modes.dark.textColor || opt.textColor,
+        previewSwatches: swatches,
+      } : {
+        primaryColor: opt.primaryColor,
+        accentColor: opt.accentColor,
+        backgroundColor: opt.backgroundColor,
+        surfaceColor: opt.surfaceColor,
+        mutedSurfaceColor: opt.mutedSurfaceColor,
+        borderColor: opt.borderColor,
+        textColor: opt.textColor,
+        previewSwatches: swatches,
+      };
+
+      const lightTokens = opt.modes?.light ? {
+        primaryColor: opt.modes.light.primaryColor || opt.primaryColor,
+        accentColor: opt.modes.light.accentColor || opt.accentColor,
+        backgroundColor: opt.modes.light.backgroundColor || "#f8fafc",
+        surfaceColor: opt.modes.light.surfaceColor || "#ffffff",
+        mutedSurfaceColor: opt.modes.light.mutedSurfaceColor || "#f1f5f9",
+        borderColor: opt.modes.light.borderColor || "#cbd5e1",
+        textColor: opt.modes.light.textColor || "#0f172a",
+        previewSwatches: [opt.primaryColor, opt.accentColor, "#ffffff", "#f8fafc"] as [string, string, string, string],
+      } : {
+        primaryColor: opt.primaryColor,
+        accentColor: opt.accentColor,
+        backgroundColor: "#f8fafc",
+        surfaceColor: "#ffffff",
+        mutedSurfaceColor: "#f1f5f9",
+        borderColor: "#cbd5e1",
+        textColor: "#0f172a",
+        previewSwatches: [opt.primaryColor, opt.accentColor, "#ffffff", "#f8fafc"] as [string, string, string, string],
+      };
+
+      return {
+        id: opt.id,
+        name: opt.name,
+        tagline: opt.tagline || "",
+        description: opt.description || "",
+        logoColor: opt.logoColor || opt.primaryColor,
+        primaryColor: opt.primaryColor,
+        accentColor: opt.accentColor,
+        backgroundColor: opt.backgroundColor,
+        surfaceColor: opt.surfaceColor,
+        mutedSurfaceColor: opt.mutedSurfaceColor,
+        borderColor: opt.borderColor,
+        textColor: opt.textColor,
+        previewSwatches: swatches,
+        modes: {
+          dark: darkTokens,
+          light: lightTokens,
+        },
+      };
+    });
+  }, [theme.portalThemes]);
+
   // Derive activePortalSchemeId: override > profile preference > localStorage > ensemble default > fallback
   const activePortalSchemeId: PortalColorSchemeId = useMemo(() => {
     if (overrideSchemeId) return overrideSchemeId;
-    if (profilePortalThemeSchemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === profilePortalThemeSchemeId)) {
+    if (profilePortalThemeSchemeId && availablePortalSchemes.some((s) => s.id === profilePortalThemeSchemeId)) {
       return profilePortalThemeSchemeId as PortalColorSchemeId;
     }
-    if (localSavedScheme && PORTAL_COLOR_SCHEMES.some((s) => s.id === localSavedScheme)) {
+    if (localSavedScheme && availablePortalSchemes.some((s) => s.id === localSavedScheme)) {
       return localSavedScheme as PortalColorSchemeId;
     }
-    if (portalConfigSchemeId && PORTAL_COLOR_SCHEMES.some((s) => s.id === portalConfigSchemeId)) {
+    if (portalConfigSchemeId && availablePortalSchemes.some((s) => s.id === portalConfigSchemeId)) {
       return portalConfigSchemeId as PortalColorSchemeId;
     }
-    return "eagleburger-gold";
-  }, [overrideSchemeId, profilePortalThemeSchemeId, localSavedScheme, portalConfigSchemeId]);
+    return availablePortalSchemes[0]?.id || "eagleburger-gold";
+  }, [overrideSchemeId, profilePortalThemeSchemeId, localSavedScheme, portalConfigSchemeId, availablePortalSchemes]);
 
   const profilePortalThemeMode = profile?.portalThemeMode;
 
@@ -154,8 +227,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const activePortalScheme = useMemo(() => {
-    return getPortalColorScheme(activePortalSchemeId, activePortalMode);
-  }, [activePortalSchemeId, activePortalMode]);
+    return getPortalColorScheme(activePortalSchemeId, activePortalMode, availablePortalSchemes);
+  }, [activePortalSchemeId, activePortalMode, availablePortalSchemes]);
 
   const setMemberPortalTheme = async (schemeId: PortalColorSchemeId, mode?: PortalThemeMode) => {
     setOverrideSchemeId(schemeId);
@@ -250,7 +323,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         activePortalSchemeId,
         activePortalMode,
         activePortalScheme,
-        availablePortalSchemes: PORTAL_COLOR_SCHEMES,
+        availablePortalSchemes,
         setMemberPortalTheme,
         setMemberPortalMode,
         loading,

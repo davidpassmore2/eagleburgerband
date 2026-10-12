@@ -6,7 +6,18 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageTheme } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
-import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from "@/lib/schema/theme";
+import { 
+  ThemeConfig, 
+  ThemeSchema, 
+  ThemeScopeConfig, 
+  PORTAL_COLOR_SCHEMES,
+  PublicThemeOption,
+  DEFAULT_PUBLIC_THEMES,
+  PortalThemeOption,
+  DEFAULT_PORTAL_THEMES,
+  TypographyConfig,
+  VisualPolishConfig,
+} from "@/lib/schema/theme";
 import { toast } from "@/lib/context/ToastContext";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -26,8 +37,148 @@ import {
   Video,
   Camera,
   Share2,
-  Palette
+  Palette,
+  Plus,
+  Trash2,
+  CheckCircle,
+  Info,
+  Type,
+  Sliders,
+  Wand2,
+  Layers,
+  ExternalLink,
 } from "lucide-react";
+
+const HEADING_FONT_CONFIG: Record<
+  TypographyConfig["headingFont"],
+  { name: string; family: string; subtitle: string; preview: string }
+> = {
+  montserrat: {
+    name: "Montserrat",
+    family: "'Montserrat', sans-serif",
+    subtitle: "Bold Classic & Balanced Brass",
+    preview: "BRASS ANTHEM",
+  },
+  oswald: {
+    name: "Oswald",
+    family: "'Oswald', sans-serif",
+    subtitle: "Punchy Condensed Street Beat",
+    preview: "STREET BEAT",
+  },
+  cinzel: {
+    name: "Cinzel",
+    family: "'Cinzel', serif",
+    subtitle: "Regal & Ceremonial Fanfare",
+    preview: "FANFARE VIBE",
+  },
+  "bebas-neue": {
+    name: "Bebas Neue",
+    family: "'Bebas Neue', sans-serif",
+    subtitle: "Tall Impact Display Headline",
+    preview: "HIGH OCTANE",
+  },
+  inter: {
+    name: "Inter",
+    family: "'Inter', sans-serif",
+    subtitle: "Modern Clean Precision",
+    preview: "PRECISION",
+  },
+};
+
+const BODY_FONT_CONFIG: Record<
+  TypographyConfig["bodyFont"],
+  { name: string; family: string; subtitle: string }
+> = {
+  inter: {
+    name: "Inter",
+    family: "'Inter', sans-serif",
+    subtitle: "Crisp High Legibility (Default)",
+  },
+  roboto: {
+    name: "Roboto",
+    family: "'Roboto', sans-serif",
+    subtitle: "Clean Geometric Everyday Sans",
+  },
+  "space-grotesk": {
+    name: "Space Grotesk",
+    family: "'Space Grotesk', sans-serif",
+    subtitle: "Distinctive Groove & Tech Edge",
+  },
+};
+
+const TRACKING_CONFIG: Record<TypographyConfig["headingTracking"], { label: string; value: string }> = {
+  normal: { label: "Normal", value: "0" },
+  wide: { label: "Wide (+0.05em)", value: "0.05em" },
+  wider: { label: "Wider (+0.10em)", value: "0.10em" },
+};
+
+const BORDER_RADIUS_CONFIG: Record<
+  VisualPolishConfig["borderRadius"],
+  { label: string; description: string; classCard: string; classButton: string; styleRadius: string }
+> = {
+  sharp: {
+    label: "Sharp",
+    description: "Brutalist 2px/4px angles",
+    classCard: "rounded-sm",
+    classButton: "rounded-none",
+    styleRadius: "4px",
+  },
+  modern: {
+    label: "Modern",
+    description: "Balanced 12px/16px curves",
+    classCard: "rounded-2xl",
+    classButton: "rounded-xl",
+    styleRadius: "16px",
+  },
+  pill: {
+    label: "Pill / Soft",
+    description: "Organic 24px/9999px pill curves",
+    classCard: "rounded-3xl",
+    classButton: "rounded-full",
+    styleRadius: "28px",
+  },
+};
+
+const GLOW_CONFIG: Record<VisualPolishConfig["glowIntensity"], { label: string; description: string; shadow: string }> = {
+  none: { label: "None", description: "Flat & minimal", shadow: "none" },
+  subtle: { label: "Subtle", description: "Soft ambient halo", shadow: "0 0 16px rgba(250, 204, 21, 0.25)" },
+  vivid: { label: "Vivid", description: "High-voltage neon punch", shadow: "0 0 28px rgba(250, 204, 21, 0.65)" },
+};
+
+const TEXTURE_CONFIG: Record<
+  VisualPolishConfig["backgroundTexture"],
+  { label: string; description: string; getStyle: (primaryColor?: string) => React.CSSProperties }
+> = {
+  solid: {
+    label: "Solid Carbon",
+    description: "Deep uniform dark tone",
+    getStyle: () => ({ backgroundColor: "#020617" }),
+  },
+  grid: {
+    label: "Dot Grid",
+    description: "Subtle technical grid matrix",
+    getStyle: () => ({
+      backgroundColor: "#020617",
+      backgroundImage: "radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)",
+      backgroundSize: "16px 16px",
+    }),
+  },
+  vignette: {
+    label: "Vignette",
+    description: "Focal spotlight gradient",
+    getStyle: () => ({
+      background: "radial-gradient(circle at center, #1e293b 0%, #020617 100%)",
+    }),
+  },
+  mesh: {
+    label: "Brass Mesh",
+    description: "Dual-source brass ambient light",
+    getStyle: (primary = "#facc15") => ({
+      backgroundColor: "#030712",
+      backgroundImage: `radial-gradient(at 0% 0%, ${primary}25 0px, transparent 50%), radial-gradient(at 100% 100%, #f59e0b25 0px, transparent 50%)`,
+    }),
+  },
+};
 
 const DEFAULT_THEME: ThemeConfig = ThemeSchema.parse({});
 
@@ -38,6 +189,8 @@ export default function ThemeCustomizerPage() {
   const [theme, setTheme] = useState<ThemeConfig>(DEFAULT_THEME);
   const [savedTheme, setSavedTheme] = useState<ThemeConfig | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("public");
+  const [selectedPublicThemeId, setSelectedPublicThemeId] = useState<string>("default");
+  const [selectedPortalThemeId, setSelectedPortalThemeId] = useState<string>("eagleburger-gold");
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -108,16 +261,338 @@ export default function ThemeCustomizerPage() {
   const resetScope = (scope: TabType) => {
     if (scope === "public") {
       setTheme((prev) => ({ ...prev, public: DEFAULT_THEME.public }));
+      toast.info("Reset public website styling to factory defaults.");
     } else if (scope === "portal") {
       setTheme((prev) => ({ ...prev, portal: DEFAULT_THEME.portal }));
+      toast.info("Reset musician portal styling to factory defaults.");
     } else {
       setTheme((prev) => ({
         ...prev,
         bandName: DEFAULT_THEME.bandName,
+        monogram: DEFAULT_THEME.monogram,
         logoUrl: DEFAULT_THEME.logoUrl,
+        faviconUrl: DEFAULT_THEME.faviconUrl,
         activeSeason: DEFAULT_THEME.activeSeason,
-        socialLinks: DEFAULT_THEME.socialLinks,
+        typography: DEFAULT_THEME.typography,
+        visualPolish: DEFAULT_THEME.visualPolish,
       }));
+      toast.info("Reset brand identity, typography, and visual polish to defaults.");
+    }
+  };
+
+  const updateTypography = (patch: Partial<TypographyConfig>) => {
+    setTheme((prev) => ({
+      ...prev,
+      typography: {
+        ...(prev.typography || {
+          headingFont: "montserrat",
+          bodyFont: "inter",
+          headingTracking: "wide",
+          headingUppercase: true,
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const updateVisualPolish = (patch: Partial<VisualPolishConfig>) => {
+    setTheme((prev) => ({
+      ...prev,
+      visualPolish: {
+        ...(prev.visualPolish || {
+          borderRadius: "modern",
+          glowIntensity: "subtle",
+          backgroundTexture: "solid",
+        }),
+        ...patch,
+      },
+    }));
+  };
+
+  const publicThemes: PublicThemeOption[] = (theme.publicThemes && theme.publicThemes.length > 0)
+    ? theme.publicThemes
+    : DEFAULT_PUBLIC_THEMES;
+
+  const selectedTheme = publicThemes.find((t) => t.id === selectedPublicThemeId) || publicThemes[0];
+
+  const handleUpdateSelectedPublicTheme = (patch: Partial<PublicThemeOption>) => {
+    const updatedList = publicThemes.map((item) => {
+      if (item.id === selectedTheme.id) {
+        return { ...item, ...patch };
+      }
+      return item;
+    });
+
+    const isCurrentlyActive = (theme.public.schemeId || "default") === selectedTheme.id;
+    setTheme((prev) => ({
+      ...prev,
+      publicThemes: updatedList,
+      ...(isCurrentlyActive
+        ? {
+            public: {
+              ...prev.public,
+              ...patch,
+              schemeId: selectedTheme.id,
+            },
+          }
+        : {}),
+    }));
+  };
+
+  const handleApplyPublicTheme = (themeOption: PublicThemeOption) => {
+    setTheme((prev) => ({
+      ...prev,
+      public: {
+        ...prev.public,
+        schemeId: themeOption.id,
+        primaryColor: themeOption.primaryColor,
+        accentColor: themeOption.accentColor,
+        logoColor: themeOption.logoColor,
+        backgroundColor: themeOption.backgroundColor,
+        surfaceColor: themeOption.surfaceColor,
+        mutedSurfaceColor: themeOption.mutedSurfaceColor,
+        borderColor: themeOption.borderColor,
+        textColor: themeOption.textColor,
+      },
+    }));
+    toast.success(`"${themeOption.name}" applied as active public site theme! Click "Save Brand Settings" to publish.`);
+  };
+
+  const handleCreatePublicTheme = () => {
+    const newId = `custom-${Date.now()}`;
+    const newTheme: PublicThemeOption = {
+      id: newId,
+      name: `Custom Theme ${publicThemes.length + 1}`,
+      description: "Custom user-generated public site styling.",
+      isDefault: false,
+      primaryColor: selectedTheme.primaryColor || "#facc15",
+      accentColor: selectedTheme.accentColor || "#f59e0b",
+      logoColor: selectedTheme.logoColor || "#facc15",
+      backgroundColor: selectedTheme.backgroundColor || "#020617",
+      surfaceColor: selectedTheme.surfaceColor || "#0f172a",
+      mutedSurfaceColor: selectedTheme.mutedSurfaceColor || "#1e293b",
+      borderColor: selectedTheme.borderColor || "#334155",
+      textColor: selectedTheme.textColor || "#f8fafc",
+    };
+    setTheme((prev) => ({
+      ...prev,
+      publicThemes: [...publicThemes, newTheme],
+    }));
+    setSelectedPublicThemeId(newId);
+    toast.success("Created new custom theme! You can now customize its colors and name.");
+  };
+
+  const handleDeletePublicTheme = (id: string) => {
+    if (id === "default") {
+      toast.error("The default Eagleburger Gold theme cannot be deleted.");
+      return;
+    }
+    const updatedList = publicThemes.filter((t) => t.id !== id);
+    const wasActive = theme.public.schemeId === id;
+    const fallbackTheme = updatedList[0] || DEFAULT_PUBLIC_THEMES[0];
+
+    setTheme((prev) => ({
+      ...prev,
+      publicThemes: updatedList,
+      ...(wasActive
+        ? {
+            public: {
+              ...prev.public,
+              schemeId: fallbackTheme.id,
+              primaryColor: fallbackTheme.primaryColor,
+              accentColor: fallbackTheme.accentColor,
+              logoColor: fallbackTheme.logoColor,
+              backgroundColor: fallbackTheme.backgroundColor,
+              surfaceColor: fallbackTheme.surfaceColor,
+              mutedSurfaceColor: fallbackTheme.mutedSurfaceColor,
+              borderColor: fallbackTheme.borderColor,
+              textColor: fallbackTheme.textColor,
+            },
+          }
+        : {}),
+    }));
+
+    setSelectedPublicThemeId(fallbackTheme.id);
+    toast.info("Theme option removed.");
+  };
+
+  const handleResetSelectedTheme = () => {
+    const factory = DEFAULT_PUBLIC_THEMES.find((t) => t.id === selectedTheme.id);
+    if (factory) {
+      handleUpdateSelectedPublicTheme({
+        name: factory.name,
+        description: factory.description,
+        primaryColor: factory.primaryColor,
+        accentColor: factory.accentColor,
+        logoColor: factory.logoColor,
+        backgroundColor: factory.backgroundColor,
+        surfaceColor: factory.surfaceColor,
+        mutedSurfaceColor: factory.mutedSurfaceColor,
+        borderColor: factory.borderColor,
+        textColor: factory.textColor,
+      });
+      toast.info(`Reset "${factory.name}" to factory default values.`);
+    } else {
+      const def = DEFAULT_PUBLIC_THEMES[0];
+      handleUpdateSelectedPublicTheme({
+        primaryColor: def.primaryColor,
+        accentColor: def.accentColor,
+        logoColor: def.logoColor,
+        backgroundColor: def.backgroundColor,
+        surfaceColor: def.surfaceColor,
+        mutedSurfaceColor: def.mutedSurfaceColor,
+        borderColor: def.borderColor,
+        textColor: def.textColor,
+      });
+      toast.info("Reset custom theme colors to default palette.");
+    }
+  };
+
+  const portalThemes: PortalThemeOption[] = (theme.portalThemes && theme.portalThemes.length > 0)
+    ? theme.portalThemes
+    : DEFAULT_PORTAL_THEMES;
+
+  const selectedPortalTheme = portalThemes.find((t) => t.id === selectedPortalThemeId) || portalThemes[0];
+
+  const handleUpdateSelectedPortalTheme = (patch: Partial<PortalThemeOption>) => {
+    const updatedList = portalThemes.map((item) => {
+      if (item.id === selectedPortalTheme.id) {
+        return { ...item, ...patch };
+      }
+      return item;
+    });
+
+    const isCurrentlyActive = (theme.portal.schemeId || "eagleburger-gold") === selectedPortalTheme.id;
+    setTheme((prev) => ({
+      ...prev,
+      portalThemes: updatedList,
+      ...(isCurrentlyActive
+        ? {
+            portal: {
+              ...prev.portal,
+              ...patch,
+              schemeId: selectedPortalTheme.id,
+            },
+          }
+        : {}),
+    }));
+  };
+
+  const handleApplyPortalTheme = (themeOption: PortalThemeOption) => {
+    setTheme((prev) => ({
+      ...prev,
+      portal: {
+        ...prev.portal,
+        schemeId: themeOption.id,
+        primaryColor: themeOption.primaryColor,
+        accentColor: themeOption.accentColor,
+        logoColor: themeOption.logoColor || themeOption.primaryColor,
+        backgroundColor: themeOption.backgroundColor,
+        surfaceColor: themeOption.surfaceColor,
+        mutedSurfaceColor: themeOption.mutedSurfaceColor,
+        borderColor: themeOption.borderColor,
+        textColor: themeOption.textColor,
+      },
+    }));
+    toast.success(`"${themeOption.name}" set as ensemble default portal theme! Click "Save Brand Settings" to publish.`);
+  };
+
+  const handleCreatePortalTheme = () => {
+    const newId = `custom-portal-${Date.now()}`;
+    const newTheme: PortalThemeOption = {
+      id: newId,
+      name: `Custom Scheme ${portalThemes.length + 1}`,
+      description: "Custom atmospheric theme for musician portal operations.",
+      tagline: "",
+      isDefault: false,
+      primaryColor: selectedPortalTheme.primaryColor || "#facc15",
+      accentColor: selectedPortalTheme.accentColor || "#f59e0b",
+      logoColor: selectedPortalTheme.logoColor || "#facc15",
+      backgroundColor: selectedPortalTheme.backgroundColor || "#0a0802",
+      surfaceColor: selectedPortalTheme.surfaceColor || "#151105",
+      mutedSurfaceColor: selectedPortalTheme.mutedSurfaceColor || "#1e1808",
+      borderColor: selectedPortalTheme.borderColor || "#382c0f",
+      textColor: selectedPortalTheme.textColor || "#fefce8",
+      previewSwatches: [
+        selectedPortalTheme.primaryColor || "#facc15",
+        selectedPortalTheme.accentColor || "#f59e0b",
+        selectedPortalTheme.surfaceColor || "#151105",
+        selectedPortalTheme.backgroundColor || "#0a0802"
+      ],
+    };
+    setTheme((prev) => ({
+      ...prev,
+      portalThemes: [...portalThemes, newTheme],
+    }));
+    setSelectedPortalThemeId(newId);
+    toast.success("Created new custom portal theme! Customize its palette below.");
+  };
+
+  const handleDeletePortalTheme = (id: string) => {
+    if (id === "eagleburger-gold") {
+      toast.error("The default Eagleburger Gold portal scheme cannot be deleted.");
+      return;
+    }
+    const updatedList = portalThemes.filter((t) => t.id !== id);
+    const wasActive = theme.portal.schemeId === id;
+    const fallbackTheme = updatedList[0] || DEFAULT_PORTAL_THEMES[0];
+
+    setTheme((prev) => ({
+      ...prev,
+      portalThemes: updatedList,
+      ...(wasActive
+        ? {
+            portal: {
+              ...prev.portal,
+              schemeId: fallbackTheme.id,
+              primaryColor: fallbackTheme.primaryColor,
+              accentColor: fallbackTheme.accentColor,
+              logoColor: fallbackTheme.logoColor || fallbackTheme.primaryColor,
+              backgroundColor: fallbackTheme.backgroundColor,
+              surfaceColor: fallbackTheme.surfaceColor,
+              mutedSurfaceColor: fallbackTheme.mutedSurfaceColor,
+              borderColor: fallbackTheme.borderColor,
+              textColor: fallbackTheme.textColor,
+            },
+          }
+        : {}),
+    }));
+
+    setSelectedPortalThemeId(fallbackTheme.id);
+    toast.info("Portal theme option removed.");
+  };
+
+  const handleResetSelectedPortalTheme = () => {
+    const factory = DEFAULT_PORTAL_THEMES.find((t) => t.id === selectedPortalTheme.id);
+    if (factory) {
+      handleUpdateSelectedPortalTheme({
+        name: factory.name,
+        description: factory.description,
+        primaryColor: factory.primaryColor,
+        accentColor: factory.accentColor,
+        logoColor: factory.logoColor,
+        backgroundColor: factory.backgroundColor,
+        surfaceColor: factory.surfaceColor,
+        mutedSurfaceColor: factory.mutedSurfaceColor,
+        borderColor: factory.borderColor,
+        textColor: factory.textColor,
+        previewSwatches: factory.previewSwatches,
+      });
+      toast.info(`Reset "${factory.name}" to factory default values.`);
+    } else {
+      const def = DEFAULT_PORTAL_THEMES[0];
+      handleUpdateSelectedPortalTheme({
+        primaryColor: def.primaryColor,
+        accentColor: def.accentColor,
+        logoColor: def.logoColor,
+        backgroundColor: def.backgroundColor,
+        surfaceColor: def.surfaceColor,
+        mutedSurfaceColor: def.mutedSurfaceColor,
+        borderColor: def.borderColor,
+        textColor: def.textColor,
+        previewSwatches: def.previewSwatches,
+      });
+      toast.info("Reset custom portal theme colors to default palette.");
     }
   };
 
@@ -240,8 +715,8 @@ export default function ThemeCustomizerPage() {
               : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
-          <Building2 className="w-4 h-4" />
-          <span>Ensemble Identity & Socials</span>
+          <Sparkles className="w-4 h-4" />
+          <span>Brand Identity & Visual Polish</span>
         </button>
       </div>
 
@@ -249,136 +724,376 @@ export default function ThemeCustomizerPage() {
         {/* Left Column: Tab-Dependent Customizer Form */}
         <div className="lg:col-span-7 space-y-4">
           {activeTab === "public" && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-yellow-400" /> Public Site Styling
-                  </h2>
-                  <p className="text-[11px] text-slate-400">
-                    Controls colors and marketing copy displayed to fans, clients, and parade organizers.
-                  </p>
+            <div className="space-y-4">
+              {/* Presets Gallery Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-yellow-400" /> Public Site Themes & Palettes
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Select, generate, and edit style presets for the public fan site. The default scheme preserves the signature Eagleburger look.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreatePublicTheme}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/20 transition self-start sm:self-auto"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create Theme</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => resetScope("public")}
-                  className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition"
-                >
-                  <RefreshCw className="w-3 h-3" /> Defaults
-                </button>
+
+                {/* Themes Grid */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                      Available Presets ({publicThemes.length})
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Click to edit or preview
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {publicThemes.map((option) => {
+                      const isSelected = selectedTheme.id === option.id;
+                      const isActiveLive = (theme.public.schemeId || "default") === option.id;
+
+                      return (
+                        <div
+                          key={option.id}
+                          onClick={() => setSelectedPublicThemeId(option.id)}
+                          className={`p-3.5 rounded-xl border cursor-pointer transition text-left space-y-2.5 relative ${
+                            isSelected
+                              ? "border-yellow-400 bg-slate-950/90 shadow-md ring-1 ring-yellow-400/40"
+                              : "border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-950/70"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                {option.name}
+                                {option.isDefault && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                                {option.description || "Public site color scheme"}
+                              </p>
+                            </div>
+
+                            {isActiveLive ? (
+                              <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                <CheckCircle className="w-2.5 h-2.5" /> Live
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Swatches strip */}
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                title="Primary Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.primaryColor }}
+                              />
+                              <span
+                                title="Accent Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.accentColor }}
+                              />
+                              <span
+                                title="Logo Tint"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.logoColor || option.primaryColor }}
+                              />
+                              <span
+                                title="Surface Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.surfaceColor }}
+                              />
+                              <span
+                                title="Background Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.backgroundColor }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-500">
+                              {isSelected ? "Editing" : "Select"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Public Marketing Tagline / Hero Subheading
-                  </label>
-                  <input
-                    type="text"
-                    value={theme.public.tagline}
-                    onChange={(e) => updatePublicScope({ tagline: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
+              {/* Theme Customizer Form */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        Theme Editor
+                      </span>
+                      <span className="text-xs font-bold text-white">
+                        {selectedTheme.name}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Adjust colors, surfaces, and emblem tints for this theme preset.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(theme.public.schemeId || "default") !== selectedTheme.id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPublicTheme(selectedTheme)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 flex items-center gap-1.5 transition shadow"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Apply as Live Site Theme</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Active on Live Site</span>
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleResetSelectedTheme}
+                      title="Reset this preset to defaults"
+                      className="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 flex items-center gap-1 transition"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span className="hidden sm:inline">Reset</span>
+                    </button>
+
+                    {!selectedTheme.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePublicTheme(selectedTheme.id)}
+                        title="Delete custom theme"
+                        className="text-xs text-rose-400 hover:text-rose-300 px-2.5 py-1.5 rounded-xl border border-rose-900/40 hover:border-rose-800 flex items-center gap-1 transition"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Primary Brand Gold (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.public.primaryColor}
-                        onChange={(e) => updatePublicScope({ primaryColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
+                <div className="space-y-4">
+                  {/* Notice callout regarding page headline & copy */}
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex items-start gap-2.5 text-slate-400 text-xs">
+                    <Info className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-200">Marketing Taglines & Headlines: </span>
+                      Hero headlines, marketing copy, and home page taglines are managed in the{" "}
+                      <a href="/admin/pages" className="text-yellow-400 hover:underline font-semibold">
+                        Page Editor (Admin &gt; Pages)
+                      </a>
+                      . This studio manages visual color palettes, surfaces, and logo emblem styling.
+                    </div>
+                  </div>
+
+                  {/* Theme Info Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Preset Display Name
+                      </label>
                       <input
                         type="text"
-                        value={theme.public.primaryColor}
-                        onChange={(e) => updatePublicScope({ primaryColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        value={selectedTheme.name}
+                        onChange={(e) => handleUpdateSelectedPublicTheme({ name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Preset Description / Vibe
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedTheme.description || ""}
+                        onChange={(e) => handleUpdateSelectedPublicTheme({ description: e.target.value })}
+                        placeholder="e.g. Signature brass, dark ambient revelry"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Accent / Highlight (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.public.accentColor}
-                        onChange={(e) => updatePublicScope({ accentColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.public.accentColor}
-                        onChange={(e) => updatePublicScope({ accentColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                  {/* Palette Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/60">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Primary Brand Accent (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.primaryColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ primaryColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.primaryColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ primaryColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Logo Emblem Tint (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.public.logoColor || theme.public.primaryColor || "#facc15"}
-                        onChange={(e) => updatePublicScope({ logoColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.public.logoColor || theme.public.primaryColor || "#facc15"}
-                        onChange={(e) => updatePublicScope({ logoColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Secondary Accent / Highlight (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.accentColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ accentColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.accentColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ accentColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Site Background (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.public.backgroundColor}
-                        onChange={(e) => updatePublicScope({ backgroundColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.public.backgroundColor}
-                        onChange={(e) => updatePublicScope({ backgroundColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Logo Emblem Tint (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.logoColor || selectedTheme.primaryColor || "#facc15"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ logoColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.logoColor || selectedTheme.primaryColor || "#facc15"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ logoColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Card / Surface Background (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.public.surfaceColor}
-                        onChange={(e) => updatePublicScope({ surfaceColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.public.surfaceColor}
-                        onChange={(e) => updatePublicScope({ surfaceColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Site Background (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.backgroundColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ backgroundColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.backgroundColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ backgroundColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Card / Surface Background (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.surfaceColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ surfaceColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.surfaceColor}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ surfaceColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Inner Wells / Muted Surfaces (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.mutedSurfaceColor || "#1e293b"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ mutedSurfaceColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.mutedSurfaceColor || "#1e293b"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ mutedSurfaceColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Border & Separators (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.borderColor || "#334155"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ borderColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.borderColor || "#334155"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ borderColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Main Text Color (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedTheme.textColor || "#f8fafc"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ textColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedTheme.textColor || "#f8fafc"}
+                          onChange={(e) => handleUpdateSelectedPublicTheme({ textColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -387,273 +1102,372 @@ export default function ThemeCustomizerPage() {
           )}
 
           {activeTab === "portal" && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <LayoutDashboard className="w-4 h-4 text-yellow-400" /> Musician Portal Styling
-                  </h2>
-                  <p className="text-[11px] text-slate-400">
-                    Controls tactical UI highlights, sidebar accents, and operational subheadings for band members.
-                  </p>
+            <div className="space-y-4">
+              {/* Portal Schemes Gallery Card */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4 text-yellow-400" /> Musician Portal Schemes & Presets
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Manage color schemes available to band members in their personal Portal Theme chooser. Create new options, customize palette tokens, and set the ensemble default.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreatePortalTheme}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/20 transition self-start sm:self-auto"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create Portal Scheme</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => resetScope("portal")}
-                  className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition"
-                >
-                  <RefreshCw className="w-3 h-3" /> Defaults
-                </button>
-              </div>
 
-              <div className="space-y-4">
-                {/* 5 Harmonious Scheme Presets */}
-                <div className="space-y-2.5">
+                {/* Schemes Grid */}
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                      <Palette className="w-3.5 h-3.5 text-yellow-400" />
-                      Ensemble Default Color Schemes
-                    </label>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      5 harmonious presets
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                      Available Schemes ({portalThemes.length})
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Click to edit or preview
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {PORTAL_COLOR_SCHEMES.map((scheme) => {
-                      const isSelected = theme.portal.schemeId === scheme.id;
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {portalThemes.map((option) => {
+                      const isSelected = selectedPortalTheme.id === option.id;
+                      const isActiveLive = (theme.portal.schemeId || "eagleburger-gold") === option.id;
+
                       return (
-                        <button
-                          key={scheme.id}
-                          type="button"
-                          onClick={() => {
-                            updatePortalScope({
-                              schemeId: scheme.id,
-                              primaryColor: scheme.primaryColor,
-                              accentColor: scheme.accentColor,
-                              backgroundColor: scheme.backgroundColor,
-                              surfaceColor: scheme.surfaceColor,
-                              mutedSurfaceColor: scheme.mutedSurfaceColor,
-                              borderColor: scheme.borderColor,
-                              textColor: scheme.textColor,
-                              tagline: scheme.tagline,
-                            });
-                          }}
-                          className={`text-left p-3 rounded-xl border transition-all relative group ${
+                        <div
+                          key={option.id}
+                          onClick={() => setSelectedPortalThemeId(option.id)}
+                          className={`p-3.5 rounded-xl border cursor-pointer transition text-left space-y-2.5 relative ${
                             isSelected
-                              ? "border-yellow-400 bg-slate-950/80 shadow-md ring-1 ring-yellow-400/40"
+                              ? "border-yellow-400 bg-slate-950/90 shadow-md ring-1 ring-yellow-400/40"
                               : "border-slate-800 bg-slate-950/40 hover:border-slate-700 hover:bg-slate-950/70"
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-white group-hover:text-yellow-400 transition-colors">
-                              {scheme.name}
-                            </span>
-                            {isSelected ? (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-400 text-slate-950 font-mono">
-                                Active Default
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                {option.name}
+                                {option.isDefault && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                                {option.description || "Musician portal scheme"}
+                              </p>
+                            </div>
+
+                            {isActiveLive ? (
+                              <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                <CheckCircle className="w-2.5 h-2.5" /> Ensemble Default
                               </span>
-                            ) : (
-                              <span className="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition font-mono">
-                                Apply Preset
-                              </span>
-                            )}
+                            ) : null}
                           </div>
 
-                          {/* 4-dot swatch row */}
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            {scheme.previewSwatches.map((color, idx) => (
+                          {/* Swatches strip */}
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                            <div className="flex items-center gap-1.5">
                               <span
-                                key={idx}
-                                className="w-3 h-3 rounded-full border border-slate-700 shadow-sm"
-                                style={{ backgroundColor: color }}
-                                title={color}
+                                title="Primary Tool Highlight"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.primaryColor }}
                               />
-                            ))}
-                            <span className="text-[9px] text-slate-400 font-mono ml-1">
-                              {scheme.primaryColor}
+                              <span
+                                title="Secondary Accent"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.accentColor }}
+                              />
+                              <span
+                                title="Logo Tint"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.logoColor || option.primaryColor }}
+                              />
+                              <span
+                                title="Surface Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.surfaceColor }}
+                              />
+                              <span
+                                title="Background Color"
+                                className="w-4 h-4 rounded-full border border-slate-800 shadow-sm"
+                                style={{ backgroundColor: option.backgroundColor }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-500">
+                              {isSelected ? "Editing" : "Select"}
                             </span>
                           </div>
-
-                          <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                            {scheme.description}
-                          </p>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Portal Operational Subheading
-                  </label>
-                  <input
-                    type="text"
-                    value={theme.portal.tagline}
-                    onChange={(e) => updatePortalScope({ tagline: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
+              {/* Portal Scheme Customizer Form */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                        Scheme Editor
+                      </span>
+                      <span className="text-xs font-bold text-white">
+                        {selectedPortalTheme.name}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Adjust surfaces, tool highlights, and emblem tint for this portal theme preset.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(theme.portal.schemeId || "eagleburger-gold") !== selectedPortalTheme.id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPortalTheme(selectedPortalTheme)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 flex items-center gap-1.5 transition shadow"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Set as Ensemble Default</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Active Ensemble Default</span>
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleResetSelectedPortalTheme}
+                      title="Reset this preset to defaults"
+                      className="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 flex items-center gap-1 transition"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span className="hidden sm:inline">Reset</span>
+                    </button>
+
+                    {!selectedPortalTheme.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePortalTheme(selectedPortalTheme.id)}
+                        title="Delete custom scheme"
+                        className="text-xs text-rose-400 hover:text-rose-300 px-2.5 py-1.5 rounded-xl border border-rose-900/40 hover:border-rose-800 flex items-center gap-1 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Tool Highlight / Active Accent (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.primaryColor}
-                        onChange={(e) => updatePortalScope({ primaryColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
+                <div className="space-y-4">
+                  {/* Informational Callout */}
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex items-start gap-2.5 text-slate-400 text-xs">
+                    <Info className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-200">Musician Preference Availability: </span>
+                      Any preset saved here is automatically made available to all musicians in their personal Portal Theme chooser (the palette button in the navigation header). The legacy operational subheading field has been retired from this form.
+                    </div>
+                  </div>
+
+                  {/* Scheme Info Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Preset Display Name
+                      </label>
                       <input
                         type="text"
-                        value={theme.portal.primaryColor}
-                        onChange={(e) => updatePortalScope({ primaryColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        value={selectedPortalTheme.name}
+                        onChange={(e) => handleUpdateSelectedPortalTheme({ name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Preset Description / Character
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedPortalTheme.description || ""}
+                        onChange={(e) => handleUpdateSelectedPortalTheme({ description: e.target.value })}
+                        placeholder="e.g. Traditional marching corps atmosphere with royal garnet surfaces"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Secondary Accent / Badge Tint (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.accentColor}
-                        onChange={(e) => updatePortalScope({ accentColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.accentColor}
-                        onChange={(e) => updatePortalScope({ accentColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                  {/* Palette Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/60">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Tool Highlight / Active Accent (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.primaryColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ primaryColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.primaryColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ primaryColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Portal Logo Emblem Tint (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"}
-                        onChange={(e) => updatePortalScope({ logoColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"}
-                        onChange={(e) => updatePortalScope({ logoColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Secondary Accent / Badge Tint (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.accentColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ accentColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.accentColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ accentColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Ambient Workspace Background (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.backgroundColor}
-                        onChange={(e) => updatePortalScope({ backgroundColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.backgroundColor}
-                        onChange={(e) => updatePortalScope({ backgroundColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Portal Logo Emblem Tint (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.logoColor || selectedPortalTheme.primaryColor || "#facc15"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ logoColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.logoColor || selectedPortalTheme.primaryColor || "#facc15"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ logoColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Card & Sidebar Surface (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.surfaceColor}
-                        onChange={(e) => updatePortalScope({ surfaceColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.surfaceColor}
-                        onChange={(e) => updatePortalScope({ surfaceColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Ambient Workspace Background (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.backgroundColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ backgroundColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.backgroundColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ backgroundColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Inner Well / Search Input Surface (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.mutedSurfaceColor || "#1e1808"}
-                        onChange={(e) => updatePortalScope({ mutedSurfaceColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.mutedSurfaceColor || "#1e1808"}
-                        onChange={(e) => updatePortalScope({ mutedSurfaceColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Card & Sidebar Surface (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.surfaceColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ surfaceColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.surfaceColor}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ surfaceColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Card & Divider Border Tint (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.borderColor || "#382c0f"}
-                        onChange={(e) => updatePortalScope({ borderColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.borderColor || "#382c0f"}
-                        onChange={(e) => updatePortalScope({ borderColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Inner Well / Search Input Surface (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.mutedSurfaceColor || "#1e1808"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ mutedSurfaceColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.mutedSurfaceColor || "#1e1808"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ mutedSurfaceColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      High-Contrast Text Color (Hex)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={theme.portal.textColor || "#fefce8"}
-                        onChange={(e) => updatePortalScope({ textColor: e.target.value })}
-                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={theme.portal.textColor || "#fefce8"}
-                        onChange={(e) => updatePortalScope({ textColor: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
-                      />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Card & Divider Border Tint (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.borderColor || "#382c0f"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ borderColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.borderColor || "#382c0f"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ borderColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        High-Contrast Text Color (Hex)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={selectedPortalTheme.textColor || "#fefce8"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ textColor: e.target.value })}
+                          className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedPortalTheme.textColor || "#fefce8"}
+                          onChange={(e) => handleUpdateSelectedPortalTheme({ textColor: e.target.value })}
+                          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -662,119 +1476,363 @@ export default function ThemeCustomizerPage() {
           )}
 
           {activeTab === "identity" && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-yellow-400" /> Ensemble Brand Identity & Socials
-                  </h2>
-                  <p className="text-[11px] text-slate-400">
-                    Official ensemble naming, active marching season, logo asset paths, and canonical social media accounts.
-                  </p>
+            <div className="space-y-4">
+              {/* Card 1: Core Ensemble Identity & Assets */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-yellow-400" /> Core Ensemble Identity & Assets
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Primary organizational naming, monogram badge, active marching season, and global image assets.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => resetScope("identity")}
+                    className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Defaults
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => resetScope("identity")}
-                  className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition"
-                >
-                  <RefreshCw className="w-3 h-3" /> Defaults
-                </button>
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Official Ensemble Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={theme.bandName}
+                        onChange={(e) => setTheme({ ...theme, bandName: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Band Monogram
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={theme.monogram || "EBB"}
+                        onChange={(e) => setTheme({ ...theme, monogram: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-yellow-400 font-mono font-bold tracking-wider focus:outline-none focus:border-yellow-400 uppercase"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Active Marching Season
+                      </label>
+                      <input
+                        type="text"
+                        value={theme.activeSeason}
+                        onChange={(e) => setTheme({ ...theme, activeSeason: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Logo Asset URI
+                      </label>
+                      <input
+                        type="text"
+                        value={theme.logoUrl}
+                        onChange={(e) => setTheme({ ...theme, logoUrl: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                        Favicon URI
+                      </label>
+                      <input
+                        type="text"
+                        value={theme.faviconUrl || "/favicon.ico"}
+                        onChange={(e) => setTheme({ ...theme, faviconUrl: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2.5">
+                    <Info className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-slate-300 font-medium">Looking for social links or website content? </span>
+                      Official social media channels (YouTube, Instagram, Facebook), public bios, and hero media are managed directly in the{" "}
+                      <a
+                        href="/admin/pages"
+                        className="text-yellow-400 hover:text-yellow-300 underline font-semibold inline-flex items-center gap-1"
+                      >
+                        Public Page Editor <ExternalLink className="w-3 h-3 inline" />
+                      </a>.
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Official Ensemble Name
+              {/* Card 2: Typography & Lettering */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Type className="w-4 h-4 text-yellow-400" /> Typography & Lettering
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Control primary headline font families, body paragraph legibility, uppercase transforms, and letter tracking.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Headings Font Family */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Headings Font Family
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={theme.bandName}
-                    onChange={(e) => setTheme({ ...theme, bandName: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Active Calendar Season
-                    </label>
-                    <input
-                      type="text"
-                      value={theme.activeSeason}
-                      onChange={(e) => setTheme({ ...theme, activeSeason: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Logo Asset URI
-                    </label>
-                    <input
-                      type="text"
-                      value={theme.logoUrl}
-                      onChange={(e) => setTheme({ ...theme, logoUrl: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {(Object.keys(HEADING_FONT_CONFIG) as Array<TypographyConfig["headingFont"]>).map((fontKey) => {
+                      const cfg = HEADING_FONT_CONFIG[fontKey];
+                      const isSelected = (theme.typography?.headingFont || "montserrat") === fontKey;
+                      return (
+                        <button
+                          key={fontKey}
+                          type="button"
+                          onClick={() => updateTypography({ headingFont: fontKey })}
+                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-xs font-bold text-white">{cfg.name}</span>
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                          </div>
+                          <div
+                            className="text-base text-yellow-400 font-bold truncate tracking-wide"
+                            style={{ fontFamily: cfg.family }}
+                          >
+                            {cfg.preview}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 space-y-3">
-                  <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                    Social Media Channels
+                {/* Body Font Family */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Body Copy Font Family
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(Object.keys(BODY_FONT_CONFIG) as Array<TypographyConfig["bodyFont"]>).map((fontKey) => {
+                      const cfg = BODY_FONT_CONFIG[fontKey];
+                      const isSelected = (theme.typography?.bodyFont || "inter") === fontKey;
+                      return (
+                        <button
+                          key={fontKey}
+                          type="button"
+                          onClick={() => updateTypography({ bodyFont: fontKey })}
+                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-xs font-bold text-white">{cfg.name}</span>
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                          </div>
+                          <div
+                            className="text-xs text-slate-300 line-clamp-2"
+                            style={{ fontFamily: cfg.family }}
+                          >
+                            Street brass melodies & rhythm
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-1">{cfg.subtitle}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Tracking & Uppercase Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+                      Headings Letter Tracking
+                    </label>
+                    <div className="flex gap-2">
+                      {(Object.keys(TRACKING_CONFIG) as Array<TypographyConfig["headingTracking"]>).map((trackKey) => {
+                        const track = TRACKING_CONFIG[trackKey];
+                        const isSelected = (theme.typography?.headingTracking || "wide") === trackKey;
+                        return (
+                          <button
+                            key={trackKey}
+                            type="button"
+                            onClick={() => updateTypography({ headingTracking: trackKey })}
+                            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-medium border transition ${
+                              isSelected
+                                ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
+                                : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700"
+                            }`}
+                          >
+                            {track.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                      <Video className="w-3.5 h-3.5 text-red-400" /> YouTube Channel / Video Reel
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">
+                      Headings Lettercase
                     </label>
-                    <input
-                      type="url"
-                      value={theme.socialLinks.youtube}
-                      onChange={(e) =>
-                        setTheme({
-                          ...theme,
-                          socialLinks: { ...theme.socialLinks, youtube: e.target.value },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                      <input
+                        type="checkbox"
+                        checked={theme.typography?.headingUppercase ?? true}
+                        onChange={(e) => updateTypography({ headingUppercase: e.target.checked })}
+                        className="w-4 h-4 rounded text-yellow-400 bg-slate-900 border-slate-700 focus:ring-yellow-400 focus:ring-offset-slate-900"
+                      />
+                      <span className="text-xs text-white font-medium select-none">
+                        Force uppercase for titles & headlines
+                      </span>
+                    </label>
                   </div>
+                </div>
+              </div>
 
+              {/* Card 3: Visual Polish & Atmosphere */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                      <Camera className="w-3.5 h-3.5 text-pink-400" /> Instagram Handle / Profile
-                    </label>
-                    <input
-                      type="url"
-                      value={theme.socialLinks.instagram}
-                      onChange={(e) =>
-                        setTheme({
-                          ...theme,
-                          socialLinks: { ...theme.socialLinks, instagram: e.target.value },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
+                    <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-yellow-400" /> Visual Polish & Atmosphere
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Configure corner geometry profiles, ambient glow radiance, and atmospheric background textures.
+                    </p>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 mb-1">
-                      <Share2 className="w-3.5 h-3.5 text-blue-400" /> Facebook Page
-                    </label>
-                    <input
-                      type="url"
-                      value={theme.socialLinks.facebook}
-                      onChange={(e) =>
-                        setTheme({
-                          ...theme,
-                          socialLinks: { ...theme.socialLinks, facebook: e.target.value },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
+                {/* Corner Radius Profile */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Corner Radius Profile
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(Object.keys(BORDER_RADIUS_CONFIG) as Array<VisualPolishConfig["borderRadius"]>).map((radKey) => {
+                      const rad = BORDER_RADIUS_CONFIG[radKey];
+                      const isSelected = (theme.visualPolish?.borderRadius || "modern") === radKey;
+                      return (
+                        <button
+                          key={radKey}
+                          type="button"
+                          onClick={() => updateVisualPolish({ borderRadius: radKey })}
+                          className={`p-3 text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                          } ${rad.classCard}`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-2">
+                            <span className="text-xs font-bold text-white">{rad.label}</span>
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-7 h-7 bg-yellow-400/20 border border-yellow-400/60"
+                              style={{ borderRadius: rad.styleRadius }}
+                            />
+                            <span className="text-[10px] text-slate-400">{rad.description}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Accent Glow Intensity */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Accent Glow Intensity
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {(Object.keys(GLOW_CONFIG) as Array<VisualPolishConfig["glowIntensity"]>).map((glowKey) => {
+                      const glow = GLOW_CONFIG[glowKey];
+                      const isSelected = (theme.visualPolish?.glowIntensity || "subtle") === glowKey;
+                      return (
+                        <button
+                          key={glowKey}
+                          type="button"
+                          onClick={() => updateVisualPolish({ glowIntensity: glowKey })}
+                          className={`p-3 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-xs font-bold text-white">{glow.label}</span>
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div
+                              className="w-3.5 h-3.5 rounded-full bg-yellow-400 shrink-0"
+                              style={{ boxShadow: glow.shadow }}
+                            />
+                            <span className="text-[10px] text-slate-400">{glow.description}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Background Texture / Pattern */}
+                <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Background Texture & Atmosphere
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    {(Object.keys(TEXTURE_CONFIG) as Array<VisualPolishConfig["backgroundTexture"]>).map((texKey) => {
+                      const tex = TEXTURE_CONFIG[texKey];
+                      const isSelected = (theme.visualPolish?.backgroundTexture || "solid") === texKey;
+                      return (
+                        <button
+                          key={texKey}
+                          type="button"
+                          onClick={() => updateVisualPolish({ backgroundTexture: texKey })}
+                          className={`p-2.5 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-yellow-400/10 border-yellow-400/80 ring-1 ring-yellow-400/50"
+                              : "bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-2">
+                            <span className="text-xs font-bold text-white">{tex.label}</span>
+                            {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                          </div>
+                          <div
+                            className="w-full h-10 rounded-lg border border-slate-800 mb-1.5"
+                            style={tex.getStyle(theme.public.primaryColor)}
+                          />
+                          <div className="text-[10px] text-slate-400">{tex.description}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -792,7 +1850,7 @@ export default function ThemeCustomizerPage() {
                   ? "Public Site Live Preview"
                   : activeTab === "portal"
                   ? "Musician Portal Live Preview"
-                  : "Brand Identity Overview"}
+                  : "Brand Identity & Specimen Studio"}
               </span>
               <span className="text-[10px] font-mono text-slate-500">Live Simulator</span>
             </div>
@@ -800,30 +1858,50 @@ export default function ThemeCustomizerPage() {
             {/* Simulated Preview Box */}
             {activeTab === "public" && (
               <div
-                className="p-5 rounded-xl space-y-4 border transition-colors shadow-inner"
+                className="p-5 rounded-xl space-y-3.5 border transition-colors shadow-inner"
                 style={{
-                  backgroundColor: theme.public.backgroundColor,
-                  borderColor: theme.public.accentColor + "40",
-                  color: theme.public.textColor,
+                  backgroundColor: selectedTheme.backgroundColor,
+                  borderColor: (selectedTheme.borderColor || selectedTheme.accentColor) + "50",
+                  color: selectedTheme.textColor || "#f8fafc",
                 }}
               >
+                {/* Simulator Scope Status */}
+                <div
+                  className="flex items-center justify-between text-[11px] pb-2 border-b"
+                  style={{ borderColor: (selectedTheme.borderColor || "#334155") + "60" }}
+                >
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="opacity-70">Preset:</span>
+                    <span style={{ color: selectedTheme.primaryColor }}>{selectedTheme.name}</span>
+                  </div>
+                  {(theme.public.schemeId || "default") === selectedTheme.id ? (
+                    <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> Active on Live Site
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-yellow-400/90 font-mono">
+                      Preview Draft
+                    </span>
+                  )}
+                </div>
+
                 {/* Public Header Mock */}
                 <div
                   className="p-3 rounded-xl flex items-center justify-between border shadow-sm"
                   style={{
-                    backgroundColor: theme.public.surfaceColor,
-                    borderColor: theme.public.primaryColor + "30",
+                    backgroundColor: selectedTheme.surfaceColor,
+                    borderColor: (selectedTheme.borderColor || selectedTheme.primaryColor) + "40",
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <EbbLogo className="w-8 h-8" color={theme.public.logoColor || theme.public.primaryColor || "#facc15"} />
+                    <EbbLogo className="w-8 h-8" color={selectedTheme.logoColor || selectedTheme.primaryColor || "#facc15"} />
                     <div>
                       <div className="text-xs font-extrabold uppercase tracking-tight">
                         {theme.bandName}
                       </div>
                       <div
                         className="text-[10px] font-semibold uppercase tracking-wider"
-                        style={{ color: theme.public.primaryColor }}
+                        style={{ color: selectedTheme.primaryColor }}
                       >
                         Pittsburgh Brass & Battery
                       </div>
@@ -833,8 +1911,8 @@ export default function ThemeCustomizerPage() {
                   <span
                     className="text-[10px] font-bold px-2 py-0.5 rounded border"
                     style={{
-                      borderColor: theme.public.primaryColor,
-                      color: theme.public.primaryColor,
+                      borderColor: selectedTheme.primaryColor,
+                      color: selectedTheme.primaryColor,
                     }}
                   >
                     Book
@@ -842,27 +1920,66 @@ export default function ThemeCustomizerPage() {
                 </div>
 
                 {/* Public Hero Mock */}
-                <div className="space-y-2 py-2">
+                <div className="space-y-2 py-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                      style={{
+                        backgroundColor: selectedTheme.primaryColor + "20",
+                        color: selectedTheme.primaryColor,
+                      }}
+                    >
+                      {theme.activeSeason}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded border"
+                      style={{
+                        borderColor: selectedTheme.accentColor + "60",
+                        backgroundColor: selectedTheme.accentColor + "20",
+                        color: selectedTheme.accentColor,
+                      }}
+                    >
+                      Accent Highlight
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black leading-tight">
+                    Pittsburgh's Premier Street Brass & Battery Powerhouse
+                  </h3>
+                  <p className="text-[11px] opacity-80 leading-relaxed">
+                    Mobile street revelry, New Orleans funk, and high-energy brass power across Western PA.
+                  </p>
+                </div>
+
+                {/* Muted Well / Event Feature Mock */}
+                <div
+                  className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between shadow-inner"
+                  style={{
+                    backgroundColor: selectedTheme.mutedSurfaceColor || "#1e293b",
+                    borderColor: selectedTheme.borderColor || "#334155",
+                  }}
+                >
+                  <div>
+                    <span className="font-bold block">Next Appearance: Shadyside Arts Festival</span>
+                    <span className="text-[10px] opacity-70">Main Stage & Mobile Second Line</span>
+                  </div>
                   <span
-                    className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded shadow-sm"
                     style={{
-                      backgroundColor: theme.public.primaryColor + "20",
-                      color: theme.public.primaryColor,
+                      backgroundColor: selectedTheme.primaryColor + "30",
+                      color: selectedTheme.primaryColor,
+                      border: `1px solid ${selectedTheme.primaryColor}50`,
                     }}
                   >
-                    {theme.activeSeason}
+                    Sat 3:00 PM
                   </span>
-                  <h3 className="text-base font-black leading-tight">
-                    {theme.public.tagline}
-                  </h3>
                 </div>
 
                 {/* Public Booking Banner Mock */}
                 <div
                   className="p-3 rounded-xl flex items-center justify-between"
                   style={{
-                    backgroundColor: theme.public.surfaceColor,
-                    borderLeft: `4px solid ${theme.public.primaryColor}`,
+                    backgroundColor: selectedTheme.surfaceColor,
+                    borderLeft: `4px solid ${selectedTheme.primaryColor}`,
                   }}
                 >
                   <div className="text-[11px] font-semibold">Available for Parades & Festivals</div>
@@ -870,7 +1987,7 @@ export default function ThemeCustomizerPage() {
                     type="button"
                     className="text-[10px] font-bold px-2.5 py-1 rounded shadow"
                     style={{
-                      backgroundColor: theme.public.primaryColor,
+                      backgroundColor: selectedTheme.primaryColor,
                       color: "#020617",
                     }}
                   >
@@ -882,28 +1999,48 @@ export default function ThemeCustomizerPage() {
 
             {activeTab === "portal" && (
               <div
-                className="p-5 rounded-xl space-y-4 border transition-colors shadow-inner"
+                className="p-5 rounded-xl space-y-3.5 border transition-colors shadow-inner"
                 style={{
-                  backgroundColor: theme.portal.backgroundColor,
-                  borderColor: theme.portal.borderColor || theme.portal.accentColor + "40",
-                  color: theme.portal.textColor,
+                  backgroundColor: selectedPortalTheme.backgroundColor,
+                  borderColor: (selectedPortalTheme.borderColor || selectedPortalTheme.accentColor) + "50",
+                  color: selectedPortalTheme.textColor || "#fefce8",
                 }}
               >
+                {/* Simulator Scope Status */}
+                <div
+                  className="flex items-center justify-between text-[11px] pb-2 border-b"
+                  style={{ borderColor: (selectedPortalTheme.borderColor || "#382c0f") + "60" }}
+                >
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="opacity-70">Preset:</span>
+                    <span style={{ color: selectedPortalTheme.primaryColor }}>{selectedPortalTheme.name}</span>
+                  </div>
+                  {(theme.portal.schemeId || "eagleburger-gold") === selectedPortalTheme.id ? (
+                    <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> Ensemble Default
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-yellow-400/90 font-mono">
+                      Preview Draft
+                    </span>
+                  )}
+                </div>
+
                 {/* Portal Sidebar Segment Mock */}
                 <div
                   className="p-4 rounded-xl space-y-3 border shadow-sm"
                   style={{
-                    backgroundColor: theme.portal.surfaceColor,
-                    borderColor: theme.portal.borderColor || theme.portal.accentColor + "50",
+                    backgroundColor: selectedPortalTheme.surfaceColor,
+                    borderColor: (selectedPortalTheme.borderColor || selectedPortalTheme.primaryColor) + "50",
                   }}
                 >
                   <div 
                     className="flex items-center gap-2 pb-2 border-b"
-                    style={{ borderColor: theme.portal.borderColor || "#334155" }}
+                    style={{ borderColor: selectedPortalTheme.borderColor || "#382c0f" }}
                   >
-                    <EbbLogo className="w-7 h-7" color={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"} />
+                    <EbbLogo className="w-7 h-7" color={selectedPortalTheme.logoColor || selectedPortalTheme.primaryColor || "#facc15"} />
                     <div>
-                      <div className="text-xs font-bold" style={{ color: theme.portal.textColor }}>
+                      <div className="text-xs font-bold" style={{ color: selectedPortalTheme.textColor }}>
                         {theme.bandName}
                       </div>
                       <div className="text-[10px] opacity-75">Musician Portal</div>
@@ -918,7 +2055,7 @@ export default function ThemeCustomizerPage() {
                     <div
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs font-bold shadow-sm"
                       style={{
-                        backgroundColor: theme.portal.primaryColor,
+                        backgroundColor: selectedPortalTheme.primaryColor,
                         color: "#020617",
                       }}
                     >
@@ -926,9 +2063,21 @@ export default function ThemeCustomizerPage() {
                       <span>Call Sheet Dispatch</span>
                     </div>
 
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs opacity-75 hover:opacity-100 transition">
-                      <Compass className="w-3.5 h-3.5" />
-                      <span>Gig Central RSVPs</span>
+                    <div className="flex items-center justify-between px-2.5 py-1.5 rounded text-xs opacity-75 hover:opacity-100 transition">
+                      <div className="flex items-center gap-2">
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Gig Central RSVPs</span>
+                      </div>
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm"
+                        style={{
+                          backgroundColor: selectedPortalTheme.accentColor + "25",
+                          color: selectedPortalTheme.accentColor,
+                          border: `1px solid ${selectedPortalTheme.accentColor}40`,
+                        }}
+                      >
+                        3 Pending
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -937,20 +2086,20 @@ export default function ThemeCustomizerPage() {
                 <div
                   className="p-3.5 rounded-xl border space-y-2 shadow-sm"
                   style={{
-                    backgroundColor: theme.portal.mutedSurfaceColor || "#1e1808",
-                    borderColor: theme.portal.borderColor || "#382c0f",
+                    backgroundColor: selectedPortalTheme.mutedSurfaceColor || "#1e1808",
+                    borderColor: selectedPortalTheme.borderColor || "#382c0f",
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold" style={{ color: theme.portal.textColor }}>
+                    <span className="text-[11px] font-bold" style={{ color: selectedPortalTheme.textColor }}>
                       Next Rehearsal RSVP
                     </span>
                     <span
                       className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border"
                       style={{
-                        backgroundColor: `${theme.portal.primaryColor}20`,
-                        borderColor: `${theme.portal.primaryColor}50`,
-                        color: theme.portal.primaryColor,
+                        backgroundColor: `${selectedPortalTheme.primaryColor}20`,
+                        borderColor: `${selectedPortalTheme.primaryColor}50`,
+                        color: selectedPortalTheme.primaryColor,
                       }}
                     >
                       Confirmed (18 / 22)
@@ -963,15 +2112,26 @@ export default function ThemeCustomizerPage() {
 
                 {/* Tactical Alert Mock */}
                 <div
-                  className="p-3 rounded-xl text-xs space-y-1 border shadow-sm"
+                  className="p-3 rounded-xl text-xs space-y-1.5 border shadow-sm"
                   style={{
-                    backgroundColor: theme.portal.surfaceColor,
-                    borderColor: theme.portal.borderColor || "#382c0f",
-                    borderLeft: `4px solid ${theme.portal.primaryColor}`,
+                    backgroundColor: selectedPortalTheme.surfaceColor,
+                    borderColor: selectedPortalTheme.borderColor || "#382c0f",
+                    borderLeft: `4px solid ${selectedPortalTheme.primaryColor}`,
                   }}
                 >
-                  <div className="font-bold" style={{ color: theme.portal.textColor }}>
-                    {theme.portal.tagline}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold" style={{ color: selectedPortalTheme.textColor }}>
+                      Repertoire Update: "Fat Bottomed Girls"
+                    </span>
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono"
+                      style={{
+                        backgroundColor: selectedPortalTheme.accentColor + "20",
+                        color: selectedPortalTheme.accentColor,
+                      }}
+                    >
+                      Priority
+                    </span>
                   </div>
                   <div className="text-[10px] opacity-70 font-mono">
                     Active season: {theme.activeSeason}
@@ -981,62 +2141,191 @@ export default function ThemeCustomizerPage() {
             )}
 
             {activeTab === "identity" && (
-              <div className="bg-slate-950 border border-slate-800 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-yellow-400 text-slate-950 font-black text-lg flex items-center justify-center shadow">
-                    EBB
+              <div className="space-y-4">
+                {/* Dynamically link external Google Fonts for accurate specimen rendering */}
+                <link
+                  rel="stylesheet"
+                  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@600;700;900&family=Montserrat:wght@600;700;900&family=Oswald:wght@600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+                />
+
+                {/* Identity Header Specimen */}
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center gap-3.5 shadow-md">
+                  <div
+                    className="w-14 h-14 font-black text-lg flex items-center justify-center shrink-0 font-mono transition-all duration-300"
+                    style={{
+                      backgroundColor: theme.public.primaryColor || "#facc15",
+                      color: theme.public.backgroundColor || "#0a0802",
+                      borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
+                      boxShadow: GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].shadow,
+                    }}
+                  >
+                    {theme.monogram || "EBB"}
                   </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-white">{theme.bandName}</h3>
-                    <div className="text-xs text-yellow-400 font-mono">{theme.activeSeason}</div>
+                  <div className="min-w-0">
+                    <h3
+                      className="text-base font-extrabold text-white leading-tight truncate transition-all duration-200"
+                      style={{
+                        fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
+                        letterSpacing: TRACKING_CONFIG[theme.typography?.headingTracking || "wide"].value,
+                        textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
+                      }}
+                    >
+                      {theme.bandName}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 font-bold">
+                        {theme.activeSeason}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].label} Profile
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-800 text-xs text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Logo Asset:</span>
-                    <span className="font-mono text-[11px] text-slate-400">{theme.logoUrl}</span>
+                {/* Live Typography Specimens Card */}
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+                    <span className="flex items-center gap-1.5 text-yellow-400 font-bold">
+                      <Type className="w-3.5 h-3.5" /> Typography Specimens
+                    </span>
+                    <span className="text-slate-500">
+                      {HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].name} +{" "}
+                      {BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].name}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Schema Version:</span>
-                    <span className="font-mono text-[11px] text-emerald-400">v2 (Scoped)</span>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono text-slate-400">Heading 1 Display</div>
+                    <div
+                      className="text-base sm:text-lg font-black leading-snug transition-all duration-200"
+                      style={{
+                        color: theme.public.primaryColor || "#facc15",
+                        fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
+                        letterSpacing: TRACKING_CONFIG[theme.typography?.headingTracking || "wide"].value,
+                        textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
+                      }}
+                    >
+                      Pittsburgh Street Brass & Battery
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-slate-900">
+                    <div className="text-[10px] font-mono text-slate-400">Body Copy & Legibility</div>
+                    <p
+                      className="text-xs text-slate-300 leading-relaxed transition-all duration-200"
+                      style={{
+                        fontFamily: BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].family,
+                      }}
+                    >
+                      The Eagleburger Band delivers raw, acoustic funk grooves, second-line anthems, and thunderous percussion across Pittsburgh festivals, parades, and street corners.
+                    </p>
                   </div>
                 </div>
 
-                <div className="pt-2 flex items-center gap-2">
-                  {theme.socialLinks.youtube && (
-                    <a
-                      href={theme.socialLinks.youtube}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-slate-900 text-red-400 border border-slate-800 hover:border-red-400/50 transition"
-                      title="YouTube"
+                {/* Atmosphere & Texture Specimen Card */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span className="text-yellow-400 font-bold flex items-center gap-1">
+                      <Layers className="w-3 h-3" /> Atmosphere & Surface Specimen
+                    </span>
+                    <span>{TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].label}</span>
+                  </div>
+                  <div
+                    className="p-4 border transition-all duration-300 space-y-3"
+                    style={{
+                      ...TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].getStyle(
+                        theme.public.primaryColor
+                      ),
+                      borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
+                      borderColor: theme.public.borderColor || "#334155",
+                      boxShadow: GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].shadow,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="text-xs font-bold text-white tracking-wide"
+                        style={{
+                          fontFamily: HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].family,
+                          textTransform: (theme.typography?.headingUppercase ?? true) ? "uppercase" : "none",
+                        }}
+                      >
+                        Bloomfield Parade Warmup
+                      </span>
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        Confirmed
+                      </span>
+                    </div>
+                    <p
+                      className="text-[11px] text-slate-300"
+                      style={{
+                        fontFamily: BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].family,
+                      }}
                     >
-                      <Video className="w-4 h-4" />
-                    </a>
-                  )}
-                  {theme.socialLinks.instagram && (
-                    <a
-                      href={theme.socialLinks.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-slate-900 text-pink-400 border border-slate-800 hover:border-pink-400/50 transition"
-                      title="Instagram"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </a>
-                  )}
-                  {theme.socialLinks.facebook && (
-                    <a
-                      href={theme.socialLinks.facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-slate-900 text-blue-400 border border-slate-800 hover:border-blue-400/50 transition"
-                      title="Facebook"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </a>
-                  )}
+                      Full battery roll-off at Liberty Ave staging zone. Repertoire charts active in portal.
+                    </p>
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        className="text-[10px] font-bold px-3 py-1 bg-yellow-400 text-slate-950 transition"
+                        style={{
+                          borderRadius: BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].styleRadius,
+                        }}
+                      >
+                        View Setlist
+                      </button>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        Glow: {GLOW_CONFIG[theme.visualPolish?.glowIntensity || "subtle"].label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Identity Asset Specs Table */}
+                <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2 text-xs text-slate-300">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 font-bold">
+                    Active Identity & Asset Tokens
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Monogram:</span>
+                      <span className="font-mono text-yellow-400 font-bold">{theme.monogram || "EBB"}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Season:</span>
+                      <span className="font-mono text-slate-300">{theme.activeSeason}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Heading Font:</span>
+                      <span className="font-mono text-slate-300">
+                        {HEADING_FONT_CONFIG[theme.typography?.headingFont || "montserrat"].name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Body Font:</span>
+                      <span className="font-mono text-slate-300">
+                        {BODY_FONT_CONFIG[theme.typography?.bodyFont || "inter"].name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Radius:</span>
+                      <span className="font-mono text-slate-300">
+                        {BORDER_RADIUS_CONFIG[theme.visualPolish?.borderRadius || "modern"].label}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5 border-b border-slate-900">
+                      <span className="text-slate-500">Texture:</span>
+                      <span className="font-mono text-slate-300">
+                        {TEXTURE_CONFIG[theme.visualPolish?.backgroundTexture || "solid"].label}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5 col-span-2">
+                      <span className="text-slate-500">Logo URI:</span>
+                      <span className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">
+                        {theme.logoUrl}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
