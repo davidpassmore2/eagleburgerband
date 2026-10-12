@@ -7,6 +7,19 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 55,
+    title: "Scoped Brand & Theme Studio & Backend Security Lockdown",
+    category: "Branding & Security",
+    accomplishments: [
+      "Built multi-scope Brand & Palette Customizer (/admin/theme) with independent controls for Public Fan Site and Musician Portal schemes.",
+      "Added custom preset generation, 8-token palette editing, factory defaults resets, and CSS mask-image dynamic logo tinting.",
+      "Engineered independent Public vs. Portal aesthetic tone controls, enabling punchy street marketing for the public site and focused functional styling for the portal.",
+      "Integrated expanded typography library featuring slab serifs (Arvo, Rokkitt), modern sans (Poppins, Montserrat, Oswald, Bebas Neue, Inter), and classic serifs (Cinzel, Merriweather, Lora).",
+      "Wired dynamic CSS variables (--ebb-font-heading, --ebb-font-body, --ebb-tracking-heading, --ebb-radius, --ebb-glow) directly into theme context and global styles.",
+      "Hardened backend security: removed firestore.rules catch-all, locked down user document modifications, added server route caller ID token verification, and service-account REST client.",
+    ],
+  },
+  {
     stage: 54,
     title: "Sidebar Navigation Customizer & Member Changelog Hub",
     category: "Admin & Navigation",
