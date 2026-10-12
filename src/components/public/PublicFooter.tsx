@@ -15,6 +15,7 @@ import {
 import { ExternalLink } from "lucide-react";
 import { SocialIcon, getSocialBrandColors } from "@/components/ui/SocialIcon";
 import { useAuth } from "@/lib/context/AuthContext";
+import EbbLogo from "@/components/common/EbbLogo";
 
 export default function PublicFooter() {
   const { firebaseUser } = useAuth();
@@ -75,15 +76,7 @@ export default function PublicFooter() {
         {/* Col 1: Band Bio & Social Media Channels */}
         <div className="space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 flex items-center justify-center shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src="/images/eagleburger-logo.png" 
-                alt="Eagleburger Band Logo" 
-                className="w-full h-full object-contain"
-                suppressHydrationWarning
-              />
-            </div>
+            <EbbLogo className="w-8 h-8" color="var(--ebb-primary)" />
             <span className="text-lg font-bold text-white uppercase tracking-wider font-arvo">
               EAGLEBURGER BAND
             </span>

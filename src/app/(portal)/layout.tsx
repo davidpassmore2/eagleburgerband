@@ -29,6 +29,7 @@ import { PortalLoadingProvider } from "@/lib/context/PortalLoadingContext";
 import PwaInstallBanner from "@/components/common/PwaInstallBanner";
 import { PortalUsageTracker } from "@/components/portal/PortalUsageTracker";
 import ManagerNotificationBell from "@/components/portal/ManagerNotificationBell";
+import EbbLogo from "@/components/common/EbbLogo";
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -237,18 +238,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         className="md:hidden flex items-center justify-between px-4 py-3 border-b shrink-0 z-30 sticky top-0"
       >
         <div className="flex items-center gap-2.5">
-          <div 
-            suppressHydrationWarning
-            className="w-7 h-7 flex items-center justify-center shrink-0"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/images/eagleburger-logo.png" 
-              alt="Eagleburger Band Logo" 
-              className="w-full h-full object-contain"
-              suppressHydrationWarning
-            />
-          </div>
+          <EbbLogo className="w-7 h-7" />
           <span 
             style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
             className="font-arvo font-bold text-xs truncate tracking-tight"
@@ -311,18 +301,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
             className="flex items-center justify-between pb-4 border-b shrink-0"
           >
             <div className="flex items-center gap-3">
-              <div 
-                suppressHydrationWarning
-                className="w-9 h-9 flex items-center justify-center shrink-0"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/images/eagleburger-logo.png" 
-                  alt="Eagleburger Band Logo" 
-                  className="w-full h-full object-contain"
-                  suppressHydrationWarning
-                />
-              </div>
+              <EbbLogo className="w-9 h-9" />
               <div>
                 <div 
                   style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}

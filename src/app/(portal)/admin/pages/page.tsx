@@ -4347,15 +4347,7 @@ export default function CMSPagesStudio() {
                   >
                     {/* Brand */}
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src="/images/eagleburger-logo.png" 
-                          alt="Eagleburger Band Logo" 
-                          className="w-full h-full object-contain"
-                          suppressHydrationWarning
-                        />
-                      </div>
+                      <div className="ebb-mask-logo w-10 h-10 shrink-0" aria-label="Eagleburger Band Logo" />
                       <div>
                         <span className="text-base font-bold tracking-tight text-white uppercase font-arvo">
                           EAGLEBURGER BAND

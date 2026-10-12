@@ -13,6 +13,7 @@ import {
   LogIn
 } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
+import EbbLogo from "@/components/common/EbbLogo";
 
 export default function PublicHeaderNav() {
   const pathname = usePathname();
@@ -76,15 +77,7 @@ export default function PublicHeaderNav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-3 group" suppressHydrationWarning>
-          <div className="w-11 h-11 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/images/eagleburger-logo.png" 
-              alt="Eagleburger Band Logo" 
-              className="w-full h-full object-contain"
-              suppressHydrationWarning
-            />
-          </div>
+          <EbbLogo className="w-11 h-11 group-hover:scale-105 transition-transform" color="var(--ebb-primary)" />
           <div>
             <span className="text-xl font-bold tracking-tight text-white group-hover:text-yellow-400 transition-colors uppercase font-arvo">
               EAGLEBURGER BAND
