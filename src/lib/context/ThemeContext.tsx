@@ -221,8 +221,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const getScopedStyles = (scope: "public" | "portal"): React.CSSProperties => {
     const scopeConfig = scope === "public" ? theme.public : portalTheme;
     const isPortal = scope === "portal";
+    const primaryTextColor =
+      isPortal && (activePortalMode === "light" || activePortalSchemeId === "sousa-crimson")
+        ? "#ffffff"
+        : "#0f172a";
+
     return {
       ["--ebb-primary" as string]: scopeConfig.primaryColor,
+      ["--ebb-primary-text" as string]: primaryTextColor,
       ["--ebb-accent" as string]: scopeConfig.accentColor,
       ["--ebb-background" as string]: scopeConfig.backgroundColor,
       ["--ebb-surface" as string]: scopeConfig.surfaceColor,
