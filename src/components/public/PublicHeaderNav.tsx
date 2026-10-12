@@ -77,7 +77,7 @@ export default function PublicHeaderNav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-3 group" suppressHydrationWarning>
-          <EbbLogo className="w-11 h-11 group-hover:scale-105 transition-transform" color="var(--ebb-primary)" />
+          <EbbLogo className="w-11 h-11 group-hover:scale-105 transition-transform" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
           <div>
             <span className="text-xl font-bold tracking-tight text-white group-hover:text-yellow-400 transition-colors uppercase font-arvo">
               EAGLEBURGER BAND

@@ -23,6 +23,7 @@ export const ThemeScopeConfigSchema = z.object({
   schemeId: PortalColorSchemeIdSchema.default("eagleburger-gold"),
   primaryColor: z.string().default("#facc15"),       // EBB Gold / Accent
   accentColor: z.string().default("#f59e0b"),        // Secondary Accent / Amber
+  logoColor: z.string().default("#facc15"),          // Dedicated Logo Emblem Hex Color
   backgroundColor: z.string().default("#0a0802"),    // Harmonious ambient background
   surfaceColor: z.string().default("#151105"),       // Card / Sidebar surface
   mutedSurfaceColor: z.string().default("#1e1808"),  // Inner wells, inputs, badges
@@ -49,6 +50,7 @@ export const ThemeSchema = z.object({
     schemeId: "eagleburger-gold" as const,
     primaryColor: "#facc15",
     accentColor: "#f59e0b",
+    logoColor: "#facc15",
     backgroundColor: "#020617",
     surfaceColor: "#0f172a",
     mutedSurfaceColor: "#1e293b",
@@ -62,6 +64,7 @@ export const ThemeSchema = z.object({
     schemeId: "eagleburger-gold" as const,
     primaryColor: "#facc15",
     accentColor: "#f59e0b",
+    logoColor: "#facc15",
     backgroundColor: "#0a0802",
     surfaceColor: "#151105",
     mutedSurfaceColor: "#1e1808",
@@ -73,6 +76,7 @@ export const ThemeSchema = z.object({
   // Backwards compatibility legacy flat fields
   primaryColor: z.string().default("#facc15"),
   accentColor: z.string().default("#0f172a"),
+  logoColor: z.string().default("#facc15"),
   subheading: z.string().default("Brass, percussion, and mobile street revelry."),
 
   schemaVersion: z.number().default(2),

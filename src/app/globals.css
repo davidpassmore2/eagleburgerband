@@ -167,7 +167,7 @@ textarea:disabled,
 
 /* Dynamic Mask-Tinted Logo Utility (Hex / Theme-Colored PNG) */
 .ebb-mask-logo {
-  background-color: var(--ebb-primary);
+  background-color: var(--ebb-logo-color, var(--ebb-primary, #facc15));
   mask: url('/images/eagleburger-logo.png') no-repeat center / contain;
   -webkit-mask: url('/images/eagleburger-logo.png') no-repeat center / contain;
   display: inline-block;

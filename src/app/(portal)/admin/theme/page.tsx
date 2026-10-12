@@ -10,6 +10,7 @@ import { ThemeConfig, ThemeSchema, ThemeScopeConfig, PORTAL_COLOR_SCHEMES } from
 import { toast } from "@/lib/context/ToastContext";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
+import EbbLogo from "@/components/common/EbbLogo";
 import { 
   Save, 
   Check, 
@@ -323,6 +324,26 @@ export default function ThemeCustomizerPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Logo Emblem Tint (Hex)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.public.logoColor || theme.public.primaryColor || "#facc15"}
+                        onChange={(e) => updatePublicScope({ logoColor: e.target.value })}
+                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={theme.public.logoColor || theme.public.primaryColor || "#facc15"}
+                        onChange={(e) => updatePublicScope({ logoColor: e.target.value })}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                       Site Background (Hex)
                     </label>
                     <div className="flex items-center gap-2">
@@ -511,6 +532,26 @@ export default function ThemeCustomizerPage() {
                         type="text"
                         value={theme.portal.accentColor}
                         onChange={(e) => updatePortalScope({ accentColor: e.target.value })}
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Portal Logo Emblem Tint (Hex)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"}
+                        onChange={(e) => updatePortalScope({ logoColor: e.target.value })}
+                        className="w-8 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"}
+                        onChange={(e) => updatePortalScope({ logoColor: e.target.value })}
                         className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
                       />
                     </div>
@@ -775,15 +816,7 @@ export default function ThemeCustomizerPage() {
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-8 h-8 rounded-lg font-black flex items-center justify-center text-xs shadow"
-                      style={{
-                        backgroundColor: theme.public.primaryColor,
-                        color: "#020617",
-                      }}
-                    >
-                      EBB
-                    </div>
+                    <EbbLogo className="w-8 h-8" color={theme.public.logoColor || theme.public.primaryColor || "#facc15"} />
                     <div>
                       <div className="text-xs font-extrabold uppercase tracking-tight">
                         {theme.bandName}
@@ -868,15 +901,7 @@ export default function ThemeCustomizerPage() {
                     className="flex items-center gap-2 pb-2 border-b"
                     style={{ borderColor: theme.portal.borderColor || "#334155" }}
                   >
-                    <div
-                      className="font-black px-2 py-0.5 rounded text-[10px] tracking-wider shadow-sm"
-                      style={{
-                        backgroundColor: theme.portal.primaryColor,
-                        color: "#020617",
-                      }}
-                    >
-                      EBB
-                    </div>
+                    <EbbLogo className="w-7 h-7" color={theme.portal.logoColor || theme.portal.primaryColor || "#facc15"} />
                     <div>
                       <div className="text-xs font-bold" style={{ color: theme.portal.textColor }}>
                         {theme.bandName}

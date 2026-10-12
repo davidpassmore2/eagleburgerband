@@ -209,6 +209,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       schemeId: activePortalScheme.id,
       primaryColor: activePortalScheme.primaryColor,
       accentColor: activePortalScheme.accentColor,
+      logoColor: theme.portal?.logoColor || activePortalScheme.primaryColor,
       backgroundColor: activePortalScheme.backgroundColor,
       surfaceColor: activePortalScheme.surfaceColor,
       mutedSurfaceColor: activePortalScheme.mutedSurfaceColor,
@@ -216,7 +217,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       textColor: activePortalScheme.textColor,
       tagline: theme.portal?.tagline || activePortalScheme.tagline,
     };
-  }, [activePortalScheme, theme.portal?.tagline]);
+  }, [activePortalScheme, theme.portal?.tagline, theme.portal?.logoColor]);
 
   const getScopedStyles = (scope: "public" | "portal"): React.CSSProperties => {
     const scopeConfig = scope === "public" ? theme.public : portalTheme;
@@ -230,6 +231,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       ["--ebb-primary" as string]: scopeConfig.primaryColor,
       ["--ebb-primary-text" as string]: primaryTextColor,
       ["--ebb-accent" as string]: scopeConfig.accentColor,
+      ["--ebb-logo-color" as string]: scopeConfig.logoColor || scopeConfig.primaryColor || "#facc15",
       ["--ebb-background" as string]: scopeConfig.backgroundColor,
       ["--ebb-surface" as string]: scopeConfig.surfaceColor,
       ["--ebb-surface-muted" as string]: isPortal ? activePortalScheme.mutedSurfaceColor : scopeConfig.mutedSurfaceColor || "#1e293b",

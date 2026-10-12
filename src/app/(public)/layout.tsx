@@ -4,6 +4,7 @@ import PublicHeaderNav from "@/components/public/PublicHeaderNav";
 import PublicFooter from "@/components/public/PublicFooter";
 import PublicAnnouncementBanner from "@/components/public/PublicAnnouncementBanner";
 import { PublicLoadingProvider } from "@/lib/context/PublicLoadingContext";
+import PublicThemeShell from "@/components/public/PublicThemeShell";
 
 export const metadata = {
   title: "Eagleburger Band | Pittsburgh Street Brass & Drums",
@@ -29,11 +30,8 @@ export default function PublicLayout({
 }) {
   return (
     <AuthProvider>
-      <PublicLoadingProvider>
-        <div 
-          className="public-site min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-yellow-400 selection:text-slate-950"
-          suppressHydrationWarning
-        >
+      <PublicThemeShell>
+        <PublicLoadingProvider>
           {/* Dynamic Site Announcement Banner */}
           <PublicAnnouncementBanner />
 
@@ -47,8 +45,8 @@ export default function PublicLayout({
 
           {/* Dynamic Public Marketing Footer */}
           <PublicFooter />
-        </div>
-      </PublicLoadingProvider>
+        </PublicLoadingProvider>
+      </PublicThemeShell>
     </AuthProvider>
   );
 }

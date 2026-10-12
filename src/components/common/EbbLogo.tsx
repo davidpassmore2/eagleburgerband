@@ -19,7 +19,7 @@ interface EbbLogoProps {
  * using CSS mask-image on the silhouette PNG asset.
  */
 export default function EbbLogo({
-  color = "var(--ebb-primary)",
+  color = "var(--ebb-logo-color, var(--ebb-primary, #facc15))",
   className = "w-8 h-8",
   src = "/images/eagleburger-logo.png",
   alt = "Eagleburger Band Logo",

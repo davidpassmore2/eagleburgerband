@@ -76,7 +76,7 @@ export default function PublicFooter() {
         {/* Col 1: Band Bio & Social Media Channels */}
         <div className="space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5">
-            <EbbLogo className="w-8 h-8" color="var(--ebb-primary)" />
+            <EbbLogo className="w-8 h-8" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
             <span className="text-lg font-bold text-white uppercase tracking-wider font-arvo">
               EAGLEBURGER BAND
             </span>
