@@ -78,6 +78,23 @@
   font-family: var(--font-poppins), sans-serif !important;
 }
 
+/* Musician Portal Sidebar Navigation Links: Strictly follow Portal Brand Identity Body Typography */
+.portal-sidebar,
+.portal-sidebar nav,
+.portal-sidebar nav a,
+.portal-sidebar nav span,
+.portal-sidebar .sidebar-link,
+.portal-sidebar-link {
+  font-family: var(--ebb-font-body, var(--font-poppins, sans-serif)) !important;
+}
+
+.portal-sidebar .section-title,
+.portal-sidebar-section-title {
+  font-family: var(--ebb-font-heading, var(--font-arvo, serif));
+  letter-spacing: var(--ebb-tracking-heading, 0.05em);
+  text-transform: var(--ebb-transform-heading, uppercase);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

@@ -797,6 +797,7 @@ export default function SidebarNavigationStudioPage() {
               style={{
                 backgroundColor: "var(--ebb-surface)",
                 borderColor: "var(--ebb-border)",
+                fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
               }}
               className="rounded-3xl border p-4 shadow-2xl space-y-4"
             >
@@ -808,7 +809,10 @@ export default function SidebarNavigationStudioPage() {
               </div>
 
               {/* Home Base */}
-              <div className="px-3 py-2 rounded-xl text-xs font-semibold bg-yellow-400 text-slate-950 flex items-center gap-2.5 shadow">
+              <div 
+                style={{ fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))" }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold bg-yellow-400 text-slate-950 flex items-center gap-2.5 shadow"
+              >
                 <Compass className="w-4 h-4" />
                 <span>Home Base</span>
               </div>
@@ -829,8 +833,13 @@ export default function SidebarNavigationStudioPage() {
                   return (
                     <div key={section.id} className="space-y-1">
                       <div
-                        style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
-                        className="px-3 pt-2 pb-0.5 text-[11px] font-arvo font-bold uppercase tracking-wider"
+                        style={{
+                          color: "var(--ebb-primary)",
+                          fontFamily: "var(--ebb-font-heading, var(--font-arvo), serif)",
+                          letterSpacing: "var(--ebb-tracking-heading, 0.05em)",
+                          textTransform: "var(--ebb-transform-heading, uppercase)" as React.CSSProperties["textTransform"],
+                        }}
+                        className="px-3 pt-2 pb-0.5 text-[11px] font-bold"
                       >
                         {section.title || section.id}
                       </div>
@@ -840,6 +849,7 @@ export default function SidebarNavigationStudioPage() {
                           return (
                             <div
                               key={link.id}
+                              style={{ fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))" }}
                               className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                             >
                               <Icon className="w-4 h-4 text-slate-400 shrink-0" />
