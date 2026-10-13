@@ -7,6 +7,21 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 57,
+    title: "Architectural Hardening, Song Catalog Alignment & Interactive Bubble Physics",
+    category: "Architecture, Branding & Effects",
+    accomplishments: [
+      "Conducted comprehensive platform architectural review across 35 Zod schemas, 40 portal routes, 18 API routes, and Firestore security rules.",
+      "Closed HTML sanitization gaps in admin broadcast previews using DOMPurify to eliminate stored/reflected XSS risks (Rule 4 compliance).",
+      "Created SystemConfigSchema with safe defaults and validated Cloudinary integrations against Zod schemas (Rule 2 compliance).",
+      "Instituted centralized portal route guard interception in layout.tsx, establishing defense-in-depth role enforcement across all 38+ portal tools (Rule 3 compliance).",
+      "Optimized visitor session performance by converting public announcement banner from an active onSnapshot listener to a one-time getDoc read.",
+      "Standardized terminology across portal navigation, search filters, and headers to 'Song Catalog' while maintaining 'Tunes' as the canonical arrangement model.",
+      "Added 'Special Effects' studio to the Brand & Palette Customizer (/admin/theme) with live preview simulation and controls for opacity, density, and variability.",
+      "Engineered kinetic PublicBubbleOverlay with Shadow DOM isolation, growth scaling, randomized lifespan pop bursts, and aerodynamic mouse deflection with poke-to-pop touch physics while preserving 100% click-through.",
+    ],
+  },
+  {
     stage: 56,
     title: "Typography Expansion, Persistent Integrations & Zero-FOUC Polish",
     category: "Branding & Infrastructure",
