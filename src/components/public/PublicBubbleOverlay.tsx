@@ -73,6 +73,15 @@ export default function PublicBubbleOverlay({
         will-change: transform;
       }
 
+      .bubble-deflector {
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        transform: translate3d(var(--mouse-nudge-x, 0px), var(--mouse-nudge-y, 0px), 0);
+        transition: transform 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.25);
+        will-change: transform;
+      }
+
       .bubble-body {
         position: relative;
         border-radius: 50%;
@@ -153,11 +162,152 @@ export default function PublicBubbleOverlay({
       return `hsla(${hue}, 30%, 85%, 0.15)`;
     }
 
+    let mouseX = -9999;
+    let mouseY = -9999;
+    let prevMouseX = -9999;
+    let prevMouseY = -9999;
+    let mouseVx = 0;
+    let mouseVy = 0;
+    let rafId: number | null = null;
+    let lastMoveTime = 0;
+
+    function triggerBubblePop(mover: HTMLElement, body: HTMLElement) {
+      if (mover.getAttribute("data-popping") === "true") return;
+      mover.setAttribute("data-popping", "true");
+      mover.style.animationPlayState = "paused";
+      body.classList.add("popping");
+      setTimeout(() => {
+        mover.remove();
+      }, 220);
+    }
+
+    function applyMouseInfluence() {
+      rafId = null;
+
+      const movers = container.querySelectorAll<HTMLElement>(".bubble-mover");
+      const interactionRadius = fullscreen ? 180 : 100;
+
+      for (let i = 0; i < movers.length; i++) {
+        const mover = movers[i];
+        if (mover.getAttribute("data-popping") === "true") continue;
+
+        const deflector = mover.querySelector<HTMLElement>(".bubble-deflector");
+        const body = mover.querySelector<HTMLElement>(".bubble-body");
+        if (!deflector || !body) continue;
+
+        if (mouseX === -9999 || mouseY === -9999) {
+          deflector.style.setProperty("--mouse-nudge-x", "0px");
+          deflector.style.setProperty("--mouse-nudge-y", "0px");
+          continue;
+        }
+
+        const rect = body.getBoundingClientRect();
+        let bubbleX: number;
+        let bubbleY: number;
+
+        if (fullscreen) {
+          bubbleX = rect.left + rect.width / 2;
+          bubbleY = rect.top + rect.height / 2;
+        } else if (localContainerRef.current) {
+          const cRect = localContainerRef.current.getBoundingClientRect();
+          bubbleX = rect.left + rect.width / 2 - cRect.left;
+          bubbleY = rect.top + rect.height / 2 - cRect.top;
+        } else {
+          continue;
+        }
+
+        const dx = bubbleX - mouseX;
+        const dy = bubbleY - mouseY;
+        const dist = Math.hypot(dx, dy);
+
+        // 1. Direct hit / Poke: If cursor touches the bubble body, pop it immediately!
+        const pokeRadius = Math.max(18, rect.width * 0.45);
+        if (dist < pokeRadius) {
+          triggerBubblePop(mover, body);
+          continue;
+        }
+
+        // 2. Proximity Deflection & Wake Draft
+        if (dist < interactionRadius) {
+          const proximity = 1 - dist / interactionRadius;
+          const power = Math.pow(proximity, 1.4);
+          const angle = Math.atan2(dy, dx);
+
+          // Radial repulsion away from cursor
+          const repelDist = (fullscreen ? 75 : 40) * power;
+          let pushX = Math.cos(angle) * repelDist;
+          let pushY = Math.sin(angle) * repelDist;
+
+          // Velocity wind draft (air wake from moving mouse)
+          pushX += Math.max(-50, Math.min(50, mouseVx * 0.4)) * proximity;
+          pushY += Math.max(-50, Math.min(50, mouseVy * 0.4)) * proximity;
+
+          deflector.style.setProperty("--mouse-nudge-x", `${Math.round(pushX)}px`);
+          deflector.style.setProperty("--mouse-nudge-y", `${Math.round(pushY)}px`);
+        } else {
+          // Out of range: smoothly return to natural path
+          deflector.style.setProperty("--mouse-nudge-x", "0px");
+          deflector.style.setProperty("--mouse-nudge-y", "0px");
+        }
+      }
+    }
+
+    function onPointerMove(e: PointerEvent | MouseEvent) {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastMoveTime);
+      lastMoveTime = now;
+
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+
+      if (!fullscreen && localContainerRef.current) {
+        const cRect = localContainerRef.current.getBoundingClientRect();
+        clientX = e.clientX - cRect.left;
+        clientY = e.clientY - cRect.top;
+      }
+
+      if (prevMouseX !== -9999) {
+        const rawVx = ((clientX - prevMouseX) / dt) * 16.6;
+        const rawVy = ((clientY - prevMouseY) / dt) * 16.6;
+        mouseVx = mouseVx * 0.5 + rawVx * 0.5;
+        mouseVy = mouseVy * 0.5 + rawVy * 0.5;
+      }
+
+      prevMouseX = clientX;
+      prevMouseY = clientY;
+      mouseX = clientX;
+      mouseY = clientY;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(applyMouseInfluence);
+      }
+    }
+
+    function onPointerLeave() {
+      mouseX = -9999;
+      mouseY = -9999;
+      prevMouseX = -9999;
+      prevMouseY = -9999;
+      mouseVx = 0;
+      mouseVy = 0;
+      if (!rafId) {
+        rafId = requestAnimationFrame(applyMouseInfluence);
+      }
+    }
+
+    // Attach listeners
+    const eventTarget = fullscreen ? window : (localContainerRef.current || window);
+    eventTarget.addEventListener("pointermove", onPointerMove as EventListener, { passive: true });
+    eventTarget.addEventListener("pointerleave", onPointerLeave as EventListener, { passive: true });
+
     function spawnBubble() {
       if (typeof document !== "undefined" && document.hidden) return;
 
       const mover = document.createElement("div");
       mover.className = "bubble-mover";
+
+      const deflector = document.createElement("div");
+      deflector.className = "bubble-deflector";
 
       const body = document.createElement("div");
       body.className = "bubble-body";
@@ -225,19 +375,13 @@ export default function PublicBubbleOverlay({
       body.style.setProperty("--target-scale", String(targetScale));
       body.style.background = `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.55), ${getSubtleTint()})`;
 
-      mover.appendChild(body);
+      deflector.appendChild(body);
+      mover.appendChild(deflector);
       container.appendChild(mover);
 
       // Trigger pop when lifespan is reached
       setTimeout(() => {
-        // 1. Freeze flight ascent in place
-        mover.style.animationPlayState = "paused";
-        // 2. Play popping burst animation on the body
-        body.classList.add("popping");
-        // 3. Remove from DOM after pop animation finishes
-        setTimeout(() => {
-          mover.remove();
-        }, 220);
+        triggerBubblePop(mover, body);
       }, lifespanMs);
     }
 
@@ -250,6 +394,9 @@ export default function PublicBubbleOverlay({
 
     return () => {
       clearInterval(intervalId);
+      if (rafId) cancelAnimationFrame(rafId);
+      eventTarget.removeEventListener("pointermove", onPointerMove as EventListener);
+      eventTarget.removeEventListener("pointerleave", onPointerLeave as EventListener);
       overlayHost.remove();
     };
   }, [enabled, opacity, density, variability, fullscreen]);
