@@ -30,8 +30,10 @@ import {
   ShieldCheck,
   History,
   Users,
+  Compass,
 } from "lucide-react";
 import { authedFetch } from "@/lib/firebase/authedFetch";
+import PortalPageAccessMatrix from "@/components/portal/PortalPageAccessMatrix";
 
 type UserRecord = User & {
   status?: "active" | "inactive" | "pending";
@@ -44,6 +46,7 @@ export default function UsersAdminPage() {
   const { profile, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+  const [activeTab, setActiveTab] = useState<"users" | "pages">("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "pending">("all");
 
@@ -339,8 +342,47 @@ export default function UsersAdminPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
+      {/* Studio Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("users")}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === "users"
+              ? "bg-yellow-400 text-slate-950 shadow-md"
+              : "text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>User Accounts & Roles</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-black/20">
+            {users.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("pages")}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === "pages"
+              ? "bg-yellow-400 text-slate-950 shadow-md"
+              : "text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800"
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>Portal Pages & Access Matrix</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-black/20">
+            Audit
+          </span>
+        </button>
+      </div>
+
+      {activeTab === "pages" ? (
+        <PortalPageAccessMatrix />
+      ) : (
+        <>
+          {/* Filter and Search Bar */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-3">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
           <button
@@ -663,6 +705,8 @@ export default function UsersAdminPage() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
