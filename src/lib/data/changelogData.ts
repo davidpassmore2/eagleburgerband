@@ -7,6 +7,20 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 56,
+    title: "Typography Expansion, Persistent Integrations & Zero-FOUC Polish",
+    category: "Branding & Infrastructure",
+    accomplishments: [
+      "Expanded Google Fonts library supporting over 30 display heading and body copy families for both public fan and musician portal scopes.",
+      "Unified theme terminology across the UI and codebase, standardizing on 'Theme' for a consistent member and admin experience.",
+      "Isolated logo color masks between the public website and musician portal so personal member theme choices never conflict with public branding.",
+      "Added persistent Firestore system_config storage for Cloudinary media credentials and library integrations across reloads.",
+      "Bound musician portal sidebar navigation links and tools dynamically to the configured portal body typography (--ebb-font-body).",
+      "Completely eliminated public site Flash of Unstyled Content (FOUC) and Text (FOUT) via dark root tokens, SSR schema parity, localStorage theme caching, and font preconnects.",
+      "Hardened Firestore security rules for resources, navigation, and system configurations with verified automated CLI deployment.",
+    ],
+  },
+  {
     stage: 55,
     title: "Scoped Brand & Theme Studio & Backend Security Lockdown",
     category: "Branding & Security",
