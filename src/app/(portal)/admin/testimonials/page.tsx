@@ -17,6 +17,7 @@ import {
   TestimonialStatus,
 } from "@/lib/schema/testimonial";
 import { toast } from "@/lib/context/ToastContext";
+import ConfirmDialog from "@/components/portal/ConfirmDialog";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
   Star,
@@ -46,6 +47,8 @@ export default function TestimonialsAdminStudio() {
   const [editingItem, setEditingItem] = useState<Testimonial | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [testimonialToDelete, setTestimonialToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -108,18 +111,23 @@ export default function TestimonialsAdminStudio() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this testimonial?")) {
-      return;
-    }
-    setActionInProgress(id);
+  const handleDelete = (id: string) => {
+    setTestimonialToDelete(id);
+  };
+
+  const executeDelete = async () => {
+    if (!testimonialToDelete) return;
+    setIsDeleting(true);
+    setActionInProgress(testimonialToDelete);
     try {
-      await deleteDoc(doc(db, "testimonials", id));
+      await deleteDoc(doc(db, "testimonials", testimonialToDelete));
       toast.success("Testimonial deleted.");
+      setTestimonialToDelete(null);
     } catch (err) {
       console.error("Error deleting testimonial:", err);
       toast.error("Failed to delete testimonial.");
     } finally {
+      setIsDeleting(false);
       setActionInProgress(null);
     }
   };
@@ -599,6 +607,18 @@ export default function TestimonialsAdminStudio() {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(testimonialToDelete)}
+        title="Delete Testimonial?"
+        description="Are you sure you want to permanently delete this testimonial? It will be removed from the public website showcase."
+        confirmLabel="Delete Testimonial"
+        confirmVariant="danger"
+        loading={isDeleting}
+        onConfirm={executeDelete}
+        onCancel={() => setTestimonialToDelete(null)}
+      />
     </div>
   );
 }

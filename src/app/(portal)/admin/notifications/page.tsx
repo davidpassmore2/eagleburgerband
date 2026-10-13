@@ -27,7 +27,7 @@ import {
   TokenValues 
 } from "@/lib/email/templates";
 import { toast } from "@/lib/context/ToastContext";
-import { WysiwygEditor } from "@/components/cms/WysiwygEditor";
+import { WysiwygEditor, sanitizeHtml } from "@/components/cms/WysiwygEditor";
 import AccessDenied from "@/components/portal/AccessDenied";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { 
@@ -1457,7 +1457,7 @@ function EmailSuiteContent() {
                   >
                     <div className="p-3 text-[12px] max-h-[460px] overflow-y-auto scrollbar-thin">
                       <div 
-                        dangerouslySetInnerHTML={{ __html: simulatedHtmlBody }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(simulatedHtmlBody) }}
                         className="email-simulated-content text-slate-200"
                       />
                     </div>
@@ -1761,7 +1761,7 @@ function EmailSuiteContent() {
                   </div>
                   <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs text-slate-200">
                     <div 
-                      dangerouslySetInnerHTML={{ __html: inspectingLog.htmlBody }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(inspectingLog.htmlBody) }}
                       className="email-simulated-content leading-relaxed"
                     />
                   </div>
@@ -1840,7 +1840,7 @@ function EmailSuiteContent() {
                 </div>
               ) : (
                 <div 
-                  dangerouslySetInnerHTML={{ __html: simulatedHtmlBody }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(simulatedHtmlBody) }}
                   className="email-simulated-content max-w-2xl mx-auto shadow-2xl rounded-xl overflow-hidden"
                 />
               )}

@@ -15,6 +15,7 @@ import {
   DEFAULT_RESOURCES,
 } from "@/lib/schema/resource";
 import { toast } from "@/lib/context/ToastContext";
+import ConfirmDialog from "@/components/portal/ConfirmDialog";
 import {
   FolderOpen,
   Plus,
@@ -93,6 +94,10 @@ export default function MediaResourcesStudioPage() {
   // Cloudinary Integration State
   const [cloudinaryConfig, setCloudinaryConfig] = useState<CloudinaryStoredConfig>(() => getCloudinaryConfig());
   const [isSyncingEnv, setIsSyncingEnv] = useState(false);
+
+  // Confirm Delete Asset State
+  const [assetToDelete, setAssetToDelete] = useState<ResourceAsset | null>(null);
+  const [isDeletingAsset, setIsDeletingAsset] = useState(false);
 
   // Firestore Listener for Resources Catalog
   useEffect(() => {
@@ -318,17 +323,22 @@ export default function MediaResourcesStudioPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteAsset = async (asset: ResourceAsset) => {
-    if (!confirm(`Are you sure you want to remove "${asset.name}" from the resource catalog?`)) {
-      return;
-    }
+  const handleDeleteAsset = (asset: ResourceAsset) => {
+    setAssetToDelete(asset);
+  };
 
+  const executeDeleteAsset = async () => {
+    if (!assetToDelete) return;
+    setIsDeletingAsset(true);
     try {
-      await deleteDoc(doc(db, "resources", asset.id));
-      setResources((prev) => prev.filter((r) => r.id !== asset.id));
-      toast.success(`Resource "${asset.name}" deleted.`);
+      await deleteDoc(doc(db, "resources", assetToDelete.id));
+      setResources((prev) => prev.filter((r) => r.id !== assetToDelete.id));
+      toast.success(`Resource "${assetToDelete.name}" deleted.`);
+      setAssetToDelete(null);
     } catch (err) {
       toast.error("Failed to delete resource: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsDeletingAsset(false);
     }
   };
 
@@ -1194,6 +1204,18 @@ export default function MediaResourcesStudioPage() {
         isOpen={isConfigModalOpen}
         onClose={() => setIsConfigModalOpen(false)}
         onConfigSaved={() => setCloudinaryConfig(getCloudinaryConfig())}
+      />
+
+      {/* Confirm Delete Resource Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(assetToDelete)}
+        title="Remove Resource Asset?"
+        description={`Are you sure you want to remove "${assetToDelete?.name}" from the resource catalog? This cannot be undone.`}
+        confirmLabel="Delete Asset"
+        confirmVariant="danger"
+        loading={isDeletingAsset}
+        onConfirm={executeDeleteAsset}
+        onCancel={() => setAssetToDelete(null)}
       />
     </div>
   );

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useSyncExternalStore, useState, useEffect } from "react";
+import React, { useSyncExternalStore, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { SidebarNavProvider, useSidebarNav } from "@/lib/context/SidebarNavContext";
 import { hasRole } from "@/lib/auth/permissions";
+import { WORKSPACE_TOOLS } from "@/lib/portal/workspaceRegistry";
+import AccessDenied from "@/components/portal/AccessDenied";
 import { 
   LogIn, 
   LogOut, 
@@ -82,6 +84,22 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const mounted = useMounted();
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isEmulationModalOpen, setIsEmulationModalOpen] = useState(false);
+
+  // Centralized Route RBAC Interceptor against Workspace Registry
+  const currentTool = useMemo(() => {
+    if (!pathname) return null;
+    return WORKSPACE_TOOLS.find((tool) => {
+      if (tool.href === pathname) return true;
+      if (pathname.startsWith(`${tool.href}/`)) return true;
+      return false;
+    });
+  }, [pathname]);
+
+  const isToolAuthorized = useMemo(() => {
+    if (!currentTool) return true;
+    if (loading || !mounted) return true;
+    return currentTool.requiredRoles.some((role) => hasRole(profile, role));
+  }, [currentTool, profile, loading, mounted]);
 
   // Sidebar responsive drawer & pin open states via useSyncExternalStore
   const isPinned = useSyncExternalStore(
@@ -598,7 +616,14 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 
         <RoleEmulationBanner onOpenCustomModal={() => setIsEmulationModalOpen(true)} />
         <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
-          {children}
+          {!isToolAuthorized ? (
+            <AccessDenied
+              title={`${currentTool?.title || "Tool"} Access Restricted`}
+              message={`Your account role (${profile?.roles?.join(", ") || "member"}) does not have clearance for this operational tool. Required clearance: ${currentTool?.requiredRoles.join(", ")}.`}
+            />
+          ) : (
+            children
+          )}
         </div>
 
         {/* PWA Musician Install Banner */}

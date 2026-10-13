@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useSyncExternalStore } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { 
   AnnouncementBanner, 
@@ -19,9 +19,11 @@ export default function PublicAnnouncementBanner() {
   const [userDismissed, setUserDismissed] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, "site_navigation", "config"),
-      (snap) => {
+    let isMounted = true;
+
+    getDoc(doc(db, "site_navigation", "config"))
+      .then((snap) => {
+        if (!isMounted) return;
         setIsLoaded(true);
         if (snap.exists()) {
           const parsed = SiteNavigationSchema.safeParse(snap.data());
@@ -31,15 +33,18 @@ export default function PublicAnnouncementBanner() {
           }
         }
         setBanner(null);
-      },
-      (err) => {
-        console.warn("Announcement banner subscription notice:", err);
-        setIsLoaded(true);
-        setBanner(null);
-      }
-    );
+      })
+      .catch((err) => {
+        console.warn("Announcement banner fetch notice:", err);
+        if (isMounted) {
+          setIsLoaded(true);
+          setBanner(null);
+        }
+      });
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const messageKey = banner?.message?.trim() || "";
