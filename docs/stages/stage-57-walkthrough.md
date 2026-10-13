@@ -71,7 +71,12 @@ This guide walks through verifying the newly implemented architectural hardening
 5. **Test Poke-to-Pop:**
    - Move your cursor directly into the center of a bubble.
    - Observe the bubble immediately burst into micro-droplets on direct contact.
-6. **Verify 100% Click-Through Non-Blocking Behavior:**
+6. **Test Route Change Burst Spike & Dwindle:**
+   - Click between public navigation links (e.g. from `/` to `/shows`, `/music`, or `/about`).
+   - Observe the instant surge: an initial cluster of bubbles erupts upwards, bubble generation spikes to ~4.5&times; frequency with buoyant upward zip, and existing bubbles smoothly continue floating without any DOM resets or flashing.
+   - Watch the generation rate progressively ease back down over ~3.2 seconds into the ambient floating pace.
+   - Test in the Theme Studio simulator (`/admin/theme`): click **⚡ Simulate Route Burst** to observe the exact spike and dwindling behavior live.
+7. **Verify 100% Click-Through Non-Blocking Behavior:**
    - Click on links, navigation headers, audio player buttons, and event registration forms directly under or through floating bubbles.
    - Confirm that `pointer-events: none` on the Shadow DOM host allows all underlying click events to register immediately without delay.
 

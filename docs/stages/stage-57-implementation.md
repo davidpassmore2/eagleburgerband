@@ -86,6 +86,10 @@ export const SpecialEffectsSchema = z.object({
    - **Slipstream Wake Draft:** Cursor momentum transfers directional velocity draft to passing bubbles.
    - **Smooth Restitution:** Resets nudges back to 0px smoothly when the cursor moves away.
 4. **Non-Blocking Click-Through:** Guaranteed pass-through with `pointer-events: none` across all bubble nodes and RAF event throttling with zero React re-renders.
+5. **Route-Change Burst Dynamics:**
+   - Detects Next.js route transitions (`usePathname()`) and fires an instantaneous celebratory cluster volley.
+   - Spawns at a spiked rate (accelerating up to ~4.5&times; baseline frequency with buoyant upward zip).
+   - Gracefully eases and dwindles down over 3.2 seconds using a non-linear decay schedule (`(1 - t)^2.2`) back to the ambient baseline interval without remounting the DOM overlay.
 
 ---
 

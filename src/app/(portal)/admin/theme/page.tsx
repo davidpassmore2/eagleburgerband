@@ -383,6 +383,7 @@ export default function ThemeCustomizerPage() {
   const [simulatorScope, setSimulatorScope] = useState<"public" | "portal">("public");
   const [headingCategoryFilter, setHeadingCategoryFilter] = useState<"all" | "slab" | "sans" | "serif">("all");
   const [bodyCategoryFilter, setBodyCategoryFilter] = useState<"all" | "sans" | "serif">("all");
+  const [simulatedBurstTrigger, setSimulatedBurstTrigger] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
@@ -2480,6 +2481,9 @@ export default function ThemeCustomizerPage() {
                         <strong className="text-slate-300">Organic Growth Scaling:</strong> Bubbles are assigned a dynamic scale factor, smoothly expanding as they float upward to simulate rising atmospheric soap bubbles.
                       </li>
                       <li>
+                        <strong className="text-slate-300">Route Change Burst:</strong> Upon every public page navigation, bubble generation automatically spikes up to ~4.5&times; baseline frequency with buoyant upward zip, then gracefully dwindles over ~3.2 seconds back to ambient density.
+                      </li>
+                      <li>
                         <strong className="text-slate-300">Auto-Garbage Collection:</strong> Each bubble element automatically removes itself from the DOM upon pop animation completion.
                       </li>
                     </ul>
@@ -3067,7 +3071,7 @@ export default function ThemeCustomizerPage() {
                     }}
                   >
                     {/* Live Embedded Bubble Overlay inside preview */}
-                    <PublicBubbleOverlay config={bubbles} fullscreen={false} />
+                    <PublicBubbleOverlay config={bubbles} fullscreen={false} burstTrigger={simulatedBurstTrigger} />
 
                     {/* Mock Public Hero Header */}
                     <div className="space-y-2 relative z-20">
@@ -3111,7 +3115,7 @@ export default function ThemeCustomizerPage() {
 
                     {/* Mock Action Buttons */}
                     <div className="pt-6 relative z-20 space-y-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           className="px-3 py-1.5 rounded-lg text-xs font-extrabold shadow"
@@ -3133,6 +3137,17 @@ export default function ThemeCustomizerPage() {
                         >
                           Upcoming Shows
                         </button>
+                        {bubbles.enabled && (
+                          <button
+                            type="button"
+                            onClick={() => setSimulatedBurstTrigger((k) => k + 1)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-yellow-400/40 bg-yellow-400/10 text-yellow-300 hover:bg-yellow-400/20 transition shadow"
+                            title="Simulate bubble generation spike and dwindle upon route change"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                            Simulate Route Burst
+                          </button>
+                        )}
                       </div>
 
                       {!bubbles.enabled && (

@@ -1,20 +1,27 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { BubbleEffectConfig } from "@/lib/schema/theme";
 
 interface PublicBubbleOverlayProps {
   config?: BubbleEffectConfig;
   fullscreen?: boolean;
   className?: string;
+  burstTrigger?: string | number;
 }
 
 export default function PublicBubbleOverlay({
   config,
   fullscreen = true,
   className = "",
+  burstTrigger,
 }: PublicBubbleOverlayProps) {
   const localContainerRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const triggerBurstRef = useRef<() => void>(() => {});
+  const prevPathnameRef = useRef<string | null>(null);
+  const prevBurstTriggerRef = useRef(burstTrigger);
 
   const enabled = Boolean(config?.enabled);
   const opacity = typeof config?.opacity === "number" ? Math.max(0, Math.min(1, config.opacity)) : 0.7;
@@ -300,7 +307,57 @@ export default function PublicBubbleOverlay({
     eventTarget.addEventListener("pointermove", onPointerMove as EventListener, { passive: true });
     eventTarget.addEventListener("pointerleave", onPointerLeave as EventListener, { passive: true });
 
-    function spawnBubble() {
+    let burstStartTime = 0;
+    const burstDurationMs = 3200;
+    let spawnTimerId: ReturnType<typeof setTimeout> | null = null;
+    let isDestroyed = false;
+
+    function getNextInterval(): number {
+      const baseInterval = density === "high" ? 110 : density === "low" ? 450 : 220;
+      const now = performance.now();
+      const elapsed = now - burstStartTime;
+
+      if (elapsed < burstDurationMs) {
+        const progress = elapsed / burstDurationMs;
+        // Non-linear decay: sharp peak with gradual graceful dwindling
+        const decay = Math.pow(1 - progress, 2.2);
+        // Spawn rate accelerates up to ~4.5x during initial burst spike
+        const speedup = 1 + 3.5 * decay;
+        return Math.max(28, Math.round(baseInterval / speedup));
+      }
+
+      return baseInterval;
+    }
+
+    function scheduleNextBubble() {
+      if (isDestroyed) return;
+      const delay = getNextInterval();
+      spawnTimerId = setTimeout(() => {
+        if (isDestroyed) return;
+        spawnBubble();
+        scheduleNextBubble();
+      }, delay);
+    }
+
+    function triggerBurst() {
+      if (isDestroyed) return;
+      burstStartTime = performance.now();
+
+      // 1. Initial burst cluster: rapid volley of bubbles with randomized vertical offsets
+      const clusterCount = fullscreen ? 6 : 3;
+      for (let i = 0; i < clusterCount; i++) {
+        const bottomOffset = -80 + Math.random() * 55; // -80px to -25px
+        spawnBubble(bottomOffset);
+      }
+
+      // 2. Immediately reschedule next bubble tick at the spiked rate
+      if (spawnTimerId) clearTimeout(spawnTimerId);
+      scheduleNextBubble();
+    }
+
+    triggerBurstRef.current = triggerBurst;
+
+    function spawnBubble(bottomOffsetPx?: number) {
       if (typeof document !== "undefined" && document.hidden) return;
 
       const mover = document.createElement("div");
@@ -312,14 +369,21 @@ export default function PublicBubbleOverlay({
       const body = document.createElement("div");
       body.className = "bubble-body";
 
-      // 1. Initial size governed by variability (base: 45px)
-      const minSize = 45 - 33 * variability;
-      const maxSize = 45 + 50 * variability;
+      const now = performance.now();
+      const elapsed = now - burstStartTime;
+      const isBurstActive = elapsed < burstDurationMs;
+      const burstFactor = isBurstActive ? Math.pow(1 - elapsed / burstDurationMs, 2.2) : 0;
+
+      // 1. Initial size governed by variability (base: 45px) with playful micro-droplets during burst
+      const minSize = Math.max(10, 45 - 33 * variability - 6 * burstFactor);
+      const maxSize = 45 + 50 * variability + 8 * burstFactor;
       const size = Math.round(minSize + Math.random() * (maxSize - minSize));
 
       // 2. Speed / full flight duration governed by variability (base: 7.0s)
-      const minDuration = 7.0 - 5.0 * variability;
-      const maxDuration = 7.0 + 6.0 * variability;
+      // During burst, bubbles have slightly more buoyant upward zip (~16% faster)
+      const speedBoost = 1 - 0.16 * burstFactor;
+      const minDuration = (7.0 - 5.0 * variability) * speedBoost;
+      const maxDuration = (7.0 + 6.0 * variability) * speedBoost;
       const duration = minDuration + Math.random() * (maxDuration - minDuration);
 
       // 3. Random scale factor: bubble grows to this extent as it ascends
@@ -336,7 +400,7 @@ export default function PublicBubbleOverlay({
       const lifespanMs = Math.round(lifespanSec * 1000);
 
       // 5. Vertical movement arc differentiation (horizontal sway / drift)
-      const maxArc = (fullscreen ? 90 : 45) * variability;
+      const maxArc = (fullscreen ? 90 : 45) * (variability + 0.12 * burstFactor);
       const swayDirection = (Math.random() - 0.5) * 2;
       const arcType = Math.random();
 
@@ -363,6 +427,9 @@ export default function PublicBubbleOverlay({
 
       // Configure Mover (spatial ascent & sway arc)
       mover.style.left = `${Math.random() * 100}%`;
+      if (bottomOffsetPx !== undefined) {
+        mover.style.bottom = `${bottomOffsetPx}px`;
+      }
       mover.style.animationDuration = `${duration.toFixed(2)}s`;
       mover.style.setProperty("--arc-x1", `${arcX1}px`);
       mover.style.setProperty("--arc-x2", `${arcX2}px`);
@@ -385,21 +452,40 @@ export default function PublicBubbleOverlay({
       }, lifespanMs);
     }
 
-    // Spawn rate interval based on density
-    const spawnIntervalMs = density === "high" ? 110 : density === "low" ? 450 : 220;
-
-    // Spawn an initial gentle bubble immediately
-    spawnBubble();
-    const intervalId = setInterval(spawnBubble, spawnIntervalMs);
+    // Launch initial burst on mount
+    triggerBurst();
 
     return () => {
-      clearInterval(intervalId);
+      isDestroyed = true;
+      if (spawnTimerId) clearTimeout(spawnTimerId);
       if (rafId) cancelAnimationFrame(rafId);
       eventTarget.removeEventListener("pointermove", onPointerMove as EventListener);
       eventTarget.removeEventListener("pointerleave", onPointerLeave as EventListener);
       overlayHost.remove();
     };
   }, [enabled, opacity, density, variability, fullscreen]);
+
+  // Listen for route changes (Next.js pathname) to trigger burst effect
+  useEffect(() => {
+    if (!enabled) return;
+
+    if (prevPathnameRef.current === null) {
+      prevPathnameRef.current = pathname;
+    } else if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      // Route change detected: spike bubble generation!
+      triggerBurstRef.current();
+    }
+  }, [pathname, enabled]);
+
+  // Listen for explicit manual burst triggers (e.g. Simulator preview button)
+  useEffect(() => {
+    if (!enabled || burstTrigger === undefined) return;
+    if (burstTrigger !== prevBurstTriggerRef.current) {
+      prevBurstTriggerRef.current = burstTrigger;
+      triggerBurstRef.current();
+    }
+  }, [burstTrigger, enabled]);
 
   if (!enabled) return null;
 

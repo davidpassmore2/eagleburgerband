@@ -19,6 +19,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Standardized terminology across portal navigation, search filters, and headers to 'Song Catalog' while maintaining 'Tunes' as the canonical arrangement model.",
       "Added 'Special Effects' studio to the Brand & Palette Customizer (/admin/theme) with live preview simulation and controls for opacity, density, and variability.",
       "Engineered kinetic PublicBubbleOverlay with Shadow DOM isolation, growth scaling, randomized lifespan pop bursts, and aerodynamic mouse deflection with poke-to-pop touch physics while preserving 100% click-through.",
+      "Added responsive route-change burst dynamics: bubble generation spikes up to ~4.5x upon every public navigation transition with buoyant upward zip and smoothly dwindles back to ambient pace.",
     ],
   },
   {
