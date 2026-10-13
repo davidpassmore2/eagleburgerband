@@ -2474,7 +2474,13 @@ export default function ThemeCustomizerPage() {
                         <strong className="text-slate-300">Subtle Pastel Palette:</strong> Bubbles feature soft chromatic hues (30% saturation, 85% lightness, 0.15 alpha) with radial white gleams.
                       </li>
                       <li>
-                        <strong className="text-slate-300">Auto-Garbage Collection:</strong> Each bubble element automatically removes itself from the DOM upon float animation completion.
+                        <strong className="text-slate-300">Random Lifespan &amp; Pop Burst:</strong> Each bubble is assigned an individualized lifespan during its ascent, bursting in a gleaming pop animation rather than vanishing abruptly.
+                      </li>
+                      <li>
+                        <strong className="text-slate-300">Organic Growth Scaling:</strong> Bubbles are assigned a dynamic scale factor, smoothly expanding as they float upward to simulate rising atmospheric soap bubbles.
+                      </li>
+                      <li>
+                        <strong className="text-slate-300">Auto-Garbage Collection:</strong> Each bubble element automatically removes itself from the DOM upon pop animation completion.
                       </li>
                     </ul>
                   </div>
