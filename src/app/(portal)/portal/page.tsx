@@ -54,7 +54,6 @@ import {
   ChevronRight,
   Receipt,
   UserMinus,
-  DollarSign,
   Megaphone,
 } from "lucide-react";
 
@@ -688,101 +687,16 @@ export default function MusicianPortalOverviewPage() {
         </div>
       )}
 
-      {/* Musician Standing & Financial Status Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Metric 1: Performance Attendance Standing */}
-        <div
-          suppressHydrationWarning
-          style={{
-            backgroundColor: "var(--ebb-surface)",
-            borderColor: "var(--ebb-border)",
-          }}
-          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition-colors"
-        >
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-mono uppercase font-bold text-slate-400">
-              Season Commitment
-            </span>
-            <div className="text-sm font-black text-white flex items-center gap-1.5">
-              <span>{confirmedCount} / {upcomingGigs.length} Confirmed</span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              {unansweredGigs.length > 0 ? (
-                <span className="text-amber-400 font-bold">{unansweredGigs.length} RSVP(s) pending</span>
-              ) : (
-                <span className="text-emerald-400 font-semibold">100% responded</span>
-              )}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* Metric 2: Gig Distributions & Payouts */}
-        <Link
-          href="/portal/gigs"
-          suppressHydrationWarning
-          style={{
-            backgroundColor: "var(--ebb-surface)",
-            borderColor: "var(--ebb-border)",
-          }}
-          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition hover:border-yellow-400/50 group"
-        >
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
-              <span>Gig Earnings</span>
-              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-yellow-400 transition" />
-            </span>
-            <div className="text-sm font-black text-white flex items-center gap-1.5">
-              <span className="text-emerald-400">${personalEarnings.paid.toFixed(2)}</span>
-              <span className="text-xs text-slate-400 font-normal">paid</span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              {personalEarnings.unpaid > 0 ? (
-                <span className="text-yellow-400 font-bold">${personalEarnings.unpaid.toFixed(2)} pending</span>
-              ) : (
-                "All distributions settled"
-              )}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 flex items-center justify-center shrink-0">
-            <DollarSign className="w-4 h-4" />
-          </div>
-        </Link>
-
-        {/* Metric 3: Expense Reimbursements */}
-        <Link
-          href="/portal/reimbursements"
-          suppressHydrationWarning
-          style={{
-            backgroundColor: "var(--ebb-surface)",
-            borderColor: "var(--ebb-border)",
-          }}
-          className="border rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 transition hover:border-emerald-500/50 group"
-        >
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
-              <span>Reimbursements</span>
-              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition" />
-            </span>
-            <div className="text-sm font-black text-white flex items-center gap-1.5">
-              <span className="text-emerald-400">${personalReimbursements.paid.toFixed(2)}</span>
-              <span className="text-xs text-slate-400 font-normal">reimbursed</span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              {personalReimbursements.pending > 0 ? (
-                <span className="text-amber-400 font-bold">${personalReimbursements.pending.toFixed(2)} in review</span>
-              ) : (
-                "No pending claims"
-              )}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
-            <Receipt className="w-4 h-4" />
-          </div>
-        </Link>
-      </div>
+      {/* 3. Member Season Analytics & Standing (Prioritized Primary Telemetry) */}
+      <MemberAnalyticsCard
+        profile={profile}
+        gigs={gigs}
+        userRsvps={userRsvps}
+        earnings={personalEarnings}
+        reimbursements={personalReimbursements}
+        tuneCount={tuneCount}
+        suggestionCount={suggestionCount}
+      />
 
       {/* Unread Broadcast Alert */}
       {unreadNotifications.length > 0 && (
@@ -1320,17 +1234,7 @@ export default function MusicianPortalOverviewPage() {
         </div>
       </div>
 
-      {/* 6. Member Analytics & Season Record Card */}
-      <MemberAnalyticsCard
-        profile={profile}
-        gigs={gigs}
-        userRsvps={userRsvps}
-        earnings={personalEarnings}
-        tuneCount={tuneCount}
-        suggestionCount={suggestionCount}
-      />
-
-      {/* 7. Musician PWA Status & Installation Card (Bottom Section) */}
+      {/* Musician PWA Status & Installation Card (Bottom Section) */}
       <PortalPwaCard />
 
       {/* Modal Launches */}
