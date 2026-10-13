@@ -1,5 +1,9 @@
 import { RehearsalConfig, RehearsalRsvp } from "@/lib/schema/rehearsal";
 import { BlackoutDate } from "@/lib/schema/blackout";
+import {
+  formatFriendlyDate,
+  formatNonMilitaryTime,
+} from "@/lib/utils/dateTimeFormat";
 
 export interface UpcomingRehearsalDate {
   dateStr: string; // YYYY-MM-DD
@@ -44,20 +48,8 @@ export function getUpcomingRehearsalDates(
 
       if (!skipToday) {
         const dayName = cursor.toLocaleDateString("en-US", { weekday: "long" });
-        const monthDay = cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        const formattedDate = `${dayName}, ${monthDay}`;
-
-        // Format 24h start time to 12h AM/PM
-        let timeFormatted = config.startTime;
-        try {
-          const [h, m] = config.startTime.split(":");
-          const hour = parseInt(h, 10);
-          const ampm = hour >= 12 ? "PM" : "AM";
-          const h12 = hour % 12 || 12;
-          timeFormatted = `${h12}:${m} ${ampm}`;
-        } catch {
-          // fallback to raw
-        }
+        const formattedDate = formatFriendlyDate(dateStr, { includeDayOfWeek: true, includeYear: false, shortMonth: true });
+        const timeFormatted = formatNonMilitaryTime(config.startTime, true);
 
         dates.push({
           dateStr,

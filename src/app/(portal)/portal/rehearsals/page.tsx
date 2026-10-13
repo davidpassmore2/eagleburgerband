@@ -31,6 +31,12 @@ import {
   getRehearsalAttendanceStats,
   getBlackoutsForDate,
 } from "@/lib/rehearsal/rehearsalHelpers";
+import {
+  formatNonMilitaryTime,
+  formatTimeRange,
+  formatFriendlyDate,
+  formatEasternTimestamp,
+} from "@/lib/utils/dateTimeFormat";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import RehearsalMapPicker from "@/components/portal/RehearsalMapPicker";
@@ -482,7 +488,7 @@ export default function RehearsalsPage() {
             </span>
             <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-yellow-400" /> Weekly {config.dayName}s @{" "}
-              {config.startTime}
+              {formatNonMilitaryTime(config.startTime, true)}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2 mt-1">
@@ -595,11 +601,9 @@ export default function RehearsalsPage() {
                   )}
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-                  {new Date(activeRehearsal.date + "T12:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
+                  {formatFriendlyDate(activeRehearsal.date, {
+                    includeDayOfWeek: true,
+                    includeYear: true,
                   })}
                 </h2>
               </div>
@@ -653,7 +657,7 @@ export default function RehearsalsPage() {
                 <div className="text-sm font-bold text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span>
-                    {activeRehearsal.startTime} – {activeRehearsal.endTime}
+                    {formatTimeRange(activeRehearsal.startTime, activeRehearsal.endTime, true)}
                   </span>
                 </div>
                 {activeRehearsal.agenda && (
@@ -860,7 +864,7 @@ export default function RehearsalsPage() {
                     >
                       <div className="flex items-center justify-between text-[10px] text-slate-400">
                         <strong className="text-white">{c.authorName}</strong>
-                        <span>{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{formatEasternTimestamp(c.createdAt)}</span>
                       </div>
                       <p className="text-slate-300">{c.text}</p>
                     </div>
@@ -1124,10 +1128,10 @@ export default function RehearsalsPage() {
                 <h4 className="text-base font-bold text-white">Cancel Band Rehearsal</h4>
                 <p className="text-xs text-slate-400">
                   For{" "}
-                  {new Date(cancelModalSession.date + "T12:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric",
+                  {formatFriendlyDate(cancelModalSession.date, {
+                    includeDayOfWeek: true,
+                    includeYear: false,
+                    shortMonth: true,
                   })}
                 </p>
               </div>

@@ -18,6 +18,11 @@ import {
 import { BlackoutDate } from "@/lib/schema/blackout";
 import { RehearsalSession } from "@/lib/schema/rehearsal";
 import { getBlackoutsForDate } from "@/lib/rehearsal/rehearsalHelpers";
+import {
+  formatNonMilitaryTime,
+  formatTimeRange,
+  formatFriendlyDate,
+} from "@/lib/utils/dateTimeFormat";
 
 interface RehearsalBlackoutCalendarProps {
   rehearsals: RehearsalSession[];
@@ -292,7 +297,7 @@ export default function RehearsalBlackoutCalendar({
                     >
                       <div className="flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 shrink-0" />
-                        <span className="truncate">{dayRehearsal.startTime} Practice</span>
+                        <span className="truncate">{formatNonMilitaryTime(dayRehearsal.startTime, false)} Practice</span>
                       </div>
                     </div>
                   )}
@@ -324,11 +329,9 @@ export default function RehearsalBlackoutCalendar({
                 </span>
                 <h4 className="text-base font-bold text-white flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4 text-yellow-400" />
-                  {new Date(selectedDayInfo.dateStr + "T12:00:00").toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
+                  {formatFriendlyDate(selectedDayInfo.dateStr, {
+                    includeDayOfWeek: true,
+                    includeYear: true,
                   })}
                 </h4>
               </div>
@@ -367,7 +370,11 @@ export default function RehearsalBlackoutCalendar({
                 <div className="text-xs text-slate-300 flex items-center gap-1.5">
                   <Clock className="w-3 h-3 text-yellow-400" />
                   <span>
-                    {selectedDayInfo.dayRehearsal.startTime} – {selectedDayInfo.dayRehearsal.endTime}
+                    {formatTimeRange(
+                      selectedDayInfo.dayRehearsal.startTime,
+                      selectedDayInfo.dayRehearsal.endTime,
+                      true
+                    )}
                   </span>
                 </div>
                 {selectedDayInfo.dayRehearsal.locationName && (

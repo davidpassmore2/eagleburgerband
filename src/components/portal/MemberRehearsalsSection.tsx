@@ -24,6 +24,11 @@ import {
   getUpcomingRehearsalDates,
   getRehearsalAttendanceStats,
 } from "@/lib/rehearsal/rehearsalHelpers";
+import {
+  formatNonMilitaryTime,
+  formatTimeRange,
+  formatFriendlyDate,
+} from "@/lib/utils/dateTimeFormat";
 import { toast } from "@/lib/context/ToastContext";
 import {
   Music2,
@@ -227,7 +232,7 @@ export default function MemberRehearsalsSection() {
             <Music2 className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} /> Band Rehearsals &amp; Practice
           </h2>
           <span className="text-[11px] text-slate-500">
-            Weekly {config.dayName} Downbeats, Locations &amp; Member Attendance
+            Weekly {config.dayName} Downbeats @ {formatNonMilitaryTime(config.startTime, true)}, Locations &amp; Member Attendance
           </span>
         </div>
 
@@ -301,10 +306,10 @@ export default function MemberRehearsalsSection() {
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              {new Date(activeRehearsal.date + "T12:00:00").toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
+              {formatFriendlyDate(activeRehearsal.date, {
+                includeDayOfWeek: true,
+                includeYear: false,
+                shortMonth: true,
               })}
             </h3>
           </div>
@@ -346,7 +351,7 @@ export default function MemberRehearsalsSection() {
             <div>
               <span className="text-[10px] font-mono text-slate-400 uppercase block">Time</span>
               <span className="font-bold text-white">
-                {activeRehearsal.startTime} – {activeRehearsal.endTime}
+                {formatTimeRange(activeRehearsal.startTime, activeRehearsal.endTime, true)}
               </span>
             </div>
           </div>

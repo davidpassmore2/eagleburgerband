@@ -16,10 +16,13 @@ import {
   Loader2,
   Compass,
   Building,
+  Sparkles,
 } from "lucide-react";
 import { RehearsalLocation, RehearsalComment } from "@/lib/schema/rehearsal";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast } from "@/lib/context/ToastContext";
+import { reverseGeocodeCoordinates } from "@/lib/geo/reverseGeocode";
+import { formatEasternTimestamp } from "@/lib/utils/dateTimeFormat";
 
 interface RehearsalMapPickerProps {
   locations: RehearsalLocation[];
@@ -99,6 +102,8 @@ export default function RehearsalMapPicker({
   // Form mode
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [lastResolvedAddress, setLastResolvedAddress] = useState<string | null>(null);
   const [newCommentText, setNewCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
@@ -110,6 +115,26 @@ export default function RehearsalMapPicker({
     accessNotes: "",
     isDefault: false,
   });
+
+  const autoNormalizeAddress = async (lat: number, lng: number) => {
+    setIsGeocoding(true);
+    try {
+      const result = await reverseGeocodeCoordinates(lat, lng);
+      if (result) {
+        setLastResolvedAddress(result.streetAddress || result.fullAddress);
+        setFormData((prev) => ({
+          ...prev,
+          name: prev.name.trim() ? prev.name : result.name || prev.name,
+          address: result.streetAddress || prev.address,
+          city: result.city || prev.city,
+        }));
+      }
+    } catch (err) {
+      console.warn("Reverse geocode error:", err);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
   // Sync state if selected location changes
   useEffect(() => {
@@ -145,10 +170,10 @@ export default function RehearsalMapPicker({
 
       mapInstanceRef.current = map;
 
-      // CartoDB Dark/Voyager style map tiles
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      // OpenStreetMap standard tile layer (free, no API key required)
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> & CartoDB',
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
         maxZoom: 19,
       }).addTo(map);
 
@@ -191,20 +216,25 @@ export default function RehearsalMapPicker({
 
       markerRef.current = marker;
 
-      // Handle dragend to update coordinates
+      // Handle dragend to update coordinates & auto-normalize address
       marker.on("dragend", () => {
         const position = marker.getLatLng();
-        setCurrentLat(Number(position.lat.toFixed(6)));
-        setCurrentLng(Number(position.lng.toFixed(6)));
+        const lat = Number(position.lat.toFixed(6));
+        const lng = Number(position.lng.toFixed(6));
+        setCurrentLat(lat);
+        setCurrentLng(lng);
+        autoNormalizeAddress(lat, lng);
       });
 
-      // Handle map click to reposition pin
+      // Handle map click to reposition pin & auto-normalize address
       if (!readOnly) {
         map.on("click", (e: any) => {
-          const { lat, lng } = e.latlng;
+          const lat = Number(e.latlng.lat.toFixed(6));
+          const lng = Number(e.latlng.lng.toFixed(6));
           marker.setLatLng([lat, lng]);
-          setCurrentLat(Number(lat.toFixed(6)));
-          setCurrentLng(Number(lng.toFixed(6)));
+          setCurrentLat(lat);
+          setCurrentLng(lng);
+          autoNormalizeAddress(lat, lng);
         });
       }
 
@@ -459,7 +489,28 @@ export default function RehearsalMapPicker({
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-slate-300 block">Street Address</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold text-slate-300 block">Street Address</label>
+                    <button
+                      type="button"
+                      disabled={isGeocoding}
+                      onClick={() => autoNormalizeAddress(currentLat, currentLng)}
+                      className="text-[10px] text-yellow-400 hover:text-yellow-300 flex items-center gap-1 font-semibold transition"
+                      title="Auto-fill address via OpenStreetMap"
+                    >
+                      {isGeocoding ? (
+                        <>
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                          <span>Resolving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>From Pin</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <input
                     type="text"
                     placeholder="Arch St & W Ohio St"
@@ -478,6 +529,13 @@ export default function RehearsalMapPicker({
                   />
                 </div>
               </div>
+
+              {lastResolvedAddress && (
+                <div className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span className="truncate">OSM Normalized: {lastResolvedAddress}</span>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-slate-300 block">
@@ -612,12 +670,7 @@ export default function RehearsalMapPicker({
                       >
                         <div className="flex items-center justify-between text-[10px] text-slate-400">
                           <span className="font-bold text-white">{comm.authorName}</span>
-                          <span>
-                            {new Date(comm.createdAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
+                          <span>{formatEasternTimestamp(comm.createdAt)}</span>
                         </div>
                         <p className="text-xs text-slate-300">{comm.text}</p>
                       </div>
