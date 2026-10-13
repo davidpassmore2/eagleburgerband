@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, setDoc, type DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs } from "@/lib/auth/permissions";
@@ -93,6 +93,9 @@ export default function PublicGigDetailPage({
         },
         { merge: true }
       );
+      setGig((prev) =>
+        prev ? { ...prev, publicDetails: { ...prev.publicDetails, showExternalDirections: !current } } : prev
+      );
     } catch (err) {
       toast.error("Failed to toggle navigation: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -103,54 +106,45 @@ export default function PublicGigDetailPage({
   useEffect(() => {
     if (!gigId) return;
 
-    const unsub = onSnapshot(
-      doc(db, "gigs", gigId),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+    fetch(`/api/public/gigs/${encodeURIComponent(gigId)}`)
+      .then(async (res) => {
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return ((await res.json()) as { gig: DocumentData }).gig;
+      })
+      .then((data) => {
+        if (data) {
           const pub = data.publicDetails || {};
-
-          // Enforce strict privacy guardrail: only allow public view if isPublic !== false
-          if (pub.isPublic !== false) {
-            setGig({
-              id: docSnap.id,
-              date: data.date || "",
-              status: data.status || "confirmed",
-              publicDetails: {
-                title: pub.title || data.title || "Eagleburger Band Appearance",
-                venue: pub.venue || data.venue || "TBA",
-                address: pub.address || pub.venueAddress || data.venueAddress || "",
-                coordinates: pub.coordinates || data.coordinates,
-                city: pub.city || data.city || "Pittsburgh, PA",
-                description: pub.description || "",
-                admission: pub.admission || "Free",
-                eventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
-                facebookEventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
-                ticketUrl: pub.ticketUrl || "",
-                isPublic: pub.isPublic !== false,
-                showExternalDirections: pub.showExternalDirections !== false,
-                headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
-                headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
-                headerImageOverlayOpacity: pub.headerImageOverlayOpacity ?? data.headerImageOverlayOpacity ?? 0,
-                headerImageHeightPreset: pub.headerImageHeightPreset || data.headerImageHeightPreset || "standard",
-                headerImageVerticalPosition: pub.headerImageVerticalPosition ?? data.headerImageVerticalPosition ?? 50,
-              },
-            });
-          } else {
-            setGig(null);
-          }
+          setGig({
+            id: data.id,
+            date: data.date || "",
+            status: data.status || "confirmed",
+            publicDetails: {
+              title: pub.title || data.title || "Eagleburger Band Appearance",
+              venue: pub.venue || data.venue || "TBA",
+              address: pub.address || pub.venueAddress || data.venueAddress || "",
+              coordinates: pub.coordinates || data.coordinates,
+              city: pub.city || data.city || "Pittsburgh, PA",
+              description: pub.description || "",
+              admission: pub.admission || "Free",
+              eventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
+              facebookEventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
+              ticketUrl: pub.ticketUrl || "",
+              isPublic: pub.isPublic !== false,
+              showExternalDirections: pub.showExternalDirections !== false,
+              headerImageUrl: pub.headerImageUrl || data.headerImageUrl || "",
+              headerImageAlt: pub.headerImageAlt || data.headerImageAlt || "",
+              headerImageOverlayOpacity: pub.headerImageOverlayOpacity ?? data.headerImageOverlayOpacity ?? 0,
+              headerImageHeightPreset: pub.headerImageHeightPreset || data.headerImageHeightPreset || "standard",
+              headerImageVerticalPosition: pub.headerImageVerticalPosition ?? data.headerImageVerticalPosition ?? 50,
+            },
+          });
         } else {
           setGig(null);
         }
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("Error fetching gig:", err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsub();
+      })
+      .catch((err) => console.warn("Error fetching gig:", err))
+      .finally(() => setLoading(false));
   }, [gigId]);
 
   const handleCopyShareLink = () => {

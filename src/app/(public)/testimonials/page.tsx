@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { collection, onSnapshot, addDoc, query, where, doc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
@@ -83,20 +83,12 @@ export default function TestimonialsPublicPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Listen for approved & featured testimonials
-    const q = query(
-      collection(db, "testimonials"),
-      where("status", "in", ["approved", "featured"])
-    );
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const list: Testimonial[] = [];
-        snap.forEach((d) => {
-          list.push({ id: d.id, ...d.data() } as Testimonial);
-        });
-        // Sort featured first, then newest
+    fetch("/api/public/testimonials")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ testimonials: Testimonial[] }>;
+      })
+      .then(({ testimonials: list }) => {
         list.sort((a, b) => {
           if (a.status === "featured" && b.status !== "featured") return -1;
           if (b.status === "featured" && a.status !== "featured") return 1;
@@ -105,15 +97,9 @@ export default function TestimonialsPublicPage() {
           return dateB - dateA;
         });
         setTestimonials(list);
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("Public testimonials listener notice:", err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsub();
+      })
+      .catch((err) => console.warn("Public testimonials request notice:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const clearFieldError = (field: string) => {

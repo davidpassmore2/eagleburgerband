@@ -74,6 +74,43 @@ service cloud.firestore {
         && profileMatchesInvite(/databases/$(database)/documents/invites/$(token));
     }
 
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function addsOrRemovesOnlyMe(field) {
+      let before = resource.data.get(field, []).toSet();
+      let after = request.resource.data.get(field, []).toSet();
+      return after.difference(before).hasOnly([request.auth.uid])
+        && before.difference(after).hasOnly([request.auth.uid]);
+    }
+
+    function changesOnlyMyRating() {
+      return request.resource.data.get('ratings', {}).diff(resource.data.get('ratings', {}))
+        .affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    function changesOnlySetlistLogistics() {
+      return request.resource.data.get('internalLogistics', {}).diff(resource.data.get('internalLogistics', {}))
+        .affectedKeys().hasOnly(['setlistId', 'setlistName', 'setlistTitle']);
+    }
+
+    function canReviewSuggestion(category) {
+      return isAdmin()
+        || (category == 'tune_request' && hasAnyRole(['catalog_manager']))
+        || (category in ['gig_outreach', 'gig_opportunity'] && hasAnyRole(['gig_manager']))
+        || (category == 'website_request' && hasAnyRole(['web_manager']))
+        || (category in ['general_feedback', 'general', 'rehearsal_format', 'gear_uniform'] && hasAnyRole(['community_manager']));
+    }
+
+    function canDispatchBroadcasts() {
+      return hasAnyRole(['gig_manager', 'membership_manager', 'community_manager', 'section_leader']);
+    }
+
+    function canManageContent() {
+      return hasAnyRole(['web_manager', 'community_manager']);
+    }
+
     function isAllowedSelfStatusChange() {
       let before = resource.data.get('status', 'active');
       let after = request.resource.data.get('status', 'active');
@@ -120,36 +157,48 @@ service cloud.firestore {
 
     match /sections/{sectionId} {
       allow read: if true;
-      allow write: if isMember();
+      allow write: if hasAnyRole(['section_leader', 'membership_manager']);
     }
 
     match /songs/{songId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow write: if isAdmin();
     }
 
     match /tunes/{tuneId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow create, delete: if hasAnyRole(['catalog_manager']);
+      allow update: if hasAnyRole(['catalog_manager'])
+        || (isMember()
+            && changedKeys().hasOnly(['ratings', 'ratingAverage', 'ratingCount', 'upvoteUids', 'downvoteUids', 'updatedAt'])
+            && changesOnlyMyRating()
+            && addsOrRemovesOnlyMe('upvoteUids')
+            && addsOrRemovesOnlyMe('downvoteUids'));
     }
 
     match /setlists/{setlistId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['setlist_manager', 'catalog_manager', 'gig_manager']);
     }
 
     match /gigs/{gigId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow create, delete: if hasAnyRole(['gig_manager']);
+      allow update: if hasAnyRole(['gig_manager'])
+        || (hasAnyRole(['setlist_manager', 'catalog_manager'])
+            && changedKeys().hasOnly(['setlistId', 'setlistName', 'setlistTitle', 'setlist', 'internalLogistics', 'updatedAt'])
+            && changesOnlySetlistLogistics())
+        || (hasAnyRole(['treasurer'])
+            && changedKeys().hasOnly(['isSettled', 'settlementDetails', 'updatedAt']));
 
       match /rsvps/{userId} {
-        allow read: if true;
-        allow write: if isMember();
+        allow read: if isMember();
+        allow write: if isMember() && isSelf(userId);
       }
 
       match /dispatch_history/{dispatchId} {
-        allow read: if true;
-        allow write: if isMember();
+        allow read: if isMember();
+        allow write: if hasAnyRole(['gig_manager']);
       }
 
       match /checkins/{userId} {
@@ -157,120 +206,162 @@ service cloud.firestore {
       }
 
       match /dispatches/{dispatchId} {
-        allow read, write: if isMember();
+        allow read: if isMember();
+        allow write: if hasAnyRole(['gig_manager']);
       }
     }
 
     match /contacts/{contactId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['gig_manager']);
     }
 
     match /suggestions/{suggestionId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow create: if isMember()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'submitted';
+      allow update: if canReviewSuggestion(resource.data.get('category', ''))
+        || (isMember()
+            && changedKeys().hasOnly(['upvoteUids', 'downvoteUids', 'upvotes', 'downvotes', 'updatedAt'])
+            && addsOrRemovesOnlyMe('upvoteUids')
+            && addsOrRemovesOnlyMe('downvoteUids')
+            && addsOrRemovesOnlyMe('upvotes')
+            && addsOrRemovesOnlyMe('downvotes'));
+      allow delete: if canReviewSuggestion(resource.data.get('category', ''))
+        || (isMember() && resource.data.get('authorUid', '') == request.auth.uid);
     }
 
     match /comments/{commentId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow create: if isMember() && request.resource.data.authorUid == request.auth.uid;
+      allow update: if canManageContent()
+        || (isMember()
+            && changedKeys().hasOnly(['isFlagged', 'flagReason', 'flaggedByUid', 'updatedAt'])
+            && request.resource.data.isFlagged == true
+            && request.resource.data.flaggedByUid == request.auth.uid);
+      allow delete: if canManageContent()
+        || (isMember() && resource.data.get('authorUid', '') == request.auth.uid);
     }
 
     match /theme/{themeId} {
       allow read: if true;
-      allow write: if isMember();
+      allow write: if hasAnyRole(['web_manager']);
     }
 
     match /content_pages/{pageId} {
       allow read: if true;
-      allow write: if isMember();
+      allow write: if canManageContent();
     }
 
     match /site_navigation/{configId} {
       allow read: if true;
-      allow write: if isMember();
+      allow write: if canManageContent();
     }
 
     match /resources/{resourceId} {
-      allow read: if true;
-      allow create, update, delete: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['web_manager', 'community_manager', 'gig_manager']);
     }
 
     match /inquiries/{inquiryId} {
       allow create: if request.resource.data.clientName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.date is string;
-      allow read, update, delete: if isMember();
+      allow read: if isMember();
+      allow update, delete: if hasAnyRole(['gig_manager']);
     }
 
     match /booking_leads/{leadId} {
       allow create: if request.resource.data.clientName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.date is string;
-      allow read, update, delete: if isMember();
+      allow read: if isMember();
+      allow update, delete: if hasAnyRole(['gig_manager']);
     }
 
     match /donations/{donationId} {
-      allow read: if true;
-      allow write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['treasurer', 'community_manager']);
     }
 
     match /testimonials/{testimonialId} {
       allow create: if request.resource.data.authorName is string &&
                     request.resource.data.email is string &&
                     request.resource.data.quote is string;
-      allow read: if resource.data.status in ['approved', 'featured'] || isMember();
-      allow update, delete: if isMember();
+      allow read: if isMember();
+      allow update, delete: if hasAnyRole(['web_manager', 'community_manager']);
     }
 
     match /auditions/{auditionId} {
       allow create: if request.resource.data.name is string &&
                     request.resource.data.email is string &&
                     request.resource.data.primaryInstrument is string;
-      allow read, update, delete: if isMember();
+      allow read: if isMember();
+      allow update, delete: if hasAnyRole(['membership_manager', 'gig_manager', 'section_leader']);
     }
 
     match /contact_messages/{messageId} {
       allow create: if request.resource.data.name is string &&
                     request.resource.data.email is string &&
                     request.resource.data.message is string;
-      allow read, update, delete: if isMember();
+      allow read: if isMember();
+      allow update, delete: if hasAnyRole(['web_manager', 'community_manager', 'gig_manager']);
     }
 
     match /reimbursements/{reimbursementId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow create: if hasAnyRole(['treasurer'])
+        || (isMember()
+            && request.resource.data.applicantUid == request.auth.uid
+            && request.resource.data.status == 'submitted');
+      allow update, delete: if hasAnyRole(['treasurer']);
     }
 
     match /notifications/{notificationId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow create, delete: if canDispatchBroadcasts();
+      allow update: if canDispatchBroadcasts()
+        || (isMember()
+            && changedKeys().hasOnly(['readUids', 'updatedAt'])
+            && addsOrRemovesOnlyMe('readUids'));
     }
 
     match /transactions/{transactionId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['treasurer']);
     }
 
     match /settings/{settingId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['treasurer']);
     }
 
     match /inventory/{itemId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['asset_manager']);
     }
 
     match /vault_tracks/{trackId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['catalog_manager']);
     }
 
     match /gig_ledgers/{ledgerId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow write: if hasAnyRole(['treasurer']);
     }
 
     match /email_logs/{logId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow create: if canDispatchBroadcasts();
+      allow update, delete: if isAdmin();
     }
 
     match /notification_logs/{logId} {
-      allow read, write: if isMember();
+      allow read: if isMember();
+      allow create: if canDispatchBroadcasts();
+      allow update, delete: if isAdmin();
     }
 
     match /admin_logs/{logId} {

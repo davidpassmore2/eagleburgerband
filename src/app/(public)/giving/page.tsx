@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { collection, onSnapshot, doc } from "firebase/firestore";
+import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
@@ -11,7 +11,6 @@ import {
   DonationCategory,
   DonationCategoryEnum,
   PublicBeneficiary,
-  PublicBeneficiarySchema,
 } from "@/lib/schema/donation";
 import {
   HeartHandshake,
@@ -117,34 +116,19 @@ export default function PublicGivingPage() {
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, "donations"),
-      (snap) => {
-        const list: PublicBeneficiary[] = [];
-        snap.forEach((d) => {
-          const raw = d.data();
-          // Strict data boundary: only parse public records and omit private financial fields
-          if (raw.isPublic === true) {
-            const parsed = PublicBeneficiarySchema.safeParse({ ...raw, id: d.id });
-            if (parsed.success) {
-              list.push(parsed.data);
-            }
-          }
-        });
-
+    fetch("/api/public/donations")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ beneficiaries: PublicBeneficiary[] }>;
+      })
+      .then(({ beneficiaries: list }) => {
         if (list.length > 0) {
           list.sort((a, b) => a.organizationName.localeCompare(b.organizationName));
           setBeneficiaries(list);
         }
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("Public giving listener error, using fallbacks:", err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsub();
+      })
+      .catch((err) => console.warn("Public giving request error, using fallbacks:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredBeneficiaries = useMemo(() => {
