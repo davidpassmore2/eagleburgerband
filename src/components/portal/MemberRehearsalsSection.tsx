@@ -486,6 +486,54 @@ export default function MemberRehearsalsSection() {
             />
           </div>
         </div>
+
+        {/* Confirmed Attending Members Roll Call Preview */}
+        <div className="space-y-2 pt-2 border-t border-slate-800/80">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-white flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-yellow-400" />
+              <span>
+                Attending Roll Call ({rsvps.filter((r) => r.status === "attending").length} Confirmed)
+              </span>
+            </span>
+            <Link
+              href="/portal/rehearsals"
+              className="text-[11px] text-yellow-400 hover:text-yellow-300 font-semibold flex items-center gap-1 transition"
+            >
+              <span>View Roster ({rsvps.length})</span>
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {rsvps.filter((r) => r.status === "attending" || r.status === "probable").length === 0 ? (
+            <div className="text-[11px] text-slate-500 bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 text-center">
+              No musicians confirmed yet. Tap your attendance above to check in!
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {rsvps
+                .filter((r) => r.status === "attending" || r.status === "probable")
+                .map((r) => (
+                  <span
+                    key={r.uid}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border ${
+                      r.status === "attending"
+                        ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                        : "bg-cyan-500/10 text-cyan-300 border-cyan-500/20"
+                    }`}
+                  >
+                    <span className="font-semibold">{r.displayName}</span>
+                    {r.instrument && (
+                      <span className="text-[10px] text-slate-400">({r.instrument})</span>
+                    )}
+                    {r.status === "probable" && (
+                      <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase">(Prob)</span>
+                    )}
+                  </span>
+                ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Cancel Reason Dialog */}
