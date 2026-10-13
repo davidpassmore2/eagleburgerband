@@ -966,7 +966,7 @@ export default function MusicianPortalOverviewPage() {
                 </div>
               </div>
               <h3 className="font-extrabold text-sm sm:text-base text-white">
-                Repertoire &amp; Music Vault
+                Song Catalog &amp; Music Vault
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Access master horn charts, download parts, submit new tunes, and vote on peer suggestions.
@@ -980,7 +980,7 @@ export default function MusicianPortalOverviewPage() {
               >
                 <span className="flex items-center gap-2">
                   <Music className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Master Chart Catalog</span>
+                  <span>Song Catalog</span>
                 </span>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
               </Link>

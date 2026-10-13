@@ -215,7 +215,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
-      { title: "Music Vault", path: "/portal/library" }
+      { title: "Song Catalog", path: "/portal/library" }
     ]
   },
   {
@@ -252,15 +252,15 @@ const ROUTE_DOCS: RouteDoc[] = [
     ]
   },
   {
-    id: "music-vault",
-    title: "Music Vault & Sheet Music Repertoire",
+    id: "song-catalog",
+    title: "Song Catalog & Sheet Music",
     path: "/portal/library",
     category: "Musician Essentials",
     roles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
     badge: "Sheet Music & Audio",
     iconName: "Music2",
     summary: "Interactive chart library, instrument part PDFs, rehearsal audio recordings, key signatures, and tempo notes.",
-    description: "The Music Vault is the digital library for all active, rehearsal, and archival arrangements played by the Eagleburger Band. Musicians can filter charts by title, tempo, key, or genre, download instrument-specific PDF parts for printing or digital tablet readers, and listen to reference audio recordings.",
+    description: "The Song Catalog is the digital library for all active, rehearsal, and archival arrangements played by the Eagleburger Band. Musicians can filter charts by title, tempo, key, or genre, download instrument-specific PDF parts for printing or digital tablet readers, and listen to reference audio recordings.",
     keyFeatures: [
       "Instant search and filter by tune title, composer, arranger, style, and difficulty.",
       "Rotation and lifecycle filtering: Active rotation, In Repertoire (learn & maintain), Frequently Played, and Vaulted charts.",
@@ -270,7 +270,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Direct setlist cross-referencing indicating which songs are scheduled for upcoming gigs."
     ],
     howToUse: [
-      "Open the Music Vault from the sidebar navigation.",
+      "Open the Song Catalog from the sidebar navigation.",
       "Use the search box or genre tags to find the chart you need.",
       "Click your instrument section tab to view and download your specific part PDF.",
       "Load PDF parts into your digital reader (e.g. forScore, MobileSheets) or print 2-up for your flip folder.",
@@ -282,7 +282,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Listen to the rehearsal audio to learn unwritten drum breaks, vocal cues, and street march choreo."
     ],
     relatedRoutes: [
-      { title: "Catalog Studio", path: "/admin/catalog" },
+      { title: "Rehearsal Vault", path: "/portal/vault" },
       { title: "Setlist Studio", path: "/admin/setlists" }
     ]
   },
@@ -383,7 +383,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Home Base", path: "/portal" },
-      { title: "Repertoire Catalog", path: "/portal/library" }
+      { title: "Song Catalog", path: "/portal/library" }
     ]
   },
   {
@@ -951,7 +951,7 @@ const ROUTE_DOCS: RouteDoc[] = [
   // --- Music & Repertoire ---
   {
     id: "admin-catalog-mgmt",
-    title: "Master Repertoire Catalog & Sheet Music",
+    title: "Master Song Catalog & Sheet Music",
     path: "/admin/catalog",
     category: "Music & Repertoire",
     roles: ["admin", "catalog_manager"],
@@ -1014,14 +1014,14 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-tunes",
-    title: "Repertoire Studio & Chart Library",
+    title: "Song Catalog & Chart Library",
     path: "/admin/tunes",
     category: "Music & Repertoire",
     roles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
-    badge: "Repertoire & Charts",
+    badge: "Song Catalog & Charts",
     iconName: "Music",
     summary: "Search, view, and submit band charts, tempo/key info, sheet music parts, and arrangement links.",
-    description: "Repertoire Studio is the open chart library and submission hub for the Eagleburger Band. All members can search active tunes, explore arrangements and sheet music links, and submit newly charted tunes with keys, tempos, genres, and difficulty levels.",
+    description: "The Song Catalog is the open chart library and submission hub for the Eagleburger Band. All members can search active songs, explore arrangements and sheet music links, and submit newly charted tunes with keys, tempos, genres, and difficulty levels.",
     keyFeatures: [
       "Open access for all musicians to browse, search, and submit band tunes and charts.",
       "Dual-sync catalog integration syncing records across the repertoire database.",
@@ -1031,7 +1031,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Submitter chart editing permissions with admin and catalog manager deletion controls."
     ],
     howToUse: [
-      "Open Repertoire Studio from the sidebar or Home Base quick actions.",
+      "Open Song Catalog from the sidebar or Home Base quick actions.",
       "Use the instant search, genre filters, and status chips (All, Active, In Repertoire, In Rehearsal) to find charts.",
       "Click '+ Add Chart / Tune' to register a new chart or brass adaptation.",
       "Select the appropriate Library Status: choose 'In Repertoire' for tunes musicians must learn and keep ready even if called less frequently.",
@@ -1044,7 +1044,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Check existing catalog listings before submitting to ensure the tune isn't already in rehearsal."
     ],
     relatedRoutes: [
-      { title: "Music Vault", path: "/portal/library" },
+      { title: "Song Catalog", path: "/portal/library" },
       { title: "Suggestion Triage", path: "/admin/suggestions" },
       { title: "Setlist Studio", path: "/admin/setlists" }
     ]
@@ -1075,9 +1075,8 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Encourage arrangers to write flexible percussion parts that can scale between 2 and 6 drummers."
     ],
     relatedRoutes: [
-      { title: "Master Catalog", path: "/admin/catalog" },
-      { title: "Repertoire Studio", path: "/admin/tunes" },
-      { title: "Music Vault", path: "/portal/library" }
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
     ]
   },
   {
@@ -1094,20 +1093,20 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Dated rehearsal audio archive with built-in streaming player.",
       "Section rehearsal notes highlighting tempo changes, cutoffs, and key soloists.",
       "Filter by date, tune title, or rehearsal session.",
-      "Direct links to corresponding charts in the Repertoire Catalog."
+      "Direct links to corresponding charts in the Song Catalog."
     ],
     howToUse: [
       "Go to Rehearsal Vault (/portal/vault) from the Music & Repertoire navigation section.",
       "Filter by rehearsal date or search for a specific song title.",
-      "Play practice tracks directly or download them for offline listening."
+      "Play practice tracks directly or download them for offline listening.",
     ],
     proTips: [
       "Listen to the latest rehearsal takes before dress rehearsals to lock in tight horn section harmonies and rhythm section grooves.",
       "Section leaders can upload audio clips directly following sectionals to help sub players get up to speed."
     ],
     relatedRoutes: [
-      { title: "Repertoire Catalog", path: "/portal/library" },
-      { title: "Repertoire Studio", path: "/admin/tunes" }
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
     ]
   },
 
@@ -1552,7 +1551,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     proTips: [
       "Check route analytics on gig days to confirm that musicians are successfully opening mobile call sheets and check-in pages.",
-      "Low engagement on the Repertoire Catalog ahead of rehearsals may indicate members need a reminder to practice upcoming tunes."
+      "Low engagement on the Song Catalog ahead of rehearsals may indicate members need a reminder to practice upcoming tunes."
     ],
     relatedRoutes: [
       { title: "Admin Action Audit Log", path: "/admin/audit-log" },
@@ -1747,18 +1746,17 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       "Review member song suggestions and shepherd promising chart ideas into active arranging."
     ],
     authorities: [
-      "Add, update, and archive tunes in the Repertoire Catalog (/admin/catalog).",
+      "Add, update, and archive songs in the Song Catalog (/portal/library).",
       "Manage sheet music part files and reference audio attachments.",
       "Assemble, reorder, and publish gig setlists (/admin/setlists).",
       "Review, upvote, and triage member song suggestions (/admin/suggestions).",
       "Analyze catalog analytics, play counts, and chart performance frequencies (/admin/analytics/catalog)."
     ],
     routes: [
-      { title: "Master Catalog", path: "/admin/catalog" },
+      { title: "Song Catalog", path: "/portal/library" },
       { title: "Setlist Designer", path: "/admin/setlists" },
       { title: "Repertoire Analytics", path: "/admin/analytics/catalog" },
       { title: "Song Suggestions", path: "/admin/suggestions" },
-      { title: "Music Vault", path: "/portal/library" },
     ],
     accentBorder: "rgba(16, 185, 129, 0.5)",
   },
@@ -1927,14 +1925,13 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       "Submit RSVPs and view detailed logistical call sheets (/portal/gigs).",
       "Download sheet music part PDFs and listen to practice tracks (/portal/library).",
       "Browse the band-wide Musician Directory (/portal/roster).",
-      "Browse, search, and submit band charts and sheet music in Repertoire Studio (/admin/tunes).",
+      "Browse, search, and submit band charts and sheet music in the Song Catalog (/portal/library).",
       "Submit song pitches and upvote charts in Song Suggestions (/admin/suggestions)."
     ],
     routes: [
       { title: "Home Base", path: "/portal" },
       { title: "Gig Central", path: "/portal/gigs" },
-      { title: "Music Vault", path: "/portal/library" },
-      { title: "Repertoire Studio", path: "/admin/tunes" },
+      { title: "Song Catalog", path: "/portal/library" },
       { title: "Musician Directory", path: "/portal/roster" },
       { title: "Song Suggestions", path: "/admin/suggestions" },
       { title: "Help Center", path: "/portal/help" },
@@ -1954,14 +1951,13 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     ],
     authorities: [
       "View specific performance call sheets and logistical details for assigned performances.",
-      "Download assigned sheet music parts from the Music Vault (/portal/library).",
-      "Browse repertoire charts and submit new arrangements in Repertoire Studio (/admin/tunes).",
+      "Download assigned sheet music parts from the Song Catalog (/portal/library).",
+      "Browse repertoire charts and submit new arrangements in the Song Catalog (/portal/library).",
       "Pitch tune ideas and vote on charts in Song Suggestions (/admin/suggestions)."
     ],
     routes: [
       { title: "Gig Central", path: "/portal/gigs" },
-      { title: "Music Vault", path: "/portal/library" },
-      { title: "Repertoire Studio", path: "/admin/tunes" },
+      { title: "Song Catalog", path: "/portal/library" },
       { title: "Song Suggestions", path: "/admin/suggestions" },
     ],
     accentBorder: "rgba(148, 163, 184, 0.5)",
@@ -2036,15 +2032,15 @@ const RBAC_ROLES = [
     role: "member",
     title: "Active Band Musician",
     target: "All Rostered Brass & Percussion Players",
-    scope: "Access to personal dashboard, upcoming gigs calendar, RSVP submissions, sheet music downloads, reference audio, repertoire chart browsing and submissions, song pitches, roster directory, and calendar sync.",
-    routes: "/portal, /portal/gigs, /portal/library, /admin/tunes, /admin/suggestions, /portal/roster, /portal/help"
+    scope: "Access to personal dashboard, upcoming gigs calendar, RSVP submissions, sheet music downloads, reference audio, song catalog browsing and submissions, song pitches, roster directory, and calendar sync.",
+    routes: "/portal, /portal/gigs, /portal/library, /admin/suggestions, /portal/roster, /portal/help"
   },
   {
     role: "guest",
     title: "Guest Musician / Sub",
     target: "Occasional Subs & Contracted Players",
-    scope: "Access to assigned gig call sheets, sheet music parts in the music vault, repertoire studio chart browsing and submissions, and tune suggestions.",
-    routes: "/portal/gigs, /portal/library, /admin/tunes, /admin/suggestions"
+    scope: "Access to assigned gig call sheets, sheet music parts in the song catalog, chart browsing and submissions, and tune suggestions.",
+    routes: "/portal/gigs, /portal/library, /admin/suggestions"
   }
 ];
 

@@ -1026,14 +1026,14 @@ function GigSetlistAssignmentModalInner({
                 </div>
               </div>
 
-              {/* Repertoire Catalog Picker (5 cols) */}
+              {/* Song Catalog Picker (5 cols) */}
               <div className="lg:col-span-5 flex flex-col bg-slate-950/50 border border-slate-800 rounded-2xl p-3 overflow-hidden">
                 <div className="pb-2 border-b border-slate-800/80 mb-2">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search repertoire catalog..."
+                      placeholder="Search song catalog..."
                       value={catalogSearch}
                       onChange={(e) => setCatalogSearch(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-semibold"

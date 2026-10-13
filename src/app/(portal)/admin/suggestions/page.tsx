@@ -371,7 +371,7 @@ export default function SuggestionTriagePage() {
 
   // Promote tune to catalog
   const handlePromoteToCatalog = async (sug: SuggestionItem) => {
-    if (!confirm(`Promote "${sug.title}" directly to the active band repertoire catalog?`)) return;
+    if (!confirm(`Promote "${sug.title}" directly to the active band song catalog?`)) return;
     setPromotingId(sug.id);
 
     try {
@@ -397,7 +397,7 @@ export default function SuggestionTriagePage() {
       });
       dispatchPortalInteraction("promote_suggestion", `Promoted "${sug.title}" to catalog`, { suggestionId: sug.id, songId });
 
-      toast.success(`"${sug.title}" is now added to the Repertoire Catalog!`);
+      toast.success(`"${sug.title}" is now added to the Song Catalog!`);
     } catch (err) {
       toast.error("Failed to promote suggestion: " + (err instanceof Error ? err.message : String(err)));
     } finally {

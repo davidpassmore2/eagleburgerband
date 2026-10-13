@@ -307,7 +307,7 @@ export default function UnifiedRepertoireLibraryPage() {
   // Upvote / Downvote Reactions
   const handleVote = async (tuneId: string, voteType: "up" | "down") => {
     if (!currentUserId) {
-      toast.error("Please log in to react to charts.");
+      toast.error("Please log in to react to songs.");
       return;
     }
 
@@ -392,7 +392,7 @@ export default function UnifiedRepertoireLibraryPage() {
   const handleSaveTune = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
-      toast.error("Chart title is required.");
+      toast.error("Song title is required.");
       return;
     }
 
@@ -436,27 +436,27 @@ export default function UnifiedRepertoireLibraryPage() {
       // 1. Write to canonical 'tunes' collection
       await setDoc(doc(db, "tunes", tuneId), payload, { merge: true });
 
-      toast.success(`Chart "${formTitle.trim()}" saved.`);
+      toast.success(`Song "${formTitle.trim()}" saved.`);
       setIsEditorOpen(false);
       setEditingTune(null);
     } catch (err) {
-      toast.error("Failed to save chart: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to save song: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
   };
 
-  // Delete Chart
+  // Delete Song
   const handleDeleteTune = async (tuneId: string, title: string) => {
-    if (!confirm(`Are you sure you want to permanently delete "${title}" from the repertoire catalog?`)) {
+    if (!confirm(`Are you sure you want to permanently delete "${title}" from the song catalog?`)) {
       return;
     }
 
     try {
       await deleteDoc(doc(db, "tunes", tuneId));
-      toast.success(`Chart "${title}" deleted.`);
+      toast.success(`Song "${title}" deleted.`);
     } catch (err) {
-      toast.error("Failed to delete chart: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete song: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -517,7 +517,7 @@ export default function UnifiedRepertoireLibraryPage() {
     return (
       <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
         <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-        Loading Repertoire Catalog & Sheet Music...
+        Loading Song Catalog & Sheet Music...
       </div>
     );
   }
@@ -537,17 +537,17 @@ export default function UnifiedRepertoireLibraryPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2.5 py-0.5 rounded border border-slate-800">
-              Repertoire Studio
+              Song Catalog
             </span>
             <span className="text-xs font-mono text-slate-400">
-              {tunes.length} Active Charts
+              {tunes.length} Active Songs
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
-            <Music2 className="w-7 h-7 text-yellow-400" /> Repertoire Catalog
+            <Music2 className="w-7 h-7 text-yellow-400" /> Song Catalog
           </h1>
           <p className="text-xs text-slate-400">
-            Official music library for the Eagleburger Band. Access sheet music, audio reference samples, performance frequencies, and rehearsal arrangements.
+            Official song catalog for the Eagleburger Band. Access sheet music charts, audio reference samples, performance frequencies, and rehearsal arrangements.
           </p>
         </div>
 
@@ -557,30 +557,30 @@ export default function UnifiedRepertoireLibraryPage() {
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
-              placeholder="Search title, artist, tags..."
+              placeholder="Search songs, artists, tags..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 font-semibold"
             />
           </div>
 
-          {/* Pitch a Tune — available to all members */}
+          {/* Pitch a Song — available to all members */}
           <Link
             href="/admin/suggestions?category=tune_request"
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-700 hover:border-slate-600 shrink-0"
-            title="Suggest a new tune for the band's repertoire"
+            title="Suggest a new song for the band's catalog"
           >
-            <Lightbulb className="w-4 h-4 text-yellow-400" /> Pitch a Tune
+            <Lightbulb className="w-4 h-4 text-yellow-400" /> Pitch a Song
           </Link>
 
-          {/* Manager Action: Add Chart */}
+          {/* Manager Action: Add Song */}
           {canManage && (
             <button
               type="button"
               onClick={handleOpenCreateModal}
               className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow shrink-0"
             >
-              <Plus className="w-4 h-4" /> Add New Chart
+              <Plus className="w-4 h-4" /> Add New Song
             </button>
           )}
         </div>
@@ -982,9 +982,9 @@ export default function UnifiedRepertoireLibraryPage() {
       {filteredTunes.length === 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
           <Music2 className="w-8 h-8 text-slate-600 mx-auto" />
-          <h3 className="text-sm font-bold text-white">No Repertoire Charts Found</h3>
+          <h3 className="text-sm font-bold text-white">No Songs Found</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            No charts matched your current search and filter settings. Try adjusting your query or resetting filters.
+            No songs matched your current search and filter settings. Try adjusting your query or resetting filters.
           </p>
           <button
             type="button"
@@ -1033,7 +1033,7 @@ export default function UnifiedRepertoireLibraryPage() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Music2 className="w-5 h-5 text-yellow-400" />
-                {editingTune ? `Edit Chart: ${editingTune.title}` : "Add New Sheet Music Chart"}
+                {editingTune ? `Edit Song: ${editingTune.title}` : "Add New Song to Catalog"}
               </h2>
               <button
                 type="button"
@@ -1047,7 +1047,7 @@ export default function UnifiedRepertoireLibraryPage() {
             <form onSubmit={handleSaveTune} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Chart Title *</label>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Song Title *</label>
                   <input
                     type="text"
                     required

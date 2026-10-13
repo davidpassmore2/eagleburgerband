@@ -126,7 +126,7 @@ export default function CommentsAdminPage() {
             <MessageSquareQuote className="text-yellow-400 w-6 h-6" /> Comment Moderation Studio
           </h1>
           <p className="text-slate-400 text-sm">
-            Audit discussions across suggestions, gigs, and repertoire catalog entries, triage flagged content, and manage pinned announcements.
+            Audit discussions across suggestions, gigs, and song catalog entries, triage flagged content, and manage pinned announcements.
           </p>
         </div>
 

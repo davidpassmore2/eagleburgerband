@@ -229,7 +229,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   // --- Music & Repertoire ---
   {
     id: "library",
-    title: "Repertoire Catalog",
+    title: "Song Catalog",
     href: "/portal/library",
     icon: Music2,
     requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
