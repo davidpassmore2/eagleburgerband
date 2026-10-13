@@ -26,6 +26,8 @@ import {
   RsvpStatus,
 } from "@/lib/schema/rehearsal";
 import { BlackoutDate, BlackoutDateSchema } from "@/lib/schema/blackout";
+import { User, UserSchema } from "@/lib/schema/user";
+import { Section, SectionSchema } from "@/lib/schema/section";
 import {
   getUpcomingRehearsalDates,
   getRehearsalAttendanceStats,
@@ -65,6 +67,12 @@ import {
   Navigation,
   ExternalLink,
   ShieldAlert,
+  Search,
+  Layers,
+  ListFilter,
+  Tag,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 
 const PITTSBURGH_DEFAULT_LOCATIONS: RehearsalLocation[] = [
@@ -138,7 +146,19 @@ export default function RehearsalsPage() {
   const [sessions, setSessions] = useState<RehearsalSession[]>([]);
   const [rsvps, setRsvps] = useState<RehearsalRsvp[]>([]);
   const [blackouts, setBlackouts] = useState<BlackoutDate[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Roster Filter & View State
+  const [rosterStatusFilter, setRosterStatusFilter] = useState<
+    "all" | "attending" | "probable" | "tentative" | "declined" | "no_response"
+  >("all");
+  const [rosterSearch, setRosterSearch] = useState("");
+  const [rosterViewMode, setRosterViewMode] = useState<"by_section" | "flat">("by_section");
+
+  // User RSVP Note Input
+  const [myRsvpNote, setMyRsvpNote] = useState("");
 
   // Selected Location for Map Picker
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
@@ -206,11 +226,37 @@ export default function RehearsalsPage() {
       setLoading(false);
     });
 
+    // Active band members listener
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const list: User[] = [];
+      snapshot.forEach((d) => {
+        const parsed = UserSchema.safeParse({ uid: d.id, ...d.data() });
+        if (parsed.success && parsed.data.status === "active") {
+          list.push(parsed.data);
+        }
+      });
+      list.sort((a, b) => (a.displayName || a.realName || "").localeCompare(b.displayName || b.realName || ""));
+      setUsers(list);
+    });
+
+    // Instrument sections listener
+    const unsubSections = onSnapshot(collection(db, "sections"), (snapshot) => {
+      const list: Section[] = [];
+      snapshot.forEach((d) => {
+        const parsed = SectionSchema.safeParse({ id: d.id, ...d.data() });
+        if (parsed.success) list.push(parsed.data);
+      });
+      list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      setSections(list);
+    });
+
     return () => {
       unsubConfig();
       unsubLocations();
       unsubSessions();
       unsubBlackouts();
+      unsubUsers();
+      unsubSections();
     };
   }, []);
 
@@ -286,12 +332,21 @@ export default function RehearsalsPage() {
     return rsvps.find((r) => r.uid === profile.uid);
   }, [rsvps, profile?.uid]);
 
+  // Sync user's existing note into state
+  useEffect(() => {
+    if (myRsvp) {
+      setMyRsvpNote(myRsvp.notes || "");
+    }
+  }, [myRsvp]);
+
   // Handlers
-  const handleRsvp = async (status: RsvpStatus, note = "") => {
+  const handleRsvp = async (status: RsvpStatus, note?: string) => {
     if (!profile?.uid) {
       toast.error("Please sign in to RSVP.");
       return;
     }
+
+    const noteToSave = note !== undefined ? note : myRsvpNote;
 
     try {
       // Ensure rehearsal doc exists
@@ -313,7 +368,7 @@ export default function RehearsalsPage() {
         sectionName: profile.sectionId || "General",
         instrument: profile.selectedInstrument || profile.instruments?.[0] || "",
         status,
-        notes: note,
+        notes: noteToSave,
         updatedAt: new Date().toISOString(),
       };
 
@@ -323,6 +378,192 @@ export default function RehearsalsPage() {
       toast.error("Failed to update RSVP: " + (err instanceof Error ? err.message : String(err)));
     }
   };
+
+  // Full Roster Entry Interface
+  interface RosterMemberPlan {
+    uid: string;
+    displayName: string;
+    sectionId: string;
+    sectionName: string;
+    instrument: string;
+    status: RsvpStatus | "no_response";
+    notes?: string;
+    updatedAt?: string;
+    hasBlackoutConflict: boolean;
+    blackoutReason?: string;
+    isCurrentUser: boolean;
+  }
+
+  // Enriched full roster (merging active directory with recorded rehearsal RSVPs)
+  const allRosterEntries = useMemo<RosterMemberPlan[]>(() => {
+    const list: RosterMemberPlan[] = [];
+    const rsvpMap = new Map<string, RehearsalRsvp>();
+    rsvps.forEach((r) => rsvpMap.set(r.uid, r));
+
+    const secNameMap = new Map<string, string>();
+    sections.forEach((s) => secNameMap.set(s.id.toLowerCase(), s.name));
+
+    // 1. Process active users in the band directory
+    if (users.length > 0) {
+      users.forEach((u) => {
+        const userRsvp = rsvpMap.get(u.uid);
+        const userBlackout = activeDateBlackouts.find((b) => b.uid === u.uid);
+
+        const secId = (u.sectionId || userRsvp?.sectionId || "general").toLowerCase();
+        const secName =
+          secNameMap.get(secId) || userRsvp?.sectionName || u.sectionId || "General Roster";
+        const instrument =
+          u.selectedInstrument || u.instruments?.[0] || userRsvp?.instrument || "";
+
+        list.push({
+          uid: u.uid,
+          displayName: u.displayName || u.realName || "Musician",
+          sectionId: secId,
+          sectionName: secName,
+          instrument,
+          status: userRsvp ? userRsvp.status : "no_response",
+          notes: userRsvp?.notes,
+          updatedAt: userRsvp?.updatedAt,
+          hasBlackoutConflict: Boolean(userBlackout),
+          blackoutReason: userBlackout?.reason,
+          isCurrentUser: u.uid === profile?.uid,
+        });
+
+        rsvpMap.delete(u.uid);
+      });
+    }
+
+    // 2. Include any additional RSVPs (guests/directors without user directory record)
+    rsvpMap.forEach((r) => {
+      const userBlackout = activeDateBlackouts.find((b) => b.uid === r.uid);
+      const secId = (r.sectionId || "general").toLowerCase();
+      const secName = secNameMap.get(secId) || r.sectionName || "General Roster";
+
+      list.push({
+        uid: r.uid,
+        displayName: r.displayName || "Musician",
+        sectionId: secId,
+        sectionName: secName,
+        instrument: r.instrument || "",
+        status: r.status,
+        notes: r.notes,
+        updatedAt: r.updatedAt,
+        hasBlackoutConflict: Boolean(userBlackout),
+        blackoutReason: userBlackout?.reason,
+        isCurrentUser: r.uid === profile?.uid,
+      });
+    });
+
+    return list;
+  }, [rsvps, users, sections, activeDateBlackouts, profile?.uid]);
+
+  // Response breakdown totals
+  const rosterCounts = useMemo(() => {
+    let attending = 0;
+    let probable = 0;
+    let tentative = 0;
+    let declined = 0;
+    let noResponse = 0;
+
+    allRosterEntries.forEach((m) => {
+      if (m.status === "attending") attending++;
+      else if (m.status === "probable") probable++;
+      else if (m.status === "tentative") tentative++;
+      else if (m.status === "declined") declined++;
+      else noResponse++;
+    });
+
+    return {
+      total: allRosterEntries.length,
+      responded: rsvps.length,
+      attending,
+      probable,
+      tentative,
+      declined,
+      noResponse,
+    };
+  }, [allRosterEntries, rsvps.length]);
+
+  // Filtered roster by status and search text
+  const filteredRoster = useMemo(() => {
+    return allRosterEntries.filter((m) => {
+      if (rosterStatusFilter === "attending" && m.status !== "attending") return false;
+      if (rosterStatusFilter === "probable" && m.status !== "probable") return false;
+      if (rosterStatusFilter === "tentative" && m.status !== "tentative") return false;
+      if (rosterStatusFilter === "declined" && m.status !== "declined") return false;
+      if (rosterStatusFilter === "no_response" && m.status !== "no_response") return false;
+
+      if (rosterSearch.trim()) {
+        const query = rosterSearch.toLowerCase();
+        const matchesName = m.displayName.toLowerCase().includes(query);
+        const matchesInstrument = m.instrument.toLowerCase().includes(query);
+        const matchesSection = m.sectionName.toLowerCase().includes(query);
+        const matchesNote = (m.notes || "").toLowerCase().includes(query);
+        return matchesName || matchesInstrument || matchesSection || matchesNote;
+      }
+
+      return true;
+    });
+  }, [allRosterEntries, rosterStatusFilter, rosterSearch]);
+
+  // Group filtered roster by instrument section
+  const rosterBySection = useMemo(() => {
+    const definedSecs =
+      sections.length > 0
+        ? sections
+        : [
+            { id: "percussion", name: "Percussion", order: 1 },
+            { id: "sousaphones", name: "Sousaphones", order: 2 },
+            { id: "trombones", name: "Trombones", order: 3 },
+            { id: "trumpets", name: "Trumpets", order: 4 },
+            { id: "saxophones", name: "Saxophones & Woodwinds", order: 5 },
+            { id: "auxiliary", name: "Auxiliary & Visuals", order: 6 },
+          ];
+
+    const groups: {
+      sectionId: string;
+      sectionName: string;
+      leaderName?: string;
+      members: RosterMemberPlan[];
+      attendingCount: number;
+      projectedCount: number;
+    }[] = [];
+
+    definedSecs.forEach((sec) => {
+      const sectionMembers = filteredRoster.filter(
+        (m) => m.sectionId === sec.id.toLowerCase()
+      );
+      if (sectionMembers.length > 0 || (!rosterSearch.trim() && rosterStatusFilter === "all")) {
+        const attendingCount = sectionMembers.filter((m) => m.status === "attending").length;
+        const probableCount = sectionMembers.filter((m) => m.status === "probable").length;
+        groups.push({
+          sectionId: sec.id,
+          sectionName: sec.name,
+          leaderName: "leaderName" in sec ? (sec.leaderName as string) : undefined,
+          members: sectionMembers,
+          attendingCount,
+          projectedCount: attendingCount + probableCount,
+        });
+      }
+    });
+
+    const otherMembers = filteredRoster.filter(
+      (m) => !definedSecs.some((sec) => sec.id.toLowerCase() === m.sectionId)
+    );
+    if (otherMembers.length > 0) {
+      const attendingCount = otherMembers.filter((m) => m.status === "attending").length;
+      const probableCount = otherMembers.filter((m) => m.status === "probable").length;
+      groups.push({
+        sectionId: "general",
+        sectionName: "General Roster / Other",
+        members: otherMembers,
+        attendingCount,
+        projectedCount: attendingCount + probableCount,
+      });
+    }
+
+    return groups;
+  }, [sections, filteredRoster, rosterSearch, rosterStatusFilter]);
 
   const handleToggleCancelRehearsal = async (session: RehearsalSession) => {
     if (!session.isCancelled) {
@@ -776,6 +1017,37 @@ export default function RehearsalsPage() {
                   <span>Declined (Out)</span>
                 </button>
               </div>
+
+              {/* Optional Personal Note Input */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
+                <input
+                  type="text"
+                  placeholder="Add note or call-time reason (e.g. Arriving 15 min late, bringing extra stands)..."
+                  value={myRsvpNote}
+                  onChange={(e) => setMyRsvpNote(e.target.value)}
+                  onBlur={() => {
+                    if (myRsvp && myRsvpNote !== (myRsvp.notes || "")) {
+                      handleRsvp(myRsvp.status, myRsvpNote);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (myRsvp) handleRsvp(myRsvp.status, myRsvpNote);
+                    }
+                  }}
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                />
+                {myRsvp && myRsvpNote !== (myRsvp.notes || "") && (
+                  <button
+                    type="button"
+                    onClick={() => handleRsvp(myRsvp.status, myRsvpNote)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-400 text-slate-950 hover:bg-yellow-300 transition shrink-0"
+                  >
+                    Save Note
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Quorum & Attendance Breakdown */}
@@ -838,6 +1110,348 @@ export default function RehearsalsPage() {
                   >
                     View Blackout Calendar
                   </button>
+                </div>
+              )}
+            </div>
+
+            {/* Member Attendance Roster & Section Coverage */}
+            <div className="space-y-4 pt-3 border-t border-slate-800">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                    <Users className="w-4 h-4 text-yellow-400" />
+                    <span>Member Attendance Roster &amp; Roll Call</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {rosterCounts.attending} confirmed in, {rosterCounts.probable} probable, {rosterCounts.declined} out
+                    {rosterCounts.noResponse > 0 && ` (${rosterCounts.noResponse} awaiting RSVP)`}.
+                  </p>
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl self-stretch sm:self-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setRosterViewMode("by_section")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      rosterViewMode === "by_section"
+                        ? "bg-yellow-400 text-slate-950 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>By Section</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRosterViewMode("flat")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                      rosterViewMode === "flat"
+                        ? "bg-yellow-400 text-slate-950 font-bold"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <ListFilter className="w-3.5 h-3.5" />
+                    <span>All Musicians ({rosterCounts.total})</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter Tabs & Search Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                {/* Status Filter Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("all")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                      rosterStatusFilter === "all"
+                        ? "bg-slate-200 text-slate-950 border-white font-bold"
+                        : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+                    }`}
+                  >
+                    All ({rosterCounts.total})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("attending")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                      rosterStatusFilter === "attending"
+                        ? "bg-emerald-500 text-slate-950 border-emerald-400 font-bold"
+                        : "bg-emerald-950/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    }`}
+                  >
+                    In ({rosterCounts.attending})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("probable")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                      rosterStatusFilter === "probable"
+                        ? "bg-cyan-500 text-slate-950 border-cyan-400 font-bold"
+                        : "bg-cyan-950/20 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+                    }`}
+                  >
+                    Probable ({rosterCounts.probable})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("tentative")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                      rosterStatusFilter === "tentative"
+                        ? "bg-amber-400 text-slate-950 border-amber-300 font-bold"
+                        : "bg-amber-950/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    Tentative ({rosterCounts.tentative})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("declined")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                      rosterStatusFilter === "declined"
+                        ? "bg-rose-500 text-white border-rose-400 font-bold"
+                        : "bg-rose-950/20 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+                    }`}
+                  >
+                    Out ({rosterCounts.declined})
+                  </button>
+
+                  {rosterCounts.noResponse > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setRosterStatusFilter("no_response")}
+                      className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border ${
+                        rosterStatusFilter === "no_response"
+                          ? "bg-slate-700 text-white border-slate-600 font-bold"
+                          : "bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300"
+                      }`}
+                    >
+                      Awaiting ({rosterCounts.noResponse})
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Input */}
+                <div className="relative min-w-[200px]">
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search name, instrument, note..."
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                  />
+                  {rosterSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setRosterSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Roster Cards Output */}
+              {filteredRoster.length === 0 ? (
+                <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 text-center space-y-2">
+                  <UserX className="w-6 h-6 text-slate-500 mx-auto" />
+                  <p className="text-xs text-slate-400">
+                    No musicians match your current filter ({rosterStatusFilter !== "all" ? rosterStatusFilter : "all"}).
+                  </p>
+                  {(rosterStatusFilter !== "all" || rosterSearch) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRosterStatusFilter("all");
+                        setRosterSearch("");
+                      }}
+                      className="text-xs text-yellow-400 hover:underline font-semibold"
+                    >
+                      Reset filters to view all members
+                    </button>
+                  )}
+                </div>
+              ) : rosterViewMode === "by_section" ? (
+                <div className="space-y-3.5">
+                  {rosterBySection.map((sec) => (
+                    <div
+                      key={sec.sectionId}
+                      className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-3.5 space-y-2.5"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white uppercase tracking-wider">
+                            {sec.sectionName}
+                          </span>
+                          {sec.leaderName && (
+                            <span className="text-[10px] text-slate-500">
+                              (Lead: {sec.leaderName})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                            {sec.attendingCount} In {sec.projectedCount > sec.attendingCount && `(${sec.projectedCount} proj)`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {sec.members.length === 0 ? (
+                        <p className="text-[11px] text-slate-600 italic py-1">
+                          No section members currently matched.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {sec.members.map((m) => (
+                            <div
+                              key={m.uid}
+                              className={`border rounded-xl p-2.5 space-y-1.5 transition ${
+                                m.isCurrentUser
+                                  ? "bg-slate-900 border-yellow-400/40 ring-1 ring-yellow-400/20 shadow-xs"
+                                  : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-xs text-white truncate">
+                                      {m.displayName}
+                                    </span>
+                                    {m.isCurrentUser && (
+                                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                                        You
+                                      </span>
+                                    )}
+                                  </div>
+                                  {m.instrument && (
+                                    <span className="text-[10px] text-slate-400 block truncate">
+                                      {m.instrument}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                                    m.status === "attending"
+                                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                      : m.status === "probable"
+                                      ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                                      : m.status === "tentative"
+                                      ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                                      : m.status === "declined"
+                                      ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                                      : "bg-slate-800 text-slate-400 border-slate-700"
+                                  }`}
+                                >
+                                  {m.status === "attending"
+                                    ? "In"
+                                    : m.status === "probable"
+                                    ? "Probable"
+                                    : m.status === "tentative"
+                                    ? "Tentative"
+                                    : m.status === "declined"
+                                    ? "Out"
+                                    : "Awaiting"}
+                                </span>
+                              </div>
+
+                              {m.notes && (
+                                <div className="text-[11px] text-slate-300 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 italic">
+                                  &ldquo;{m.notes}&rdquo;
+                                </div>
+                              )}
+
+                              {m.hasBlackoutConflict && (
+                                <div className="text-[10px] text-amber-400 bg-amber-950/30 border border-amber-500/20 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                  <Palmtree className="w-2.5 h-2.5 shrink-0" />
+                                  <span className="truncate">
+                                    Blackout: {m.blackoutReason || "Out of town"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {filteredRoster.map((m) => (
+                    <div
+                      key={m.uid}
+                      className={`border rounded-xl p-3 space-y-1.5 transition ${
+                        m.isCurrentUser
+                          ? "bg-slate-900 border-yellow-400/40 ring-1 ring-yellow-400/20 shadow-xs"
+                          : "bg-slate-950/70 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-xs text-white truncate">
+                              {m.displayName}
+                            </span>
+                            {m.isCurrentUser && (
+                              <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-400 block truncate">
+                            {m.instrument ? `${m.instrument} • ` : ""}{m.sectionName}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                            m.status === "attending"
+                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                              : m.status === "probable"
+                              ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                              : m.status === "tentative"
+                              ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                              : m.status === "declined"
+                              ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                              : "bg-slate-800 text-slate-400 border-slate-700"
+                          }`}
+                        >
+                          {m.status === "attending"
+                            ? "In"
+                            : m.status === "probable"
+                            ? "Probable"
+                            : m.status === "tentative"
+                            ? "Tentative"
+                            : m.status === "declined"
+                            ? "Out"
+                            : "Awaiting"}
+                        </span>
+                      </div>
+
+                      {m.notes && (
+                        <div className="text-[11px] text-slate-300 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 italic">
+                          &ldquo;{m.notes}&rdquo;
+                        </div>
+                      )}
+
+                      {m.hasBlackoutConflict && (
+                        <div className="text-[10px] text-amber-400 bg-amber-950/30 border border-amber-500/20 rounded px-1.5 py-0.5 flex items-center gap-1">
+                          <Palmtree className="w-2.5 h-2.5 shrink-0" />
+                          <span className="truncate">
+                            Blackout: {m.blackoutReason || "Out of town"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
