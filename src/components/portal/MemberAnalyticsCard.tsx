@@ -140,7 +140,7 @@ export default function MemberAnalyticsCard({
       return {
         label: "Growing Record",
         colorClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-        description: "Establishing season performance history.",
+        description: "Establishing season gig history.",
       };
     }
   }, [analytics.reliabilityRate]);
@@ -180,7 +180,7 @@ export default function MemberAnalyticsCard({
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Personal performance telemetry, call sheet reliability, and season compensation.
+              Personal gig telemetry, call sheet reliability, and season compensation.
             </p>
           </div>
         </div>

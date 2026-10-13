@@ -224,315 +224,194 @@ export default function MemberRehearsalsSection() {
   };
 
   return (
-    <div className="space-y-3">
-      {/* Section Header */}
-      <div className="px-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h2 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
-            <Music2 className="w-3.5 h-3.5" style={{ color: "var(--ebb-primary)" }} /> Band Rehearsals &amp; Practice
-          </h2>
-          <span className="text-[11px] text-slate-500">
-            Weekly {config.dayName} Downbeats @ {formatNonMilitaryTime(config.startTime, true)}, Locations &amp; Member Attendance
-          </span>
-        </div>
-
-        <Link
-          href="/portal/rehearsals"
-          className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1 transition"
-        >
-          <span>Open Full Rehearsal Hub</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* Feature Links Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Link
-          href="/portal/rehearsals"
-          className="bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition"
-        >
-          <Clock className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-          <span className="truncate">Schedule &amp; RSVPs</span>
-        </Link>
-
-        <Link
-          href="/portal/rehearsals"
-          className="bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition"
-        >
-          <Compass className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span className="truncate">Locations &amp; Pins</span>
-        </Link>
-
-        <Link
-          href="/portal/rehearsals"
-          className="bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition"
-        >
-          <Palmtree className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="truncate">Blackout Calendar</span>
-        </Link>
-
-        <Link
-          href="/portal/rehearsals"
-          className="bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition"
-        >
-          <Settings className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="truncate">Weekly Settings</span>
-        </Link>
-      </div>
-
-      {/* Next Upcoming Rehearsal Card */}
+    <>
       <div
-        className={`border rounded-2xl p-5 space-y-4 shadow transition ${
-          activeRehearsal.isCancelled
-            ? "bg-red-950/20 border-red-500/30"
-            : "bg-slate-900 border-slate-800"
+        suppressHydrationWarning
+        style={{
+          backgroundColor: "var(--ebb-surface)",
+          borderColor: "var(--ebb-border)",
+        }}
+        className={`border rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-colors flex flex-col justify-between ${
+          activeRehearsal.isCancelled ? "bg-red-950/20 border-red-500/30" : ""
         }`}
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
-                Next Scheduled Practice
+        {/* Subtle accent glow */}
+        <div
+          className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
+          style={{ backgroundColor: "var(--ebb-primary)" }}
+        />
+
+        <div className="space-y-4 relative z-10 flex-1">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                suppressHydrationWarning
+                style={{
+                  backgroundColor: "var(--ebb-surface-muted)",
+                  borderColor: "var(--ebb-border)",
+                  color: "var(--ebb-primary)",
+                }}
+                className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border"
+              >
+                Next Rehearsal
+              </span>
+              <span className="text-xs font-mono text-slate-300 font-bold">
+                {formatFriendlyDate(activeRehearsal.date, {
+                  includeDayOfWeek: true,
+                  includeYear: false,
+                  shortMonth: true,
+                })}
               </span>
               {activeRehearsal.isCancelled ? (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500 text-white flex items-center gap-1 shadow-xs">
-                  <XCircle className="w-3 h-3" /> Cancelled
+                <span className="text-xs font-mono font-bold text-red-300 bg-red-500/20 border border-red-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                  <XCircle className="w-3 h-3 text-red-400" />
+                  <span>Cancelled</span>
                 </span>
               ) : (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Active
+                <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>On Schedule</span>
                 </span>
               )}
             </div>
 
-            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              {formatFriendlyDate(activeRehearsal.date, {
-                includeDayOfWeek: true,
-                includeYear: false,
-                shortMonth: true,
-              })}
+            <h3 className="text-xl sm:text-2xl font-black text-white truncate">
+              {activeRehearsal.title || `${config.dayName} Band Rehearsal`}
             </h3>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCancelRehearsal}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border flex items-center gap-1 ${
-                activeRehearsal.isCancelled
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                  : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20"
-              }`}
-            >
-              <AlertTriangle className="w-3 h-3" />
-              <span>{activeRehearsal.isCancelled ? "Reactivate" : "Cancel Practice"}</span>
-            </button>
-
-            <Link
-              href="/portal/rehearsals"
-              className="px-3 py-1 rounded-lg text-xs font-bold text-slate-950 bg-yellow-400 hover:bg-yellow-300 transition flex items-center gap-1"
-            >
-              <span>Details</span>
-              <ChevronRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-
-        {activeRehearsal.isCancelled && (
-          <div className="text-xs text-red-200 bg-red-950/40 border border-red-500/20 rounded-xl p-3">
-            <strong>Cancellation Notice:</strong>{" "}
-            {activeRehearsal.cancellationReason || "Cancelled by leadership."}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-center gap-2.5">
-            <Clock className="w-4 h-4 text-yellow-400 shrink-0" />
-            <div>
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Time</span>
-              <span className="font-bold text-white">
-                {formatTimeRange(activeRehearsal.startTime, activeRehearsal.endTime, true)}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 truncate">
-              <MapPin className="w-4 h-4 text-yellow-400 shrink-0" />
-              <div className="truncate">
-                <span className="text-[10px] font-mono text-slate-400 uppercase block">Grounds</span>
-                <span className="font-bold text-white truncate block">
-                  {activeRehearsal.locationName}
-                </span>
+            {activeRehearsal.isCancelled && (
+              <div className="text-xs text-red-200 bg-red-950/60 border border-red-500/30 rounded-xl p-2.5">
+                <strong>Cancellation Notice:</strong> {activeRehearsal.cancellationReason || "Cancelled by leadership."}
               </div>
-            </div>
-            {activeRehearsal.lat && activeRehearsal.lng && (
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${activeRehearsal.lat},${activeRehearsal.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-yellow-400 hover:text-yellow-300 p-1"
-                title="Get directions"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
             )}
-          </div>
-        </div>
 
-        {/* 1-Click Quick Attendance Strip */}
-        <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400 font-mono text-[11px]">My Plan:</span>
-            {myRsvp?.status === "attending" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
-                <CheckCircle2 className="w-3 h-3" /> In
+            <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3 text-xs text-slate-300">
+              <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
+                <Clock className="w-3.5 h-3.5 text-yellow-400" />
+                <span>{formatTimeRange(activeRehearsal.startTime, activeRehearsal.endTime, true)}</span>
               </span>
-            )}
-            {myRsvp?.status === "probable" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-lg">
-                <Clock className="w-3 h-3" /> Probable
-              </span>
-            )}
-            {myRsvp?.status === "declined" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
-                <XCircle className="w-3 h-3" /> Out
-              </span>
-            )}
-            {myRsvp?.status === "tentative" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
-                <HelpCircle className="w-3 h-3" /> Tentative
-              </span>
-            )}
-            {!myRsvp?.status && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
-                Set Plan
-              </span>
-            )}
-          </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              type="button"
-              disabled={isUpdatingRsvp}
-              onClick={() => handleRsvpChange("attending")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                myRsvp?.status === "attending"
-                  ? "bg-emerald-500 text-slate-950 font-bold"
-                  : "bg-slate-950 text-slate-300 hover:text-emerald-400 border border-slate-800"
-              }`}
-            >
-              <Check className="w-3 h-3" /> In
-            </button>
-
-            <button
-              type="button"
-              disabled={isUpdatingRsvp}
-              onClick={() => handleRsvpChange("probable")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                myRsvp?.status === "probable"
-                  ? "bg-cyan-500 text-slate-950 font-bold"
-                  : "bg-slate-950 text-slate-300 hover:text-cyan-400 border border-slate-800"
-              }`}
-            >
-              Probable
-            </button>
-
-            <button
-              type="button"
-              disabled={isUpdatingRsvp}
-              onClick={() => handleRsvpChange("tentative")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                myRsvp?.status === "tentative"
-                  ? "bg-amber-400 text-slate-950 font-bold"
-                  : "bg-slate-950 text-slate-300 hover:text-amber-400 border border-slate-800"
-              }`}
-            >
-              Tentative
-            </button>
-
-            <button
-              type="button"
-              disabled={isUpdatingRsvp}
-              onClick={() => handleRsvpChange("declined")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                myRsvp?.status === "declined"
-                  ? "bg-rose-500 text-white font-bold"
-                  : "bg-slate-950 text-slate-300 hover:text-rose-400 border border-slate-800"
-              }`}
-            >
-              Out
-            </button>
-          </div>
-        </div>
-
-        {/* Projected quorum bar */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span>
-              Projected Quorum: <strong className="text-white">{stats.projectedHeadcount}</strong> /{" "}
-              {stats.targetQuorum} Musicians
-            </span>
-            <span className={stats.isQuorumMet ? "text-emerald-400 font-bold" : "text-yellow-400"}>
-              {stats.quorumPercentage}% Quorum
-            </span>
-          </div>
-          <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
-            <div
-              className={`h-full transition-all duration-300 ${
-                stats.isQuorumMet ? "bg-emerald-400" : "bg-yellow-400"
-              }`}
-              style={{ width: `${stats.quorumPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Confirmed Attending Members Roll Call Preview */}
-        <div className="space-y-2 pt-2 border-t border-slate-800/80">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-white flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-yellow-400" />
-              <span>
-                Attending Roll Call ({rsvps.filter((r) => r.status === "attending").length} Confirmed)
-              </span>
-            </span>
-            <Link
-              href="/portal/rehearsals"
-              className="text-[11px] text-yellow-400 hover:text-yellow-300 font-semibold flex items-center gap-1 transition"
-            >
-              <span>View Roster ({rsvps.length})</span>
-              <ChevronRight className="w-3 h-3" />
-            </Link>
-          </div>
-
-          {rsvps.filter((r) => r.status === "attending" || r.status === "probable").length === 0 ? (
-            <div className="text-[11px] text-slate-500 bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 text-center">
-              No musicians confirmed yet. Tap your attendance above to check in!
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {rsvps
-                .filter((r) => r.status === "attending" || r.status === "probable")
-                .map((r) => (
-                  <span
-                    key={r.uid}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border ${
-                      r.status === "attending"
-                        ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                        : "bg-cyan-500/10 text-cyan-300 border-cyan-500/20"
-                    }`}
+              <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5 truncate max-w-full">
+                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">{activeRehearsal.locationName}</span>
+                {activeRehearsal.lat && activeRehearsal.lng && (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${activeRehearsal.lat},${activeRehearsal.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-yellow-400 hover:text-yellow-300 p-0.5 ml-0.5"
+                    title="Get directions"
                   >
-                    <span className="font-semibold">{r.displayName}</span>
-                    {r.instrument && (
-                      <span className="text-[10px] text-slate-400">({r.instrument})</span>
-                    )}
-                    {r.status === "probable" && (
-                      <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase">(Prob)</span>
-                    )}
-                  </span>
-                ))}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </span>
+
+              <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                <span>
+                  {stats.attending} In / {stats.projectedHeadcount} Proj ({stats.quorumPercentage}% Quorum)
+                </span>
+              </span>
             </div>
-          )}
+          </div>
+
+          {/* Quick 1-Click RSVP on Rehearsal */}
+          <div className="bg-black/30 p-2.5 rounded-xl border border-white/10 space-y-1.5">
+            <div className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>My Attendance Plan</span>
+              {myRsvp?.status === "attending" && (
+                <span className="text-emerald-400 font-bold">Confirmed In</span>
+              )}
+              {myRsvp?.status === "probable" && (
+                <span className="text-cyan-400 font-bold">Probable</span>
+              )}
+              {myRsvp?.status === "tentative" && (
+                <span className="text-amber-400 font-bold">Tentative</span>
+              )}
+              {myRsvp?.status === "declined" && (
+                <span className="text-rose-400 font-bold">Declined</span>
+              )}
+              {!myRsvp?.status && (
+                <span className="text-amber-400 font-bold animate-pulse">Required</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <button
+                type="button"
+                disabled={isUpdatingRsvp}
+                onClick={() => handleRsvpChange("attending")}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                  myRsvp?.status === "attending"
+                    ? "bg-emerald-500 text-slate-950 shadow"
+                    : "bg-white/5 hover:bg-emerald-500/20 text-slate-300"
+                }`}
+              >
+                <Check className="w-3 h-3" /> In
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingRsvp}
+                onClick={() => handleRsvpChange("probable")}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                  myRsvp?.status === "probable"
+                    ? "bg-cyan-500 text-slate-950 shadow"
+                    : "bg-white/5 hover:bg-cyan-500/20 text-slate-300"
+                }`}
+              >
+                <Clock className="w-3 h-3" /> Probable
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingRsvp}
+                onClick={() => handleRsvpChange("tentative")}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                  myRsvp?.status === "tentative"
+                    ? "bg-amber-400 text-slate-950 shadow"
+                    : "bg-white/5 hover:bg-amber-400/20 text-slate-300"
+                }`}
+              >
+                <HelpCircle className="w-3 h-3" /> Maybe
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingRsvp}
+                onClick={() => handleRsvpChange("declined")}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                  myRsvp?.status === "declined"
+                    ? "bg-rose-500 text-white shadow"
+                    : "bg-white/5 hover:bg-rose-500/20 text-slate-300"
+                }`}
+              >
+                <XCircle className="w-3 h-3" /> Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 pt-3 border-t border-white/5 relative z-10 mt-4">
+          <Link
+            href="/portal/rehearsals"
+            className="flex-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow"
+          >
+            <Music2 className="w-3.5 h-3.5" />
+            <span>Rehearsal Hub</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleCancelRehearsal}
+            className={`flex-1 border text-slate-200 hover:text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+              activeRehearsal.isCancelled
+                ? "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                : "bg-black/20 hover:bg-red-500/10 hover:text-red-300 border-white/10"
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>{activeRehearsal.isCancelled ? "Reactivate" : "Cancel Rehearsal"}</span>
+          </button>
         </div>
       </div>
 
@@ -573,7 +452,7 @@ export default function MemberRehearsalsSection() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -161,7 +161,7 @@ export default function EditGigLogisticsModal({
           {/* Edit Form */}
           <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
             <div>
-              <label className="block text-slate-400 uppercase font-bold mb-1">Performance Title</label>
+              <label className="block text-slate-400 uppercase font-bold mb-1">Gig Title</label>
               <input
                 type="text"
                 required
@@ -174,7 +174,7 @@ export default function EditGigLogisticsModal({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <DatePicker
-                  label="Performance Date"
+                  label="Gig Date"
                   required
                   value={date}
                   onChange={(d) => setDate(d)}
@@ -278,7 +278,7 @@ export default function EditGigLogisticsModal({
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
                 <Landmark className="w-4 h-4 shrink-0 text-amber-400" />
                 <span>
-                  <strong>100% to Band Fund:</strong> Performance fee builds the band treasury for operations, gear, and travel ($0 individual payout).
+                  <strong>100% to Band Fund:</strong> Gig fee builds the band treasury for operations, gear, and travel ($0 individual payout).
                 </span>
               </div>
             )}

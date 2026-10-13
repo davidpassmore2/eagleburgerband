@@ -661,7 +661,7 @@ export default function RehearsalsPage() {
       );
 
       setPracticeCommentText("");
-      toast.success("Practice comment posted.");
+      toast.success("Rehearsal note posted.");
     } catch (err) {
       toast.error("Failed to post comment: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -757,10 +757,10 @@ export default function RehearsalsPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2 mt-1">
-            <Music2 className="text-yellow-400 w-6 h-6" /> Band Rehearsals &amp; Practice Hub
+            <Music2 className="text-yellow-400 w-6 h-6" /> Band Rehearsals Hub
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-            Coordinate weekly downbeats, log attendance plans, drop practice location pins, and check member availability.
+            Coordinate weekly downbeats, log attendance plans, drop rehearsal location pins, and check member availability.
           </p>
         </div>
 
@@ -788,7 +788,7 @@ export default function RehearsalsPage() {
           }`}
         >
           <Calendar className="w-4 h-4" />
-          <span>Practice Schedule &amp; RSVPs</span>
+          <span>Rehearsal Schedule &amp; RSVPs</span>
         </button>
 
         <button
@@ -886,7 +886,7 @@ export default function RehearsalsPage() {
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>
-                    {activeRehearsal.isCancelled ? "Reactivate Practice" : "Cancel Rehearsal"}
+                    {activeRehearsal.isCancelled ? "Reactivate Rehearsal" : "Cancel Rehearsal"}
                   </span>
                 </button>
               </div>
@@ -898,7 +898,7 @@ export default function RehearsalsPage() {
                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <span className="font-bold text-sm text-red-100 block">
-                    This practice session has been cancelled.
+                    This rehearsal session has been cancelled.
                   </span>
                   <p>
                     <strong>Reason:</strong>{" "}
@@ -934,7 +934,7 @@ export default function RehearsalsPage() {
 
               <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Practice Location &amp; Map Pin
+                  Rehearsal Location &amp; Map Pin
                 </span>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-yellow-400" />
@@ -1514,19 +1514,19 @@ export default function RehearsalsPage() {
               )}
             </div>
 
-            {/* Individual Practice Comments Thread */}
+            {/* Individual Rehearsal Comments Thread */}
             <div className="space-y-3 pt-3 border-t border-slate-800">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-yellow-400" />
                 <span className="text-xs font-bold text-white uppercase tracking-wider">
-                  Practice Discussion &amp; Notes ({(activeRehearsal.comments || []).length})
+                  Rehearsal Discussion &amp; Notes ({(activeRehearsal.comments || []).length})
                 </span>
               </div>
 
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {(activeRehearsal.comments || []).length === 0 ? (
                   <div className="text-xs text-slate-500 py-2">
-                    No comments yet for this practice session. Post music requests, rideshare notes, or questions below.
+                    No comments yet for this rehearsal. Post music requests, rideshare notes, or questions below.
                   </div>
                 ) : (
                   (activeRehearsal.comments || []).map((c) => (
@@ -1548,7 +1548,7 @@ export default function RehearsalsPage() {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Leave a note on this practice..."
+                  placeholder="Leave a note on this rehearsal..."
                   value={practiceCommentText}
                   onChange={(e) => setPracticeCommentText(e.target.value)}
                   onKeyDown={(e) => {
@@ -1731,7 +1731,7 @@ export default function RehearsalsPage() {
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-300 block">
-                Default Practice Location
+                Default Rehearsal Location
               </label>
               <select
                 value={settingsForm.defaultLocationId}

@@ -74,7 +74,7 @@ import {
 export type HelpCategory =
   | "All Routes"
   | "Musician Essentials"
-  | "Performances & Logistics"
+  | "Gigs & Logistics"
   | "Personnel & Attendance"
   | "Music & Repertoire"
   | "Website & Intake"
@@ -91,7 +91,7 @@ interface RouteDoc {
   launchPath?: string;
   category:
     | "Musician Essentials"
-    | "Performances & Logistics"
+    | "Gigs & Logistics"
     | "Personnel & Attendance"
     | "Music & Repertoire"
     | "Website & Intake"
@@ -172,7 +172,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     howToUse: [
       "Use the search box at the top to quickly find guides on specific tools or workflows.",
-      "Switch category tabs (Musician Essentials, Performances, Personnel, Music, Website, Finance, Business) to browse tools.",
+      "Switch category tabs (Musician Essentials, Gigs & Logistics, Personnel, Music, Website, Finance, Business) to browse tools.",
       "Explore the 'Portal Roles & Members' tab to see who holds leadership positions and what each role does.",
       "Check the 'Permissions Matrix' tab to understand what workspaces your roles unlock."
     ],
@@ -195,9 +195,9 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Core Musician Dashboard",
     iconName: "Compass",
     summary: "Central hub for upcoming gigs, personal RSVP status, rehearsals, band alerts, and personal earnings.",
-    description: "Home Base is the primary landing page for every Eagleburger Band musician. It provides a real-time snapshot of the ensemble's next scheduled performances, immediate calls for attendance confirmation, quick links to sheet music charts, and personal earnings from compensated performances.",
+    description: "Home Base is the primary landing page for every Eagleburger Band musician. It provides a real-time snapshot of the ensemble's next scheduled gigs, immediate calls for attendance confirmation, quick links to sheet music charts, and personal earnings from compensated gigs.",
     keyFeatures: [
-      "Live countdown and overview of the next upcoming performance.",
+      "Live countdown and overview of the next upcoming gig.",
       "1-click RSVP status toggle (Attending, Declined, Tentative) for pending gigs.",
       "Calendar subscription modal offering universal webcal/iCal feeds for Apple Calendar, Google Calendar, and Outlook.",
       "Personal season gig tally and earnings reconciliation record.",
@@ -205,7 +205,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     howToUse: [
       "Check your dashboard weekly for newly announced rehearsals, street parades, or private booking requests.",
-      "Click 'Subscribe to Calendar' to auto-sync performance call times directly into your smartphone's native calendar app.",
+      "Click 'Subscribe to Calendar' to auto-sync gig call times directly into your smartphone's native calendar app.",
       "Review any pending RSVPs and confirm your attendance so section leaders can monitor instrumentation balance.",
       "Use the quick links to immediately view call sheets, setlists, and sheet music charts for upcoming appearances."
     ],
@@ -220,16 +220,16 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "gig-central",
-    title: "Gig Central & Performance RSVPs",
+    title: "Gig Central & Gig RSVPs",
     path: "/portal/gigs",
     category: "Musician Essentials",
     roles: ["member"],
-    badge: "Performance Logistics",
+    badge: "Gig Logistics",
     iconName: "Calendar",
-    summary: "Complete performance schedule, call times, downbeat, uniform attire, compensation, and venue addresses.",
-    description: "Gig Central displays the full roster of confirmed, tentative, and past performances. Musicians use this view to inspect detailed performance logistics—including staging addresses, unloading instructions, attire (e.g. Band Polo, Street Brass Festive), and compensation amounts—and manage their official attendance commitments.",
+    summary: "Complete gig schedule, call times, downbeat, uniform attire, compensation, and venue addresses.",
+    description: "Gig Central displays the full roster of confirmed, tentative, and past gigs. Musicians use this view to inspect detailed gig logistics—including staging addresses, unloading instructions, attire (e.g. Band Polo, Street Brass Festive), and compensation amounts—and manage their official attendance commitments.",
     keyFeatures: [
-      "Chronological performance timeline with status badges (Confirmed, Pending, In Progress, Completed).",
+      "Chronological gig timeline with status badges (Confirmed, Pending, In Progress, Completed).",
       "Detailed logistical cards with Call Time, Downbeat, Expected End, and Venue Address.",
       "Three-state RSVP buttons: Attending (Green), Declined (Red), and Tentative (Amber).",
       "Real-time section attendance headcounts showing how many players are committed per instrument.",
@@ -357,7 +357,7 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "portal-perform",
-    title: "Stage Readiness & Live Performance Chart Viewer",
+    title: "Stage Readiness & Live Gig Chart Viewer",
     path: "/portal/perform/[gigId]",
     launchPath: "/portal/gigs",
     category: "Musician Essentials",
@@ -373,7 +373,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Offline print and PDF export toolbar for generating paper backup charts."
     ],
     howToUse: [
-      "Open the performance card from Home Base or Gig Central and tap 'Stage View'.",
+      "Open the gig card from Home Base or Gig Central and tap 'Stage View'.",
       "Keep the screen unlocked on your phone mount or music stand during downbeat.",
       "Tap any tune title to immediately load your instrument part PDF."
     ],
@@ -447,19 +447,19 @@ const ROUTE_DOCS: RouteDoc[] = [
     ]
   },
 
-  // --- Performances & Logistics ---
+  // --- Gigs & Logistics ---
   {
     id: "status-matrix",
     title: "Status Matrix & Lifecycle Guide",
     path: "/portal/status-matrix",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["member", "guest"],
     badge: "Operations Reference",
     iconName: "Workflow",
     summary: "Complete operational guide covering Lead-to-Gig lifecycle, 4-state RSVPs, member hiatus, and dispatch automation.",
-    description: "The Status Matrix is the authoritative manual for band members and managers detailing every status phase in our performance pipeline. Learn how leads convert to tentative gigs, how the 4-state RSVP system (In, Probable, Tentative, Declined) drives playing strength quorum, and how member hiatus shields musicians from email dispatches.",
+    description: "The Status Matrix is the authoritative manual for band members and managers detailing every status phase in our gig pipeline. Learn how leads convert to tentative gigs, how the 4-state RSVP system (In, Probable, Tentative, Declined) drives playing strength quorum, and how member hiatus shields musicians from email dispatches.",
     keyFeatures: [
-      "Visual end-to-end performance lifecycle from Lead intake to post-downbeat settlement.",
+      "Visual end-to-end gig lifecycle from Lead intake to post-downbeat settlement.",
       "Comprehensive definition table for all Lead, Gig, RSVP, and Member account statuses.",
       "Interactive Quorum & Playing Strength Calculator testing 'Probable' availability rules.",
       "Automated dispatch triggers: initial availability polling and confirmation dispatches.",
@@ -473,7 +473,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     proTips: [
       "Remember: marking 'Probable' allows coordinators to confirm gigs faster while accounting for work contingencies.",
-      "If taking an extended absence from the band, activate Hiatus Mode in your profile to mute all performance call sheets without losing account access."
+      "If taking an extended absence from the band, activate Hiatus Mode in your profile to mute all gig call sheets without losing account access."
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
@@ -485,7 +485,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "portal-availability",
     title: "Musician Availability & Blackout Dates",
     path: "/portal/availability",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "section_leader", "member", "guest"],
     badge: "Availability Calendar",
     iconName: "Calendar",
@@ -494,12 +494,12 @@ const ROUTE_DOCS: RouteDoc[] = [
     keyFeatures: [
       "Interactive multi-day date range picker for logging upcoming vacations and travel.",
       "Optional blackout reason notes (e.g. Work Travel, Family Vacation, Out of Town).",
-      "Automated conflict engine alerting gig managers when scheduling performances on your blacked-out dates.",
+      "Automated conflict engine alerting gig managers when scheduling gigs on your blacked-out dates.",
       "Dynamic suppression of automated availability invitations during active blackout periods.",
       "Complete historical list of active and upcoming blackout windows with 1-click deletion."
     ],
     howToUse: [
-      "Navigate to Musician Availability (/portal/availability) from the Performances menu.",
+      "Navigate to Musician Availability (/portal/availability) from the Gigs menu.",
       "Click your start date and end date on the calendar to select a blackout date range.",
       "Optionally add a note explaining your absence, then click 'Save Blackout Range'.",
       "Review your active blackout windows below the calendar."
@@ -518,7 +518,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-checkin",
     title: "Downbeat Check-In Studio",
     path: "/admin/checkin",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "section_leader"],
     badge: "Day-of-Show Roll Call",
     iconName: "UserCheck",
@@ -550,12 +550,12 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-gigs",
     title: "Gig Management Studio",
     path: "/admin/gigs",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager"],
     badge: "Logistics Administration",
     iconName: "Calendar",
-    summary: "Comprehensive lifecycle management for band performances from initial booking to post-gig wrapup.",
-    description: "The Gig Management Studio is the operational control center for gig managers and band administrators. Coordinators schedule new performances, configure call times and downbeats, establish compensation models, inspect section roll calls, manage cancellation broadcasts, and syndicate events to the public marketing site.",
+    summary: "Comprehensive lifecycle management for band gigs from initial booking to post-gig wrapup.",
+    description: "The Gig Management Studio is the operational control center for gig managers and band administrators. Coordinators schedule new gigs, configure call times and downbeats, establish compensation models, inspect section roll calls, manage cancellation broadcasts, and syndicate events to the public marketing site.",
     keyFeatures: [
       "Full CRUD lifecycle operations validated against GigSchema (Draft -> Confirmed -> In Progress -> Completed -> Cancelled).",
       "Automated Gig Cancellation Broadcast Modal: Prompts managers to broadcast urgent cancellation alerts with custom reason notes to assigned musicians.",
@@ -569,7 +569,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "To schedule a gig, click '+ New Gig' or convert an approved booking inquiry.",
       "Configure logistics (Call Time, Downbeat, Attire, Parking notes, Compensation model).",
       "Check the section instrumentation badges to verify player commitments.",
-      "If a performance must be called off, cancel the gig and confirm the cancellation broadcast modal to alert players immediately.",
+      "If a gig must be called off, cancel the gig and confirm the cancellation broadcast modal to alert players immediately.",
       "Toggle 'Publish to Fan Site' when contracts and venue permits are finalized."
     ],
     proTips: [
@@ -587,21 +587,21 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-setlists",
     title: "Setlist Studio",
     path: "/admin/setlists",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "catalog_manager"],
     badge: "Show Curation",
     iconName: "ListMusic",
-    summary: "Curate and arrange performance setlists, tune orders, keys, transitions, and timing for specific gigs.",
-    description: "Setlist Studio allows musical directors and gig coordinators to build performance setlists tailored to each gig's venue, crowd demographic, and performance length. Songs from the Master Catalog can be arranged into sets, annotated with tempo, key, and transition cues, and published to musician call sheets.",
+    summary: "Curate and arrange gig setlists, tune orders, keys, transitions, and timing for specific gigs.",
+    description: "Setlist Studio allows musical directors and gig coordinators to build gig setlists tailored to each gig's venue, crowd demographic, and gig duration. Songs from the Master Catalog can be arranged into sets, annotated with tempo, key, and transition cues, and published to musician call sheets.",
     keyFeatures: [
       "Drag-and-drop tune ordering with estimated set duration calculation.",
       "Direct integration with the Master Catalog showing tune keys, tempos, and style tags.",
-      "Performance notes per tune (e.g. 'Drum intro', 'Trumpet solo feature', 'Fade on repeat').",
+      "Gig notes per tune (e.g. 'Drum intro', 'Trumpet solo feature', 'Fade on repeat').",
       "Multi-set support (e.g. Set 1: Parade March, Set 2: Beer Garden Stage Show).",
       "1-click publish linking the curated setlist directly to the gig's digital call sheet."
     ],
     howToUse: [
-      "Select the target performance from the gig dropdown.",
+      "Select the target gig from the gig dropdown.",
       "Browse the catalog drawer on the right and click '+' to add charts to the setlist.",
       "Reorder tunes using drag handles or up/down controls to balance energy and key flow.",
       "Add transition notes or soloist assignments directly on the tune card.",
@@ -620,12 +620,12 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-dispatch",
     title: "Call Sheet Dispatch & Live Communications",
     path: "/admin/dispatch",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager"],
     badge: "Dispatch & Alerts",
     iconName: "Send",
     summary: "Publish finalized call sheets, broadcast emergency logistics changes, and track musician acknowledgments.",
-    description: "Call Sheet Dispatch is the central broadcasting station for finalized performance logistics. Gig managers use this workspace to lock in final call sheets, generate shareable links, and push real-time alerts to the band regarding parking changes, weather delays, or staging updates.",
+    description: "Call Sheet Dispatch is the central broadcasting station for finalized gig logistics. Gig managers use this workspace to lock in final call sheets, generate shareable links, and push real-time alerts to the band regarding parking changes, weather delays, or staging updates.",
     keyFeatures: [
       "Formal call sheet generation with complete itinerary, attire, setlist, and contact roster.",
       "Broadcast alerts with priority tiers: Routine Info (Blue), Urgent Logistics (Amber), Emergency (Red).",
@@ -640,7 +640,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "If rain or timing delays occur on gig day, use the 'Emergency Logistics Change' banner to blast instant updates."
     ],
     proTips: [
-      "Dispatch call sheets 48 to 72 hours prior to performance day to allow musicians to plan transit and childcare.",
+      "Dispatch call sheets 48 to 72 hours prior to gig day to allow musicians to plan transit and childcare.",
       "Always double check parking restrictions—remind brass players to pack their instrument cases if marching away from cars."
     ],
     relatedRoutes: [
@@ -652,7 +652,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     id: "admin-notifications",
     title: "Email & SMS Notification Suite & Broadcast Studio",
     path: "/admin/notifications",
-    category: "Performances & Logistics",
+    category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "membership_manager", "community_manager", "section_leader"],
     badge: "Email & SMS Broadcasts",
     iconName: "Mail",
@@ -700,12 +700,12 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Personal Inbox",
     iconName: "Bell",
     summary: "Centralized inbox for personal gig invitations, call sheet dispatches, logistics updates, and announcement broadcasts.",
-    description: "The Notifications & Inbox studio brings together all personal band communications in one convenient stream. Review urgent call time updates, invitations for upcoming performances, call sheet releases, and general announcements with instant mark-as-read controls.",
+    description: "The Notifications & Inbox studio brings together all personal band communications in one convenient stream. Review urgent call time updates, invitations for upcoming gigs, call sheet releases, and general announcements with instant mark-as-read controls.",
     keyFeatures: [
       "Real-time stream of transactional gig invitations, logistics changes, and band broadcasts.",
       "Category badges (Gig Invite, Logistics Alert, Call Sheet, Broadcast).",
       "1-tap 'Mark as Read' and batch read actions.",
-      "Direct action links jumping straight to referenced performance call sheets and RSVPs.",
+      "Direct action links jumping straight to referenced gig call sheets and RSVPs.",
       "Category notification preference toggles to customize your alert feed."
     ],
     howToUse: [
@@ -733,21 +733,21 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Attendance History",
     iconName: "CheckSquare",
     summary: "Personal attendance track record, on-time percentage, and day-of-show arrival check-in.",
-    description: "My Attendance & Check-In gives every musician complete visibility into their gig attendance history, seasonal arrival stats, and active day-of-show check-in prompts. On performance days, musicians can check in on-site or verify that their section leader recorded their arrival.",
+    description: "My Attendance & Check-In gives every musician complete visibility into their gig attendance history, seasonal arrival stats, and active day-of-show check-in prompts. On gig days, musicians can check in on-site or verify that their section leader recorded their arrival.",
     keyFeatures: [
-      "Personal on-time arrival percentage and season performance tally.",
+      "Personal on-time arrival percentage and season gig tally.",
       "Active day-of-show check-in banner when an upcoming gig call time window is open.",
       "Comprehensive timeline of past gigs and confirmed attendance records (Present, Tardy, Excused, Absent).",
       "Section leader verification confirmation status."
     ],
     howToUse: [
-      "On performance day, open /portal/checkin from Home Base or the Personnel menu.",
+      "On gig day, open /portal/checkin from Home Base or the Personnel menu.",
       "When the check-in window opens before call time, click 'Check In' to register your on-site arrival.",
       "Review your historical attendance percentage at the top of the screen."
     ],
     proTips: [
       "Section leaders can also verify your arrival on-site using the Downbeat Check-In Studio (/admin/checkin).",
-      "High attendance reliability directly impacts priority invitation for premium contracted and paid performances."
+      "High attendance reliability directly impacts priority invitation for premium contracted and paid gigs."
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
@@ -904,7 +904,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Reliability badge indicators (High Reliability > 85%, Moderate 60-84%, Needs Review < 60%)."
     ],
     howToUse: [
-      "Filter records by instrument section or performance date range.",
+      "Filter records by instrument section or gig date range.",
       "Review attendance trends ahead of high-profile civic parades to select dependable core lineups.",
       "Manually record excused absences when musicians give advance notice of work or family conflicts."
     ],
@@ -984,16 +984,16 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-catalog-analytics",
-    title: "Repertoire Performance Analytics",
+    title: "Repertoire Gig Analytics",
     path: "/admin/analytics/catalog",
     category: "Music & Repertoire",
     roles: ["admin", "catalog_manager"],
     badge: "Repertoire Intelligence",
     iconName: "BarChart3",
-    summary: "Data analytics on song performance frequency, crowd favorites, and setlist diversity.",
+    summary: "Data analytics on song gig frequency, crowd favorites, and setlist diversity.",
     description: "Repertoire Analytics mines historical setlists to provide data-driven insights into the band's musical rotation. Musical directors can identify overplayed charts, uncover forgotten gems, and ensure the ensemble maintains a diverse, energetic catalog.",
     keyFeatures: [
-      "Tune performance frequency leaderboard (Top 10 Most Played charts).",
+      "Tune gig frequency leaderboard (Top 10 Most Played charts).",
       "Dormant charts report (songs not performed in the last 6 months).",
       "Genre and tempo distribution charts (balancing funk, second line, pop, and marches).",
       "Gig type correlation (which charts perform best at civic parades vs craft breweries)."
@@ -1004,7 +1004,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Use genre breakdown charts to identify musical gaps when commissioning new arrangements."
     ],
     proTips: [
-      "Aim for at least 30% rotation in your standard festival set to keep performances fresh for loyal fans.",
+      "Aim for at least 30% rotation in your standard festival set to keep gigs fresh for loyal fans.",
       "Retire charts that haven't been called in over 18 months to keep flip folders lightweight."
     ],
     relatedRoutes: [
@@ -1039,7 +1039,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Save your submission; it will immediately appear in the band repertoire."
     ],
     proTips: [
-      "'In Repertoire' status is ideal for staple secondary arrangements, crowd request songs, and festival rotation tunes that players must keep practiced but are not on every gig call sheet.",
+      "'In Repertoire' status is ideal for staple secondary arrangements, crowd request songs, and festival rotation tunes that players must keep rehearsed but are not on every gig call sheet.",
       "Include the concert key and horn transpositions in the notes when submitting brass charts.",
       "Check existing catalog listings before submitting to ensure the tune isn't already in rehearsal."
     ],
@@ -1081,14 +1081,14 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "portal-vault",
-    title: "Rehearsal Vault & Practice Media",
+    title: "Rehearsal Vault & Media",
     path: "/portal/vault",
     category: "Music & Repertoire",
     roles: ["admin", "catalog_manager", "section_leader", "member"],
     badge: "Rehearsal Media",
     iconName: "Music",
-    summary: "Archive of rehearsal audio takes, practice notes, and march choreography references.",
-    description: "The Rehearsal Vault provides a permanent media library for practice recordings and street staging videos. Musicians can listen to recent rehearsal takes, study tricky transition tempos, and review march drill choreography between weekly rehearsals.",
+    summary: "Archive of rehearsal audio takes, rehearsal notes, and march choreography references.",
+    description: "The Rehearsal Vault provides a permanent media library for rehearsal recordings and street staging videos. Musicians can listen to recent rehearsal takes, study tricky transition tempos, and review march drill choreography between weekly rehearsals.",
     keyFeatures: [
       "Dated rehearsal audio archive with built-in streaming player.",
       "Section rehearsal notes highlighting tempo changes, cutoffs, and key soloists.",
@@ -1098,7 +1098,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     howToUse: [
       "Go to Rehearsal Vault (/portal/vault) from the Music & Repertoire navigation section.",
       "Filter by rehearsal date or search for a specific song title.",
-      "Play practice tracks directly or download them for offline listening.",
+      "Play rehearsal tracks directly or download them for offline listening.",
     ],
     proTips: [
       "Listen to the latest rehearsal takes before dress rehearsals to lock in tight horn section harmonies and rhythm section grooves.",
@@ -1191,7 +1191,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Client Pipeline",
     iconName: "Inbox",
     summary: "Triage incoming client gig inquiries submitted from the public site, manage quotes, and convert to gigs.",
-    description: "The Booking Leads pipeline captures client requests submitted via the public /book form. Gig managers review event details, estimate performance fees, communicate with event organizers, and seamlessly convert approved leads into confirmed gigs in the Gig Management Studio.",
+    description: "The Booking Leads pipeline captures client requests submitted via the public /book form. Gig managers review event details, estimate gig fees, communicate with event organizers, and seamlessly convert approved leads into confirmed gigs in the Gig Management Studio.",
     keyFeatures: [
       "Lead pipeline stages: New Lead -> Contacted -> Quoted -> Confirmed/Booked -> Declined.",
       "Automated client details capture: Event Type, Date, Venue/Location, Estimated Budget, Audience Size.",
@@ -1201,7 +1201,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     howToUse: [
       "Monitor the inbox for incoming booking requests.",
       "Review client budget and date against the existing gig calendar to verify band availability.",
-      "Follow up with the organizer to negotiate performance length, call times, and compensation.",
+      "Follow up with the organizer to negotiate gig length, call times, and compensation.",
       "Once agreed upon, click 'Convert to Gig' to immediately transition the lead into an active gig record."
     ],
     proTips: [
@@ -1316,7 +1316,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Media Storage",
     iconName: "FolderOpen",
     summary: "Cloud media asset storage for high-resolution band photography, logos, press kits, and public downloads.",
-    description: "The Media & Resource Library allows Web Managers and Administrators to organize digital brand assets. Upload performance photography, vector logos, festival stage plots, and hospitality riders for embedding into public CMS pages and sharing with press.",
+    description: "The Media & Resource Library allows Web Managers and Administrators to organize digital brand assets. Upload gig photography, vector logos, festival stage plots, and hospitality riders for embedding into public CMS pages and sharing with press.",
     keyFeatures: [
       "Asset uploads to Firebase Cloud Storage with automatic thumbnail generation.",
       "Categorization by Asset Type (Logos, Band Photos, Stage Plots, Press Kits, Documents).",
@@ -1348,7 +1348,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "Treasury & Accounting",
     iconName: "DollarSign",
     summary: "Band treasury accounting, gig fee revenues, expense reconciliation, charitable giving reporting, and musician payouts.",
-    description: "The Financial Ledger is the band treasurer's central command center. It reconciles revenue tracking from contracted performances, merch, tips, and sponsorships against operating costs, member expense reimbursements, and logged charitable gifts to present a 100% accurate net treasury balance.",
+    description: "The Financial Ledger is the band treasurer's central command center. It reconciles revenue tracking from contracted gigs, merch, tips, and sponsorships against operating costs, member expense reimbursements, and logged charitable gifts to present a 100% accurate net treasury balance.",
     keyFeatures: [
       "Reconciled 5-card Treasury Metrics Grid: Current Net, Total Inflows, Operating & Payouts, Charitable Giving Outflow, and Opening Baseline.",
       "Dedicated Charitable Giving reporting view: tracks all-time disbursements, fiscal year totals, and cause category breakdowns.",
@@ -1391,7 +1391,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Historical personal compensation and reimbursement summary record."
     ],
     howToUse: [
-      "Click '+ Submit Expense Claim' after purchasing supplies for band performances or rehearsals.",
+      "Click '+ Submit Expense Claim' after purchasing supplies for band gigs or rehearsals.",
       "Enter expense title, category, purchase date, exact dollar amount, and attach your receipt.",
       "Track approval status as the treasurer reviews the claim.",
       "Receive payment via your configured preferred payout method in your profile."
@@ -1447,11 +1447,11 @@ const ROUTE_DOCS: RouteDoc[] = [
     badge: "CRM & Venues",
     iconName: "Contact",
     summary: "Rolodex of festival directors, parade marshals, brewery coordinators, and past corporate clients.",
-    description: "The Client CRM maintains relationships with the band's performance partners across Western Pennsylvania. Gig coordinators store venue logistics contacts, stage managers, noise ordinances, and historical performance relationships.",
+    description: "The Client CRM maintains relationships with the band's gig partners across Western Pennsylvania. Gig coordinators store venue logistics contacts, stage managers, noise ordinances, and historical gig relationships.",
     keyFeatures: [
       "Contact directory categorized by client type: Festival, Parade, Wedding, Brewery, Civic/Municipal.",
       "Venue logistical profiles: Power availability, acoustic footprint, parking permits, load-in contacts.",
-      "Historical gig connection linking each client to past performances and fees.",
+      "Historical gig connection linking each client to past gigs and fees.",
       "Searchable notes for annual recurring bookings (e.g. 'Contact in March for Octoberfest')."
     ],
     howToUse: [
@@ -1551,7 +1551,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     proTips: [
       "Check route analytics on gig days to confirm that musicians are successfully opening mobile call sheets and check-in pages.",
-      "Low engagement on the Song Catalog ahead of rehearsals may indicate members need a reminder to practice upcoming tunes."
+      "Low engagement on the Song Catalog ahead of rehearsals may indicate members need a reminder to rehearse upcoming tunes."
     ],
     relatedRoutes: [
       { title: "Admin Action Audit Log", path: "/admin/audit-log" },
@@ -1644,7 +1644,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Complete historical archive of all platform stages with concise bullet points.",
       "Real-time search across stage numbers, titles, categories, and accomplishment keywords.",
       "Sort toggle: Newest First (Stage 53 -> 1) vs Oldest First (Stage 1 -> 53).",
-      "Category filters (Personnel, Performances, Music, Website, Finance, Business, etc.).",
+      "Category filters (Personnel, Gigs, Music, Website, Finance, Business, etc.).",
       "Expand All and Collapse All stage cards for easy skimming."
     ],
     howToUse: [
@@ -1706,10 +1706,10 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
   },
   {
     role: "gig_manager",
-    title: "Gig & Performance Operations Manager",
-    badge: "Performance Operations",
+    title: "Gig Operations Manager",
+    badge: "Gig Operations",
     target: "Gig Coordinators, Event Leads & Stage Managers",
-    summary: "Operational commander for all live performances, street parades, festival appearances, and private bookings. Coordinates staging logistics, call times, uniform requirements, downbeat roll calls, and mass communications.",
+    summary: "Operational commander for all live gigs, street parades, festival appearances, and private bookings. Coordinates staging logistics, call times, uniform requirements, downbeat roll calls, and mass communications.",
     responsibilities: [
       "Create, schedule, and maintain upcoming gigs, rehearsals, and street parade dates.",
       "Establish precise logistical timelines: call time, staging location, warm-up, downbeat, and conclusion.",
@@ -1719,7 +1719,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     authorities: [
       "Create and edit gigs in the Gig Management workspace (/admin/gigs).",
       "Publish and broadcast Call Sheet Dispatch emails and SMS alerts (/admin/dispatch).",
-      "Triage inbound gig inquiries and convert leads into confirmed performances (/admin/inquiries).",
+      "Triage inbound gig inquiries and convert leads into confirmed gigs (/admin/inquiries).",
       "Verify real-time attendance during day-of-show Downbeat Check-In (/admin/checkin)."
     ],
     routes: [
@@ -1727,7 +1727,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       { title: "Setlist Designer", path: "/admin/setlists" },
       { title: "Live Check-In", path: "/admin/checkin" },
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
-      { title: "Performance Inquiries", path: "/admin/inquiries" },
+      { title: "Gig Inquiries", path: "/admin/inquiries" },
       { title: "Broadcast Studio", path: "/admin/notifications" },
     ],
     accentBorder: "rgba(56, 189, 248, 0.5)",
@@ -1737,11 +1737,11 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     title: "Music Librarian & Catalog Manager",
     badge: "Repertoire & Arrangements",
     target: "Music Librarians, Arrangers & Band Music Directors",
-    summary: "Custodian of the ensemble's musical library and repertoire. Manages sheet music part distributions, arranges charts for brass and percussion voicings, uploads rehearsal reference recordings, and programs performance setlists.",
+    summary: "Custodian of the ensemble's musical library and repertoire. Manages sheet music part distributions, arranges charts for brass and percussion voicings, uploads rehearsal reference recordings, and programs gig setlists.",
     responsibilities: [
       "Curate the Master Music Catalog with chart metadata, key signatures, tempos, and arrangers.",
       "Upload sheet music PDFs for each brass and percussion part to secure cloud storage.",
-      "Link high-fidelity reference audio tracks and rehearsal practice recordings for member study.",
+      "Link high-fidelity reference audio tracks and rehearsal recordings for member study.",
       "Design chronological setlists for upcoming gigs, balancing tempos, genres, and stamina.",
       "Review member song suggestions and shepherd promising chart ideas into active arranging."
     ],
@@ -1750,7 +1750,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       "Manage sheet music part files and reference audio attachments.",
       "Assemble, reorder, and publish gig setlists (/admin/setlists).",
       "Review, upvote, and triage member song suggestions (/admin/suggestions).",
-      "Analyze catalog analytics, play counts, and chart performance frequencies (/admin/analytics/catalog)."
+      "Analyze catalog analytics, play counts, and chart gig frequencies (/admin/analytics/catalog)."
     ],
     routes: [
       { title: "Song Catalog", path: "/portal/library" },
@@ -1767,7 +1767,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     target: "Instrument Voicing Leads (Trumpet, Trombone, Sax, Sousaphone, Percussion, Auxiliary)",
     summary: "Musical and operational leaders for individual instrument sections. Responsible for monitoring section attendance, ensuring adequate part coverage (e.g. 1st vs 2nd parts, lead sousaphone), welcoming new section recruits, and executing roll call on gig day.",
     responsibilities: [
-      "Review gig RSVP headcounts to ensure balanced instrumentation before every performance.",
+      "Review gig RSVP headcounts to ensure balanced instrumentation before every gig.",
       "Coordinate instrument subbing and part reassignments if a key player is unavailable.",
       "Run Downbeat Check-In on show day to verify on-time arrival and proper attire.",
       "Guide new section members through charts, street choreography, and band traditions."
@@ -1793,7 +1793,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     summary: "Financial steward of the ensemble. Manages the official ledger, tracks gig income, calculates per-player stipend distributions, reconciles operating expenses, and oversees charitable giving allocations.",
     responsibilities: [
       "Maintain accurate entries in the Financial Ledger for all gig deposits, stipends, and operating expenses.",
-      "Calculate and record per-player earnings following paid performances.",
+      "Calculate and record per-player earnings following paid gigs.",
       "Track charitable contributions and community donations in the Giving Manager.",
       "Generate financial balance sheets, cashflow reports, and annual budget projections."
     ],
@@ -1862,7 +1862,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     title: "Equipment & Uniform Quartermaster",
     badge: "Gear & Uniform Custody",
     target: "Quartermasters, Gear Custodians & Drum Technicians",
-    summary: "Custodian of physical band assets, marching instruments, marching drum carriers, harnesses, banners, sound gear, and performance uniform jackets.",
+    summary: "Custodian of physical band assets, marching instruments, marching drum carriers, harnesses, banners, sound gear, and band uniform jackets.",
     responsibilities: [
       "Maintain the band's equipment inventory: marching drums, sousaphone stands, banners, and megaphones.",
       "Track checkout custody of band-owned instruments, marching harnesses, and uniform pieces.",
@@ -1893,13 +1893,13 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       "Moderate public fan comments and guestbook messages."
     ],
     authorities: [
-      "Review and triage public inquiries in Performance Inquiries (/admin/inquiries).",
+      "Review and triage public inquiries in Gig Inquiries (/admin/inquiries).",
       "Manage outreach beneficiary relationships in Charitable Giving (/admin/giving).",
       "Review and approve public fan comments in Comment Moderation (/admin/comments).",
       "Draft and publish announcements in the Broadcast Studio (/admin/notifications)."
     ],
     routes: [
-      { title: "Performance Inquiries", path: "/admin/inquiries" },
+      { title: "Gig Inquiries", path: "/admin/inquiries" },
       { title: "Charitable Giving", path: "/admin/giving" },
       { title: "External Contacts", path: "/admin/contacts" },
       { title: "Broadcast Studio", path: "/admin/notifications" },
@@ -1912,18 +1912,18 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     title: "Active Musician & Performing Member",
     badge: "Active Performer",
     target: "All Rostered Brass, Woodwind, Percussion & Visual Artists",
-    summary: "The core heartbeat of the Eagleburger Band. Active musicians rehearse, perform at parades and gigs, maintain personal attendance commitments, practice repertoire charts, and bring street brass energy to Pittsburgh.",
+    summary: "The core heartbeat of the Eagleburger Band. Active musicians rehearse, perform at parades and gigs, maintain personal attendance commitments, rehearse repertoire charts, and bring street brass energy to Pittsburgh.",
     responsibilities: [
       "Promptly RSVP (Attending, Tentative, Declined) to all scheduled gigs and rehearsals in Gig Central.",
       "Arrive on time for designated call times, in specified band uniform, ready for warmup and downbeat.",
-      "Practice charts and download updated sheet music parts from the Music Vault.",
+      "Rehearse charts and download updated sheet music parts from the Music Vault.",
       "Subscribe personal smartphone calendars to the band's auto-updating iCal feed.",
       "Participate in ensemble voting on repertoire suggestions and community initiatives."
     ],
     authorities: [
       "Access the Musician Portal dashboard (/portal) and personal earnings tally.",
       "Submit RSVPs and view detailed logistical call sheets (/portal/gigs).",
-      "Download sheet music part PDFs and listen to practice tracks (/portal/library).",
+      "Download sheet music part PDFs and listen to rehearsal tracks (/portal/library).",
       "Browse the band-wide Musician Directory (/portal/roster).",
       "Browse, search, and submit band charts and sheet music in the Song Catalog (/portal/library).",
       "Submit song pitches and upvote charts in Song Suggestions (/admin/suggestions)."
@@ -1945,12 +1945,12 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     target: "Guest Solos, Substitute Brass Players & Contracted Performers",
     summary: "External musicians and guest performers who join the Eagleburger Band for specific gigs, festival appearances, or temporary subbing assignments.",
     responsibilities: [
-      "Review logistical call sheets for assigned performances.",
-      "Practice assigned chart parts and attend designated staging rehearsals.",
-      "Confirm attendance for contracted performance dates."
+      "Review logistical call sheets for assigned gigs.",
+      "Rehearse assigned chart parts and attend designated staging rehearsals.",
+      "Confirm attendance for contracted gig dates."
     ],
     authorities: [
-      "View specific performance call sheets and logistical details for assigned performances.",
+      "View specific gig call sheets and logistical details for assigned gigs.",
       "Download assigned sheet music parts from the Song Catalog (/portal/library).",
       "Browse repertoire charts and submit new arrangements in the Song Catalog (/portal/library).",
       "Pitch tune ideas and vote on charts in Song Suggestions (/admin/suggestions)."
@@ -2054,11 +2054,11 @@ const FAQS = [
     a: "Open Gig Central (/portal/gigs), locate the gig, and update your RSVP button to 'Declined' or 'Tentative' immediately. If the gig is within 48 hours, also contact your Section Leader directly via the Roster Directory (/portal/roster) so they can arrange a replacement for your instrument part."
   },
   {
-    q: "Where do I find my instrument's sheet music or practice recordings?",
+    q: "Where do I find my instrument's sheet music or rehearsal recordings?",
     a: "Navigate to the Music Vault (/portal/library). You can search by song title or filter by genre tag. Click on your instrument section (e.g. Trumpet 1, Trombone 2, Snare) to download your part PDF, or press play on the audio player to hear the reference track."
   },
   {
-    q: "How do musician payouts work for paid performances?",
+    q: "How do musician payouts work for paid gigs?",
     a: "When the band receives payment for a contracted gig, the Treasurer reconciles attendance records in the Financial Ledger (/admin/finance) and calculates per-player distributions. Once distributed, your earnings are marked in the system and reflect directly on your personal Home Base dashboard."
   },
   {
@@ -2071,7 +2071,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between 'Only My Gigs' and 'All Band Gigs' in the live calendar feed?",
-    a: "When subscribing to the live iCal feed in Gig Central (/portal/gigs), you can choose between 'Only My Gigs' (syncs only the performances you have RSVP'd 'Attending' or 'Tentative' to) and 'All Band Gigs' (syncs the band's entire scheduled calendar). Any venue address or call time changes update in your native phone calendar automatically!"
+    a: "When subscribing to the live iCal feed in Gig Central (/portal/gigs), you can choose between 'Only My Gigs' (syncs only the gigs you have RSVP'd 'Attending' or 'Tentative' to) and 'All Band Gigs' (syncs the band's entire scheduled calendar). Any venue address or call time changes update in your native phone calendar automatically!"
   },
   {
     q: "How do I choose or update my shirt size for band merchandise and uniforms?",
@@ -2461,7 +2461,7 @@ export default function PortalHelpCenterPage() {
               Status Matrix & Lifecycle Guide
             </h3>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Explore how booking leads convert to performances, the 4-state RSVP system (In, Probable, Tentative, Declined),
+              Explore how booking leads convert to gigs, the 4-state RSVP system (In, Probable, Tentative, Declined),
               playing strength quorum rules, and automated dispatches.
             </p>
           </div>
@@ -2579,7 +2579,7 @@ export default function PortalHelpCenterPage() {
             [
               "All Routes",
               "Musician Essentials",
-              "Performances & Logistics",
+              "Gigs & Logistics",
               "Personnel & Attendance",
               "Music & Repertoire",
               "Website & Intake",

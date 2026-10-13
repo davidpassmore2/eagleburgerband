@@ -614,7 +614,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-400">
-                  Receive high-priority performance alerts, day-of-show call time briefings, weather shifts, and downbeat roll calls.
+                  Receive high-priority gig alerts, day-of-show call time briefings, weather shifts, and downbeat roll calls.
                 </p>
               </div>
             </div>
@@ -639,7 +639,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
                 />
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
-                We will only send text messages related to Eagleburger Band performances, logistics, and rehearsals.
+                We will only send text messages related to Eagleburger Band gigs, logistics, and rehearsals.
               </p>
             </div>
 
@@ -658,7 +658,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
                 />
                 <label htmlFor="smsConsentToggle" className="cursor-pointer space-y-1">
                   <div className="text-xs font-bold text-white flex items-center gap-2">
-                    <span>Opt In to Band SMS Text Briefings & Performance Paging</span>
+                    <span>Opt In to Band SMS Text Briefings & Gig Paging</span>
                     {smsConsent && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
                   </div>
                   <p className="text-[11px] text-slate-300 leading-relaxed">
@@ -670,7 +670,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
               {/* Compliance & Opt-Out Notice */}
               <div className="pt-2 border-t border-slate-700/50 text-[10px] text-slate-400 leading-normal space-y-1">
                 <p>
-                  <strong>Terms & Privacy:</strong> Message and data rates may apply. Frequency varies based on the band&apos;s active performance schedule. You can opt out at any time by unchecking the box above or by contacting band management.
+                  <strong>Terms & Privacy:</strong> Message and data rates may apply. Frequency varies based on the band&apos;s active gig schedule. You can opt out at any time by unchecking the box above or by contacting band management.
                 </p>
                 {profile.smsConsentUpdatedAt && (
                   <p className="font-mono text-slate-500">
@@ -903,7 +903,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-400">
-                  Provide your Venmo username, PayPal email, or Zelle handle so the Treasurer can disburse expense reimbursements and performance splits.
+                  Provide your Venmo username, PayPal email, or Zelle handle so the Treasurer can disburse expense reimbursements and gig splits.
                 </p>
               </div>
             </div>
@@ -1110,7 +1110,7 @@ function ProfileForm({ profile }: ProfileFormProps) {
               You are currently listed as an inactive member.
             </p>
             <p>
-              Your gig history and performance analytics are preserved. To reactivate your account or rejoin the band, contact a band manager or administrator.
+              Your gig history and gig analytics are preserved. To reactivate your account or rejoin the band, contact a band manager or administrator.
             </p>
           </div>
         ) : (
