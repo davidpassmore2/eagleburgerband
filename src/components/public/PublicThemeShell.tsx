@@ -7,7 +7,7 @@ function PublicThemeContainer({ children }: { children: React.ReactNode }) {
   const { getScopedStyles } = useTheme();
   return (
     <div
-      className="public-site min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-yellow-400 selection:text-slate-950 transition-colors duration-200"
+      className="public-site min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-yellow-400 selection:text-slate-950"
       style={getScopedStyles("public")}
       suppressHydrationWarning
     >

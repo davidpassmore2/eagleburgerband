@@ -17,12 +17,12 @@ export const ThemeScopeConfigSchema = z.object({
   primaryColor: z.string().default("#facc15"),       // EBB Gold / Accent
   accentColor: z.string().default("#f59e0b"),        // Secondary Accent / Amber
   logoColor: z.string().default("#facc15"),          // Dedicated Logo Emblem Hex Color
-  backgroundColor: z.string().default("#0a0802"),    // Harmonious ambient background
-  surfaceColor: z.string().default("#151105"),       // Card / Sidebar surface
-  mutedSurfaceColor: z.string().default("#1e1808"),  // Inner wells, inputs, badges
-  borderColor: z.string().default("#382c0f"),        // Card & separator borders
-  textColor: z.string().default("#fefce8"),          // Text
-  tagline: z.string().default("Brass, percussion, and mobile street revelry."),
+  backgroundColor: z.string().default("#020617"),    // Harmonious ambient background (slate-950)
+  surfaceColor: z.string().default("#0f172a"),       // Card / Sidebar surface (slate-900)
+  mutedSurfaceColor: z.string().default("#1e293b"),  // Inner wells, inputs, badges (slate-800)
+  borderColor: z.string().default("#334155"),        // Card & separator borders (slate-700)
+  textColor: z.string().default("#f8fafc"),          // Text (slate-50)
+  tagline: z.string().default("Pittsburgh's Premier Street Brass & Battery Powerhouse"),
 });
 
 export type ThemeScopeConfig = z.infer<typeof ThemeScopeConfigSchema>;
@@ -446,8 +446,8 @@ export const ThemeSchema = z.object({
 
   // Independent Public Site Typography & Visual Atmosphere
   publicTypography: TypographyConfigSchema.default({
-    headingFont: "montserrat",
-    bodyFont: "inter",
+    headingFont: "arvo",
+    bodyFont: "work-sans",
     headingTracking: "wide",
     headingUppercase: true,
   }),

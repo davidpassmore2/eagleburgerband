@@ -18,6 +18,7 @@ import { useAuth } from "./AuthContext";
 const DEFAULT_THEME: ThemeConfig = ThemeSchema.parse({});
 const LOCAL_STORAGE_SCHEME_KEY = "ebb_portal_theme_scheme";
 const LOCAL_STORAGE_MODE_KEY = "ebb_portal_theme_mode";
+const LOCAL_STORAGE_PUBLIC_THEME_KEY = "ebb_public_theme_cache";
 
 const storageSubscribe = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -210,6 +211,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [overrideMode, profilePortalThemeMode, localSavedMode]);
 
   useEffect(() => {
+    // Attempt instant theme restore from localStorage before Firestore responds
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_PUBLIC_THEME_KEY);
+      if (cached) {
+        const parsedCached = ThemeSchema.safeParse(JSON.parse(cached));
+        if (parsedCached.success) {
+          setTheme(parsedCached.data);
+          setLoading(false);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const unsub = onSnapshot(
       doc(db, "theme", "config"),
       (snap) => {
@@ -217,6 +232,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           const parsed = ThemeSchema.safeParse(snap.data());
           if (parsed.success) {
             setTheme(parsed.data);
+            try {
+              localStorage.setItem(LOCAL_STORAGE_PUBLIC_THEME_KEY, JSON.stringify(parsed.data));
+            } catch {
+              // ignore
+            }
           } else {
             console.warn("Theme parsing warning, applying defaults:", parsed.error);
             setTheme(DEFAULT_THEME);
