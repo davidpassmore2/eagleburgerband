@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   ArrowUpRight,
   Smartphone,
-  ChevronRight
+  ChevronRight,
+  Receipt,
 } from "lucide-react";
 import { User } from "@/lib/schema/user";
 import { AttendanceStatus } from "./PortalDayEventsModal";
@@ -32,6 +33,7 @@ interface MemberAnalyticsCardProps {
   gigs: AnalyticsGig[];
   userRsvps: Record<string, AttendanceStatus>;
   earnings: { paid: number; unpaid: number };
+  reimbursements?: { paid: number; pending: number };
   tuneCount: number | null;
   suggestionCount: number | null;
 }
@@ -41,6 +43,7 @@ export default function MemberAnalyticsCard({
   gigs,
   userRsvps,
   earnings,
+  reimbursements,
   tuneCount,
   suggestionCount,
 }: MemberAnalyticsCardProps) {
@@ -308,7 +311,7 @@ export default function MemberAnalyticsCard({
           </p>
         </div>
 
-        {/* Metric 4: Total Season Earnings */}
+        {/* Metric 4: Total Season Earnings & Reimbursements */}
         <div
           suppressHydrationWarning
           style={{
@@ -327,7 +330,7 @@ export default function MemberAnalyticsCard({
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-black text-white">
-              ${analytics.totalEarnings}
+              ${analytics.totalEarnings.toFixed(2)}
             </span>
             {analytics.avgEarningsPerGig > 0 && (
               <span className="text-[10px] text-slate-400 font-mono">
@@ -336,10 +339,29 @@ export default function MemberAnalyticsCard({
             )}
           </div>
           <div className="text-[11px] text-slate-400 flex items-center gap-2">
-            <span>Paid: <strong className="text-emerald-400">${earnings.paid}</strong></span>
+            <span>Paid: <strong className="text-emerald-400">${earnings.paid.toFixed(2)}</strong></span>
             <span>•</span>
-            <span>Pending: <strong style={{ color: "var(--ebb-primary)" }}>${earnings.unpaid}</strong></span>
+            <span>Pending: <strong style={{ color: "var(--ebb-primary)" }}>${earnings.unpaid.toFixed(2)}</strong></span>
           </div>
+          {reimbursements && (
+            <div className="pt-1.5 mt-1 border-t border-white/5 flex items-center justify-between text-[11px]">
+              <Link
+                href="/portal/reimbursements"
+                className="flex items-center gap-1 text-slate-400 hover:text-white transition group"
+              >
+                <Receipt className="w-3 h-3 text-emerald-400" />
+                <span>Claims:</span>
+                <strong className="text-emerald-400">${reimbursements.paid.toFixed(2)}</strong>
+              </Link>
+              {reimbursements.pending > 0 ? (
+                <span className="text-[10px] text-amber-400 font-bold font-mono">
+                  ${reimbursements.pending.toFixed(2)} in review
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-500 font-mono">settled</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -350,19 +372,25 @@ export default function MemberAnalyticsCard({
         className="pt-4 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
       >
         <div className="flex items-center gap-4 flex-wrap text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Music className="w-3.5 h-3.5 text-slate-500" />
-            <span>Vault Repertoire:</span>
-            <strong className="text-white">
+          <Link
+            href="/portal/catalog"
+            className="flex items-center gap-1.5 hover:text-white transition group"
+          >
+            <Music className="w-3.5 h-3.5 text-slate-500 group-hover:text-yellow-400 transition" />
+            <span>Song Catalog:</span>
+            <strong className="text-white group-hover:text-yellow-300 transition">
               {tuneCount !== null ? `${tuneCount} Master Charts` : "Loading..."}
             </strong>
-          </div>
+          </Link>
 
           {suggestionCount !== null && (
-            <div className="flex items-center gap-1.5">
+            <Link
+              href="/portal/suggestions"
+              className="flex items-center gap-1.5 hover:text-white transition group"
+            >
               <span>Peer Pitches:</span>
-              <strong className="text-white">{suggestionCount} Ideas</strong>
-            </div>
+              <strong className="text-white group-hover:text-yellow-300 transition">{suggestionCount} Ideas</strong>
+            </Link>
           )}
 
           <div className="flex items-center gap-1.5">
@@ -375,11 +403,20 @@ export default function MemberAnalyticsCard({
         </div>
 
         <div className="flex items-center gap-2">
+          {reimbursements && (
+            <Link
+              href="/portal/reimbursements"
+              className="text-slate-300 hover:text-white font-semibold flex items-center gap-1 hover:underline"
+            >
+              <Receipt className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Claims Hub</span>
+            </Link>
+          )}
           <Link
             href="/portal/profile"
-            className="text-slate-300 hover:text-white font-semibold flex items-center gap-1 hover:underline"
+            className="text-slate-300 hover:text-white font-semibold flex items-center gap-1 hover:underline ml-2"
           >
-            <span>Update Musician Profile</span>
+            <span>Update Profile</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
           <Link
