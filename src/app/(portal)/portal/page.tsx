@@ -444,7 +444,7 @@ export default function MusicianPortalOverviewPage() {
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Confirmed for <strong className="text-emerald-400">{confirmedCount}</strong> of{" "}
-            {upcomingGigs.length} upcoming {upcomingGigs.length === 1 ? "performance" : "performances"}.
+            {upcomingGigs.length} upcoming {upcomingGigs.length === 1 ? "gig" : "gigs"}.
             {unansweredGigs.length > 0 && (
               <span className="text-amber-400 ml-1.5 font-semibold">
                 (⚡ {unansweredGigs.length} awaiting your response)
@@ -518,150 +518,164 @@ export default function MusicianPortalOverviewPage() {
         </div>
       )}
 
-      {/* 3. Next Performance Spotlight Hero */}
-      {nextGig && (
-        <div
-          suppressHydrationWarning
-          style={{
-            backgroundColor: "var(--ebb-surface)",
-            borderColor: "var(--ebb-border)",
-          }}
-          className="border rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-colors"
-        >
-          {/* Subtle accent glow */}
-          <div 
-            className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
-            style={{ backgroundColor: "var(--ebb-primary)" }}
-          />
+      {/* 3. "What's Next" Hub: Side-by-Side Next Gig & Next Rehearsal */}
+      <div className="space-y-3">
+        <div className="px-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span>What&apos;s Next</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Immediate band commitments &mdash; your next gig call sheet and upcoming rehearsal roll call.
+            </p>
+          </div>
+        </div>
 
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
-            <div className="space-y-2 max-w-2xl">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  suppressHydrationWarning
-                  style={{
-                    backgroundColor: "var(--ebb-surface-muted)",
-                    borderColor: "var(--ebb-border)",
-                    color: "var(--ebb-primary)",
-                  }}
-                  className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border"
-                >
-                  Next Performance
-                </span>
-                <span className="text-xs font-mono text-slate-300 font-bold">
-                  {nextGig.date}
-                </span>
-                {countdownText && (
-                  <span className="text-xs font-mono font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
-                    <Clock className="w-3 h-3 text-yellow-400" />
-                    <span>{countdownText}</span>
-                  </span>
-                )}
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+          {/* Card 1: Next Gig */}
+          {nextGig ? (
+            <div
+              suppressHydrationWarning
+              style={{
+                backgroundColor: "var(--ebb-surface)",
+                borderColor: "var(--ebb-border)",
+              }}
+              className="border rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-colors flex flex-col justify-between"
+            >
+              {/* Subtle accent glow */}
+              <div 
+                className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
+                style={{ backgroundColor: "var(--ebb-primary)" }}
+              />
 
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                {nextGig.internalLogistics?.title || nextGig.publicDetails?.title || "Eagleburger Gig"}
-              </h2>
+              <div className="space-y-4 relative z-10 flex-1">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      suppressHydrationWarning
+                      style={{
+                        backgroundColor: "var(--ebb-surface-muted)",
+                        borderColor: "var(--ebb-border)",
+                        color: "var(--ebb-primary)",
+                      }}
+                      className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border"
+                    >
+                      Next Gig
+                    </span>
+                    <span className="text-xs font-mono text-slate-300 font-bold">
+                      {nextGig.date}
+                    </span>
+                    {countdownText && (
+                      <span className="text-xs font-mono font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                        <Clock className="w-3 h-3 text-yellow-400" />
+                        <span>{countdownText}</span>
+                      </span>
+                    )}
+                  </div>
 
-              <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-xs text-slate-300">
-                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
-                  <Clock className="w-3.5 h-3.5 text-yellow-400" />
-                  Call: <strong className="text-white">{nextGig.internalLogistics?.callTime || "TBD"}</strong>
-                  <span className="text-slate-500">|</span>
-                  Downbeat: <strong className="text-white">{nextGig.internalLogistics?.downbeat || "TBD"}</strong>
-                </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white truncate">
+                    {nextGig.internalLogistics?.title || nextGig.publicDetails?.title || "Eagleburger Gig"}
+                  </h3>
 
-                <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{nextGig.publicDetails?.venue || nextGig.internalLogistics?.unloadingAddress || "TBD"}</span>
-                </span>
+                  <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3 text-xs text-slate-300">
+                    <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
+                      <Clock className="w-3.5 h-3.5 text-yellow-400" />
+                      Call: <strong className="text-white">{nextGig.internalLogistics?.callTime || "TBD"}</strong>
+                      <span className="text-slate-500">|</span>
+                      Downbeat: <strong className="text-white">{nextGig.internalLogistics?.downbeat || "TBD"}</strong>
+                    </span>
 
-                {nextGig.internalLogistics?.attire && (
-                  <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    <span>{nextGig.internalLogistics.attire}</span>
-                  </span>
-                )}
-              </div>
-            </div>
+                    <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5 truncate max-w-full">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="truncate">{nextGig.publicDetails?.venue || nextGig.internalLogistics?.unloadingAddress || "TBD"}</span>
+                    </span>
 
-            {/* Quick 1-Click RSVP on Spotlight + Action Links */}
-            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-2.5 w-full lg:w-auto shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-white/5">
-              {/* RSVP status buttons */}
-              <div className="bg-black/30 p-2 rounded-xl border border-white/10 space-y-1.5">
-                <div className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center justify-between">
-                  <span>My Spotlight RSVP</span>
-                  {userRsvps[nextGig.id] === "attending" && (
-                    <span className="text-emerald-400 font-bold">Confirmed In</span>
-                  )}
-                  {userRsvps[nextGig.id] === "probable" && (
-                    <span className="text-cyan-400 font-bold">Probable</span>
-                  )}
-                  {userRsvps[nextGig.id] === "tentative" && (
-                    <span className="text-amber-400 font-bold">Tentative</span>
-                  )}
-                  {userRsvps[nextGig.id] === "declined" && (
-                    <span className="text-rose-400 font-bold">Declined</span>
-                  )}
-                  {!userRsvps[nextGig.id] && (
-                    <span className="text-amber-400 font-bold animate-pulse">Required</span>
-                  )}
+                    {nextGig.internalLogistics?.attire && (
+                      <span className="flex items-center gap-1.5 bg-black/20 px-2.5 py-1 rounded-lg border border-white/5">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span>{nextGig.internalLogistics.attire}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                  <button
-                    type="button"
-                    disabled={isUpdatingRsvp}
-                    onClick={() => handleRsvpChange(nextGig.id, "attending")}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      userRsvps[nextGig.id] === "attending"
-                        ? "bg-emerald-500 text-slate-950 shadow"
-                        : "bg-white/5 hover:bg-emerald-500/20 text-slate-300"
-                    }`}
-                  >
-                    <Check className="w-3 h-3" /> In
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isUpdatingRsvp}
-                    onClick={() => handleRsvpChange(nextGig.id, "probable")}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      userRsvps[nextGig.id] === "probable"
-                        ? "bg-cyan-500 text-slate-950 shadow"
-                        : "bg-white/5 hover:bg-cyan-500/20 text-slate-300"
-                    }`}
-                  >
-                    <Clock className="w-3 h-3" /> Probable
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isUpdatingRsvp}
-                    onClick={() => handleRsvpChange(nextGig.id, "tentative")}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      userRsvps[nextGig.id] === "tentative"
-                        ? "bg-amber-400 text-slate-950 shadow"
-                        : "bg-white/5 hover:bg-amber-400/20 text-slate-300"
-                    }`}
-                  >
-                    <HelpCircle className="w-3 h-3" /> Maybe
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isUpdatingRsvp}
-                    onClick={() => handleRsvpChange(nextGig.id, "declined")}
-                    className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
-                      userRsvps[nextGig.id] === "declined"
-                        ? "bg-rose-500 text-white shadow"
-                        : "bg-white/5 hover:bg-rose-500/20 text-slate-300"
-                    }`}
-                  >
-                    <XCircle className="w-3 h-3" /> Out
-                  </button>
+                {/* Quick 1-Click RSVP on Spotlight */}
+                <div className="bg-black/30 p-2.5 rounded-xl border border-white/10 space-y-1.5">
+                  <div className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center justify-between">
+                    <span>My Spotlight RSVP</span>
+                    {userRsvps[nextGig.id] === "attending" && (
+                      <span className="text-emerald-400 font-bold">Confirmed In</span>
+                    )}
+                    {userRsvps[nextGig.id] === "probable" && (
+                      <span className="text-cyan-400 font-bold">Probable</span>
+                    )}
+                    {userRsvps[nextGig.id] === "tentative" && (
+                      <span className="text-amber-400 font-bold">Tentative</span>
+                    )}
+                    {userRsvps[nextGig.id] === "declined" && (
+                      <span className="text-rose-400 font-bold">Declined</span>
+                    )}
+                    {!userRsvps[nextGig.id] && (
+                      <span className="text-amber-400 font-bold animate-pulse">Required</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isUpdatingRsvp}
+                      onClick={() => handleRsvpChange(nextGig.id, "attending")}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                        userRsvps[nextGig.id] === "attending"
+                          ? "bg-emerald-500 text-slate-950 shadow"
+                          : "bg-white/5 hover:bg-emerald-500/20 text-slate-300"
+                      }`}
+                    >
+                      <Check className="w-3 h-3" /> In
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdatingRsvp}
+                      onClick={() => handleRsvpChange(nextGig.id, "probable")}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                        userRsvps[nextGig.id] === "probable"
+                          ? "bg-cyan-500 text-slate-950 shadow"
+                          : "bg-white/5 hover:bg-cyan-500/20 text-slate-300"
+                      }`}
+                    >
+                      <Clock className="w-3 h-3" /> Probable
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdatingRsvp}
+                      onClick={() => handleRsvpChange(nextGig.id, "tentative")}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                        userRsvps[nextGig.id] === "tentative"
+                          ? "bg-amber-400 text-slate-950 shadow"
+                          : "bg-white/5 hover:bg-amber-400/20 text-slate-300"
+                      }`}
+                    >
+                      <HelpCircle className="w-3 h-3" /> Maybe
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdatingRsvp}
+                      onClick={() => handleRsvpChange(nextGig.id, "declined")}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                        userRsvps[nextGig.id] === "declined"
+                          ? "bg-rose-500 text-white shadow"
+                          : "bg-white/5 hover:bg-rose-500/20 text-slate-300"
+                      }`}
+                    >
+                      <XCircle className="w-3 h-3" /> Out
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-3 border-t border-white/5 relative z-10 mt-4">
                 <Link
                   href={`/portal/perform/${nextGig.id}`}
                   className="flex-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow"
@@ -684,9 +698,48 @@ export default function MusicianPortalOverviewPage() {
                 </Link>
               </div>
             </div>
-          </div>
+          ) : (
+            <div
+              suppressHydrationWarning
+              style={{
+                backgroundColor: "var(--ebb-surface)",
+                borderColor: "var(--ebb-border)",
+              }}
+              className="border rounded-2xl p-6 shadow-xl relative overflow-hidden transition-colors flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <span
+                  suppressHydrationWarning
+                  style={{
+                    backgroundColor: "var(--ebb-surface-muted)",
+                    borderColor: "var(--ebb-border)",
+                    color: "var(--ebb-primary)",
+                  }}
+                  className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border inline-block"
+                >
+                  Next Gig
+                </span>
+                <h3 className="text-lg font-bold text-white">No Upcoming Gigs Scheduled</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Enjoy the downtime or browse our music catalog. New gig bookings and festival dates will appear here automatically as they are confirmed.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-white/5 mt-4">
+                <Link
+                  href="/portal/gigs"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-yellow-400 hover:text-yellow-300"
+                >
+                  <span>View Full Gig Calendar</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Card 2: Next Rehearsal */}
+          <MemberRehearsalsSection />
         </div>
-      )}
+      </div>
 
 
       {/* Unread Broadcast Alert */}
@@ -757,13 +810,13 @@ export default function MusicianPortalOverviewPage() {
         </div>
       )}
 
-      {/* 3. Upcoming Performance Schedule & Month-View Calendar Grid */}
+      {/* 4. Upcoming Gig Schedule & Month-View Calendar Grid */}
       <div id="schedule-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
               <Calendar className="w-4 h-4" style={{ color: "var(--ebb-primary)" }} />
-              <span>Upcoming Performance Schedule</span>
+              <span>Upcoming Gig Schedule</span>
             </h2>
             <p className="text-xs text-slate-400">
               Interactive schedule queue and month-view calendar with call times and 1-click RSVP.
@@ -980,10 +1033,7 @@ export default function MusicianPortalOverviewPage() {
         suggestionCount={suggestionCount}
       />
 
-      {/* 5. Weekly Band Rehearsals & Practice */}
-      <MemberRehearsalsSection />
-
-      {/* 6. Thematic & Functional Action Hubs */}
+      {/* 5. Thematic & Functional Action Hubs */}
       <div className="space-y-3">
         <div className="px-1 flex items-center justify-between">
           <h2 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -993,7 +1043,7 @@ export default function MusicianPortalOverviewPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Hub 1: Performance & Logistics */}
+          {/* Hub 1: Gig Logistics */}
           <div
             suppressHydrationWarning
             style={{
@@ -1020,7 +1070,7 @@ export default function MusicianPortalOverviewPage() {
                 </span>
               </div>
               <h3 className="font-extrabold text-sm sm:text-base text-white">
-                Performance Logistics
+                Gig Logistics
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Coordinate call times, sync live feed to mobile devices, and declare blackout dates.

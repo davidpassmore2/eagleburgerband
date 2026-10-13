@@ -134,7 +134,7 @@ export default function PortalDayEventsModal({
                 {formattedDate}
               </h2>
               <p className="text-xs text-slate-400">
-                {gigs.length} {gigs.length === 1 ? "Performance Scheduled" : "Performances Scheduled"}
+                {gigs.length} {gigs.length === 1 ? "Gig Scheduled" : "Gigs Scheduled"}
               </p>
             </div>
           </div>

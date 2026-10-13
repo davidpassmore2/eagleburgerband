@@ -69,7 +69,7 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeText: "#60a5fa",
     phase: "Intake & Proposal",
     actor: "Public Host / Manager / Member",
-    summary: "Freshly submitted booking inquiry or suggested performance opportunity awaiting review.",
+    summary: "Freshly submitted booking inquiry or suggested gig opportunity awaiting review.",
     impact: "Unreviewed by band management. No musician notifications or calendar holds.",
     nextSteps: "Gig manager evaluates date viability, logistics, and band schedule.",
     automation: "Manager alert sent on submission via booking intake form.",
@@ -85,7 +85,7 @@ const STATUS_DATA: StatusDefinition[] = [
     actor: "Gig Manager / Leadership",
     summary: "Manager is actively assessing venue, downbeat, compensation, and calendar fit.",
     impact: "Active inquiry undergoing logistical diligence. Band schedule hold pending.",
-    nextSteps: "Gig manager reaches out to the client or generates a performance quote.",
+    nextSteps: "Gig manager reaches out to the client or generates a gig quote.",
   },
   {
     code: "contacted",
@@ -97,7 +97,7 @@ const STATUS_DATA: StatusDefinition[] = [
     phase: "Client Dialogue",
     actor: "Gig Manager",
     summary: "Initial dialogue established with event organizer to align on call time and compensation.",
-    impact: "Client response awaited before drafting firm performance terms.",
+    impact: "Client response awaited before drafting firm gig terms.",
     nextSteps: "Send formal financial quote or convert if details are settled.",
   },
   {
@@ -122,7 +122,7 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeText: "#4ade80",
     phase: "Handoff to Production",
     actor: "Gig Manager",
-    summary: "Lead has successfully transitioned into a full Performance record on the band calendar.",
+    summary: "Lead has successfully transitioned into a full Gig record on the band calendar.",
     impact: "Lead is finalized. A linked Gig record is created with draft/tentative status.",
     nextSteps: "Band musicians are queried for availability via automated dispatch.",
     automation: "Initial availability dispatch automatically triggered to active non-blackout members.",
@@ -176,7 +176,7 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeBg: "rgba(16, 185, 129, 0.15)",
     badgeBorder: "rgba(16, 185, 129, 0.4)",
     badgeText: "#34d399",
-    phase: "Locked Performance",
+    phase: "Locked Gig",
     actor: "Gig Manager",
     summary: "Gig is locked! Section instrumentation quorum has been achieved (In + Probable >= Quorum).",
     impact: "Appears as confirmed on public site & member iCal feeds. Call sheets and staging locked.",
@@ -192,8 +192,8 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeText: "#818cf8",
     phase: "Post-Production",
     actor: "Gig Manager & Treasurer",
-    summary: "Performance has concluded! Downbeat check-ins recorded and verified.",
-    impact: "Performance moves to past gigs archive. Attendance logged for member tallies.",
+    summary: "Gig has concluded! Downbeat check-ins recorded and verified.",
+    impact: "Gig moves to past gigs archive. Attendance logged for member tallies.",
     nextSteps: "Treasurer reviews check-in roll and distributes member compensation / payouts.",
   },
   {
@@ -205,7 +205,7 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeText: "#f87171",
     phase: "Terminated",
     actor: "Gig Manager / Event Host",
-    summary: "Performance called off due to inclement weather, client cancellation, or ensemble quorum failure.",
+    summary: "Gig called off due to inclement weather, client cancellation, or ensemble quorum failure.",
     impact: "Removed from active calendar. Marked cancelled across member feeds.",
     nextSteps: "Cancellation broadcast sent to committed musicians. Calendar event retracted.",
     automation: "Emergency cancellation broadcast dispatched if sudden call-off occurs.",
@@ -334,7 +334,7 @@ const STATUS_DATA: StatusDefinition[] = [
     phase: "Alumni",
     actor: "Admin / Membership Manager",
     summary: "Former player or alumni who has stepped down permanently from the active ensemble.",
-    impact: "No performance dispatch emails or active roster assignments.",
+    impact: "No gig dispatch emails or active roster assignments.",
     nextSteps: "Account retained for alumni historical credits.",
   },
 ];
@@ -441,7 +441,7 @@ export default function StatusMatrixGuidePage() {
               Status Matrix & Lifecycle Guide
             </h1>
             <p className="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-              The official reference for how the Eagleburger Band coordinates performances—from
+              The official reference for how the Eagleburger Band coordinates gigs—from
               initial booking inquiries (<strong>Leads</strong>) to converted <strong>Gigs</strong>,
               musician availability polling, the <strong>4-State RSVP system</strong>, and automated
               call sheet dispatches.
@@ -525,10 +525,10 @@ export default function StatusMatrixGuidePage() {
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Workflow className="w-5 h-5 text-amber-400" />
-              <span>The End-to-End Performance Lifecycle</span>
+              <span>The End-to-End Gig Lifecycle</span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              How an inquiry transforms step-by-step into a fully staffed downbeat performance.
+              How an inquiry transforms step-by-step into a fully staffed downbeat gig.
             </p>
           </div>
           <button
@@ -963,7 +963,7 @@ export default function StatusMatrixGuidePage() {
                 <p className="text-slate-300 leading-relaxed">
                   Community musicians balance professional careers and personal lives. Waiting for 100% &ldquo;In&rdquo;
                   RSVPs often delays booking confirmations until clients take their business elsewhere. By combining
-                  <strong>In</strong> and <strong>Probable</strong>, gig coordinators can lock performances days earlier
+                  <strong>In</strong> and <strong>Probable</strong>, gig coordinators can lock gigs days earlier
                   while maintaining complete confidence in section instrumentation balance.
                 </p>
               </div>
@@ -987,7 +987,7 @@ export default function StatusMatrixGuidePage() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-slate-400">
                         {item.category === "lead" && "Booking Lead"}
-                        {item.category === "gig" && "Performance Gig"}
+                        {item.category === "gig" && "Gig"}
                         {item.category === "rsvp" && "Musician RSVP"}
                         {item.category === "member" && "Member Account"}
                       </span>
@@ -1120,7 +1120,7 @@ export default function StatusMatrixGuidePage() {
               <span>2. Confirmation Dispatch</span>
             </div>
             <p className="leading-relaxed text-slate-300">
-              When the Gig Manager confirms the performance, a dedicated <strong>Confirmation Dispatch</strong> email
+              When the Gig Manager confirms the gig, a dedicated <strong>Confirmation Dispatch</strong> email
               is broadcast directly to musicians who marked their availability as <strong>&ldquo;In&rdquo;</strong> or
               <strong>&ldquo;Probable&rdquo;</strong>.
             </p>
@@ -1219,7 +1219,7 @@ export default function StatusMatrixGuidePage() {
             <p className="text-slate-300 leading-relaxed">
               <strong>Blackout Dates</strong> are specific dates or date ranges (e.g., family vacation July 4-10)
               logged on your availability calendar. <strong>Hiatus Mode</strong> is an ongoing account state that
-              mutes all performance inquiries until you toggle it back on.
+              mutes all gig inquiries until you toggle it back on.
             </p>
           </div>
 

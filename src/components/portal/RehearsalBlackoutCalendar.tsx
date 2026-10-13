@@ -157,7 +157,7 @@ export default function RehearsalBlackoutCalendar({
             Rehearsal & Musician Blackout Calendar
           </h3>
           <p className="text-xs text-slate-400">
-            View scheduled band practices alongside member out-of-town blackouts to gauge rehearsal quorum.
+            View scheduled band rehearsals alongside member out-of-town blackouts to gauge rehearsal quorum.
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export default function RehearsalBlackoutCalendar({
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
           <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-            <Music className="w-3 h-3 text-yellow-400" /> Practices in {monthLabel.split(" ")[0]}
+            <Music className="w-3 h-3 text-yellow-400" /> Rehearsals in {monthLabel.split(" ")[0]}
           </div>
           <div className="text-lg font-bold text-white font-mono mt-0.5">
             {monthStats.rehearsalCount}
@@ -297,7 +297,7 @@ export default function RehearsalBlackoutCalendar({
                     >
                       <div className="flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 shrink-0" />
-                        <span className="truncate">{formatNonMilitaryTime(dayRehearsal.startTime, false)} Practice</span>
+                        <span className="truncate">{formatNonMilitaryTime(dayRehearsal.startTime, false)} Rehearsal</span>
                       </div>
                     </div>
                   )}

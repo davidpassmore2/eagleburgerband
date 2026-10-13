@@ -810,7 +810,7 @@ export default function MemberReimbursementsPage() {
               {/* Associated Gig (Optional) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
-                  <span>Associated Performance / Event (Optional)</span>
+                  <span>Associated Gig / Event (Optional)</span>
                   <span className="text-[10px] text-slate-500">Links expense to gig ledger</span>
                 </label>
                 <select

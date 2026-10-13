@@ -269,7 +269,7 @@ export default function MusicianVaultPage() {
     return (
       <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
         <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-        Loading Practice Vault & Stems...
+        Loading Rehearsal Vault & Stems...
       </div>
     );
   }
@@ -299,7 +299,7 @@ export default function MusicianVaultPage() {
             <Radio className="w-7 h-7 text-yellow-400" /> Rehearsal Vault
           </h1>
           <p className="text-xs text-slate-400">
-            Section stems, reference full-mix recordings, and interactive click tracks to practice your parts at home.
+            Section stems, reference full-mix recordings, and interactive click tracks to rehearse your parts at home.
           </p>
         </div>
 
@@ -506,7 +506,7 @@ export default function MusicianVaultPage() {
       {filteredTracks.length === 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
           <Radio className="w-8 h-8 text-slate-600 mx-auto" />
-          <h3 className="text-sm font-bold text-white">No Practice Stems Found</h3>
+          <h3 className="text-sm font-bold text-white">No Rehearsal Stems Found</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             No audio tracks matched your selected section or search query.
           </p>
@@ -526,7 +526,7 @@ export default function MusicianVaultPage() {
             </button>
             <div className="min-w-0">
               <span className="text-[10px] font-mono uppercase text-yellow-400 font-bold block">
-                Now Practicing
+                Now Rehearsing
               </span>
               <div className="text-sm font-bold text-white truncate">
                 {currentTrack.songTitle}
@@ -662,7 +662,7 @@ export default function MusicianVaultPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Practice & Rehearsal Notes</label>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Rehearsal Notes</label>
                 <textarea
                   rows={2}
                   placeholder="e.g. Listen for the pickup at bar 16; solo section count-in on beat 4."

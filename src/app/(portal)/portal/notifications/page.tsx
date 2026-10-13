@@ -739,7 +739,7 @@ export default function MemberNotificationsPage() {
                   <div className="space-y-0.5">
                     <span className="text-xs font-bold text-white block">Rehearsal Calls & Sectionals</span>
                     <span className="text-[11px] text-slate-400">
-                      Weekly rehearsal reminders, sectional practice calls, and attendance deadlines.
+                      Weekly rehearsal reminders, sectional rehearsal calls, and attendance deadlines.
                     </span>
                   </div>
                   <input

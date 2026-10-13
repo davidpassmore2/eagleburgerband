@@ -338,8 +338,8 @@ export default function RehearsalMapPicker({
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <MapPin className="w-4 h-4 text-yellow-400" />
             {isAddingNew
-              ? "Drop Pin & Save New Practice Ground"
-              : activeLocation?.name || "Practice Locations"}
+              ? "Drop Pin & Save New Rehearsal Ground"
+              : activeLocation?.name || "Rehearsal Locations"}
           </h3>
           {activeLocation && !isAddingNew && (
             <p className="text-xs text-slate-400">
@@ -449,7 +449,7 @@ export default function RehearsalMapPicker({
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">
-                  Save New Practice Ground
+                  Save New Rehearsal Ground
                 </span>
                 <span className="text-[10px] text-yellow-400 font-mono">Pin Position Active</span>
               </div>
