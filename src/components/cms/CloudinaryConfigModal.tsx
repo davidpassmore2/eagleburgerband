@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Cloud,
@@ -41,32 +41,33 @@ export default function CloudinaryConfigModal({
   const [uploadPreset, setUploadPreset] = useState(config.uploadPreset);
   const [folder, setFolder] = useState(config.folder || "eagleburgerband_media");
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Environment variables detected from Next.js runtime
   const envCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
   const envUploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
   const hasEnvVars = Boolean(envCloudName && envUploadPreset);
 
-  const loadConfig = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const active = await fetchPersistentCloudinaryConfig();
-      setConfig(active);
-      setCloudName(active.cloudName || envCloudName);
-      setUploadPreset(active.uploadPreset || envUploadPreset);
-      setFolder(active.folder || "eagleburgerband_media");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [envCloudName, envUploadPreset]);
-
-  // Synchronize state whenever modal opens
+  // Synchronize state asynchronously whenever modal opens
   useEffect(() => {
-    if (isOpen) {
-      loadConfig();
-    }
-  }, [isOpen, loadConfig]);
+    if (!isOpen) return;
+
+    let isMounted = true;
+    fetchPersistentCloudinaryConfig()
+      .then((active) => {
+        if (!isMounted) return;
+        setConfig(active);
+        setCloudName(active.cloudName || envCloudName);
+        setUploadPreset(active.uploadPreset || envUploadPreset);
+        setFolder(active.folder || "eagleburgerband_media");
+      })
+      .catch((err) => {
+        console.warn("Failed to load persistent Cloudinary config:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, envCloudName, envUploadPreset]);
 
   if (!isOpen) return null;
 

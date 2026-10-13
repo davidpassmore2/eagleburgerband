@@ -7,7 +7,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { authedFetch } from "@/lib/firebase/authedFetch";
 import {
-  CloudinaryConfig,
   CloudinaryConfigSchema,
 } from "@/lib/schema/integrationConfig";
 
