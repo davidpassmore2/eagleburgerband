@@ -88,6 +88,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
 
   // --- Performances & Logistics ---
   {
+    id: "rehearsals",
+    title: "Band Rehearsals & Practice",
+    href: "/portal/rehearsals",
+    icon: Music2,
+    requiredRoles: ["member", "guest"],
+    category: "Performances & Logistics",
+  },
+  {
     id: "member-gigs",
     title: "Performance Calendar & RSVPs",
     href: "/portal/gigs",

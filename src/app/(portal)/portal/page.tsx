@@ -22,6 +22,7 @@ import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import PortalMonthCalendar from "@/components/portal/PortalMonthCalendar";
 import MemberAnalyticsCard from "@/components/portal/MemberAnalyticsCard";
+import MemberRehearsalsSection from "@/components/portal/MemberRehearsalsSection";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { toast } from "@/lib/context/ToastContext";
@@ -979,7 +980,10 @@ export default function MusicianPortalOverviewPage() {
         suggestionCount={suggestionCount}
       />
 
-      {/* 5. Thematic & Functional Action Hubs */}
+      {/* 5. Weekly Band Rehearsals & Practice */}
+      <MemberRehearsalsSection />
+
+      {/* 6. Thematic & Functional Action Hubs */}
       <div className="space-y-3">
         <div className="px-1 flex items-center justify-between">
           <h2 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1024,6 +1028,17 @@ export default function MusicianPortalOverviewPage() {
             </div>
 
             <div className="space-y-1.5 pt-2 border-t border-white/5">
+              <Link
+                href="/portal/rehearsals"
+                className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"
+              >
+                <span className="flex items-center gap-2">
+                  <Music2 className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>Band Rehearsals Hub</span>
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </Link>
+
               <Link
                 href="/portal/availability"
                 className="w-full text-slate-300 hover:text-white p-2 rounded-xl text-xs font-semibold flex items-center justify-between hover:bg-white/5 transition"

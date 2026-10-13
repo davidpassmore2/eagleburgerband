@@ -44,6 +44,10 @@ service cloud.firestore {
       return hasAnyRole(['membership_manager']);
     }
 
+    function canManageGigs() {
+      return hasAnyRole(['gig_manager']);
+    }
+
     function changedKeys() {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
@@ -208,6 +212,28 @@ service cloud.firestore {
       match /dispatches/{dispatchId} {
         allow read: if isMember();
         allow write: if hasAnyRole(['gig_manager']);
+      }
+    }
+
+    match /rehearsal_settings/{configId} {
+      allow read: if isMember();
+      allow write: if canManageGigs() || isAdmin();
+    }
+
+    match /rehearsal_locations/{locationId} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if canManageGigs() || isAdmin();
+    }
+
+    match /rehearsals/{rehearsalId} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if canManageGigs() || isAdmin();
+
+      match /rsvps/{userId} {
+        allow read: if isMember();
+        allow write: if isSignedIn() && request.auth.uid == userId;
       }
     }
 
