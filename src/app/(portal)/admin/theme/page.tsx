@@ -2200,6 +2200,7 @@ export default function ThemeCustomizerPage() {
               enabled: false,
               opacity: 0.7,
               density: "medium" as BubbleDensity,
+              variability: 0.5,
             };
 
             const updateBubbles = (updates: Partial<BubbleEffectConfig>) => {
@@ -2212,6 +2213,7 @@ export default function ThemeCustomizerPage() {
                       enabled: false,
                       opacity: 0.7,
                       density: "medium",
+                      variability: 0.5,
                     }),
                     ...updates,
                   },
@@ -2394,6 +2396,64 @@ export default function ThemeCustomizerPage() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* Variability Control */}
+                  <div className="space-y-3 pt-4 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-white flex items-center gap-2">
+                        <Sliders className="w-3.5 h-3.5 text-yellow-400" />
+                        Variability
+                      </label>
+                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 text-yellow-400">
+                        {Math.round((bubbles.variability ?? 0.5) * 100)}%
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Controls the diversity of individual bubble ascent speeds, differentiation on vertical movement arcs (sway &amp; drift), and size variance between micro-pearls and giant spheres.
+                    </p>
+
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={bubbles.variability ?? 0.5}
+                        onChange={(e) => updateBubbles({ variability: parseFloat(e.target.value) })}
+                        className="w-full accent-yellow-400 cursor-pointer h-2 bg-slate-950 rounded-lg border border-slate-800"
+                      />
+
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-0.5">
+                        <span>0% (Uniform speed &amp; size, straight path)</span>
+                        <span>100% (High speed contrast, wide arcs, 12-95px)</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[10px] text-slate-500 font-mono">Presets:</span>
+                        {[
+                          { label: "0% Uniform", value: 0 },
+                          { label: "35% Subtle", value: 0.35 },
+                          { label: "50% Balanced", value: 0.5 },
+                          { label: "75% Diverse", value: 0.75 },
+                          { label: "100% Dynamic", value: 1.0 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => updateBubbles({ variability: preset.value })}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono transition border ${
+                              Math.abs((bubbles.variability ?? 0.5) - preset.value) < 0.04
+                                ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/40 font-bold"
+                                : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -2987,6 +3047,7 @@ export default function ThemeCustomizerPage() {
                 enabled: false,
                 opacity: 0.7,
                 density: "medium" as BubbleDensity,
+                variability: 0.5,
               };
 
               return (
@@ -3102,6 +3163,18 @@ export default function ThemeCustomizerPage() {
                         </span>
                       </div>
                       <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Variability:</span>
+                        <span className="font-mono text-yellow-400 font-bold">
+                          {Math.round((bubbles.variability ?? 0.5) * 100)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900 col-span-2">
+                        <span className="text-slate-500">Movement Arcs:</span>
+                        <span className="font-mono text-slate-300">
+                          {(bubbles.variability ?? 0.5) === 0 ? "Straight Ascent" : `Dynamic S/C-Curves (±${Math.round(45 * (bubbles.variability ?? 0.5))}px)`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900 col-span-2">
                         <span className="text-slate-500">Target:</span>
                         <span className="font-mono text-slate-300">
                           Public Fan Site

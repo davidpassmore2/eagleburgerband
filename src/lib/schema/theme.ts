@@ -443,6 +443,7 @@ export const BubbleEffectConfigSchema = z.object({
   enabled: z.boolean().default(false),
   opacity: z.number().min(0).max(1).default(0.7),
   density: BubbleDensitySchema,
+  variability: z.number().min(0).max(1).default(0.5),
 });
 export type BubbleEffectConfig = z.infer<typeof BubbleEffectConfigSchema>;
 
@@ -451,6 +452,7 @@ export const SpecialEffectsConfigSchema = z.object({
     enabled: false,
     opacity: 0.7,
     density: "medium",
+    variability: 0.5,
   }),
 });
 export type SpecialEffectsConfig = z.infer<typeof SpecialEffectsConfigSchema>;
@@ -511,6 +513,7 @@ export const ThemeSchema = z.object({
       enabled: false,
       opacity: 0.7,
       density: "medium",
+      variability: 0.5,
     },
   }),
 

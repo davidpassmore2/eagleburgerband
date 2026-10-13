@@ -19,6 +19,7 @@ export default function PublicBubbleOverlay({
   const enabled = Boolean(config?.enabled);
   const opacity = typeof config?.opacity === "number" ? Math.max(0, Math.min(1, config.opacity)) : 0.7;
   const density = config?.density || "medium";
+  const variability = typeof config?.variability === "number" ? Math.max(0, Math.min(1, config.variability)) : 0.5;
 
   useEffect(() => {
     if (!enabled || typeof document === "undefined") {
@@ -73,11 +74,21 @@ export default function PublicBubbleOverlay({
         animation: floatUp linear forwards;
         box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.4), 0 0 4px rgba(255, 255, 255, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.15);
+        will-change: transform, opacity;
       }
 
       @keyframes floatUp {
-        to {
-          transform: translateY(${fullscreen ? "-120vh" : "-120%"});
+        0% {
+          transform: translate3d(0, 0, 0);
+        }
+        35% {
+          transform: translate3d(var(--arc-x1, 0px), ${fullscreen ? "-40vh" : "-40%"}, 0);
+        }
+        70% {
+          transform: translate3d(var(--arc-x2, 0px), ${fullscreen ? "-80vh" : "-80%"}, 0);
+        }
+        100% {
+          transform: translate3d(var(--arc-x3, 0px), ${fullscreen ? "-120vh" : "-120%"}, 0);
           opacity: 0;
         }
       }
@@ -105,13 +116,52 @@ export default function PublicBubbleOverlay({
       const bubble = document.createElement("div");
       bubble.className = "bubble";
 
-      const size = Math.random() * 50 + 20;
-      const duration = Math.random() * 5 + 5;
+      // 1. Size differentiation governed by variability (base: 45px)
+      // At variability=0: fixed 45px. At variability=1: 12px to 95px range.
+      const minSize = 45 - 33 * variability;
+      const maxSize = 45 + 50 * variability;
+      const size = Math.round(minSize + Math.random() * (maxSize - minSize));
+
+      // 2. Speed / duration variance governed by variability (base: 7.0s)
+      // At variability=0: fixed 7.0s. At variability=1: 2.0s (swift) to 13.0s (gentle floater).
+      const minDuration = 7.0 - 5.0 * variability;
+      const maxDuration = 7.0 + 6.0 * variability;
+      const duration = minDuration + Math.random() * (maxDuration - minDuration);
+
+      // 3. Vertical movement arc differentiation (horizontal sway / drift)
+      // At variability=0: pure straight vertical (0px). At variability=1: wide organic arcs.
+      const maxArc = (fullscreen ? 90 : 45) * variability;
+      const swayDirection = (Math.random() - 0.5) * 2; // -1 to +1
+      const arcType = Math.random();
+
+      let arcX1 = 0;
+      let arcX2 = 0;
+      let arcX3 = 0;
+
+      if (arcType < 0.35) {
+        // C-curve (parabolic lateral drift)
+        arcX1 = Math.round(swayDirection * maxArc * 0.6);
+        arcX2 = Math.round(swayDirection * maxArc * 1.0);
+        arcX3 = Math.round(swayDirection * maxArc * 0.75);
+      } else if (arcType < 0.70) {
+        // S-curve (subtle wavering sway)
+        arcX1 = Math.round(swayDirection * maxArc * 0.7);
+        arcX2 = Math.round(-swayDirection * maxArc * 0.5);
+        arcX3 = Math.round(swayDirection * maxArc * 0.3);
+      } else {
+        // Progressive wind draft
+        arcX1 = Math.round(swayDirection * maxArc * 0.35);
+        arcX2 = Math.round(swayDirection * maxArc * 0.7);
+        arcX3 = Math.round(swayDirection * maxArc * 1.0);
+      }
 
       bubble.style.width = `${size}px`;
       bubble.style.height = `${size}px`;
       bubble.style.left = `${Math.random() * 100}%`;
-      bubble.style.animationDuration = `${duration}s`;
+      bubble.style.animationDuration = `${duration.toFixed(2)}s`;
+      bubble.style.setProperty("--arc-x1", `${arcX1}px`);
+      bubble.style.setProperty("--arc-x2", `${arcX2}px`);
+      bubble.style.setProperty("--arc-x3", `${arcX3}px`);
       bubble.style.background = `radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), ${getSubtleTint()})`;
 
       container.appendChild(bubble);
@@ -131,7 +181,7 @@ export default function PublicBubbleOverlay({
       clearInterval(intervalId);
       overlayHost.remove();
     };
-  }, [enabled, opacity, density, fullscreen]);
+  }, [enabled, opacity, density, variability, fullscreen]);
 
   if (!enabled) return null;
 
