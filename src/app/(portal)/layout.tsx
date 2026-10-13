@@ -223,6 +223,7 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         ...getScopedStyles("portal"),
         backgroundColor: "var(--ebb-background)",
         color: "var(--ebb-text)",
+        fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
       }}
       className={`h-screen max-h-screen h-dvh max-h-dvh overflow-hidden flex flex-col md:flex-row transition-colors duration-300 relative ${
         activePortalMode === "light" ? "ebb-light text-slate-900" : "ebb-dark text-slate-100"
@@ -234,14 +235,15 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         style={{
           backgroundColor: "var(--ebb-surface)",
           borderColor: "var(--ebb-border)",
+          fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
         }}
         className="md:hidden flex items-center justify-between px-4 py-3 border-b shrink-0 z-30 sticky top-0"
       >
         <div className="flex items-center gap-2.5">
           <EbbLogo className="w-7 h-7" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
           <span 
-            style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
-            className="font-arvo font-bold text-xs truncate tracking-tight"
+            style={{ color: "var(--ebb-primary)", fontFamily: "var(--ebb-font-heading, var(--font-arvo), serif)" }}
+            className="font-bold text-xs truncate tracking-tight"
           >
             {theme.bandName}
           </span>
@@ -276,9 +278,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         style={{
           backgroundColor: "var(--ebb-surface)",
           borderColor: "var(--ebb-border)",
+          fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
         }}
         className={`
-          p-4 flex flex-col justify-between shrink-0 h-screen h-dvh max-h-screen max-h-dvh overflow-hidden transition-all duration-300 ease-in-out
+          portal-sidebar p-4 flex flex-col justify-between shrink-0 h-screen h-dvh max-h-screen max-h-dvh overflow-hidden transition-all duration-300 ease-in-out
           ${
             isPinned 
               ? "hidden md:flex md:w-72 lg:w-80 md:border-r md:sticky md:top-0" 
@@ -304,8 +307,8 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
               <EbbLogo className="w-9 h-9" color="var(--ebb-logo-color, var(--ebb-primary, #facc15))" />
               <div>
                 <div 
-                  style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
-                  className="font-arvo font-bold text-sm tracking-tight"
+                  style={{ color: "var(--ebb-primary)", fontFamily: "var(--ebb-font-heading, var(--font-arvo), serif)" }}
+                  className="font-bold text-sm tracking-tight"
                 >
                   {theme.bandName}
                 </div>
@@ -350,13 +353,19 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Sleek Scrollable Navigation Container */}
-          <nav className="flex-1 overflow-y-auto space-y-4 pt-4 pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.2)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/60 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-yellow-400/50">
+          <nav 
+            style={{ fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))" }}
+            className="flex-1 overflow-y-auto space-y-4 pt-4 pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.2)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/60 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-yellow-400/50"
+          >
             <div className="space-y-1">
               <Link
                 href="/portal"
                 suppressHydrationWarning
-                style={isPortalActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                style={{
+                  fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
+                  ...(isPortalActive ? { backgroundColor: "var(--ebb-primary)" } : {}),
+                }}
+                className={`sidebar-link flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   isPortalActive
                     ? "text-slate-950 font-bold shadow"
                     : "text-slate-300 hover:bg-slate-800"
@@ -381,8 +390,13 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                   return (
                     <div key={section.id} className="space-y-1">
                       <div 
-                        style={{ color: "var(--ebb-primary)", fontFamily: "var(--font-arvo), serif" }}
-                        className="px-3 pt-2 pb-0.5 text-[11px] font-arvo font-bold uppercase tracking-wider"
+                        style={{
+                          color: "var(--ebb-primary)",
+                          fontFamily: "var(--ebb-font-heading, var(--font-arvo), serif)",
+                          letterSpacing: "var(--ebb-tracking-heading, 0.05em)",
+                          textTransform: "var(--ebb-transform-heading, uppercase)",
+                        }}
+                        className="section-title px-3 pt-2 pb-0.5 text-[11px] font-bold tracking-wider"
                       >
                         {section.title || section.id}
                       </div>
@@ -396,8 +410,11 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
                               key={link.id}
                               href={tool.href}
                               suppressHydrationWarning
-                              style={isActive ? { backgroundColor: "var(--ebb-primary)" } : undefined}
-                              className={`flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition ${
+                              style={{
+                                fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
+                                ...(isActive ? { backgroundColor: "var(--ebb-primary)" } : {}),
+                              }}
+                              className={`sidebar-link flex items-start gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition ${
                                 isActive
                                   ? "text-slate-950 font-semibold shadow"
                                   : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -422,7 +439,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
         {/* Pinned Bottom User Card */}
         <div 
           suppressHydrationWarning
-          style={{ borderColor: "var(--ebb-border)" }}
+          style={{ 
+            borderColor: "var(--ebb-border)",
+            fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
+          }}
           className="pt-3 border-t mt-2 shrink-0"
         >
           {!mounted || loading ? (
@@ -554,7 +574,10 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
       >
         {/* Unpinned Sidebar Slide-Out Trigger Header (Desktop) */}
         {!isPinned && (
-          <div className="hidden md:flex items-center justify-between px-6 py-2.5 border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-sm shrink-0">
+          <div 
+            style={{ fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))" }}
+            className="hidden md:flex items-center justify-between px-6 py-2.5 border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-sm shrink-0"
+          >
             <button
               type="button"
               onClick={() => setIsOpen(true)}
@@ -604,6 +627,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <AuthProvider>
       <ThemeProvider>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Black&family=Arvo:wght@400;700&family=Bebas+Neue&family=Bitter:wght@400;500;600&family=Bree+Serif&family=Cinzel:wght@600;700;900&family=Crete+Round&family=DM+Sans:wght@400;500;700&family=EB+Garamond:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@600;700;900&family=Open+Sans:wght@400;600&family=Oswald:wght@600;700&family=Outfit:wght@400;500;600&family=Playfair+Display:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=PT+Serif:wght@400;700&family=Raleway:wght@400;500;600&family=Righteous&family=Roboto:wght@400;500;700&family=Rokkitt:wght@600;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Space+Grotesk:wght@400;500;700&family=Syne:wght@600;700;800&family=Teko:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap"
+        />
         <SidebarNavProvider>
           <PortalLoadingProvider>
             <PortalNavigationShell>{children}</PortalNavigationShell>
@@ -612,4 +639,4 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </ThemeProvider>
     </AuthProvider>
   );
-}
+}
