@@ -17,11 +17,14 @@ import {
   DEFAULT_PORTAL_THEMES,
   TypographyConfig,
   VisualPolishConfig,
+  BubbleEffectConfig,
+  BubbleDensity,
 } from "@/lib/schema/theme";
 import { toast } from "@/lib/context/ToastContext";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import EbbLogo from "@/components/common/EbbLogo";
+import PublicBubbleOverlay from "@/components/public/PublicBubbleOverlay";
 import { 
   Save, 
   Check, 
@@ -47,6 +50,11 @@ import {
   Wand2,
   Layers,
   ExternalLink,
+  CircleDot,
+  SlidersHorizontal,
+  ToggleLeft,
+  ToggleRight,
+  Eye,
 } from "lucide-react";
 
 const HEADING_FONT_CONFIG: Record<
@@ -359,7 +367,7 @@ const TEXTURE_CONFIG: Record<
 
 const DEFAULT_THEME: ThemeConfig = ThemeSchema.parse({});
 
-type TabType = "public" | "portal" | "identity";
+type TabType = "public" | "portal" | "identity" | "effects";
 
 export default function ThemeCustomizerPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -907,6 +915,19 @@ export default function ThemeCustomizerPage() {
         >
           <Sparkles className="w-4 h-4" />
           <span>Brand Identity & Visual Polish</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("effects")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition ${
+            activeTab === "effects"
+              ? "border-yellow-400 text-yellow-400 bg-slate-900/50 rounded-t-xl"
+              : "border-transparent text-slate-400 hover:text-white"
+          }`}
+        >
+          <Wand2 className="w-4 h-4" />
+          <span>Special Effects</span>
         </button>
       </div>
 
@@ -2173,6 +2194,234 @@ export default function ThemeCustomizerPage() {
               })()}
             </div>
           )}
+
+          {activeTab === "effects" && (() => {
+            const bubbles = theme.specialEffects?.bubbles ?? {
+              enabled: false,
+              opacity: 0.7,
+              density: "medium" as BubbleDensity,
+            };
+
+            const updateBubbles = (updates: Partial<BubbleEffectConfig>) => {
+              setTheme((prev) => ({
+                ...prev,
+                specialEffects: {
+                  ...prev.specialEffects,
+                  bubbles: {
+                    ...(prev.specialEffects?.bubbles ?? {
+                      enabled: false,
+                      opacity: 0.7,
+                      density: "medium",
+                    }),
+                    ...updates,
+                  },
+                },
+              }));
+            };
+
+            return (
+              <div className="space-y-4">
+                {/* Intro Banner */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2 shadow-xl">
+                  <div className="flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-yellow-400" />
+                    <h2 className="text-sm font-bold text-white">Special Effects & Overlays</h2>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Configure atmospheric visual overlays and ambient particle systems for the public marketing website.
+                    Effects are rendered through an isolated Shadow DOM container and will not interfere with clicks or accessibility.
+                  </p>
+                </div>
+
+                {/* Bubble Generator Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+                  {/* Card Header & Toggle */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400">
+                          <CircleDot className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                            Bubble Generator
+                          </h3>
+                          <span className="text-[11px] text-slate-400">
+                            Soft chromatic floating bubble particles across the public site
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => updateBubbles({ enabled: !bubbles.enabled })}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow ${
+                        bubbles.enabled
+                          ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold shadow-emerald-500/20"
+                          : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                      }`}
+                    >
+                      {bubbles.enabled ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Active on Public Site</span>
+                        </>
+                      ) : (
+                        <>
+                          <ToggleLeft className="w-4 h-4 text-slate-400" />
+                          <span>Inactive (Click to Enable)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Effect Opacity Control */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-white flex items-center gap-2">
+                        <Eye className="w-3.5 h-3.5 text-yellow-400" />
+                        Effect Opacity
+                      </label>
+                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 text-yellow-400">
+                        {Math.round(bubbles.opacity * 100)}%
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Controls the maximum visibility and opacity of the bubble particles and highlights.
+                    </p>
+
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="0.10"
+                        max="1.00"
+                        step="0.05"
+                        value={bubbles.opacity}
+                        onChange={(e) => updateBubbles({ opacity: parseFloat(e.target.value) })}
+                        className="w-full accent-yellow-400 cursor-pointer h-2 bg-slate-950 rounded-lg border border-slate-800"
+                      />
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[10px] text-slate-500 font-mono">Quick Presets:</span>
+                        {[
+                          { label: "25% Subtle", value: 0.25 },
+                          { label: "50% Soft", value: 0.50 },
+                          { label: "70% Balanced", value: 0.70 },
+                          { label: "100% Vivid", value: 1.00 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => updateBubbles({ opacity: preset.value })}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono transition border ${
+                              Math.abs(bubbles.opacity - preset.value) < 0.04
+                                ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/40 font-bold"
+                                : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Density Control */}
+                  <div className="space-y-3 pt-4 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-white flex items-center gap-2">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-yellow-400" />
+                        Bubble Density
+                      </label>
+                      <span className="text-xs font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-slate-950 border border-slate-800 text-yellow-400">
+                        {bubbles.density}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Determines how frequently new bubbles are generated and float across the screen.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        {
+                          id: "low" as BubbleDensity,
+                          name: "Low (Sparse)",
+                          badge: "~450ms interval",
+                          desc: "Subtle occasional bubbles. Minimal, gentle background atmosphere.",
+                        },
+                        {
+                          id: "medium" as BubbleDensity,
+                          name: "Medium (Balanced)",
+                          badge: "~220ms interval",
+                          desc: "Classic floating stream. Smooth continuous presence without crowding.",
+                        },
+                        {
+                          id: "high" as BubbleDensity,
+                          name: "High (Festive)",
+                          badge: "~110ms interval",
+                          desc: "Celebratory parade flurry. High energy, frequent lively bubbles.",
+                        },
+                      ].map((den) => {
+                        const isSelected = bubbles.density === den.id;
+                        return (
+                          <button
+                            key={den.id}
+                            type="button"
+                            onClick={() => updateBubbles({ density: den.id })}
+                            className={`p-3.5 rounded-xl border text-left transition relative flex flex-col justify-between gap-2 ${
+                              isSelected
+                                ? "border-yellow-400 bg-yellow-400/10 shadow-lg shadow-yellow-400/5 ring-1 ring-yellow-400"
+                                : "border-slate-800 bg-slate-950 hover:border-slate-700 hover:bg-slate-900/60"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className={`text-xs font-bold ${isSelected ? "text-yellow-400" : "text-white"}`}>
+                                  {den.name}
+                                </span>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />}
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-500 block mt-0.5">
+                                {den.badge}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 leading-snug">
+                              {den.desc}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Architecture & Specs Callout */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+                    <div className="font-bold text-slate-200 flex items-center gap-1.5 text-[11px]">
+                      <Info className="w-3.5 h-3.5 text-sky-400" />
+                      Implementation Details & Guardrails
+                    </div>
+                    <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4 leading-relaxed">
+                      <li>
+                        <strong className="text-slate-300">Zero Interaction Blocking:</strong> Root container enforces <code className="text-yellow-400 bg-slate-900 px-1 py-0.5 rounded font-mono text-[10px]">pointer-events: none</code> so fans can click all links, audio players, and contact buttons normally.
+                      </li>
+                      <li>
+                        <strong className="text-slate-300">Style Isolation:</strong> Rendered inside a Shadow Root, preventing CSS leaking into or out of page elements.
+                      </li>
+                      <li>
+                        <strong className="text-slate-300">Subtle Pastel Palette:</strong> Bubbles feature soft chromatic hues (30% saturation, 85% lightness, 0.15 alpha) with radial white gleams.
+                      </li>
+                      <li>
+                        <strong className="text-slate-300">Auto-Garbage Collection:</strong> Each bubble element automatically removes itself from the DOM upon float animation completion.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Column: Context-Aware Live Preview Simulator */}
@@ -2185,6 +2434,8 @@ export default function ThemeCustomizerPage() {
                   ? "Public Site Live Preview"
                   : activeTab === "portal"
                   ? "Musician Portal Live Preview"
+                  : activeTab === "effects"
+                  ? "Special Effects Live Preview"
                   : "Brand Identity & Specimen Studio"}
               </span>
               <span className="text-[10px] font-mono text-slate-500">Live Simulator</span>
@@ -2723,6 +2974,137 @@ export default function ThemeCustomizerPage() {
                         <span className="text-slate-500">Logo URI:</span>
                         <span className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">
                           {theme.logoUrl}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {activeTab === "effects" && (() => {
+              const bubbles = theme.specialEffects?.bubbles ?? {
+                enabled: false,
+                opacity: 0.7,
+                density: "medium" as BubbleDensity,
+              };
+
+              return (
+                <div className="space-y-4">
+                  {/* Effects Preview Box */}
+                  <div
+                    className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950 p-6 min-h-[380px] flex flex-col justify-between shadow-inner"
+                    style={{
+                      backgroundColor: theme.public.backgroundColor || "#020617",
+                      borderColor: theme.public.borderColor || "#334155",
+                    }}
+                  >
+                    {/* Live Embedded Bubble Overlay inside preview */}
+                    <PublicBubbleOverlay config={bubbles} fullscreen={false} />
+
+                    {/* Mock Public Hero Header */}
+                    <div className="space-y-2 relative z-20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <EbbLogo
+                            color={theme.public.logoColor || theme.public.primaryColor || "#facc15"}
+                            className="w-8 h-8"
+                          />
+                          <span
+                            className="font-bold text-white text-xs tracking-wider"
+                            style={{ color: theme.public.textColor || "#f8fafc" }}
+                          >
+                            {theme.bandName || "Eagleburger Band"}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full border font-bold ${
+                            bubbles.enabled
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              : "bg-slate-800 text-slate-400 border-slate-700"
+                          }`}
+                        >
+                          {bubbles.enabled ? "OVERLAY ACTIVE" : "OVERLAY INACTIVE"}
+                        </span>
+                      </div>
+
+                      <h4
+                        className="text-lg font-black text-white pt-2 leading-tight"
+                        style={{ color: theme.public.primaryColor || "#facc15" }}
+                      >
+                        Pittsburgh&apos;s Street Brass Powerhouse
+                      </h4>
+                      <p
+                        className="text-xs opacity-80 leading-relaxed"
+                        style={{ color: theme.public.textColor || "#cbd5e1" }}
+                      >
+                        Acoustic funk, second-line brass, and thunderous marching drums for festivals, street parties, and parades.
+                      </p>
+                    </div>
+
+                    {/* Mock Action Buttons */}
+                    <div className="pt-6 relative z-20 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded-lg text-xs font-extrabold shadow"
+                          style={{
+                            backgroundColor: theme.public.primaryColor || "#facc15",
+                            color: "#020617",
+                          }}
+                        >
+                          Book Us
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold border"
+                          style={{
+                            borderColor: theme.public.borderColor || "#334155",
+                            color: theme.public.textColor || "#f8fafc",
+                            backgroundColor: "rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          Upcoming Shows
+                        </button>
+                      </div>
+
+                      {!bubbles.enabled && (
+                        <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 text-center text-xs text-slate-400">
+                          <span className="text-yellow-400 font-bold">Bubble Generator is paused.</span> Click &quot;Active on Public Site&quot; in the left panel to watch soft bubbles float upward live in this simulator.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Active Effect Parameters Spec Card */}
+                  <div className="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2 text-xs text-slate-300">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-800 font-bold flex items-center justify-between">
+                      <span>Effect Settings</span>
+                      <span className="text-yellow-400 font-mono text-[9px]">BUBBLE GENERATOR</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Status:</span>
+                        <span className={`font-mono font-bold ${bubbles.enabled ? "text-emerald-400" : "text-slate-500"}`}>
+                          {bubbles.enabled ? "Enabled" : "Disabled"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Opacity:</span>
+                        <span className="font-mono text-yellow-400 font-bold">
+                          {Math.round(bubbles.opacity * 100)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Density:</span>
+                        <span className="font-mono text-slate-300 uppercase">
+                          {bubbles.density}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-0.5 border-b border-slate-900">
+                        <span className="text-slate-500">Target:</span>
+                        <span className="font-mono text-slate-300">
+                          Public Fan Site
                         </span>
                       </div>
                     </div>

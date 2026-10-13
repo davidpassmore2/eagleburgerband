@@ -436,6 +436,25 @@ export const VisualPolishConfigSchema = z.object({
 
 export type VisualPolishConfig = z.infer<typeof VisualPolishConfigSchema>;
 
+export const BubbleDensitySchema = z.enum(["low", "medium", "high"]).default("medium");
+export type BubbleDensity = z.infer<typeof BubbleDensitySchema>;
+
+export const BubbleEffectConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  opacity: z.number().min(0).max(1).default(0.7),
+  density: BubbleDensitySchema,
+});
+export type BubbleEffectConfig = z.infer<typeof BubbleEffectConfigSchema>;
+
+export const SpecialEffectsConfigSchema = z.object({
+  bubbles: BubbleEffectConfigSchema.default({
+    enabled: false,
+    opacity: 0.7,
+    density: "medium",
+  }),
+});
+export type SpecialEffectsConfig = z.infer<typeof SpecialEffectsConfigSchema>;
+
 export const ThemeSchema = z.object({
   // Global / Shared Ensemble Identity
   bandName: z.string().default("Eagleburger Band"),
@@ -485,6 +504,15 @@ export const ThemeSchema = z.object({
 
   // Available Musician Portal Theme Presets (Managed Presets for Member Selection)
   portalThemes: z.array(PortalThemeOptionSchema).default(() => DEFAULT_PORTAL_THEMES),
+
+  // Special Visual & Atmospheric Effects (Public Website Overlays)
+  specialEffects: SpecialEffectsConfigSchema.default({
+    bubbles: {
+      enabled: false,
+      opacity: 0.7,
+      density: "medium",
+    },
+  }),
 
   // Public Marketing Site Scope
   public: ThemeScopeConfigSchema.default(() => ({
