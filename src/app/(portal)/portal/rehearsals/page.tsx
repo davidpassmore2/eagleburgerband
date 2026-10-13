@@ -152,7 +152,7 @@ export default function RehearsalsPage() {
 
   // Roster Filter & View State
   const [rosterStatusFilter, setRosterStatusFilter] = useState<
-    "all" | "attending" | "probable" | "tentative" | "declined" | "no_response"
+    "all" | "attending" | "probable" | "tentative" | "declined" | "blackout" | "no_response"
   >("all");
   const [rosterSearch, setRosterSearch] = useState("");
   const [rosterViewMode, setRosterViewMode] = useState<"by_section" | "flat">("by_section");
@@ -386,7 +386,7 @@ export default function RehearsalsPage() {
     sectionId: string;
     sectionName: string;
     instrument: string;
-    status: RsvpStatus | "no_response";
+    status: RsvpStatus | "blackout" | "no_response";
     notes?: string;
     updatedAt?: string;
     hasBlackoutConflict: boolean;
@@ -415,13 +415,26 @@ export default function RehearsalsPage() {
         const instrument =
           u.selectedInstrument || u.instruments?.[0] || userRsvp?.instrument || "";
 
+        let status: RsvpStatus | "blackout" | "no_response";
+        if (userRsvp) {
+          if (userRsvp.status === "declined" && userBlackout) {
+            status = "blackout";
+          } else {
+            status = userRsvp.status;
+          }
+        } else if (userBlackout) {
+          status = "blackout";
+        } else {
+          status = "no_response";
+        }
+
         list.push({
           uid: u.uid,
           displayName: u.displayName || u.realName || "Musician",
           sectionId: secId,
           sectionName: secName,
           instrument,
-          status: userRsvp ? userRsvp.status : "no_response",
+          status,
           notes: userRsvp?.notes,
           updatedAt: userRsvp?.updatedAt,
           hasBlackoutConflict: Boolean(userBlackout),
@@ -439,13 +452,20 @@ export default function RehearsalsPage() {
       const secId = (r.sectionId || "general").toLowerCase();
       const secName = secNameMap.get(secId) || r.sectionName || "General Roster";
 
+      let status: RsvpStatus | "blackout" | "no_response";
+      if (r.status === "declined" && userBlackout) {
+        status = "blackout";
+      } else {
+        status = r.status;
+      }
+
       list.push({
         uid: r.uid,
         displayName: r.displayName || "Musician",
         sectionId: secId,
         sectionName: secName,
         instrument: r.instrument || "",
-        status: r.status,
+        status,
         notes: r.notes,
         updatedAt: r.updatedAt,
         hasBlackoutConflict: Boolean(userBlackout),
@@ -463,6 +483,7 @@ export default function RehearsalsPage() {
     let probable = 0;
     let tentative = 0;
     let declined = 0;
+    let blackout = 0;
     let noResponse = 0;
 
     allRosterEntries.forEach((m) => {
@@ -470,6 +491,7 @@ export default function RehearsalsPage() {
       else if (m.status === "probable") probable++;
       else if (m.status === "tentative") tentative++;
       else if (m.status === "declined") declined++;
+      else if (m.status === "blackout" || m.hasBlackoutConflict) blackout++;
       else noResponse++;
     });
 
@@ -480,6 +502,7 @@ export default function RehearsalsPage() {
       probable,
       tentative,
       declined,
+      blackout,
       noResponse,
     };
   }, [allRosterEntries, rsvps.length]);
@@ -491,6 +514,7 @@ export default function RehearsalsPage() {
       if (rosterStatusFilter === "probable" && m.status !== "probable") return false;
       if (rosterStatusFilter === "tentative" && m.status !== "tentative") return false;
       if (rosterStatusFilter === "declined" && m.status !== "declined") return false;
+      if (rosterStatusFilter === "blackout" && m.status !== "blackout" && !m.hasBlackoutConflict) return false;
       if (rosterStatusFilter === "no_response" && m.status !== "no_response") return false;
 
       if (rosterSearch.trim()) {
@@ -1077,6 +1101,12 @@ export default function RehearsalsPage() {
                   <span className="text-rose-400 font-bold">
                     {attendanceStats.declined} Out
                   </span>
+                  {activeDateBlackouts.length > 0 && (
+                    <span className="text-amber-400 font-bold flex items-center gap-1">
+                      <Palmtree className="w-3 h-3 shrink-0" />
+                      {activeDateBlackouts.length} Blackout
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1124,6 +1154,7 @@ export default function RehearsalsPage() {
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {rosterCounts.attending} confirmed in, {rosterCounts.probable} probable, {rosterCounts.declined} out
+                    {rosterCounts.blackout > 0 && `, ${rosterCounts.blackout} in blackout`}
                     {rosterCounts.noResponse > 0 && ` (${rosterCounts.noResponse} awaiting RSVP)`}.
                   </p>
                 </div>
@@ -1219,6 +1250,19 @@ export default function RehearsalsPage() {
                     }`}
                   >
                     Out ({rosterCounts.declined})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRosterStatusFilter("blackout")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition border flex items-center gap-1.5 ${
+                      rosterStatusFilter === "blackout"
+                        ? "bg-amber-500 text-slate-950 border-amber-400 font-bold"
+                        : "bg-amber-950/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                    }`}
+                  >
+                    <Palmtree className="w-3.5 h-3.5 shrink-0" />
+                    <span>Blackout ({rosterCounts.blackout})</span>
                   </button>
 
                   {rosterCounts.noResponse > 0 && (
@@ -1338,7 +1382,7 @@ export default function RehearsalsPage() {
                                 </div>
 
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border flex items-center gap-1 ${
                                     m.status === "attending"
                                       ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                                       : m.status === "probable"
@@ -1347,18 +1391,25 @@ export default function RehearsalsPage() {
                                       ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
                                       : m.status === "declined"
                                       ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                                      : m.status === "blackout"
+                                      ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                                       : "bg-slate-800 text-slate-400 border-slate-700"
                                   }`}
                                 >
-                                  {m.status === "attending"
-                                    ? "In"
-                                    : m.status === "probable"
-                                    ? "Probable"
-                                    : m.status === "tentative"
-                                    ? "Tentative"
-                                    : m.status === "declined"
-                                    ? "Out"
-                                    : "Awaiting"}
+                                  {m.status === "blackout" && <Palmtree className="w-2.5 h-2.5 shrink-0" />}
+                                  <span>
+                                    {m.status === "attending"
+                                      ? "In"
+                                      : m.status === "probable"
+                                      ? "Probable"
+                                      : m.status === "tentative"
+                                      ? "Tentative"
+                                      : m.status === "declined"
+                                      ? "Out"
+                                      : m.status === "blackout"
+                                      ? "Blackout"
+                                      : "Awaiting"}
+                                  </span>
                                 </span>
                               </div>
 
@@ -1412,7 +1463,7 @@ export default function RehearsalsPage() {
                         </div>
 
                         <span
-                          className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${
+                          className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border flex items-center gap-1 ${
                             m.status === "attending"
                               ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
                               : m.status === "probable"
@@ -1421,18 +1472,25 @@ export default function RehearsalsPage() {
                               ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
                               : m.status === "declined"
                               ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                              : m.status === "blackout"
+                              ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                               : "bg-slate-800 text-slate-400 border-slate-700"
                           }`}
                         >
-                          {m.status === "attending"
-                            ? "In"
-                            : m.status === "probable"
-                            ? "Probable"
-                            : m.status === "tentative"
-                            ? "Tentative"
-                            : m.status === "declined"
-                            ? "Out"
-                            : "Awaiting"}
+                          {m.status === "blackout" && <Palmtree className="w-2.5 h-2.5 shrink-0" />}
+                          <span>
+                            {m.status === "attending"
+                              ? "In"
+                              : m.status === "probable"
+                              ? "Probable"
+                              : m.status === "tentative"
+                              ? "Tentative"
+                              : m.status === "declined"
+                              ? "Out"
+                              : m.status === "blackout"
+                              ? "Blackout"
+                              : "Awaiting"}
+                          </span>
                         </span>
                       </div>
 
