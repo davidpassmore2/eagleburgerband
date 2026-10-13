@@ -687,16 +687,6 @@ export default function MusicianPortalOverviewPage() {
         </div>
       )}
 
-      {/* 3. Member Season Analytics & Standing (Prioritized Primary Telemetry) */}
-      <MemberAnalyticsCard
-        profile={profile}
-        gigs={gigs}
-        userRsvps={userRsvps}
-        earnings={personalEarnings}
-        reimbursements={personalReimbursements}
-        tuneCount={tuneCount}
-        suggestionCount={suggestionCount}
-      />
 
       {/* Unread Broadcast Alert */}
       {unreadNotifications.length > 0 && (
@@ -766,7 +756,230 @@ export default function MusicianPortalOverviewPage() {
         </div>
       )}
 
-      {/* 4. Thematic & Functional Action Hubs */}
+      {/* 3. Upcoming Performance Schedule & Month-View Calendar Grid */}
+      <div id="schedule-section" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <Calendar className="w-4 h-4" style={{ color: "var(--ebb-primary)" }} />
+              <span>Upcoming Performance Schedule</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Interactive schedule queue and month-view calendar with call times and 1-click RSVP.
+            </p>
+          </div>
+          <Link
+            href="/portal/gigs"
+            className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 hover:underline"
+          >
+            <span>View Full Band Calendar</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* 2-Column Responsive Grid: Schedule Queue (Left) + Month Calendar (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* Left Column: Upcoming Gigs Queue */}
+          <div className="lg:col-span-7 space-y-3">
+            {upcomingGigs.length === 0 ? (
+              <div
+                suppressHydrationWarning
+                style={{
+                  backgroundColor: "var(--ebb-surface)",
+                  borderColor: "var(--ebb-border)",
+                }}
+                className="border rounded-2xl p-8 text-center text-slate-400 text-xs shadow"
+              >
+                No upcoming gigs currently scheduled. Enjoy the downtime or check back soon!
+              </div>
+            ) : (
+              upcomingGigs.map((gig) => {
+                const status = userRsvps[gig.id];
+                const title =
+                  gig.internalLogistics?.title || gig.publicDetails?.title || "Eagleburger Gig";
+                const venue =
+                  gig.publicDetails?.venue || gig.internalLogistics?.unloadingAddress || "TBD";
+                const callTime = gig.internalLogistics?.callTime || "TBD";
+                const downbeat = gig.internalLogistics?.downbeat || "TBD";
+
+                return (
+                  <div
+                    key={gig.id}
+                    suppressHydrationWarning
+                    style={{
+                      backgroundColor: "var(--ebb-surface)",
+                      borderColor: "var(--ebb-border)",
+                    }}
+                    className="border rounded-2xl p-4 sm:p-5 transition flex flex-col space-y-3 group shadow hover:brightness-105"
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            suppressHydrationWarning
+                            style={{
+                              backgroundColor: "var(--ebb-surface-muted)",
+                              borderColor: "var(--ebb-border)",
+                              color: "var(--ebb-primary)",
+                            }}
+                            className="text-xs font-mono font-bold px-2 py-0.5 rounded border"
+                          >
+                            {gig.date}
+                          </span>
+                          <Link
+                            href={`/portal/gigs/${gig.id}`}
+                            className="text-sm font-bold text-white hover:text-yellow-400 transition truncate"
+                          >
+                            {title}
+                          </Link>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-slate-500" />
+                            Call: <strong className="text-slate-200">{callTime}</strong> | Downbeat:{" "}
+                            <strong className="text-slate-200">{downbeat}</strong>
+                          </span>
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span className="truncate">{venue}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Call Sheet & Stage View links */}
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                        <Link
+                          href={`/portal/perform/${gig.id}`}
+                          className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-yellow-400/40 p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition"
+                          title="Launch Stage Teleprompter"
+                        >
+                          <PlaySquare className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Stage View</span>
+                        </Link>
+
+                        <Link
+                          href={`/portal/gigs/${gig.id}`}
+                          className="text-slate-400 hover:text-white transition flex items-center gap-0.5 text-xs font-semibold p-1.5"
+                        >
+                          <span>Call Sheet</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* In-Line 1-Click RSVP Quick Action Bar */}
+                    <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400 text-[11px] font-mono">My RSVP:</span>
+                        {status === "attending" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                            <CheckCircle2 className="w-3 h-3" /> Confirmed In
+                          </span>
+                        )}
+                        {status === "probable" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-lg">
+                            <Clock className="w-3 h-3" /> Probable
+                          </span>
+                        )}
+                        {status === "declined" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
+                            <XCircle className="w-3 h-3" /> Out
+                          </span>
+                        )}
+                        {status === "tentative" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+                            <HelpCircle className="w-3 h-3" /> Tentative
+                          </span>
+                        )}
+                        {!status && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg animate-pulse">
+                            RSVP Needed
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          disabled={isUpdatingRsvp}
+                          onClick={() => handleRsvpChange(gig.id, "attending")}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            status === "attending"
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                              : "bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-300"
+                          }`}
+                        >
+                          <Check className="w-3 h-3 text-emerald-400" /> In
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isUpdatingRsvp}
+                          onClick={() => handleRsvpChange(gig.id, "probable")}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            status === "probable"
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                              : "bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-300"
+                          }`}
+                        >
+                          <Clock className="w-3 h-3 text-cyan-400" /> Probable
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isUpdatingRsvp}
+                          onClick={() => handleRsvpChange(gig.id, "tentative")}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            status === "tentative"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                              : "bg-white/5 hover:bg-amber-500/10 text-slate-400 hover:text-amber-300"
+                          }`}
+                        >
+                          <HelpCircle className="w-3 h-3 text-amber-400" /> Maybe
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isUpdatingRsvp}
+                          onClick={() => handleRsvpChange(gig.id, "declined")}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            status === "declined"
+                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                              : "bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-300"
+                          }`}
+                        >
+                          <XCircle className="w-3 h-3 text-rose-400" /> Out
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Right Column: Month-View Calendar Widget */}
+          <div className="lg:col-span-5">
+            <PortalMonthCalendar
+              gigs={gigs}
+              userRsvps={userRsvps}
+              onRsvpChange={handleRsvpChange}
+              isUpdatingRsvp={isUpdatingRsvp}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Member Season Analytics & Standing */}
+      <MemberAnalyticsCard
+        profile={profile}
+        gigs={gigs}
+        userRsvps={userRsvps}
+        earnings={personalEarnings}
+        reimbursements={personalReimbursements}
+        tuneCount={tuneCount}
+        suggestionCount={suggestionCount}
+      />
+
+      {/* 5. Thematic & Functional Action Hubs */}
       <div className="space-y-3">
         <div className="px-1 flex items-center justify-between">
           <h2 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -1018,218 +1231,6 @@ export default function MusicianPortalOverviewPage() {
                 <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. Interactive Schedule & Month-View Calendar Grid */}
-      <div id="schedule-section" className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4" style={{ color: "var(--ebb-primary)" }} />
-              <span>Upcoming Performance Schedule</span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              Interactive schedule queue and month-view calendar with call times and 1-click RSVP.
-            </p>
-          </div>
-          <Link
-            href="/portal/gigs"
-            className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1 hover:underline"
-          >
-            <span>View Full Band Calendar</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* 2-Column Responsive Grid: Schedule Queue (Left) + Month Calendar (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column: Upcoming Gigs Queue */}
-          <div className="lg:col-span-7 space-y-3">
-            {upcomingGigs.length === 0 ? (
-              <div
-                suppressHydrationWarning
-                style={{
-                  backgroundColor: "var(--ebb-surface)",
-                  borderColor: "var(--ebb-border)",
-                }}
-                className="border rounded-2xl p-8 text-center text-slate-400 text-xs shadow"
-              >
-                No upcoming gigs currently scheduled. Enjoy the downtime or check back soon!
-              </div>
-            ) : (
-              upcomingGigs.map((gig) => {
-                const status = userRsvps[gig.id];
-                const title =
-                  gig.internalLogistics?.title || gig.publicDetails?.title || "Eagleburger Gig";
-                const venue =
-                  gig.publicDetails?.venue || gig.internalLogistics?.unloadingAddress || "TBD";
-                const callTime = gig.internalLogistics?.callTime || "TBD";
-                const downbeat = gig.internalLogistics?.downbeat || "TBD";
-
-                return (
-                  <div
-                    key={gig.id}
-                    suppressHydrationWarning
-                    style={{
-                      backgroundColor: "var(--ebb-surface)",
-                      borderColor: "var(--ebb-border)",
-                    }}
-                    className="border rounded-2xl p-4 sm:p-5 transition flex flex-col space-y-3 group shadow hover:brightness-105"
-                  >
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="space-y-1.5 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            suppressHydrationWarning
-                            style={{
-                              backgroundColor: "var(--ebb-surface-muted)",
-                              borderColor: "var(--ebb-border)",
-                              color: "var(--ebb-primary)",
-                            }}
-                            className="text-xs font-mono font-bold px-2 py-0.5 rounded border"
-                          >
-                            {gig.date}
-                          </span>
-                          <Link
-                            href={`/portal/gigs/${gig.id}`}
-                            className="text-sm font-bold text-white hover:text-yellow-400 transition truncate"
-                          >
-                            {title}
-                          </Link>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-slate-500" />
-                            Call: <strong className="text-slate-200">{callTime}</strong> | Downbeat:{" "}
-                            <strong className="text-slate-200">{downbeat}</strong>
-                          </span>
-                          <span className="flex items-center gap-1 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                            <span className="truncate">{venue}</span>
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Call Sheet & Stage View links */}
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                        <Link
-                          href={`/portal/perform/${gig.id}`}
-                          className="bg-slate-950 hover:bg-slate-800 text-yellow-400 border border-slate-800 hover:border-yellow-400/40 p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition"
-                          title="Launch Stage Teleprompter"
-                        >
-                          <PlaySquare className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Stage View</span>
-                        </Link>
-
-                        <Link
-                          href={`/portal/gigs/${gig.id}`}
-                          className="text-slate-400 hover:text-white transition flex items-center gap-0.5 text-xs font-semibold p-1.5"
-                        >
-                          <span>Call Sheet</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* In-Line 1-Click RSVP Quick Action Bar */}
-                    <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400 text-[11px] font-mono">My RSVP:</span>
-                        {status === "attending" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
-                            <CheckCircle2 className="w-3 h-3" /> Confirmed In
-                          </span>
-                        )}
-                        {status === "probable" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-lg">
-                            <Clock className="w-3 h-3" /> Probable
-                          </span>
-                        )}
-                        {status === "declined" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
-                            <XCircle className="w-3 h-3" /> Out
-                          </span>
-                        )}
-                        {status === "tentative" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
-                            <HelpCircle className="w-3 h-3" /> Tentative
-                          </span>
-                        )}
-                        {!status && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg animate-pulse">
-                            RSVP Needed
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <button
-                          type="button"
-                          disabled={isUpdatingRsvp}
-                          onClick={() => handleRsvpChange(gig.id, "attending")}
-                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
-                            status === "attending"
-                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                              : "bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-300"
-                          }`}
-                        >
-                          <Check className="w-3 h-3 text-emerald-400" /> In
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isUpdatingRsvp}
-                          onClick={() => handleRsvpChange(gig.id, "probable")}
-                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
-                            status === "probable"
-                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                              : "bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-300"
-                          }`}
-                        >
-                          <Clock className="w-3 h-3 text-cyan-400" /> Probable
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isUpdatingRsvp}
-                          onClick={() => handleRsvpChange(gig.id, "tentative")}
-                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
-                            status === "tentative"
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                              : "bg-white/5 hover:bg-amber-500/10 text-slate-400 hover:text-amber-300"
-                          }`}
-                        >
-                          <HelpCircle className="w-3 h-3 text-amber-400" /> Maybe
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isUpdatingRsvp}
-                          onClick={() => handleRsvpChange(gig.id, "declined")}
-                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
-                            status === "declined"
-                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                              : "bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-300"
-                          }`}
-                        >
-                          <XCircle className="w-3 h-3 text-rose-400" /> Out
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Right Column: Month-View Calendar Widget */}
-          <div className="lg:col-span-5">
-            <PortalMonthCalendar
-              gigs={gigs}
-              userRsvps={userRsvps}
-              onRsvpChange={handleRsvpChange}
-              isUpdatingRsvp={isUpdatingRsvp}
-            />
           </div>
         </div>
       </div>
