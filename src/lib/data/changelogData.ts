@@ -7,6 +7,20 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 58,
+    title: "Route Burst Bubble Dynamics, Member Portal Layout Reconciliation & Portal Page RBAC Matrix",
+    category: "Portal Layout, Admin RBAC & Effects",
+    accomplishments: [
+      "Engineered route-change burst dynamics for the public site bubble overlay, triggering an interactive spawn spike upon page navigation that smoothly dissipates to ambient rate.",
+      "Reconciled duplicate Member Standing and Analytics sections on the Member Portal home (/portal), consolidating metric cards into the rich MemberAnalyticsCard with integrated reimbursement tracking.",
+      "Repositioned the Upcoming Performance Schedule section to be the 3rd element on the Member Portal dashboard, immediately following the Next Performance hero banner.",
+      "Clarified RBAC delegation requirements across management studios, confirming community_manager, web_manager, and admin clearance for comment moderation.",
+      "Built the Portal Pages & Role Access Matrix in User & Role Studio (/admin/users) providing a comprehensive audit directory of all 40+ portal routes and workspace tools.",
+      "Implemented interactive Role Access Simulator allowing admins to select any of the 12 band roles to instantly filter and preview accessible pages with clearance percentages.",
+      "Added dual view modes (Table Matrix and Card Grid), live search across paths/roles/categories, one-click route URL copying, and direct workspace launch links.",
+    ],
+  },
+  {
     stage: 57,
     title: "Architectural Hardening, Song Catalog Alignment & Interactive Bubble Physics",
     category: "Architecture, Branding & Effects",
