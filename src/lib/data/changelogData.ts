@@ -7,6 +7,23 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 59,
+    title: "Band Rehearsal Hub, OpenStreetMap Geocoding, Blackout Intelligence & 'What's Next' Portal UX",
+    category: "Rehearsals, Scheduling & Member Portal UX",
+    accomplishments: [
+      "Engineered comprehensive Band Rehearsals Hub (/portal/rehearsals) with recurring schedule automation, day/time configuration, and quorum thresholds.",
+      "Built interactive Leaflet / OpenStreetMap ground picker with free Nominatim reverse geocoding for zero-API-key venue pinning, notes, and coordinates.",
+      "Implemented rehearsal cancellation and reactivation workflows with emergency reason prompts and visual status alerts.",
+      "Integrated 4-state rehearsal attendance planning (In, Probable, Tentative, Declined) with automated blackout conflict detection for members unavailable on rehearsal dates.",
+      "Built multi-member section-by-section rehearsal roster visibility, quorum health forecasting, and real-time session discussion threads.",
+      "Created ensemble blackout density calendar (RehearsalBlackoutCalendar) mapping member unavailabilities against rehearsal dates.",
+      "Redesigned the Member Portal dashboard (/portal) with a unified, concise 'What's Next' section featuring side-by-side cards for Next Gig and Next Rehearsal.",
+      "Harmonized terminology across the entire Member Portal UX, systematically replacing 'performance' with 'gig' and 'practice' with 'rehearsal'.",
+      "Standardized all rehearsal and gig timestamps to user-friendly, non-military 12-hour EST formatting.",
+      "Defined type-safe Rehearsal schemas with safe defaults (Rule 2) and hardened Firestore security rules for rehearsal collections and RSVPs.",
+    ],
+  },
+  {
     stage: 58,
     title: "Route Burst Bubble Dynamics, Member Portal Layout Reconciliation & Portal Page RBAC Matrix",
     category: "Portal Layout, Admin RBAC & Effects",
