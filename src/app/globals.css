@@ -213,167 +213,167 @@ textarea:disabled,
 }
 
 /* 1. Theme-Aware Surfaces, Cards, and Wells */
-[data-ebb-mode] aside,
-[data-ebb-mode] main {
+:is([data-ebb-mode], [data-ebb-public], .public-site) aside,
+:is([data-ebb-mode], [data-ebb-public], .public-site) main {
   color: var(--ebb-text);
 }
 
-[data-ebb-mode] .bg-slate-950:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark) {
   background-color: var(--ebb-background) !important;
 }
 
-[data-ebb-mode] .bg-slate-950\/30,
-[data-ebb-mode] .bg-slate-950\/40,
-[data-ebb-mode] .bg-slate-950\/50,
-[data-ebb-mode] .bg-slate-950\/60,
-[data-ebb-mode] .bg-slate-950\/70,
-[data-ebb-mode] .bg-slate-950\/80,
-[data-ebb-mode] .bg-slate-950\/90 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/60,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/70,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/80,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-950\/90 {
   background-color: var(--ebb-background) !important;
 }
 
-[data-ebb-mode] .bg-slate-900:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark) {
   background-color: var(--ebb-surface) !important;
 }
 
-[data-ebb-mode] .bg-slate-900\/30,
-[data-ebb-mode] .bg-slate-900\/40,
-[data-ebb-mode] .bg-slate-900\/50,
-[data-ebb-mode] .bg-slate-900\/60,
-[data-ebb-mode] .bg-slate-900\/70,
-[data-ebb-mode] .bg-slate-900\/80,
-[data-ebb-mode] .bg-slate-900\/90 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/60,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/70,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/80,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-900\/90 {
   background-color: var(--ebb-surface) !important;
 }
 
-[data-ebb-mode] .bg-slate-800:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark),
-[data-ebb-mode] .bg-slate-800\/30,
-[data-ebb-mode] .bg-slate-800\/40,
-[data-ebb-mode] .bg-slate-800\/50,
-[data-ebb-mode] .bg-slate-800\/60,
-[data-ebb-mode] .bg-slate-800\/70,
-[data-ebb-mode] .bg-slate-800\/80,
-[data-ebb-mode] .bg-slate-800\/90 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800:not([role="dialog"]):not([class*="fixed inset-0"]):not(.portal-exempt):not(.keep-dark),
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/60,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/70,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/80,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-slate-800\/90 {
   background-color: var(--ebb-surface-muted) !important;
 }
 
-[data-ebb-mode] .hover\:bg-slate-800:hover,
-[data-ebb-mode] .hover\:bg-slate-700:hover {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-slate-800:hover,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-slate-700:hover {
   background-color: color-mix(in srgb, var(--ebb-surface-muted) 80%, var(--ebb-border)) !important;
 }
 
 /* 2. Theme-Aware Borders and Dividers */
-[data-ebb-mode] .border-slate-800,
-[data-ebb-mode] .border-slate-800\/30,
-[data-ebb-mode] .border-slate-800\/40,
-[data-ebb-mode] .border-slate-800\/50,
-[data-ebb-mode] .border-slate-800\/60,
-[data-ebb-mode] .border-slate-800\/80,
-[data-ebb-mode] .border-slate-700,
-[data-ebb-mode] .border-slate-700\/30,
-[data-ebb-mode] .border-slate-700\/40,
-[data-ebb-mode] .border-slate-700\/50,
-[data-ebb-mode] .border-slate-700\/60,
-[data-ebb-mode] .border-slate-700\/80 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800\/60,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-800\/80,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700\/60,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-slate-700\/80 {
   border-color: var(--ebb-border) !important;
 }
 
 /* 3. Theme Primary Accents (Buttons, Active Tabs, Badges, Links) */
-[data-ebb-mode] .portal-primary-text,
-[data-ebb-mode] .text-yellow-400:not(.portal-exempt):not(.warning-icon):not([aria-label*="warning"]),
-[data-ebb-mode] .text-yellow-500:not(.portal-exempt):not(.warning-icon) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .portal-primary-text,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .text-yellow-400:not(.portal-exempt):not(.warning-icon):not([aria-label*="warning"]),
+:is([data-ebb-mode], [data-ebb-public], .public-site) .text-yellow-500:not(.portal-exempt):not(.warning-icon) {
   color: var(--ebb-primary) !important;
 }
 
-[data-ebb-mode] .hover\:text-yellow-400:hover,
-[data-ebb-mode] .hover\:text-yellow-300:hover {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:text-yellow-400:hover,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:text-yellow-300:hover {
   color: var(--ebb-primary) !important;
   filter: brightness(1.15);
 }
 
-[data-ebb-mode] .portal-primary-bg,
-[data-ebb-mode] .bg-yellow-400:not(.portal-exempt),
-[data-ebb-mode] .bg-yellow-500:not(.portal-exempt) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .portal-primary-bg,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400:not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500:not(.portal-exempt) {
   background-color: var(--ebb-primary) !important;
   color: var(--ebb-primary-text, #020617) !important;
 }
 
-[data-ebb-mode] .bg-yellow-400:not(.portal-exempt) *,
-[data-ebb-mode] .bg-yellow-500:not(.portal-exempt) * {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400:not(.portal-exempt) *,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500:not(.portal-exempt) * {
   color: var(--ebb-primary-text, #020617) !important;
 }
 
-[data-ebb-mode] .hover\:bg-yellow-300:hover,
-[data-ebb-mode] .hover\:bg-yellow-400:hover,
-[data-ebb-mode] .hover\:bg-yellow-500:hover {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-yellow-300:hover,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-yellow-400:hover,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-yellow-500:hover {
   background-color: var(--ebb-primary) !important;
   filter: brightness(1.1);
 }
 
-[data-ebb-mode] .portal-primary-border,
-[data-ebb-mode] .border-yellow-400:not(.portal-exempt),
-[data-ebb-mode] .border-yellow-500:not(.portal-exempt) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .portal-primary-border,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-400:not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-500:not(.portal-exempt) {
   border-color: var(--ebb-primary) !important;
 }
 
-[data-ebb-mode] .focus\:border-yellow-400:focus {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .focus\:border-yellow-400:focus {
   border-color: var(--ebb-primary) !important;
 }
 
 /* Tinted Primary Wells & Pills */
-[data-ebb-mode] .bg-yellow-400\/10,
-[data-ebb-mode] .bg-yellow-400\/15,
-[data-ebb-mode] .bg-yellow-400\/20,
-[data-ebb-mode] .bg-yellow-500\/10,
-[data-ebb-mode] .bg-yellow-500\/20 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400\/10,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400\/15,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400\/20,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500\/10,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500\/20 {
   background-color: color-mix(in srgb, var(--ebb-primary) 15%, transparent) !important;
 }
 
-[data-ebb-mode] .border-yellow-400\/20,
-[data-ebb-mode] .border-yellow-400\/30,
-[data-ebb-mode] .border-yellow-400\/40,
-[data-ebb-mode] .border-yellow-500\/20,
-[data-ebb-mode] .border-yellow-500\/30 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-400\/20,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-400\/30,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-400\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-500\/20,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .border-yellow-500\/30 {
   border-color: color-mix(in srgb, var(--ebb-primary) 30%, transparent) !important;
 }
 
 /* Rings & Focus Rings */
-[data-ebb-mode] [class*="ring-yellow-400"] {
+:is([data-ebb-mode], [data-ebb-public], .public-site) [class*="ring-yellow-400"] {
   --tw-ring-color: var(--ebb-primary) !important;
 }
-[data-ebb-mode] [class*="ring-yellow-500"] {
+:is([data-ebb-mode], [data-ebb-public], .public-site) [class*="ring-yellow-500"] {
   --tw-ring-color: var(--ebb-primary) !important;
 }
-[data-ebb-mode] [class*="focus:ring-yellow-400"]:focus {
+:is([data-ebb-mode], [data-ebb-public], .public-site) [class*="focus:ring-yellow-400"]:focus {
   --tw-ring-color: var(--ebb-primary) !important;
 }
 
 /* Group-Hover Accents */
-[data-ebb-mode] .group:hover .group-hover\:text-yellow-400,
-[data-ebb-mode] .group:hover .group-hover\:text-yellow-500 {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover .group-hover\:text-yellow-400,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover .group-hover\:text-yellow-500 {
   color: var(--ebb-primary) !important;
 }
-[data-ebb-mode] .group:hover .group-hover\:border-yellow-400\/40,
-[data-ebb-mode] .group:hover .group-hover\:border-yellow-400\/50,
-[data-ebb-mode] .group:hover [class*="group-hover:border-yellow-"] {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover .group-hover\:border-yellow-400\/40,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover .group-hover\:border-yellow-400\/50,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover [class*="group-hover:border-yellow-"] {
   border-color: var(--ebb-primary) !important;
 }
-[data-ebb-mode] .group:hover [class*="group-hover:bg-yellow-"] {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .group:hover [class*="group-hover:bg-yellow-"] {
   background-color: var(--ebb-primary) !important;
 }
 
 /* 4. Form Controls in Portal */
-[data-ebb-mode] input:not([type="checkbox"]):not([type="radio"]):not(.portal-exempt),
-[data-ebb-mode] select:not(.portal-exempt),
-[data-ebb-mode] textarea:not(.portal-exempt) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) input:not([type="checkbox"]):not([type="radio"]):not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) select:not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) textarea:not(.portal-exempt) {
   background-color: var(--ebb-surface-muted);
   border-color: var(--ebb-border);
   color: var(--ebb-text);
 }
 
-[data-ebb-mode] input:focus:not([type="checkbox"]):not([type="radio"]):not(.portal-exempt),
-[data-ebb-mode] select:focus:not(.portal-exempt),
-[data-ebb-mode] textarea:focus:not(.portal-exempt) {
+:is([data-ebb-mode], [data-ebb-public], .public-site) input:focus:not([type="checkbox"]):not([type="radio"]):not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) select:focus:not(.portal-exempt),
+:is([data-ebb-mode], [data-ebb-public], .public-site) textarea:focus:not(.portal-exempt) {
   border-color: var(--ebb-primary) !important;
 }
 

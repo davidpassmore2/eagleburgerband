@@ -56,8 +56,11 @@ interface ThemeContextValue {
   activePortalMode: PortalThemeMode;
   activePortalScheme: PortalColorScheme;
   availablePortalSchemes: PortalColorScheme[];
+  isPortalThemeOverridden: boolean;
+  ensembleDefaultPortalSchemeId: string;
   setMemberPortalTheme: (schemeId: PortalColorSchemeId, mode?: PortalThemeMode) => Promise<void>;
   setMemberPortalMode: (mode: PortalThemeMode) => Promise<void>;
+  resetMemberPortalThemeToDefault: () => Promise<void>;
   loading: boolean;
   getScopedStyles: (scope: "public" | "portal") => React.CSSProperties;
 }
@@ -70,15 +73,32 @@ const ThemeContext = createContext<ThemeContextValue>({
   activePortalMode: "dark",
   activePortalScheme: PORTAL_COLOR_SCHEMES[0],
   availablePortalSchemes: PORTAL_COLOR_SCHEMES,
+  isPortalThemeOverridden: false,
+  ensembleDefaultPortalSchemeId: "eagleburger-gold",
   setMemberPortalTheme: async () => {},
   setMemberPortalMode: async () => {},
+  resetMemberPortalThemeToDefault: async () => {},
   loading: true,
   getScopedStyles: () => ({}),
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { profile, firebaseUser } = useAuth();
-  const [theme, setTheme] = useState<ThemeConfig>(DEFAULT_THEME);
+  const [theme, setTheme] = useState<ThemeConfig>(() => {
+    if (typeof window === "undefined") return DEFAULT_THEME;
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_PUBLIC_THEME_KEY);
+      if (cached) {
+        const parsedCached = ThemeSchema.safeParse(JSON.parse(cached));
+        if (parsedCached.success) {
+          return parsedCached.data;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_THEME;
+  });
   const [loading, setLoading] = useState(true);
 
   // User override state (from immediate UI selection)
@@ -179,7 +199,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         },
       };
     });
-  }, [theme.portalThemes, theme.portal?.schemeId, theme.portal?.logoColor]);
+  }, [theme.portalThemes, theme.portal]);
 
   // Derive activePortalSchemeId: override > profile preference > localStorage > ensemble default > fallback
   const activePortalSchemeId: PortalColorSchemeId = useMemo(() => {
@@ -211,20 +231,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [overrideMode, profilePortalThemeMode, localSavedMode]);
 
   useEffect(() => {
-    // Attempt instant theme restore from localStorage before Firestore responds
-    try {
-      const cached = localStorage.getItem(LOCAL_STORAGE_PUBLIC_THEME_KEY);
-      if (cached) {
-        const parsedCached = ThemeSchema.safeParse(JSON.parse(cached));
-        if (parsedCached.success) {
-          setTheme(parsedCached.data);
-          setLoading(false);
-        }
-      }
-    } catch {
-      // ignore
-    }
-
     const unsub = onSnapshot(
       doc(db, "theme", "config"),
       (snap) => {
@@ -304,6 +310,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetMemberPortalThemeToDefault = async () => {
+    setOverrideSchemeId(null);
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_SCHEME_KEY);
+    } catch {
+      // ignore
+    }
+
+    if (firebaseUser?.uid) {
+      try {
+        await setDoc(
+          doc(db, "users", firebaseUser.uid),
+          { portalThemeSchemeId: null, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      } catch (err) {
+        console.error("Failed to reset portal theme preference to Firestore:", err);
+      }
+    }
+  };
+
+  const ensembleDefaultPortalSchemeId = theme.portal?.schemeId || "eagleburger-gold";
+  const isPortalThemeOverridden = Boolean(
+    (overrideSchemeId && overrideSchemeId !== ensembleDefaultPortalSchemeId) ||
+    (profilePortalThemeSchemeId && profilePortalThemeSchemeId !== ensembleDefaultPortalSchemeId) ||
+    (localSavedScheme && localSavedScheme !== ensembleDefaultPortalSchemeId)
+  );
+
   const portalTheme: ThemeScopeConfig = useMemo(() => {
     const isEnsembleDefault = activePortalScheme.id === (theme.portal?.schemeId || "eagleburger-gold");
     const activeLogoColor =
@@ -330,10 +364,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const getScopedStyles = (scope: "public" | "portal"): React.CSSProperties => {
     const scopeConfig = scope === "public" ? theme.public : portalTheme;
     const isPortal = scope === "portal";
-    const primaryTextColor =
-      isPortal && (activePortalMode === "light" || activePortalSchemeId === "sousa-crimson")
-        ? "#ffffff"
-        : "#0f172a";
+
+    const getContrastTextColor = (hex?: string) => {
+      if (!hex) return "#020617";
+      const clean = hex.replace("#", "");
+      if (clean.length !== 6) return "#020617";
+      const r = parseInt(clean.substring(0, 2), 16);
+      const g = parseInt(clean.substring(2, 4), 16);
+      const b = parseInt(clean.substring(4, 6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 150 ? "#020617" : "#ffffff";
+    };
+
+    const primaryTextColor = isPortal && activePortalMode === "light"
+      ? "#ffffff"
+      : getContrastTextColor(scopeConfig.primaryColor);
 
     const activeTypography = isPortal
       ? theme.portalTypography || theme.typography || {
@@ -443,8 +488,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         activePortalMode,
         activePortalScheme,
         availablePortalSchemes,
+        isPortalThemeOverridden,
+        ensembleDefaultPortalSchemeId,
         setMemberPortalTheme,
         setMemberPortalMode,
+        resetMemberPortalThemeToDefault,
         loading,
         getScopedStyles,
       }}

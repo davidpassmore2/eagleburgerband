@@ -5,7 +5,6 @@ import { useTheme } from "@/lib/context/ThemeContext";
 import { PortalColorScheme, PortalThemeMode } from "@/lib/schema/theme";
 import EbbLogo from "@/components/common/EbbLogo";
 import { 
-  Palette, 
   X, 
   Check, 
   CheckCircle2, 
@@ -13,7 +12,8 @@ import {
   CheckCheck,
   Sun,
   Moon,
-  Sparkles
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 interface Props {
@@ -27,8 +27,11 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
     activePortalMode,
     activePortalScheme, 
     availablePortalSchemes, 
+    isPortalThemeOverridden,
+    ensembleDefaultPortalSchemeId,
     setMemberPortalTheme,
     setMemberPortalMode,
+    resetMemberPortalThemeToDefault,
   } = useTheme();
 
   const [savingSchemeId, setSavingSchemeId] = useState<string | null>(null);
@@ -124,7 +127,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                 style={{ color: isLight ? "#64748b" : "#94a3b8" }}
                 className="text-xs mt-0.5 leading-relaxed"
               >
-                Choose an atmospheric theme and toggle between light or dark mode. Preferences persist to your musician profile.
+                The ensemble default is set by management. You can select any theme below to override the default for your personal portal experience.
               </p>
             </div>
           </div>
@@ -202,16 +205,35 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
 
         {/* Theme List */}
         <div className="p-6 overflow-y-auto space-y-3.5 flex-1 [scrollbar-width:thin]">
-          <div 
-            style={{ color: isLight ? "#64748b" : "#94a3b8" }}
-            className="text-[11px] font-mono uppercase tracking-wider font-bold px-1"
-          >
-            Atmospheric Palettes ({availablePortalSchemes.length} Available in {isLight ? "Light" : "Dark"} Mode)
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+            <div 
+              style={{ color: isLight ? "#64748b" : "#94a3b8" }}
+              className="text-[11px] font-mono uppercase tracking-wider font-bold"
+            >
+              Atmospheric Palettes ({availablePortalSchemes.length} Available in {isLight ? "Light" : "Dark"} Mode)
+            </div>
+
+            {isPortalThemeOverridden && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await resetMemberPortalThemeToDefault();
+                  setJustSaved(true);
+                  setTimeout(() => setJustSaved(false), 2000);
+                }}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-xl border border-slate-700 hover:border-yellow-400 bg-slate-900/60 hover:bg-slate-900 text-slate-300 hover:text-white transition cursor-pointer self-start sm:self-auto shadow-xs"
+                title="Clear personal override and use the default set by management"
+              >
+                <RefreshCw className="w-3 h-3 text-yellow-400" />
+                <span>Use Ensemble Default</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             {availablePortalSchemes.map((scheme) => {
               const isSelected = scheme.id === activePortalSchemeId;
+              const isEnsembleDefault = scheme.id === ensembleDefaultPortalSchemeId;
               const isSaving = savingSchemeId === scheme.id;
               const schemeTokens = scheme.modes[activePortalMode] || scheme.modes.dark;
 
@@ -235,7 +257,7 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                 >
                   {/* Left: Theme Info & Swatches */}
                   <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       {/* Swatch dots for current mode */}
                       <div className="flex items-center -space-x-1 shrink-0">
                         {schemeTokens.previewSwatches.map((color, i) => (
@@ -270,6 +292,19 @@ export default function PortalThemeModal({ isOpen, onClose }: Props) {
                           className="border text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs"
                         >
                           <CheckCircle2 className="w-3 h-3" /> Active
+                        </span>
+                      )}
+
+                      {isEnsembleDefault && (
+                        <span 
+                          style={{
+                            backgroundColor: isLight ? "#f1f5f9" : "rgba(34, 197, 94, 0.15)",
+                            borderColor: isLight ? "#cbd5e1" : "rgba(34, 197, 94, 0.4)",
+                            color: isLight ? "#15803d" : "#4ade80",
+                          }}
+                          className="border text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs"
+                        >
+                          Ensemble Default
                         </span>
                       )}
                     </div>

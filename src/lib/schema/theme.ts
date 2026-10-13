@@ -587,3 +587,68 @@ export function getPortalColorScheme(
   };
 }
 
+export function hslToHex(h: number, s: number, l: number): string {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+export function generateComplementaryThemePalette(themeScope: "public" | "portal" = "public"): {
+  name: string;
+  description: string;
+  primaryColor: string;
+  accentColor: string;
+  logoColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  mutedSurfaceColor: string;
+  borderColor: string;
+  textColor: string;
+  previewSwatches: [string, string, string, string];
+} {
+  const baseHue = Math.floor(Math.random() * 360);
+  const accentHue = (baseHue + 150 + Math.floor(Math.random() * 60)) % 360;
+
+  const primaryColor = hslToHex(baseHue, 90, 58);
+  const accentColor = hslToHex(accentHue, 85, 62);
+  const logoColor = primaryColor;
+  const backgroundColor = hslToHex(baseHue, 50, 4);
+  const surfaceColor = hslToHex(baseHue, 40, 9);
+  const mutedSurfaceColor = hslToHex(baseHue, 35, 14);
+  const borderColor = hslToHex(baseHue, 30, 22);
+  const textColor = hslToHex(baseHue, 15, 97);
+
+  const names = [
+    { min: 0, max: 25, label: "Crimson Brass" },
+    { min: 25, max: 50, label: "Amber Horn" },
+    { min: 50, max: 75, label: "Golden Fanfare" },
+    { min: 75, max: 155, label: "Emerald Groove" },
+    { min: 155, max: 195, label: "Cyan Parade" },
+    { min: 195, max: 245, label: "Cobalt Rhythm" },
+    { min: 245, max: 285, label: "Indigo March" },
+    { min: 285, max: 325, label: "Velvet Sousa" },
+    { min: 325, max: 360, label: "Ruby Battery" },
+  ];
+  const matched = names.find((n) => baseHue >= n.min && baseHue < n.max) || { label: "Harmonic Brass" };
+  const randomSuffix = Math.floor(100 + Math.random() * 900);
+
+  return {
+    name: `${matched.label} ${randomSuffix}`,
+    description: `Complementary palette generated from ${matched.label.toLowerCase()} harmonies for ${themeScope === "public" ? "public visitors" : "musicians"}.`,
+    primaryColor,
+    accentColor,
+    logoColor,
+    backgroundColor,
+    surfaceColor,
+    mutedSurfaceColor,
+    borderColor,
+    textColor,
+    previewSwatches: [primaryColor, accentColor, surfaceColor, backgroundColor],
+  };
+}
+

@@ -70,7 +70,7 @@ export default function PublicHeaderNav() {
     <header 
       className="sticky top-0 z-40 backdrop-blur-md border-b border-slate-800 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] transition-colors duration-150"
       style={{
-        backgroundColor: `rgba(2, 6, 23, ${opacityDecimal})`,
+        backgroundColor: `color-mix(in srgb, var(--ebb-background, #020617) ${Math.round(opacityDecimal * 100)}%, transparent)`,
       }}
       suppressHydrationWarning
     >
