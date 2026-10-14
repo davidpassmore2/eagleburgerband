@@ -151,7 +151,8 @@ export default function MusicianPortalOverviewPage() {
     const unsubSuggestions = onSnapshot(
       collection(db, "suggestions"),
       (snapshot) => {
-        setSuggestionCount(snapshot.size);
+        const activeCount = snapshot.docs.filter((d) => !d.data().isArchived).length;
+        setSuggestionCount(activeCount);
       },
       (err) => console.warn("Notice: suggestions subscriber note:", err)
     );

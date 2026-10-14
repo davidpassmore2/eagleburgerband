@@ -249,6 +249,9 @@ service cloud.firestore {
         && request.resource.data.status == 'submitted';
       allow update: if canReviewSuggestion(resource.data.get('category', ''))
         || (isMember()
+            && resource.data.get('authorUid', '') == request.auth.uid
+            && changedKeys().hasOnly(['isArchived', 'archivedAt', 'archivedByUid', 'updatedAt']))
+        || (isMember()
             && changedKeys().hasOnly(['upvoteUids', 'downvoteUids', 'upvotes', 'downvotes', 'updatedAt'])
             && addsOrRemovesOnlyMe('upvoteUids')
             && addsOrRemovesOnlyMe('downvoteUids')
