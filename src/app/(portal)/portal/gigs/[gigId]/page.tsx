@@ -43,6 +43,9 @@ import { Section, SectionSchema } from "@/lib/schema/section";
 import { toast } from "@/lib/context/ToastContext";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
+import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
+import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 interface SetlistItem {
   id: string;
@@ -110,6 +113,7 @@ export default function MusicianGigDetailPage() {
     : (rawParams?.gigId as string) || "";
 
   const { firebaseUser, profile } = useAuth();
+  const { isDateInBlackout } = useUserBlackouts();
   const [gig, setGig] = useState<GigDetail | null>(null);
   const [stageSetlistInfo, setStageSetlistInfo] = useState<{
     templateName?: string;
@@ -299,11 +303,19 @@ export default function MusicianGigDetailPage() {
   }
 
   const myRsvp = rsvps.find((r) => r.uid === firebaseUser?.uid);
+  const isBlackedOut = isDateInBlackout(gig?.date);
+  const isPast = isGigInPast(gig);
+  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast;
+  const rsvpTooltip = isPast
+    ? "Event is in the past"
+    : isBlackedOut
+    ? "in my blackout"
+    : undefined;
 
   const handleRsvpChange = async (
     status: "attending" | "probable" | "declined" | "tentative",
   ) => {
-    if (!firebaseUser || !gigId) return;
+    if (!firebaseUser || !gigId || isBlackedOut || isPast) return;
     setIsUpdatingRsvp(true);
 
     try {
@@ -398,9 +410,12 @@ export default function MusicianGigDetailPage() {
         >
           <ArrowLeft className="w-4 h-4" /> Return to Home Base
         </button>
-        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border border-yellow-400/30 bg-yellow-400/10 text-yellow-300">
-          Status: {gig.status}
-        </span>
+        <div className="flex items-center gap-2">
+          {isBlackedOut && <InMyBlackoutChip size="md" />}
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border border-yellow-400/30 bg-yellow-400/10 text-yellow-300">
+            Status: {gig.status}
+          </span>
+        </div>
       </div>
 
       {/* Headline & RSVP Card */}
@@ -416,8 +431,11 @@ export default function MusicianGigDetailPage() {
         </div>
 
         <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl w-full md:w-auto shrink-0 space-y-2">
-          <div className="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
-            <span>Your Performance RSVP</span>
+          <div className="text-[11px] font-semibold text-slate-400 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span>Your Performance RSVP</span>
+              {isBlackedOut && <InMyBlackoutChip />}
+            </span>
             {isUpdatingRsvp && (
               <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />
             )}
@@ -425,9 +443,10 @@ export default function MusicianGigDetailPage() {
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
-              disabled={isUpdatingRsvp}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("attending")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "attending"
                   ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                   : "bg-slate-900 text-slate-300 hover:bg-slate-800"
@@ -437,9 +456,10 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("probable")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "probable"
                   ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
                   : "bg-slate-900 text-slate-300 hover:bg-slate-800"
@@ -449,9 +469,10 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("tentative")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "tentative"
                   ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/20"
                   : "bg-slate-900 text-slate-300 hover:bg-slate-800"
@@ -461,9 +482,10 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("declined")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "declined"
                   ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                   : "bg-slate-900 text-slate-300 hover:bg-slate-800"

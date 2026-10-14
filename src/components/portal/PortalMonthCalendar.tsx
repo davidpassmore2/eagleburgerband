@@ -14,6 +14,7 @@ import PortalDayEventsModal, {
   DayModalGig,
 } from "./PortalDayEventsModal";
 import CalendarSubscribeModal from "./CalendarSubscribeModal";
+import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 
 export interface MonthCalendarGig extends DayModalGig {
   isCancelled?: boolean;
@@ -52,6 +53,7 @@ export default function PortalMonthCalendar({
   variant = "compact",
   className = "",
 }: PortalMonthCalendarProps) {
+  const { isDateInBlackout } = useUserBlackouts();
   // Determine default initial month: current month, or the month of the first upcoming gig if later
   const today = useMemo(() => new Date(), []);
   const todayDateStr = useMemo(() => {
@@ -389,11 +391,14 @@ export default function PortalMonthCalendar({
                     {hasGigs && (
                       <div className="w-full space-y-1 overflow-hidden">
                         {cell.gigs.map((gig) => {
+                          const isBlackedOut = isDateInBlackout(gig.date);
                           const rsvp = userRsvps[gig.id];
                           const title =
                             gig.internalLogistics?.title || gig.publicDetails?.title || "Gig";
                           let pillColor = "bg-sky-500/20 text-sky-300 border-sky-500/30";
-                          if (rsvp === "attending")
+                          if (isBlackedOut)
+                            pillColor = "bg-amber-500/20 text-amber-300 border-amber-500/40";
+                          else if (rsvp === "attending")
                             pillColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
                           else if (rsvp === "probable")
                             pillColor = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
@@ -405,10 +410,15 @@ export default function PortalMonthCalendar({
                           return (
                             <div
                               key={gig.id}
-                              className={`w-full text-left truncate text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded border transition-transform group-hover:scale-[1.02] ${pillColor}`}
-                              title={`${title} - Click for call sheet & RSVP`}
+                              className={`w-full text-left truncate text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded border transition-transform group-hover:scale-[1.02] flex items-center justify-between gap-1 ${pillColor}`}
+                              title={`${title}${isBlackedOut ? " (in my blackout)" : ""} - Click for details`}
                             >
-                              {title}
+                              <span className="truncate">{title}</span>
+                              {isBlackedOut && (
+                                <span className="text-[8px] uppercase font-mono shrink-0 px-1 rounded bg-amber-400/20 text-amber-300">
+                                  blackout
+                                </span>
+                              )}
                             </div>
                           );
                         })}

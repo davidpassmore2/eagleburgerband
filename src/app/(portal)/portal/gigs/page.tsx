@@ -39,6 +39,9 @@ import {
 } from "lucide-react";
 import { GigCompensationType } from "@/lib/schema/gig";
 import { toast } from "@/lib/context/ToastContext";
+import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
+import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 type GigItem = MonthCalendarGig & {
   publicDetails?: {
@@ -72,6 +75,7 @@ type GigItem = MonthCalendarGig & {
 
 export default function PortalGigsListPage() {
   const { profile } = useAuth();
+  const { isDateInBlackout } = useUserBlackouts();
   const [gigs, setGigs] = useState<GigItem[]>([]);
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
   const [loading, setLoading] = useState(true);
@@ -126,6 +130,15 @@ export default function PortalGigsListPage() {
   // Handle in-line and calendar modal RSVP changes
   const handleRsvpChange = async (gigId: string, status: AttendanceStatus) => {
     if (!profile?.uid || !gigId) return;
+    const targetGig = gigs.find((g) => g.id === gigId);
+    if (targetGig && isGigInPast(targetGig)) {
+      toast.error("RSVP cannot be updated for events that are in the past.");
+      return;
+    }
+    if (targetGig?.date && isDateInBlackout(targetGig.date)) {
+      toast.error("Cannot RSVP for events during your blackout period.");
+      return;
+    }
     setIsUpdatingRsvp(true);
 
     // Optimistic update
@@ -486,6 +499,14 @@ export default function PortalGigsListPage() {
                 const downbeat = g.internalLogistics?.downbeat || "TBD";
                 const myRsvp = userRsvps[g.id];
                 const isCancelled = g.status === "cancelled";
+                const isBlackedOut = isDateInBlackout(g.date);
+                const isPast = isGigInPast(g);
+                const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast;
+                const rsvpTooltip = isPast
+                  ? "Event is in the past"
+                  : isBlackedOut
+                  ? "in my blackout"
+                  : undefined;
 
                 return (
                   <div
@@ -517,6 +538,7 @@ export default function PortalGigsListPage() {
                           <span className="text-[10px] font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-yellow-400">
                             {g.status}
                           </span>
+                          {isBlackedOut && <InMyBlackoutChip />}
                           {(() => {
                             const compType =
                               g.internalLogistics?.compensationType ||
@@ -596,8 +618,9 @@ export default function PortalGigsListPage() {
                     {/* Quick In-line RSVP selector */}
                     {!isCancelled && (
                       <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-slate-400 text-[11px] font-mono">My RSVP:</span>
+                          {isBlackedOut && <InMyBlackoutChip />}
                           {myRsvp === "attending" && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
                               <CheckCircle2 className="w-3 h-3" /> Confirmed In
@@ -618,9 +641,14 @@ export default function PortalGigsListPage() {
                               <HelpCircle className="w-3 h-3" /> Tentative
                             </span>
                           )}
-                          {!myRsvp && (
+                          {!myRsvp && !isBlackedOut && !isPast && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
                               RSVP Needed
+                            </span>
+                          )}
+                          {!myRsvp && isPast && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-800/40 border border-slate-700/50 px-2 py-0.5 rounded-lg">
+                              No response recorded
                             </span>
                           )}
                         </div>
@@ -628,9 +656,10 @@ export default function PortalGigsListPage() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => handleRsvpChange(g.id, "attending")}
-                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                               myRsvp === "attending"
                                 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                                 : "bg-white/5 hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-300"
@@ -640,9 +669,10 @@ export default function PortalGigsListPage() {
                           </button>
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => handleRsvpChange(g.id, "probable")}
-                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                               myRsvp === "probable"
                                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                                 : "bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-300"
@@ -652,9 +682,10 @@ export default function PortalGigsListPage() {
                           </button>
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => handleRsvpChange(g.id, "tentative")}
-                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                               myRsvp === "tentative"
                                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                                 : "bg-white/5 hover:bg-amber-500/10 text-slate-400 hover:text-amber-300"
@@ -664,9 +695,10 @@ export default function PortalGigsListPage() {
                           </button>
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => handleRsvpChange(g.id, "declined")}
-                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                               myRsvp === "declined"
                                 ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
                                 : "bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-300"

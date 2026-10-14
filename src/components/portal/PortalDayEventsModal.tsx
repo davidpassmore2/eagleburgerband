@@ -16,6 +16,9 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
+import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
+import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 export type AttendanceStatus = "attending" | "probable" | "declined" | "tentative";
 
@@ -60,6 +63,8 @@ export default function PortalDayEventsModal({
   onRsvpChange,
   isUpdatingRsvp = false,
 }: PortalDayEventsModalProps) {
+  const { isDateInBlackout } = useUserBlackouts();
+
   // Handle ESC key
   useEffect(() => {
     if (!isOpen) return;
@@ -172,6 +177,14 @@ export default function PortalDayEventsModal({
               const attire = gig.internalLogistics?.attire || "Band Standard";
               const userRsvp = userRsvps[gig.id];
               const isCancelled = gig.status === "cancelled";
+              const isGigBlackedOut = isDateInBlackout(gig.date);
+              const isGigPast = isGigInPast(gig);
+              const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast;
+              const rsvpTooltip = isGigPast
+                ? "Event is in the past"
+                : isGigBlackedOut
+                ? "in my blackout"
+                : undefined;
 
               return (
                 <div
@@ -197,6 +210,7 @@ export default function PortalDayEventsModal({
                         >
                           {gig.status}
                         </span>
+                        {isGigBlackedOut && <InMyBlackoutChip />}
                         {isCancelled && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
                             Cancelled
@@ -266,9 +280,10 @@ export default function PortalDayEventsModal({
                   {/* Interactive RSVP Action Controls */}
                   {!isCancelled && (
                     <div className="pt-2 border-t border-white/10 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                      <div className="flex items-center justify-between text-xs gap-2 flex-wrap">
+                        <span className="font-bold text-slate-300 flex items-center gap-1.5 flex-wrap">
                           <span>My Attendance RSVP:</span>
+                          {isGigBlackedOut && <InMyBlackoutChip size="sm" />}
                           {userRsvp === "attending" && (
                             <span className="text-emerald-400 font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Confirmed In
@@ -289,9 +304,14 @@ export default function PortalDayEventsModal({
                               <XCircle className="w-3.5 h-3.5" /> Declined Out
                             </span>
                           )}
-                          {!userRsvp && (
+                          {!userRsvp && !isGigPast && (
                             <span className="text-slate-400 flex items-center gap-1">
                               <AlertCircle className="w-3.5 h-3.5" /> Response Needed
+                            </span>
+                          )}
+                          {!userRsvp && isGigPast && (
+                            <span className="text-slate-500 flex items-center gap-1">
+                              No response
                             </span>
                           )}
                         </span>
@@ -307,9 +327,10 @@ export default function PortalDayEventsModal({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isGigRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => onRsvpChange(gig.id, "attending")}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border disabled:opacity-40 disabled:cursor-not-allowed ${
                               userRsvp === "attending"
                                 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm"
                                 : "bg-black/30 hover:bg-emerald-500/10 text-slate-300 hover:text-emerald-300 border-white/10"
@@ -321,9 +342,10 @@ export default function PortalDayEventsModal({
 
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isGigRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => onRsvpChange(gig.id, "probable")}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border disabled:opacity-40 disabled:cursor-not-allowed ${
                               userRsvp === "probable"
                                 ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm"
                                 : "bg-black/30 hover:bg-cyan-500/10 text-slate-300 hover:text-cyan-300 border-white/10"
@@ -335,9 +357,10 @@ export default function PortalDayEventsModal({
 
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isGigRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => onRsvpChange(gig.id, "tentative")}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border disabled:opacity-40 disabled:cursor-not-allowed ${
                               userRsvp === "tentative"
                                 ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm"
                                 : "bg-black/30 hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 border-white/10"
@@ -349,9 +372,10 @@ export default function PortalDayEventsModal({
 
                           <button
                             type="button"
-                            disabled={isUpdatingRsvp}
+                            disabled={isGigRsvpDisabled}
+                            title={rsvpTooltip}
                             onClick={() => onRsvpChange(gig.id, "declined")}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border disabled:opacity-40 disabled:cursor-not-allowed ${
                               userRsvp === "declined"
                                 ? "bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-sm"
                                 : "bg-black/30 hover:bg-rose-500/10 text-slate-300 hover:text-rose-300 border-white/10"
