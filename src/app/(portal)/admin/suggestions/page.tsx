@@ -23,6 +23,7 @@ import {
 } from "@/lib/schema/suggestion";
 import { toast } from "@/lib/context/ToastContext";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
+import { getYouTubeEmbedUrl } from "@/lib/utils/media";
 import { 
   Lightbulb, 
   ThumbsUp, 
@@ -849,6 +850,7 @@ export default function SuggestionTriagePage() {
             const userUpvoted = firebaseUser ? sug.upvoteUids.includes(firebaseUser.uid) : false;
             const userDownvoted = firebaseUser ? sug.downvoteUids.includes(firebaseUser.uid) : false;
             const isPromoting = promotingId === sug.id;
+            const youtubeEmbedUrl = getYouTubeEmbedUrl(sug.referenceUrl);
 
             return (
               <div
@@ -967,6 +969,21 @@ export default function SuggestionTriagePage() {
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/50 p-3 rounded-2xl border border-slate-800/80">
                   {sug.description}
                 </p>
+
+                {/* Embedded YouTube Reference Media */}
+                {youtubeEmbedUrl && (
+                  <div className="w-full max-w-2xl rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
+                    <div className="relative aspect-video w-full">
+                      <iframe
+                        src={youtubeEmbedUrl}
+                        title={`Reference video for ${sug.title}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="absolute inset-0 w-full h-full border-0"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Leadership Response / Reviewer Notes */}
                 {sug.adminNotes && (
