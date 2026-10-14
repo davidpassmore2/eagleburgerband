@@ -25,14 +25,12 @@ import {
   getRehearsalAttendanceStats,
 } from "@/lib/rehearsal/rehearsalHelpers";
 import {
-  formatNonMilitaryTime,
   formatTimeRange,
   formatFriendlyDate,
 } from "@/lib/utils/dateTimeFormat";
 import { toast } from "@/lib/context/ToastContext";
 import {
   Music2,
-  Calendar,
   MapPin,
   Clock,
   Users,
@@ -40,18 +38,15 @@ import {
   XCircle,
   HelpCircle,
   AlertTriangle,
-  MessageSquare,
-  Navigation,
   ExternalLink,
-  ChevronRight,
-  Palmtree,
-  Settings,
-  Compass,
   Check,
 } from "lucide-react";
+import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
+import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
 
 export default function MemberRehearsalsSection() {
   const { profile } = useAuth();
+  const { isDateInBlackout } = useUserBlackouts();
   const [config, setConfig] = useState<RehearsalConfig>(() => RehearsalConfigSchema.parse({}));
   const [sessions, setSessions] = useState<RehearsalSession[]>([]);
   const [rsvps, setRsvps] = useState<RehearsalRsvp[]>([]);
@@ -143,11 +138,17 @@ export default function MemberRehearsalsSection() {
   const myRsvp = useMemo(() => {
     if (!profile?.uid) return null;
     return rsvps.find((r) => r.uid === profile.uid);
-  }, [rsvps, profile?.uid]);
+  }, [rsvps, profile]);
+
+  const isBlackedOut = isDateInBlackout(activeRehearsal?.date);
 
   const handleRsvpChange = async (status: RsvpStatus) => {
-    if (!profile?.uid) {
-      toast.error("Please sign in to update RSVP.");
+    if (!profile?.uid || isBlackedOut) {
+      if (isBlackedOut) {
+        toast.error("Cannot RSVP during your blackout period.");
+      } else {
+        toast.error("Please sign in to update RSVP.");
+      }
       return;
     }
     setIsUpdatingRsvp(true);
@@ -273,6 +274,7 @@ export default function MemberRehearsalsSection() {
                   <span>On Schedule</span>
                 </span>
               )}
+              {isBlackedOut && <InMyBlackoutChip />}
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-white truncate">
@@ -319,7 +321,10 @@ export default function MemberRehearsalsSection() {
           {/* Quick 1-Click RSVP on Rehearsal */}
           <div className="bg-black/30 p-2.5 rounded-xl border border-white/10 space-y-1.5">
             <div className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center justify-between">
-              <span>My Attendance Plan</span>
+              <span className="flex items-center gap-1.5">
+                <span>My Attendance Plan</span>
+                {isBlackedOut && <InMyBlackoutChip size="sm" />}
+              </span>
               {myRsvp?.status === "attending" && (
                 <span className="text-emerald-400 font-bold">Confirmed In</span>
               )}
@@ -340,9 +345,10 @@ export default function MemberRehearsalsSection() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <button
                 type="button"
-                disabled={isUpdatingRsvp}
+                disabled={isUpdatingRsvp || isBlackedOut}
+                title={isBlackedOut ? "in my blackout" : undefined}
                 onClick={() => handleRsvpChange("attending")}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "attending"
                     ? "bg-emerald-500 text-slate-950 shadow"
                     : "bg-white/5 hover:bg-emerald-500/20 text-slate-300"
@@ -352,9 +358,10 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp}
+                disabled={isUpdatingRsvp || isBlackedOut}
+                title={isBlackedOut ? "in my blackout" : undefined}
                 onClick={() => handleRsvpChange("probable")}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "probable"
                     ? "bg-cyan-500 text-slate-950 shadow"
                     : "bg-white/5 hover:bg-cyan-500/20 text-slate-300"
@@ -364,9 +371,10 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp}
+                disabled={isUpdatingRsvp || isBlackedOut}
+                title={isBlackedOut ? "in my blackout" : undefined}
                 onClick={() => handleRsvpChange("tentative")}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "tentative"
                     ? "bg-amber-400 text-slate-950 shadow"
                     : "bg-white/5 hover:bg-amber-400/20 text-slate-300"
@@ -376,9 +384,10 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp}
+                disabled={isUpdatingRsvp || isBlackedOut}
+                title={isBlackedOut ? "in my blackout" : undefined}
                 onClick={() => handleRsvpChange("declined")}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "declined"
                     ? "bg-rose-500 text-white shadow"
                     : "bg-white/5 hover:bg-rose-500/20 text-slate-300"

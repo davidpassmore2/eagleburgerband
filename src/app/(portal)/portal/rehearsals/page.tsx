@@ -43,6 +43,8 @@ import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import RehearsalMapPicker from "@/components/portal/RehearsalMapPicker";
 import RehearsalBlackoutCalendar from "@/components/portal/RehearsalBlackoutCalendar";
+import { isDateInUserBlackout } from "@/lib/portal/useUserBlackouts";
+import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
 import {
   Music2,
   Calendar,
@@ -157,8 +159,8 @@ export default function RehearsalsPage() {
   const [rosterSearch, setRosterSearch] = useState("");
   const [rosterViewMode, setRosterViewMode] = useState<"by_section" | "flat">("by_section");
 
-  // User RSVP Note Input
-  const [myRsvpNote, setMyRsvpNote] = useState("");
+  // User RSVP Note Input (null when unmodified from saved myRsvp.notes)
+  const [userRsvpNote, setUserRsvpNote] = useState<string | null>(null);
 
   // Selected Location for Map Picker
   const [selectedLocationId, setSelectedLocationId] = useState<string>("");
@@ -320,24 +322,31 @@ export default function RehearsalsPage() {
     return getRehearsalAttendanceStats(rsvps, 14);
   }, [rsvps]);
 
+  // Current user's blackouts
+  const myBlackouts = useMemo(() => {
+    if (!profile?.uid) return [];
+    return blackouts.filter((b) => b.uid === profile.uid);
+  }, [blackouts, profile]);
+
   // Blackouts conflicting with the active rehearsal
   const activeDateBlackouts = useMemo(() => {
-    if (!activeRehearsal?.date) return [];
+    if (!activeRehearsal.date) return [];
     return getBlackoutsForDate(activeRehearsal.date, blackouts);
-  }, [activeRehearsal?.date, blackouts]);
+  }, [activeRehearsal.date, blackouts]);
+
+  // Whether active rehearsal falls in current user's blackout
+  const isMyRehearsalBlackout = useMemo(() => {
+    if (!profile?.uid || !activeRehearsal.date) return false;
+    return isDateInUserBlackout(activeRehearsal.date, myBlackouts);
+  }, [activeRehearsal, myBlackouts, profile]);
 
   // Current user's RSVP status for active rehearsal
   const myRsvp = useMemo(() => {
     if (!profile?.uid) return null;
     return rsvps.find((r) => r.uid === profile.uid);
-  }, [rsvps, profile?.uid]);
+  }, [rsvps, profile]);
 
-  // Sync user's existing note into state
-  useEffect(() => {
-    if (myRsvp) {
-      setMyRsvpNote(myRsvp.notes || "");
-    }
-  }, [myRsvp]);
+  const effectiveRsvpNote = userRsvpNote !== null ? userRsvpNote : (myRsvp?.notes || "");
 
   // Handlers
   const handleRsvp = async (status: RsvpStatus, note?: string) => {
@@ -345,8 +354,13 @@ export default function RehearsalsPage() {
       toast.error("Please sign in to RSVP.");
       return;
     }
+    if (isMyRehearsalBlackout) {
+      toast.error("Cannot RSVP during your blackout period.");
+      return;
+    }
 
-    const noteToSave = note !== undefined ? note : myRsvpNote;
+    const noteToSave = note !== undefined ? note : effectiveRsvpNote;
+    setUserRsvpNote(noteToSave);
 
     try {
       // Ensure rehearsal doc exists
@@ -851,7 +865,7 @@ export default function RehearsalsPage() {
             {/* Top row */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/80 pb-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
                     Next Band Downbeat
                   </span>
@@ -864,6 +878,7 @@ export default function RehearsalsPage() {
                       <CheckCircle2 className="w-3 h-3" /> On Schedule
                     </span>
                   )}
+                  {isMyRehearsalBlackout && <InMyBlackoutChip />}
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
                   {formatFriendlyDate(activeRehearsal.date, {
@@ -962,9 +977,12 @@ export default function RehearsalsPage() {
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                  <span className="text-xs font-bold text-white uppercase tracking-wider block">
-                    My Attendance Plan:
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                      My Attendance Plan:
+                    </span>
+                    {isMyRehearsalBlackout && <InMyBlackoutChip />}
+                  </div>
                   <span className="text-[11px] text-slate-400">
                     Let section leaders and organizers know if you will be present for roll call.
                   </span>
@@ -991,8 +1009,10 @@ export default function RehearsalsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
+                  disabled={isMyRehearsalBlackout}
+                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
                   onClick={() => handleRsvp("attending")}
-                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "attending"
                       ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-md"
                       : "bg-slate-900 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10"
@@ -1004,8 +1024,10 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
+                  disabled={isMyRehearsalBlackout}
+                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
                   onClick={() => handleRsvp("probable")}
-                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "probable"
                       ? "bg-cyan-500 text-slate-950 border-cyan-500 shadow-md"
                       : "bg-slate-900 text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/10"
@@ -1017,8 +1039,10 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
+                  disabled={isMyRehearsalBlackout}
+                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
                   onClick={() => handleRsvp("tentative")}
-                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "tentative"
                       ? "bg-amber-400 text-slate-950 border-amber-400 shadow-md"
                       : "bg-slate-900 text-amber-400 border-amber-500/20 hover:bg-amber-500/10"
@@ -1030,8 +1054,10 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
+                  disabled={isMyRehearsalBlackout}
+                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
                   onClick={() => handleRsvp("declined")}
-                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                  className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "declined"
                       ? "bg-rose-500 text-white border-rose-500 shadow-md"
                       : "bg-slate-900 text-rose-400 border-rose-500/20 hover:bg-rose-500/10"
@@ -1046,26 +1072,31 @@ export default function RehearsalsPage() {
               <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
                 <input
                   type="text"
-                  placeholder="Add note or call-time reason (e.g. Arriving 15 min late, bringing extra stands)..."
-                  value={myRsvpNote}
-                  onChange={(e) => setMyRsvpNote(e.target.value)}
+                  placeholder={
+                    isMyRehearsalBlackout
+                      ? "RSVP locked during your blackout period"
+                      : "Add note or call-time reason (e.g. Arriving 15 min late, bringing extra stands)..."
+                  }
+                  value={effectiveRsvpNote}
+                  disabled={isMyRehearsalBlackout}
+                  onChange={(e) => setUserRsvpNote(e.target.value)}
                   onBlur={() => {
-                    if (myRsvp && myRsvpNote !== (myRsvp.notes || "")) {
-                      handleRsvp(myRsvp.status, myRsvpNote);
+                    if (!isMyRehearsalBlackout && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "")) {
+                      handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (myRsvp) handleRsvp(myRsvp.status, myRsvpNote);
+                      if (!isMyRehearsalBlackout && myRsvp) handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
-                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
-                {myRsvp && myRsvpNote !== (myRsvp.notes || "") && (
+                {!isMyRehearsalBlackout && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "") && (
                   <button
                     type="button"
-                    onClick={() => handleRsvp(myRsvp.status, myRsvpNote)}
+                    onClick={() => handleRsvp(myRsvp.status, effectiveRsvpNote)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-400 text-slate-950 hover:bg-yellow-300 transition shrink-0"
                   >
                     Save Note
@@ -1598,6 +1629,7 @@ export default function RehearsalsPage() {
                 const sessionRecord = sessions.find((s) => s.date === item.dateStr);
                 const isCancelled = sessionRecord?.isCancelled;
                 const isFirst = idx === 0;
+                const isItemBlackedOut = isDateInUserBlackout(item.dateStr, myBlackouts);
 
                 return (
                   <div
@@ -1611,10 +1643,11 @@ export default function RehearsalsPage() {
                     }`}
                   >
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-white">
                           {item.formattedDate}
                         </span>
+                        {isItemBlackedOut && <InMyBlackoutChip size="sm" />}
                         {isCancelled && (
                           <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-red-500 text-white">
                             Cancelled
