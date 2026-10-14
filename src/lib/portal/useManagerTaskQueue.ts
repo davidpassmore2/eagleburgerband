@@ -49,9 +49,16 @@ export interface ManagerTaskQueueResult {
   managerTaskCount: number;
   dispatchCount: number;
   tasks: ManagerTaskItem[];
+  allTasks: ManagerTaskItem[];
   recentDispatches: AppNotification[];
   loading: boolean;
   markDispatchAsRead: (notificationId: string) => Promise<void>;
+  markAllDispatchesAsRead: () => Promise<void>;
+  dismissTask: (taskId: string) => void;
+  undismissTask: (taskId: string) => void;
+  clearAllTasks: () => void;
+  clearAll: () => Promise<void>;
+  isTaskDismissed: (taskId: string) => boolean;
 }
 
 export function useManagerTaskQueue(): ManagerTaskQueueResult {
@@ -69,6 +76,47 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
   // In-app broadcast dispatches
   const [dispatches, setDispatches] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dismissed manager tasks state (persisted per-user)
+  const storageKey = profile?.uid ? `ebb_dismissed_tasks_${profile.uid}` : "ebb_dismissed_tasks_guest";
+  const [dismissedCounts, setDismissedCounts] = useState<Record<string, number>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === storageKey && e.newValue) {
+        try {
+          setDismissedCounts(JSON.parse(e.newValue));
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [storageKey]);
+
+  const saveDismissed = useCallback(
+    (next: Record<string, number>) => {
+      setDismissedCounts(next);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+        } catch (e) {
+          console.warn("Could not save dismissed tasks to localStorage", e);
+        }
+      }
+    },
+    [storageKey]
+  );
 
   const isUserAdmin = isAdmin(profile);
   const hasGigPerms = canManageGigs(profile);
@@ -122,7 +170,6 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
   // 2. Subscribe to Pending Gig Inquiries (Gig Manager / Admin)
   useEffect(() => {
     if (authLoading || (!hasGigPerms && !isUserAdmin)) {
-      setInquiryCount(0);
       return;
     }
 
@@ -135,13 +182,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: inquiries count subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setInquiryCount(0);
+    };
   }, [authLoading, hasGigPerms, isUserAdmin]);
 
   // 3. Subscribe to Song Suggestions Awaiting Review (Catalog Manager / Admin)
   useEffect(() => {
     if (authLoading || (!hasCatalogPerms && !isUserAdmin)) {
-      setSuggestionCount(0);
       return;
     }
 
@@ -161,13 +210,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: suggestions count subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setSuggestionCount(0);
+    };
   }, [authLoading, hasCatalogPerms, isUserAdmin]);
 
   // 4. Subscribe to Flagged Comments (Community Manager / Admin)
   useEffect(() => {
     if (authLoading || (!hasCommunityPerms && !isUserAdmin)) {
-      setFlaggedCommentCount(0);
       return;
     }
 
@@ -180,13 +231,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: flagged comments subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setFlaggedCommentCount(0);
+    };
   }, [authLoading, hasCommunityPerms, isUserAdmin]);
 
   // 5. Subscribe to Unread Contact Messages (Community / Web / Admin)
   useEffect(() => {
     if (authLoading || (!hasCommunityPerms && !isUserAdmin)) {
-      setContactInboxCount(0);
       return;
     }
 
@@ -199,13 +252,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: contact inbox count subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setContactInboxCount(0);
+    };
   }, [authLoading, hasCommunityPerms, isUserAdmin]);
 
   // 6. Subscribe to Submitted Reimbursements (Treasurer / Admin)
   useEffect(() => {
     if (authLoading || (!hasFinancePerms && !isUserAdmin)) {
-      setReimbursementCount(0);
       return;
     }
 
@@ -218,13 +273,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: reimbursements count subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setReimbursementCount(0);
+    };
   }, [authLoading, hasFinancePerms, isUserAdmin]);
 
   // 7. Subscribe to Musician Auditions (Membership Manager / Section Leader / Admin)
   useEffect(() => {
     if (authLoading || (!hasAuditionPerms && !isUserAdmin)) {
-      setAuditionCount(0);
       return;
     }
 
@@ -253,13 +310,15 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: auditions count subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setAuditionCount(0);
+    };
   }, [authLoading, hasAuditionPerms, isUserAdmin, hasRosterPerms, profile]);
 
   // 8. Subscribe to Pending Account Approvals / Onboarding (Roster / Admin)
   useEffect(() => {
     if (authLoading || (!hasRosterPerms && !isUserAdmin)) {
-      setPendingUserCount(0);
       return;
     }
 
@@ -272,10 +331,13 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
       (err) => console.warn("Notice: pending users subscriber note:", err)
     );
 
-    return () => unsub();
+    return () => {
+      unsub();
+      setPendingUserCount(0);
+    };
   }, [authLoading, hasRosterPerms, isUserAdmin]);
 
-  // Mark a dispatch as read
+  // Mark a single dispatch as read
   const markDispatchAsRead = useCallback(
     async (notificationId: string) => {
       if (!profile?.uid || !notificationId) return;
@@ -289,11 +351,28 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
         console.error("Failed to mark notification as read:", err);
       }
     },
-    [profile?.uid]
+    [profile]
   );
 
-  // Synthesize task list
-  const tasks = useMemo<ManagerTaskItem[]>(() => {
+  // Mark all unread dispatches as read
+  const markAllDispatchesAsRead = useCallback(async () => {
+    if (!profile?.uid || dispatches.length === 0) return;
+    try {
+      const updates = dispatches.map((n) =>
+        updateDoc(doc(db, "notifications", n.id), {
+          readUids: arrayUnion(profile.uid),
+          updatedAt: new Date().toISOString(),
+        })
+      );
+      await Promise.all(updates);
+      setDispatches([]);
+    } catch (err) {
+      console.error("Failed to mark all dispatches as read:", err);
+    }
+  }, [profile, dispatches]);
+
+  // Synthesize raw task list
+  const rawTasks = useMemo<ManagerTaskItem[]>(() => {
     const list: ManagerTaskItem[] = [];
 
     if (flaggedCommentCount > 0) {
@@ -391,6 +470,56 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
     pendingUserCount,
   ]);
 
+  // Filter tasks that haven't been dismissed for their current count
+  const tasks = useMemo<ManagerTaskItem[]>(() => {
+    return rawTasks.filter((t) => {
+      const dismissed = dismissedCounts[t.id] ?? 0;
+      return t.count > dismissed;
+    });
+  }, [rawTasks, dismissedCounts]);
+
+  const dismissTask = useCallback(
+    (taskId: string) => {
+      const task = rawTasks.find((t) => t.id === taskId);
+      const count = task ? task.count : 1;
+      const next = { ...dismissedCounts, [taskId]: count };
+      saveDismissed(next);
+    },
+    [rawTasks, dismissedCounts, saveDismissed]
+  );
+
+  const undismissTask = useCallback(
+    (taskId: string) => {
+      const next = { ...dismissedCounts };
+      delete next[taskId];
+      saveDismissed(next);
+    },
+    [dismissedCounts, saveDismissed]
+  );
+
+  const clearAllTasks = useCallback(() => {
+    const next: Record<string, number> = {};
+    rawTasks.forEach((t) => {
+      next[t.id] = t.count;
+    });
+    saveDismissed(next);
+  }, [rawTasks, saveDismissed]);
+
+  const clearAll = useCallback(async () => {
+    clearAllTasks();
+    await markAllDispatchesAsRead();
+  }, [clearAllTasks, markAllDispatchesAsRead]);
+
+  const isTaskDismissed = useCallback(
+    (taskId: string) => {
+      const task = rawTasks.find((t) => t.id === taskId);
+      if (!task) return false;
+      const dismissed = dismissedCounts[taskId] ?? 0;
+      return dismissed >= task.count;
+    },
+    [rawTasks, dismissedCounts]
+  );
+
   const managerTaskCount = useMemo(() => {
     return tasks.reduce((sum, t) => sum + t.count, 0);
   }, [tasks]);
@@ -403,9 +532,16 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
     managerTaskCount,
     dispatchCount,
     tasks,
+    allTasks: rawTasks,
     recentDispatches: dispatches,
     loading,
     markDispatchAsRead,
+    markAllDispatchesAsRead,
+    dismissTask,
+    undismissTask,
+    clearAllTasks,
+    clearAll,
+    isTaskDismissed,
   };
 }
 

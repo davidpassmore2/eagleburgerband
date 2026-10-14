@@ -12,6 +12,7 @@ import {
   Receipt,
   UserCheck,
   CheckCircle2,
+  CheckCheck,
   ArrowRight,
   ExternalLink,
   Sparkles,
@@ -43,6 +44,8 @@ export default function ManagerNotificationBell({
     recentDispatches,
     loading,
     markDispatchAsRead,
+    dismissTask,
+    clearAll,
   } = useManagerTaskQueue();
 
   const updatePosition = useCallback(() => {
@@ -206,14 +209,29 @@ export default function ManagerNotificationBell({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                title="Close menu"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                {totalCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await clearAll();
+                    }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer flex items-center gap-1"
+                    title="Clear all tasks and notifications"
+                  >
+                    <CheckCheck className="w-3 h-3 text-emerald-400" />
+                    <span>Clear All</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                  title="Close menu"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Content Container */}
@@ -231,17 +249,19 @@ export default function ManagerNotificationBell({
 
                   <div className="space-y-1.5">
                     {tasks.map((task) => (
-                      <Link
+                      <div
                         key={task.id}
-                        href={task.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`p-2.5 rounded-xl border transition flex items-start justify-between gap-3 group cursor-pointer ${
+                        className={`p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 group ${
                           task.priority === "urgent"
                             ? "bg-rose-950/20 border-rose-500/30 hover:border-rose-500/60"
                             : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20"
                         }`}
                       >
-                        <div className="flex items-start gap-2.5 min-w-0">
+                        <Link
+                          href={task.href}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-start gap-2.5 min-w-0 flex-1 cursor-pointer"
+                        >
                           <div className="p-1.5 rounded-lg bg-black/40 border border-white/10 shrink-0 mt-0.5">
                             {getTaskIcon(task.category)}
                           </div>
@@ -262,12 +282,31 @@ export default function ManagerNotificationBell({
                               {task.description}
                             </p>
                           </div>
-                        </div>
+                        </Link>
 
-                        <div className="shrink-0 text-slate-500 group-hover:text-yellow-400 transition self-center">
-                          <ArrowRight className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-1 shrink-0 self-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              dismissTask(task.id);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition cursor-pointer"
+                            title="Clear this task from queue"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <Link
+                            href={task.href}
+                            onClick={() => setIsOpen(false)}
+                            className="p-1 text-slate-500 group-hover:text-yellow-400 transition"
+                            title="Go to task workstation"
+                          >
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 </div>
