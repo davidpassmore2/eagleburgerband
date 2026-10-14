@@ -201,7 +201,7 @@ export function useManagerTaskQueue(): ManagerTaskQueueResult {
         snap.forEach((d) => {
           const data = d.data();
           const st = data.status;
-          if (st === "submitted" || st === "under_review" || st === "pitched" || st === "in_review") {
+          if (!data.isArchived && (st === "submitted" || st === "under_review" || st === "pitched" || st === "in_review")) {
             count++;
           }
         });

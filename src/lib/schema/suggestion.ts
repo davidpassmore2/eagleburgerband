@@ -43,6 +43,9 @@ export const SuggestionSchema = z.object({
   reviewedByUid: z.string().nullable().default(null),
   reviewedByName: z.string().nullable().default(null),
   reviewedAt: z.string().nullable().default(null),
+  isArchived: z.boolean().default(false),
+  archivedAt: z.string().nullable().default(null),
+  archivedByUid: z.string().nullable().default(null),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });

@@ -47,6 +47,8 @@ import {
   Edit3,
   User as UserIcon,
   ChevronDown,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -68,6 +70,9 @@ interface SuggestionItem {
   reviewedByName?: string | null;
   reviewedAt?: string | null;
   promotedSongId?: string;
+  isArchived: boolean;
+  archivedAt?: string | null;
+  archivedByUid?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -139,6 +144,7 @@ export default function SuggestionTriagePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"score" | "newest" | "upvotes">("score");
+  const [showArchived, setShowArchived] = useState(false);
 
   // Create Modal State
   const [isCreating, setIsCreating] = useState(false);
@@ -204,6 +210,9 @@ export default function SuggestionTriagePage() {
             reviewedByName: data.reviewedByName || null,
             reviewedAt: data.reviewedAt || null,
             promotedSongId: data.promotedSongId || undefined,
+            isArchived: Boolean(data.isArchived),
+            archivedAt: data.archivedAt || null,
+            archivedByUid: data.archivedByUid || null,
             createdAt: data.createdAt || new Date().toISOString(),
             updatedAt: data.updatedAt,
           });
@@ -417,9 +426,57 @@ export default function SuggestionTriagePage() {
     }
   };
 
-  // Filtered & Sorted Suggestions
+  // Archive suggestion handler (available regardless of status or type)
+  const handleArchive = async (sug: SuggestionItem) => {
+    try {
+      await updateDoc(doc(db, "suggestions", sug.id), {
+        isArchived: true,
+        archivedAt: new Date().toISOString(),
+        archivedByUid: firebaseUser?.uid || null,
+        updatedAt: new Date().toISOString(),
+      });
+      dispatchPortalInteraction("archive_suggestion", `Archived suggestion: ${sug.title}`, { suggestionId: sug.id });
+      toast.success(`"${sug.title}" moved to archive.`);
+    } catch (err) {
+      console.error("Archive error:", err);
+      toast.error("Failed to archive: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // Unarchive suggestion handler
+  const handleUnarchive = async (sug: SuggestionItem) => {
+    try {
+      await updateDoc(doc(db, "suggestions", sug.id), {
+        isArchived: false,
+        archivedAt: null,
+        archivedByUid: null,
+        updatedAt: new Date().toISOString(),
+      });
+      dispatchPortalInteraction("unarchive_suggestion", `Restored suggestion: ${sug.title}`, { suggestionId: sug.id });
+      toast.success(`"${sug.title}" restored to main list.`);
+    } catch (err) {
+      console.error("Unarchive error:", err);
+      toast.error("Failed to unarchive: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // Split suggestions into active vs archived
+  const { activeSuggestions, archivedSuggestions } = useMemo(() => {
+    const active: SuggestionItem[] = [];
+    const archived: SuggestionItem[] = [];
+    suggestions.forEach((s) => {
+      if (s.isArchived) {
+        archived.push(s);
+      } else {
+        active.push(s);
+      }
+    });
+    return { activeSuggestions: active, archivedSuggestions: archived };
+  }, [suggestions]);
+
+  // Filtered & Sorted Active Suggestions
   const filteredSuggestions = useMemo(() => {
-    return suggestions
+    return activeSuggestions
       .filter((s) => {
         // Category filter
         if (activeCategory !== "all" && s.category !== activeCategory) {
@@ -463,31 +520,59 @@ export default function SuggestionTriagePage() {
           return b.createdAt.localeCompare(a.createdAt);
         }
       });
-  }, [suggestions, activeCategory, filterStatus, searchQuery, sortBy]);
+  }, [activeSuggestions, activeCategory, filterStatus, searchQuery, sortBy]);
 
-  // Counts by category
+  // Filtered & Sorted Archived Suggestions
+  const filteredArchivedSuggestions = useMemo(() => {
+    return archivedSuggestions
+      .filter((s) => {
+        // Category filter
+        if (activeCategory !== "all" && s.category !== activeCategory) {
+          return false;
+        }
+
+        // Search query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = s.title.toLowerCase().includes(q);
+          const matchDesc = s.description.toLowerCase().includes(q);
+          const matchAuthor = s.authorName.toLowerCase().includes(q);
+          const matchArtist = (s.originalArtist || "").toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc && !matchAuthor && !matchArtist) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const timeA = a.archivedAt || a.updatedAt || a.createdAt;
+        const timeB = b.archivedAt || b.updatedAt || b.createdAt;
+        return timeB.localeCompare(timeA);
+      });
+  }, [archivedSuggestions, activeCategory, searchQuery]);
+
+  // Counts by category (active only)
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: suggestions.length };
-    suggestions.forEach((s) => {
+    const counts: Record<string, number> = { all: activeSuggestions.length };
+    activeSuggestions.forEach((s) => {
       counts[s.category] = (counts[s.category] || 0) + 1;
     });
     return counts;
-  }, [suggestions]);
+  }, [activeSuggestions]);
 
-  // Telemetry totals
+  // Telemetry totals (active only)
   const telemetry = useMemo(() => {
     let totalScore = 0;
     let pendingCount = 0;
     let resolvedCount = 0;
 
-    suggestions.forEach((s) => {
+    activeSuggestions.forEach((s) => {
       totalScore += (s.upvoteUids.length || 0) - (s.downvoteUids.length || 0);
       if (s.status === "submitted" || s.status === "under_review") pendingCount++;
       if (s.status === "accepted" || s.status === "implemented") resolvedCount++;
     });
 
-    return { totalScore, pendingCount, resolvedCount, totalCount: suggestions.length };
-  }, [suggestions]);
+    return { totalScore, pendingCount, resolvedCount, totalCount: activeSuggestions.length };
+  }, [activeSuggestions]);
 
   if (authLoading || loading) {
     return (
@@ -1072,6 +1157,17 @@ export default function SuggestionTriagePage() {
                       />
                     </button>
 
+                    {/* Archive Button (Available regardless of status or type) */}
+                    <button
+                      type="button"
+                      onClick={() => handleArchive(sug)}
+                      className="px-3 py-1 rounded-xl text-xs font-semibold text-slate-400 hover:text-amber-300 bg-slate-950 border border-slate-800 hover:border-amber-400/30 transition flex items-center gap-1.5 cursor-pointer"
+                      title="Archive this submission"
+                    >
+                      <Archive className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Archive</span>
+                    </button>
+
                     {/* Delete Option (For author or Admin) */}
                     {(canTriage || (firebaseUser && sug.authorUid === firebaseUser.uid)) && (
                       <button
@@ -1101,6 +1197,249 @@ export default function SuggestionTriagePage() {
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Archived Submissions Section at bottom of submissions list */}
+      <div className="pt-6 border-t border-slate-800/80 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/40 border border-slate-800 p-4 rounded-3xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-400">
+              <Archive className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Archived Submissions
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                {archivedSuggestions.length === 1
+                  ? "1 submission archived"
+                  : `${archivedSuggestions.length} submissions archived`}
+                {archivedSuggestions.length > 0 && " • Preserved for reference and can be restored anytime"}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowArchived((prev) => !prev)}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700/80 border border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs self-start sm:self-center"
+          >
+            <Archive className="w-3.5 h-3.5 text-amber-400" />
+            <span>
+              {showArchived
+                ? "Hide Archived Items"
+                : `Show Archived Items (${archivedSuggestions.length})`}
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                showArchived ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        {showArchived && (
+          <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+            {filteredArchivedSuggestions.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 text-xs">
+                {archivedSuggestions.length === 0
+                  ? "No archived submissions yet. Use the 'Archive' button on any submission in the list above to move it here."
+                  : "No archived submissions match the current category filter or search query."}
+              </div>
+            ) : (
+              filteredArchivedSuggestions.map((sug) => {
+                const catInfo = getCategoryInfo(sug.category);
+                const CatIcon = catInfo.icon;
+                const canTriage = canReviewSuggestion(userProfile, sug.category);
+                const netScore = (sug.upvoteUids.length || 0) - (sug.downvoteUids.length || 0);
+                const youtubeEmbedUrl = getYouTubeEmbedUrl(sug.referenceUrl);
+
+                return (
+                  <div
+                    key={sug.id}
+                    className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 sm:p-6 space-y-4 hover:border-slate-700/80 transition"
+                  >
+                    {/* Header Row: Category Badge, Status, Archived Badge, and Unarchive Button */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Category Chip */}
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${catInfo.color}`}>
+                          <CatIcon className="w-3 h-3" />
+                          <span>{catInfo.label}</span>
+                        </span>
+
+                        {/* Status Badge */}
+                        {getStatusBadge(sug.status)}
+
+                        {/* Archived Badge */}
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1">
+                          <Archive className="w-3 h-3 text-amber-400" />
+                          <span>Archived</span>
+                        </span>
+                      </div>
+
+                      {/* Unarchive Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleUnarchive(sug)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-950 bg-amber-400 hover:bg-yellow-300 transition flex items-center gap-1.5 cursor-pointer shadow-sm self-end sm:self-center"
+                        title="Move this submission back into the main list"
+                      >
+                        <ArchiveRestore className="w-3.5 h-3.5" />
+                        <span>Unarchive</span>
+                      </button>
+                    </div>
+
+                    {/* Proposal Title & Metadata */}
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-white/90 flex items-center gap-2">
+                        <span>{sug.title}</span>
+                        {sug.originalArtist && (
+                          <span className="text-xs text-slate-400 font-normal">
+                            by <strong className="text-slate-300">{sug.originalArtist}</strong>
+                          </span>
+                        )}
+                      </h3>
+
+                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap">
+                        <span className="flex items-center gap-1 text-slate-300">
+                          <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                          {sug.authorName}
+                        </span>
+                        <span>&bull;</span>
+                        <span className="text-slate-500 font-mono text-[11px]">
+                          Submitted: {new Date(sug.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        {sug.archivedAt && (
+                          <>
+                            <span>&bull;</span>
+                            <span className="text-amber-400/80 font-mono text-[11px]">
+                              Archived: {new Date(sug.archivedAt).toLocaleDateString()}
+                            </span>
+                          </>
+                        )}
+                        <span>&bull;</span>
+                        <span className="text-slate-400 font-mono text-[11px]">
+                          Net Score: {netScore > 0 ? `+${netScore}` : netScore} ({sug.upvoteUids.length} up / {sug.downvoteUids.length} down)
+                        </span>
+
+                        {sug.referenceUrl && (
+                          <>
+                            <span>&bull;</span>
+                            <a
+                              href={sug.referenceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-amber-400 hover:text-amber-300 transition flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Reference Link</span>
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Description Body */}
+                    {sug.description && (
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-2xl border border-slate-800/60">
+                        {sug.description}
+                      </p>
+                    )}
+
+                    {/* Embedded YouTube Reference Media */}
+                    {youtubeEmbedUrl && (
+                      <div className="w-full max-w-2xl rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
+                        <div className="relative aspect-video w-full">
+                          <iframe
+                            src={youtubeEmbedUrl}
+                            title={`Reference video for ${sug.title}`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="absolute inset-0 w-full h-full border-0"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Leadership Response / Reviewer Notes */}
+                    {sug.adminNotes && (
+                      <div className="p-3.5 bg-yellow-400/5 border border-yellow-400/20 rounded-2xl space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-yellow-300 flex items-center gap-1.5 text-[11px]">
+                            <ShieldCheck className="w-3.5 h-3.5 text-yellow-400" />
+                            Leadership Response ({sug.reviewedByName || "Reviewer"}):
+                          </span>
+                          {sug.reviewedAt && (
+                            <span className="text-[10px] font-mono text-slate-500">
+                              {new Date(sug.reviewedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-200 leading-relaxed">{sug.adminNotes}</p>
+                      </div>
+                    )}
+
+                    {/* Action Bar (Discussion, Delete) */}
+                    <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        Archived submission &bull; Click Unarchive to restore to active triage
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          type="button"
+                          onClick={() => toggleComments(sug.id)}
+                          className={`px-3 py-1 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                            expandedComments[sug.id]
+                              ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/40"
+                              : "text-slate-400 hover:text-white bg-slate-950 border border-slate-800 hover:border-slate-700"
+                          }`}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                          <span>Discussion</span>
+                          <ChevronDown
+                            className={`w-3 h-3 transition-transform duration-200 ${
+                              expandedComments[sug.id] ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {(canTriage || (firebaseUser && sug.authorUid === firebaseUser.uid)) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSuggestion(sug.id, sug.title)}
+                            className="text-slate-500 hover:text-rose-400 transition p-1 text-xs flex items-center gap-1"
+                            title="Delete proposal"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Collapsible Discussion Stream */}
+                    {expandedComments[sug.id] && (
+                      <div className="pt-3 border-t border-slate-800/80 animate-in fade-in duration-150">
+                        <CommentsStream
+                          targetType="suggestion"
+                          targetId={sug.id}
+                          targetTitle={sug.title}
+                          compact
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
       </div>
 
