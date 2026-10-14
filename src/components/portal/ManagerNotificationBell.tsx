@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { useManagerTaskQueue, ManagerTaskItem } from "@/lib/portal/useManagerTaskQueue";
+import { useTheme } from "@/lib/context/ThemeContext";
 
 interface ManagerNotificationBellProps {
   className?: string;
@@ -35,6 +36,8 @@ export default function ManagerNotificationBell({
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  const { activePortalMode, getScopedStyles } = useTheme();
 
   const {
     totalCount,
@@ -145,7 +148,12 @@ export default function ManagerNotificationBell({
         ref={buttonRef}
         type="button"
         onClick={toggleOpen}
-        className="relative p-2 rounded-xl text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-400/40"
+        style={{
+          backgroundColor: "var(--ebb-surface-muted, #1e293b)",
+          borderColor: "var(--ebb-border, #334155)",
+          color: "var(--ebb-text)",
+        }}
+        className="relative p-2 rounded-xl hover:opacity-90 border transition cursor-pointer flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[var(--ebb-primary,#facc15)]/40"
         title={
           totalCount > 0
             ? `${totalCount} item${totalCount === 1 ? "" : "s"} awaiting attention`
@@ -155,18 +163,27 @@ export default function ManagerNotificationBell({
         aria-expanded={isOpen}
       >
         <Bell
-          className={`w-4 h-4 transition ${
-            totalCount > 0 ? "text-yellow-400" : "text-slate-400"
-          }`}
+          style={{
+            color: totalCount > 0 ? "var(--ebb-primary, #facc15)" : "var(--ebb-text-muted, #94a3b8)",
+          }}
+          className="w-4 h-4 transition"
         />
 
         {/* Counter Badge Pill */}
         {totalCount > 0 && (
           <span
-            className={`absolute -top-1 -right-1 px-1.5 min-w-[18px] h-[18px] text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border border-slate-900 ${
+            style={
+              hasUrgent
+                ? {}
+                : {
+                    backgroundColor: "var(--ebb-primary, #facc15)",
+                    color: "#0f172a",
+                  }
+            }
+            className={`absolute -top-1 -right-1 px-1.5 min-w-[18px] h-[18px] text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border border-[var(--ebb-surface,#0f172a)] ${
               hasUrgent
                 ? "bg-rose-500 text-white animate-pulse"
-                : "bg-yellow-400 text-slate-950"
+                : ""
             }`}
           >
             {totalCount > 99 ? "99+" : totalCount}
@@ -182,29 +199,45 @@ export default function ManagerNotificationBell({
           <div
             ref={popoverRef}
             suppressHydrationWarning
+            data-ebb-mode={activePortalMode}
             style={{
+              ...getScopedStyles("portal"),
               top: `${coords.top}px`,
               left: `${coords.left}px`,
-              backgroundColor: "var(--ebb-surface, #0f172a)",
-              borderColor: "var(--ebb-border, #334155)",
+              backgroundColor: "var(--ebb-surface)",
+              borderColor: "var(--ebb-border)",
+              color: "var(--ebb-text)",
+              fontFamily: "var(--ebb-font-body, var(--font-poppins, sans-serif))",
             }}
-            className="fixed z-[100] w-[calc(100vw-24px)] max-w-[380px] rounded-2xl border shadow-2xl overflow-hidden animate-fadeIn"
+            className={`fixed z-[100] w-[calc(100vw-24px)] max-w-[380px] rounded-2xl border shadow-2xl overflow-hidden animate-fadeIn ${
+              activePortalMode === "light" ? "ebb-light text-slate-900" : "ebb-dark text-slate-100"
+            }`}
           >
             {/* Popover Header */}
             <div
               suppressHydrationWarning
               style={{
-                backgroundColor: "var(--ebb-surface-muted, #1e293b)",
-                borderColor: "var(--ebb-border, #334155)",
+                backgroundColor: "var(--ebb-surface-muted)",
+                borderColor: "var(--ebb-border)",
               }}
               className="px-4 py-3 border-b flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <span className="font-bold text-xs uppercase tracking-wider text-white">
+                <span 
+                  style={{ color: "var(--ebb-text)" }}
+                  className="font-bold text-xs uppercase tracking-wider"
+                >
                   Queue &amp; Dispatches
                 </span>
                 {totalCount > 0 && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 font-bold border border-yellow-400/30">
+                  <span 
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--ebb-primary) 18%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--ebb-primary) 35%, transparent)",
+                      color: "var(--ebb-primary)",
+                    }}
+                    className="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border"
+                  >
                     {totalCount} Total
                   </span>
                 )}
@@ -216,7 +249,12 @@ export default function ManagerNotificationBell({
                     onClick={async () => {
                       await clearAll();
                     }}
-                    className="px-2 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer flex items-center gap-1"
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--ebb-surface) 60%, transparent)",
+                      borderColor: "var(--ebb-border)",
+                      color: "var(--ebb-text)",
+                    }}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold hover:opacity-80 border transition cursor-pointer flex items-center gap-1"
                     title="Clear all tasks and notifications"
                   >
                     <CheckCheck className="w-3 h-3 text-emerald-400" />
@@ -226,7 +264,8 @@ export default function ManagerNotificationBell({
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                  style={{ color: "var(--ebb-text-muted)" }}
+                  className="p-1 rounded-lg hover:opacity-80 transition cursor-pointer"
                   title="Close menu"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -235,50 +274,84 @@ export default function ManagerNotificationBell({
             </div>
 
             {/* Scrollable Content Container */}
-            <div className="max-h-[70vh] overflow-y-auto divide-y divide-white/5 [scrollbar-width:thin]">
+            <div 
+              style={{
+                backgroundColor: "var(--ebb-surface)",
+              }}
+              className="max-h-[70vh] overflow-y-auto divide-y divide-[var(--ebb-border)]/40 [scrollbar-width:thin]"
+            >
               {/* Section A: Manager Action Queue */}
               {tasks.length > 0 && (
                 <div className="p-3 space-y-2">
                   <div className="px-1 flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span 
+                      style={{ color: "var(--ebb-primary)" }}
+                      className="text-[10px] font-mono uppercase font-bold tracking-wider flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3" style={{ color: "var(--ebb-primary)" }} />
                       Manager Tasks ({managerTaskCount})
                     </span>
-                    <span className="text-[10px] text-slate-400">Action Required</span>
+                    <span 
+                      style={{ color: "var(--ebb-text-muted)" }}
+                      className="text-[10px]"
+                    >
+                      Action Required
+                    </span>
                   </div>
 
                   <div className="space-y-1.5">
                     {tasks.map((task) => (
                       <div
                         key={task.id}
-                        className={`p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 group ${
-                          task.priority === "urgent"
-                            ? "bg-rose-950/20 border-rose-500/30 hover:border-rose-500/60"
-                            : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20"
-                        }`}
+                        style={{
+                          backgroundColor: task.priority === "urgent" 
+                            ? "color-mix(in srgb, #e11d48 12%, var(--ebb-surface))" 
+                            : "color-mix(in srgb, var(--ebb-surface-muted) 50%, var(--ebb-surface))",
+                          borderColor: task.priority === "urgent"
+                            ? "color-mix(in srgb, #e11d48 40%, transparent)"
+                            : "var(--ebb-border)",
+                        }}
+                        className="p-2.5 rounded-xl border transition flex items-start justify-between gap-2.5 group hover:border-[var(--ebb-primary)]/50"
                       >
                         <Link
                           href={task.href}
                           onClick={() => setIsOpen(false)}
                           className="flex items-start gap-2.5 min-w-0 flex-1 cursor-pointer"
                         >
-                          <div className="p-1.5 rounded-lg bg-black/40 border border-white/10 shrink-0 mt-0.5">
+                          <div 
+                            style={{
+                              backgroundColor: "color-mix(in srgb, var(--ebb-surface-muted) 70%, var(--ebb-background))",
+                              borderColor: "var(--ebb-border)",
+                            }}
+                            className="p-1.5 rounded-lg border shrink-0 mt-0.5"
+                          >
                             {getTaskIcon(task.category)}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <div 
+                              style={{ color: "var(--ebb-text)" }}
+                              className="text-xs font-bold flex items-center gap-1.5"
+                            >
                               <span className="truncate">{task.title}</span>
                               <span
-                                className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
+                                style={
                                   task.priority === "urgent"
-                                    ? "bg-rose-500 text-white"
-                                    : "bg-amber-400/20 text-amber-300 border border-amber-400/30"
-                                }`}
+                                    ? { backgroundColor: "#e11d48", color: "#ffffff" }
+                                    : {
+                                        backgroundColor: "color-mix(in srgb, var(--ebb-primary) 18%, transparent)",
+                                        borderColor: "color-mix(in srgb, var(--ebb-primary) 35%, transparent)",
+                                        color: "var(--ebb-primary)",
+                                      }
+                                }
+                                className="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold border"
                               >
                                 {task.count}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                            <p 
+                              style={{ color: "var(--ebb-text-muted)" }}
+                              className="text-[11px] line-clamp-1 mt-0.5"
+                            >
                               {task.description}
                             </p>
                           </div>
@@ -292,7 +365,8 @@ export default function ManagerNotificationBell({
                               e.stopPropagation();
                               dismissTask(task.id);
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition cursor-pointer"
+                            style={{ color: "var(--ebb-text-muted)" }}
+                            className="p-1.5 rounded-lg hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition cursor-pointer"
                             title="Clear this task from queue"
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -300,7 +374,8 @@ export default function ManagerNotificationBell({
                           <Link
                             href={task.href}
                             onClick={() => setIsOpen(false)}
-                            className="p-1 text-slate-500 group-hover:text-yellow-400 transition"
+                            style={{ color: "var(--ebb-text-muted)" }}
+                            className="p-1 hover:text-[var(--ebb-primary)] transition"
                             title="Go to task workstation"
                           >
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -316,14 +391,18 @@ export default function ManagerNotificationBell({
               {recentDispatches.length > 0 && (
                 <div className="p-3 space-y-2">
                   <div className="px-1 flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase font-bold text-purple-400 tracking-wider flex items-center gap-1.5">
-                      <Bell className="w-3 h-3 text-purple-400" />
+                    <span 
+                      style={{ color: "var(--ebb-accent, #a855f7)" }}
+                      className="text-[10px] font-mono uppercase font-bold tracking-wider flex items-center gap-1.5"
+                    >
+                      <Bell className="w-3 h-3" style={{ color: "var(--ebb-accent, #a855f7)" }} />
                       Unread Dispatches ({dispatchCount})
                     </span>
                     <Link
                       href="/portal/notifications"
                       onClick={() => setIsOpen(false)}
-                      className="text-[10px] text-slate-400 hover:text-white transition"
+                      style={{ color: "var(--ebb-text-muted)" }}
+                      className="text-[10px] hover:text-[var(--ebb-text)] transition"
                     >
                       View feed &rarr;
                     </Link>
@@ -333,13 +412,23 @@ export default function ManagerNotificationBell({
                     {recentDispatches.slice(0, 4).map((dispatch) => (
                       <div
                         key={dispatch.id}
-                        className="p-2.5 rounded-xl bg-purple-950/20 border border-purple-500/20 flex items-start justify-between gap-3"
+                        style={{
+                          backgroundColor: "color-mix(in srgb, var(--ebb-accent, #a855f7) 10%, var(--ebb-surface))",
+                          borderColor: "color-mix(in srgb, var(--ebb-accent, #a855f7) 25%, var(--ebb-border))",
+                        }}
+                        className="p-2.5 rounded-xl border flex items-start justify-between gap-3"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-white line-clamp-1">
+                          <div 
+                            style={{ color: "var(--ebb-text)" }}
+                            className="text-xs font-bold line-clamp-1"
+                          >
                             {dispatch.title}
                           </div>
-                          <p className="text-[11px] text-slate-300 line-clamp-1 mt-0.5">
+                          <p 
+                            style={{ color: "var(--ebb-text-muted)" }}
+                            className="text-[11px] line-clamp-1 mt-0.5"
+                          >
                             {dispatch.message}
                           </p>
                           {dispatch.actionUrl && (
@@ -349,7 +438,8 @@ export default function ManagerNotificationBell({
                                 markDispatchAsRead(dispatch.id);
                                 setIsOpen(false);
                               }}
-                              className="inline-flex items-center gap-1 text-[10px] text-yellow-400 hover:underline font-bold mt-1"
+                              style={{ color: "var(--ebb-primary)" }}
+                              className="inline-flex items-center gap-1 text-[10px] hover:underline font-bold mt-1"
                             >
                               <span>{dispatch.actionLabel || "View Details"}</span>
                               <ExternalLink className="w-2.5 h-2.5" />
@@ -360,7 +450,8 @@ export default function ManagerNotificationBell({
                         <button
                           type="button"
                           onClick={() => markDispatchAsRead(dispatch.id)}
-                          className="p-1 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition shrink-0 cursor-pointer"
+                          style={{ color: "var(--ebb-text-muted)" }}
+                          className="p-1 rounded-lg hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition shrink-0 cursor-pointer"
                           title="Mark as read"
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -374,12 +465,27 @@ export default function ManagerNotificationBell({
               {/* Empty State: All clear */}
               {tasks.length === 0 && recentDispatches.length === 0 && !loading && (
                 <div className="p-6 text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mx-auto flex items-center justify-center">
+                  <div 
+                    style={{
+                      backgroundColor: "color-mix(in srgb, var(--ebb-primary, #10b981) 15%, transparent)",
+                      borderColor: "color-mix(in srgb, var(--ebb-primary, #10b981) 30%, transparent)",
+                      color: "var(--ebb-primary, #10b981)",
+                    }}
+                    className="w-10 h-10 rounded-full border mx-auto flex items-center justify-center"
+                  >
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">All Caught Up!</div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <div 
+                      style={{ color: "var(--ebb-text)" }}
+                      className="text-xs font-bold"
+                    >
+                      All Caught Up!
+                    </div>
+                    <p 
+                      style={{ color: "var(--ebb-text-muted)" }}
+                      className="text-[11px] mt-0.5"
+                    >
                       No pending leadership tasks or unread dispatches.
                     </p>
                   </div>
@@ -391,15 +497,16 @@ export default function ManagerNotificationBell({
             <div
               suppressHydrationWarning
               style={{
-                backgroundColor: "var(--ebb-surface-muted, #1e293b)",
-                borderColor: "var(--ebb-border, #334155)",
+                backgroundColor: "var(--ebb-surface-muted)",
+                borderColor: "var(--ebb-border)",
               }}
               className="p-2.5 border-t text-center"
             >
               <Link
                 href="/portal/notifications"
                 onClick={() => setIsOpen(false)}
-                className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition flex items-center justify-center gap-1.5"
+                style={{ color: "var(--ebb-primary)" }}
+                className="text-xs font-bold hover:opacity-80 transition flex items-center justify-center gap-1.5"
               >
                 <span>Open Notification Studio</span>
                 <ArrowRight className="w-3.5 h-3.5" />
