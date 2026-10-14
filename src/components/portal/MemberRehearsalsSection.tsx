@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 
 export default function MemberRehearsalsSection() {
   const { profile } = useAuth();
@@ -141,18 +142,23 @@ export default function MemberRehearsalsSection() {
     return rsvps.find((r) => r.uid === profile.uid);
   }, [rsvps, profile]);
 
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
   const isBlackedOut = isDateInBlackout(activeRehearsal?.date);
   const isRehearsalPast = isEventInPast(activeRehearsal?.date, activeRehearsal?.endTime);
-  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isRehearsalPast;
-  const rsvpTooltip = isRehearsalPast
+  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isRehearsalPast || isOnHiatus;
+  const rsvpTooltip = isOnHiatus
+    ? "On Hiatus"
+    : isRehearsalPast
     ? "Rehearsal is in the past"
     : isBlackedOut
     ? "in my blackout"
     : undefined;
 
   const handleRsvpChange = async (status: RsvpStatus) => {
-    if (!profile?.uid || isBlackedOut || isRehearsalPast) {
-      if (isRehearsalPast) {
+    if (!profile?.uid || isBlackedOut || isRehearsalPast || isOnHiatus) {
+      if (isOnHiatus) {
+        toast.error("Attendance controls are disabled while on hiatus.");
+      } else if (isRehearsalPast) {
         toast.error("RSVP cannot be updated for rehearsals that are in the past.");
       } else if (isBlackedOut) {
         toast.error("Cannot RSVP during your blackout period.");
@@ -285,6 +291,7 @@ export default function MemberRehearsalsSection() {
                 </span>
               )}
               {isBlackedOut && <InMyBlackoutChip />}
+              {isOnHiatus && <OnHiatusChip />}
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-white truncate">
@@ -334,6 +341,7 @@ export default function MemberRehearsalsSection() {
               <span className="flex items-center gap-1.5">
                 <span>My Attendance Plan</span>
                 {isBlackedOut && <InMyBlackoutChip size="sm" />}
+                {isOnHiatus && <OnHiatusChip size="sm" />}
               </span>
               {myRsvp?.status === "attending" && (
                 <span className="text-emerald-400 font-bold">Confirmed In</span>

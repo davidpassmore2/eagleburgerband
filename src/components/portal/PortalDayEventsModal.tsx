@@ -14,10 +14,12 @@ import {
   ArrowRight,
   X,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
+import { useAuth } from "@/lib/context/AuthContext";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 export type AttendanceStatus = "attending" | "probable" | "declined" | "tentative";
@@ -63,6 +65,8 @@ export default function PortalDayEventsModal({
   onRsvpChange,
   isUpdatingRsvp = false,
 }: PortalDayEventsModalProps) {
+  const { profile } = useAuth();
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
   const { isDateInBlackout } = useUserBlackouts();
 
   // Handle ESC key
@@ -179,8 +183,10 @@ export default function PortalDayEventsModal({
               const isCancelled = gig.status === "cancelled";
               const isGigBlackedOut = isDateInBlackout(gig.date);
               const isGigPast = isGigInPast(gig);
-              const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast;
-              const rsvpTooltip = isGigPast
+              const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast || isOnHiatus;
+              const rsvpTooltip = isOnHiatus
+                ? "On Hiatus"
+                : isGigPast
                 ? "Event is in the past"
                 : isGigBlackedOut
                 ? "in my blackout"
@@ -211,6 +217,7 @@ export default function PortalDayEventsModal({
                           {gig.status}
                         </span>
                         {isGigBlackedOut && <InMyBlackoutChip />}
+                        {isOnHiatus && <OnHiatusChip />}
                         {isCancelled && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
                             Cancelled
@@ -284,6 +291,7 @@ export default function PortalDayEventsModal({
                         <span className="font-bold text-slate-300 flex items-center gap-1.5 flex-wrap">
                           <span>My Attendance RSVP:</span>
                           {isGigBlackedOut && <InMyBlackoutChip size="sm" />}
+                          {isOnHiatus && <OnHiatusChip size="sm" />}
                           {userRsvp === "attending" && (
                             <span className="text-emerald-400 font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Confirmed In

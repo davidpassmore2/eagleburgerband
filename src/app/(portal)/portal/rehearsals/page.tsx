@@ -46,6 +46,7 @@ import RehearsalMapPicker from "@/components/portal/RehearsalMapPicker";
 import RehearsalBlackoutCalendar from "@/components/portal/RehearsalBlackoutCalendar";
 import { isDateInUserBlackout } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import {
   Music2,
   Calendar,
@@ -345,6 +346,8 @@ export default function RehearsalsPage() {
     return isEventInPast(activeRehearsal?.date, activeRehearsal?.endTime);
   }, [activeRehearsal]);
 
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
+
   // Current user's RSVP status for active rehearsal
   const myRsvp = useMemo(() => {
     if (!profile?.uid) return null;
@@ -357,6 +360,10 @@ export default function RehearsalsPage() {
   const handleRsvp = async (status: RsvpStatus, note?: string) => {
     if (!profile?.uid) {
       toast.error("Please sign in to RSVP.");
+      return;
+    }
+    if (isOnHiatus) {
+      toast.error("Attendance controls are disabled while on hiatus.");
       return;
     }
     if (isRehearsalPast) {
@@ -887,6 +894,7 @@ export default function RehearsalsPage() {
                       <CheckCircle2 className="w-3 h-3" /> On Schedule
                     </span>
                   )}
+                  {isOnHiatus && <OnHiatusChip />}
                   {isMyRehearsalBlackout && <InMyBlackoutChip />}
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
@@ -990,6 +998,7 @@ export default function RehearsalsPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wider block">
                       My Attendance Plan:
                     </span>
+                    {isOnHiatus && <OnHiatusChip />}
                     {isMyRehearsalBlackout && <InMyBlackoutChip />}
                   </div>
                   <span className="text-[11px] text-slate-400">
@@ -1018,9 +1027,11 @@ export default function RehearsalsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast || isOnHiatus}
                   title={
-                    isRehearsalPast
+                    isOnHiatus
+                      ? "On Hiatus"
+                      : isRehearsalPast
                       ? "Rehearsal is in the past"
                       : isMyRehearsalBlackout
                       ? "in my blackout"
@@ -1039,9 +1050,11 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast || isOnHiatus}
                   title={
-                    isRehearsalPast
+                    isOnHiatus
+                      ? "On Hiatus"
+                      : isRehearsalPast
                       ? "Rehearsal is in the past"
                       : isMyRehearsalBlackout
                       ? "in my blackout"
@@ -1060,9 +1073,11 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast || isOnHiatus}
                   title={
-                    isRehearsalPast
+                    isOnHiatus
+                      ? "On Hiatus"
+                      : isRehearsalPast
                       ? "Rehearsal is in the past"
                       : isMyRehearsalBlackout
                       ? "in my blackout"
@@ -1081,9 +1096,11 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast || isOnHiatus}
                   title={
-                    isRehearsalPast
+                    isOnHiatus
+                      ? "On Hiatus"
+                      : isRehearsalPast
                       ? "Rehearsal is in the past"
                       : isMyRehearsalBlackout
                       ? "in my blackout"
@@ -1106,29 +1123,31 @@ export default function RehearsalsPage() {
                 <input
                   type="text"
                   placeholder={
-                    isRehearsalPast
+                    isOnHiatus
+                      ? "RSVP disabled while on hiatus"
+                      : isRehearsalPast
                       ? "Rehearsal is in the past"
                       : isMyRehearsalBlackout
                       ? "RSVP locked during your blackout period"
                       : "Add note or call-time reason (e.g. Arriving 15 min late, bringing extra stands)..."
                   }
                   value={effectiveRsvpNote}
-                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast || isOnHiatus}
                   onChange={(e) => setUserRsvpNote(e.target.value)}
                   onBlur={() => {
-                    if (!isMyRehearsalBlackout && !isRehearsalPast && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "")) {
+                    if (!isMyRehearsalBlackout && !isRehearsalPast && !isOnHiatus && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "")) {
                       handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (!isMyRehearsalBlackout && !isRehearsalPast && myRsvp) handleRsvp(myRsvp.status, effectiveRsvpNote);
+                      if (!isMyRehearsalBlackout && !isRehearsalPast && !isOnHiatus && myRsvp) handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
-                {!isMyRehearsalBlackout && !isRehearsalPast && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "") && (
+                {!isMyRehearsalBlackout && !isRehearsalPast && !isOnHiatus && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "") && (
                   <button
                     type="button"
                     onClick={() => handleRsvp(myRsvp.status, effectiveRsvpNote)}
@@ -1682,6 +1701,7 @@ export default function RehearsalsPage() {
                         <span className="text-xs font-bold text-white">
                           {item.formattedDate}
                         </span>
+                        {isOnHiatus && <OnHiatusChip size="sm" />}
                         {isItemBlackedOut && <InMyBlackoutChip size="sm" />}
                         {isCancelled && (
                           <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-red-500 text-white">

@@ -45,6 +45,7 @@ import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 interface SetlistItem {
@@ -305,8 +306,11 @@ export default function MusicianGigDetailPage() {
   const myRsvp = rsvps.find((r) => r.uid === firebaseUser?.uid);
   const isBlackedOut = isDateInBlackout(gig?.date);
   const isPast = isGigInPast(gig);
-  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast;
-  const rsvpTooltip = isPast
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
+  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast || isOnHiatus;
+  const rsvpTooltip = isOnHiatus
+    ? "On Hiatus"
+    : isPast
     ? "Event is in the past"
     : isBlackedOut
     ? "in my blackout"
@@ -315,7 +319,7 @@ export default function MusicianGigDetailPage() {
   const handleRsvpChange = async (
     status: "attending" | "probable" | "declined" | "tentative",
   ) => {
-    if (!firebaseUser || !gigId || isBlackedOut || isPast) return;
+    if (!firebaseUser || !gigId || isBlackedOut || isPast || isOnHiatus) return;
     setIsUpdatingRsvp(true);
 
     try {
@@ -411,6 +415,7 @@ export default function MusicianGigDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Return to Home Base
         </button>
         <div className="flex items-center gap-2">
+          {isOnHiatus && <OnHiatusChip size="md" />}
           {isBlackedOut && <InMyBlackoutChip size="md" />}
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border border-yellow-400/30 bg-yellow-400/10 text-yellow-300">
             Status: {gig.status}
@@ -434,6 +439,7 @@ export default function MusicianGigDetailPage() {
           <div className="text-[11px] font-semibold text-slate-400 flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">
               <span>Your Performance RSVP</span>
+              {isOnHiatus && <OnHiatusChip />}
               {isBlackedOut && <InMyBlackoutChip />}
             </span>
             {isUpdatingRsvp && (
