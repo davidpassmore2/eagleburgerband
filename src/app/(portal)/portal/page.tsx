@@ -29,6 +29,7 @@ import { NotificationSchema, AppNotification } from "@/lib/schema/notification";
 import { GigRsvpSchema } from "@/lib/schema/rsvp";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 import {
   Calendar,
@@ -98,6 +99,7 @@ interface LedgerRecord {
 
 export default function MusicianPortalOverviewPage() {
   const { profile, loading: authLoading } = useAuth();
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
   const { activePortalScheme } = useTheme();
   const { isDateInBlackout } = useUserBlackouts();
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -284,6 +286,11 @@ export default function MusicianPortalOverviewPage() {
     status: AttendanceStatus
   ) => {
     if (!profile?.uid || !gigId) return;
+
+    if (isOnHiatus) {
+      toast.error("Attendance controls are disabled while on hiatus.");
+      return;
+    }
 
     const targetGig = gigs.find((g) => g.id === gigId);
     if (targetGig && isGigInPast(targetGig)) {
@@ -550,8 +557,10 @@ export default function MusicianPortalOverviewPage() {
           {nextGig ? (() => {
             const isNextGigBlackedOut = isDateInBlackout(nextGig.date);
             const isNextGigPast = isGigInPast(nextGig);
-            const isNextGigRsvpDisabled = isUpdatingRsvp || isNextGigBlackedOut || isNextGigPast;
-            const nextGigTooltip = isNextGigPast
+            const isNextGigRsvpDisabled = isUpdatingRsvp || isNextGigBlackedOut || isNextGigPast || isOnHiatus;
+            const nextGigTooltip = isOnHiatus
+              ? "On Hiatus"
+              : isNextGigPast
               ? "Event is in the past"
               : isNextGigBlackedOut
               ? "in my blackout"
@@ -590,6 +599,7 @@ export default function MusicianPortalOverviewPage() {
                         {nextGig.date}
                       </span>
                       {isNextGigBlackedOut && <InMyBlackoutChip />}
+                      {isOnHiatus && <OnHiatusChip />}
                       {countdownText && (
                         <span className="text-xs font-mono font-bold text-yellow-300 bg-yellow-400/15 border border-yellow-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
                           <Clock className="w-3 h-3 text-yellow-400" />
@@ -630,6 +640,7 @@ export default function MusicianPortalOverviewPage() {
                       <span className="flex items-center gap-1.5">
                         <span>My Spotlight RSVP</span>
                         {isNextGigBlackedOut && <InMyBlackoutChip size="sm" />}
+                        {isOnHiatus && <OnHiatusChip size="sm" />}
                       </span>
                       {userRsvps[nextGig.id] === "attending" && (
                         <span className="text-emerald-400 font-bold">Confirmed In</span>
@@ -886,8 +897,10 @@ export default function MusicianPortalOverviewPage() {
                 const status = userRsvps[gig.id];
                 const isGigBlackedOut = isDateInBlackout(gig.date);
                 const isGigPast = isGigInPast(gig);
-                const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast;
-                const rsvpTooltip = isGigPast
+                const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast || isOnHiatus;
+                const rsvpTooltip = isOnHiatus
+                  ? "On Hiatus"
+                  : isGigPast
                   ? "Event is in the past"
                   : isGigBlackedOut
                   ? "in my blackout"
@@ -924,6 +937,7 @@ export default function MusicianPortalOverviewPage() {
                             {gig.date}
                           </span>
                           {isGigBlackedOut && <InMyBlackoutChip />}
+                          {isOnHiatus && <OnHiatusChip />}
                           <Link
                             href={`/portal/gigs/${gig.id}`}
                             className="text-sm font-bold text-white hover:text-yellow-400 transition truncate"
@@ -971,6 +985,7 @@ export default function MusicianPortalOverviewPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-slate-400 text-[11px] font-mono">My RSVP:</span>
                         {isGigBlackedOut && <InMyBlackoutChip size="sm" />}
+                        {isOnHiatus && <OnHiatusChip size="sm" />}
                         {status === "attending" && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
                             <CheckCircle2 className="w-3 h-3" /> Confirmed In

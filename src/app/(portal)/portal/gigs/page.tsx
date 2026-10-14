@@ -41,6 +41,7 @@ import { GigCompensationType } from "@/lib/schema/gig";
 import { toast } from "@/lib/context/ToastContext";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 type GigItem = MonthCalendarGig & {
@@ -130,6 +131,11 @@ export default function PortalGigsListPage() {
   // Handle in-line and calendar modal RSVP changes
   const handleRsvpChange = async (gigId: string, status: AttendanceStatus) => {
     if (!profile?.uid || !gigId) return;
+    const isOnHiatus = Boolean(profile.onHiatus || profile.status === "hiatus");
+    if (isOnHiatus) {
+      toast.error("Attendance controls are disabled while on hiatus.");
+      return;
+    }
     const targetGig = gigs.find((g) => g.id === gigId);
     if (targetGig && isGigInPast(targetGig)) {
       toast.error("RSVP cannot be updated for events that are in the past.");
@@ -501,8 +507,11 @@ export default function PortalGigsListPage() {
                 const isCancelled = g.status === "cancelled";
                 const isBlackedOut = isDateInBlackout(g.date);
                 const isPast = isGigInPast(g);
-                const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast;
-                const rsvpTooltip = isPast
+                const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
+                const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast || isOnHiatus;
+                const rsvpTooltip = isOnHiatus
+                  ? "On Hiatus"
+                  : isPast
                   ? "Event is in the past"
                   : isBlackedOut
                   ? "in my blackout"
@@ -538,6 +547,7 @@ export default function PortalGigsListPage() {
                           <span className="text-[10px] font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-yellow-400">
                             {g.status}
                           </span>
+                          {isOnHiatus && <OnHiatusChip />}
                           {isBlackedOut && <InMyBlackoutChip />}
                           {(() => {
                             const compType =
@@ -620,6 +630,7 @@ export default function PortalGigsListPage() {
                       <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-slate-400 text-[11px] font-mono">My RSVP:</span>
+                          {isOnHiatus && <OnHiatusChip />}
                           {isBlackedOut && <InMyBlackoutChip />}
                           {myRsvp === "attending" && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
@@ -641,9 +652,14 @@ export default function PortalGigsListPage() {
                               <HelpCircle className="w-3 h-3" /> Tentative
                             </span>
                           )}
-                          {!myRsvp && !isBlackedOut && !isPast && (
+                          {!myRsvp && !isBlackedOut && !isPast && !isOnHiatus && (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
                               RSVP Needed
+                            </span>
+                          )}
+                          {!myRsvp && !isPast && isOnHiatus && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-lg">
+                              Hiatus
                             </span>
                           )}
                           {!myRsvp && isPast && (

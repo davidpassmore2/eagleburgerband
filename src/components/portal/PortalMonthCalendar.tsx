@@ -14,6 +14,7 @@ import PortalDayEventsModal, {
   DayModalGig,
 } from "./PortalDayEventsModal";
 import CalendarSubscribeModal from "./CalendarSubscribeModal";
+import { useAuth } from "@/lib/context/AuthContext";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 
 export interface MonthCalendarGig extends DayModalGig {
@@ -53,6 +54,8 @@ export default function PortalMonthCalendar({
   variant = "compact",
   className = "",
 }: PortalMonthCalendarProps) {
+  const { profile } = useAuth();
+  const isOnHiatus = Boolean(profile?.onHiatus || profile?.status === "hiatus");
   const { isDateInBlackout } = useUserBlackouts();
   // Determine default initial month: current month, or the month of the first upcoming gig if later
   const today = useMemo(() => new Date(), []);
@@ -411,12 +414,17 @@ export default function PortalMonthCalendar({
                             <div
                               key={gig.id}
                               className={`w-full text-left truncate text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded border transition-transform group-hover:scale-[1.02] flex items-center justify-between gap-1 ${pillColor}`}
-                              title={`${title}${isBlackedOut ? " (in my blackout)" : ""} - Click for details`}
+                              title={`${title}${isOnHiatus ? " (On Hiatus)" : isBlackedOut ? " (in my blackout)" : ""} - Click for details`}
                             >
                               <span className="truncate">{title}</span>
                               {isBlackedOut && (
                                 <span className="text-[8px] uppercase font-mono shrink-0 px-1 rounded bg-amber-400/20 text-amber-300">
                                   blackout
+                                </span>
+                              )}
+                              {isOnHiatus && (
+                                <span className="text-[8px] uppercase font-mono shrink-0 px-1 rounded bg-purple-400/20 text-purple-300">
+                                  hiatus
                                 </span>
                               )}
                             </div>
