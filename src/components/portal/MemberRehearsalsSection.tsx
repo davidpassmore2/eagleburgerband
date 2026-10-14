@@ -27,6 +27,7 @@ import {
 import {
   formatTimeRange,
   formatFriendlyDate,
+  isEventInPast,
 } from "@/lib/utils/dateTimeFormat";
 import { toast } from "@/lib/context/ToastContext";
 import {
@@ -141,10 +142,19 @@ export default function MemberRehearsalsSection() {
   }, [rsvps, profile]);
 
   const isBlackedOut = isDateInBlackout(activeRehearsal?.date);
+  const isRehearsalPast = isEventInPast(activeRehearsal?.date, activeRehearsal?.endTime);
+  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isRehearsalPast;
+  const rsvpTooltip = isRehearsalPast
+    ? "Rehearsal is in the past"
+    : isBlackedOut
+    ? "in my blackout"
+    : undefined;
 
   const handleRsvpChange = async (status: RsvpStatus) => {
-    if (!profile?.uid || isBlackedOut) {
-      if (isBlackedOut) {
+    if (!profile?.uid || isBlackedOut || isRehearsalPast) {
+      if (isRehearsalPast) {
+        toast.error("RSVP cannot be updated for rehearsals that are in the past.");
+      } else if (isBlackedOut) {
         toast.error("Cannot RSVP during your blackout period.");
       } else {
         toast.error("Please sign in to update RSVP.");
@@ -337,16 +347,19 @@ export default function MemberRehearsalsSection() {
               {myRsvp?.status === "declined" && (
                 <span className="text-rose-400 font-bold">Declined</span>
               )}
-              {!myRsvp?.status && (
+              {!myRsvp?.status && !isRehearsalPast && (
                 <span className="text-amber-400 font-bold animate-pulse">Required</span>
+              )}
+              {!myRsvp?.status && isRehearsalPast && (
+                <span className="text-slate-500 font-bold">No response</span>
               )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <button
                 type="button"
-                disabled={isUpdatingRsvp || isBlackedOut}
-                title={isBlackedOut ? "in my blackout" : undefined}
+                disabled={isRsvpDisabled}
+                title={rsvpTooltip}
                 onClick={() => handleRsvpChange("attending")}
                 className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "attending"
@@ -358,8 +371,8 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp || isBlackedOut}
-                title={isBlackedOut ? "in my blackout" : undefined}
+                disabled={isRsvpDisabled}
+                title={rsvpTooltip}
                 onClick={() => handleRsvpChange("probable")}
                 className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "probable"
@@ -371,8 +384,8 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp || isBlackedOut}
-                title={isBlackedOut ? "in my blackout" : undefined}
+                disabled={isRsvpDisabled}
+                title={rsvpTooltip}
                 onClick={() => handleRsvpChange("tentative")}
                 className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "tentative"
@@ -384,8 +397,8 @@ export default function MemberRehearsalsSection() {
               </button>
               <button
                 type="button"
-                disabled={isUpdatingRsvp || isBlackedOut}
-                title={isBlackedOut ? "in my blackout" : undefined}
+                disabled={isRsvpDisabled}
+                title={rsvpTooltip}
                 onClick={() => handleRsvpChange("declined")}
                 className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                   myRsvp?.status === "declined"

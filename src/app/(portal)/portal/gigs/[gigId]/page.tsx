@@ -45,6 +45,7 @@ import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 interface SetlistItem {
   id: string;
@@ -303,11 +304,18 @@ export default function MusicianGigDetailPage() {
 
   const myRsvp = rsvps.find((r) => r.uid === firebaseUser?.uid);
   const isBlackedOut = isDateInBlackout(gig?.date);
+  const isPast = isGigInPast(gig);
+  const isRsvpDisabled = isUpdatingRsvp || isBlackedOut || isPast;
+  const rsvpTooltip = isPast
+    ? "Event is in the past"
+    : isBlackedOut
+    ? "in my blackout"
+    : undefined;
 
   const handleRsvpChange = async (
     status: "attending" | "probable" | "declined" | "tentative",
   ) => {
-    if (!firebaseUser || !gigId || isBlackedOut) return;
+    if (!firebaseUser || !gigId || isBlackedOut || isPast) return;
     setIsUpdatingRsvp(true);
 
     try {
@@ -435,8 +443,8 @@ export default function MusicianGigDetailPage() {
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
-              disabled={isUpdatingRsvp || isBlackedOut}
-              title={isBlackedOut ? "in my blackout" : undefined}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("attending")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "attending"
@@ -448,8 +456,8 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp || isBlackedOut}
-              title={isBlackedOut ? "in my blackout" : undefined}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("probable")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "probable"
@@ -461,8 +469,8 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp || isBlackedOut}
-              title={isBlackedOut ? "in my blackout" : undefined}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("tentative")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "tentative"
@@ -474,8 +482,8 @@ export default function MusicianGigDetailPage() {
             </button>
             <button
               type="button"
-              disabled={isUpdatingRsvp || isBlackedOut}
-              title={isBlackedOut ? "in my blackout" : undefined}
+              disabled={isRsvpDisabled}
+              title={rsvpTooltip}
               onClick={() => handleRsvpChange("declined")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition disabled:opacity-40 disabled:cursor-not-allowed ${
                 myRsvp?.status === "declined"

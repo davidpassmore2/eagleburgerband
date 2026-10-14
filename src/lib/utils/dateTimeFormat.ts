@@ -142,3 +142,70 @@ export function formatEasternTimestamp(isoString: string): string {
   }
 }
 
+/**
+ * Returns today's date formatted as YYYY-MM-DD.
+ */
+export function getTodayDateString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Determines whether an event (gig, rehearsal, etc.) has already concluded or is in the past.
+ * If dateStr < todayStr, returns true.
+ * If dateStr === todayStr and endTime is provided, returns true if current time is past endTime.
+ */
+export function isEventInPast(
+  dateStr?: string | null,
+  endTime?: string | null
+): boolean {
+  if (!dateStr) return false;
+  const normDate = dateStr.split("T")[0].trim();
+  if (!normDate) return false;
+
+  const todayStr = getTodayDateString();
+
+  if (normDate < todayStr) return true;
+  if (normDate > todayStr) return false;
+
+  // Event is today: check if optional endTime has passed
+  if (endTime && endTime.trim() && endTime.trim().toUpperCase() !== "TBD") {
+    const raw = endTime.trim();
+    const timeMatch = raw.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10);
+      const m = parseInt(timeMatch[2], 10);
+      const meridian = timeMatch[4]?.toUpperCase();
+      if (meridian === "PM" && h < 12) h += 12;
+      if (meridian === "AM" && h === 12) h = 0;
+
+      const now = new Date();
+      const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+      if (now > endDateTime) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Determines whether a gig is considered in the past (completed status or past date).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isGigInPast(gig?: any): boolean {
+  if (!gig) return false;
+  if (gig.status === "completed") return true;
+  const rawLogistics = gig.internalLogistics as { endTime?: string } | undefined;
+  const endTime =
+    typeof rawLogistics?.endTime === "string"
+      ? rawLogistics.endTime
+      : undefined;
+  return isEventInPast(gig.date, endTime);
+}
+
+

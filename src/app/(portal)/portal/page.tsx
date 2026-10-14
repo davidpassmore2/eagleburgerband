@@ -29,6 +29,7 @@ import { NotificationSchema, AppNotification } from "@/lib/schema/notification";
 import { GigRsvpSchema } from "@/lib/schema/rsvp";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 import {
   Calendar,
   Clock,
@@ -285,6 +286,10 @@ export default function MusicianPortalOverviewPage() {
     if (!profile?.uid || !gigId) return;
 
     const targetGig = gigs.find((g) => g.id === gigId);
+    if (targetGig && isGigInPast(targetGig)) {
+      toast.error("RSVP cannot be updated for events that are in the past.");
+      return;
+    }
     if (isDateInBlackout(targetGig?.date)) {
       toast.error("Cannot RSVP during your blackout period.");
       return;
@@ -544,6 +549,14 @@ export default function MusicianPortalOverviewPage() {
           {/* Card 1: Next Gig */}
           {nextGig ? (() => {
             const isNextGigBlackedOut = isDateInBlackout(nextGig.date);
+            const isNextGigPast = isGigInPast(nextGig);
+            const isNextGigRsvpDisabled = isUpdatingRsvp || isNextGigBlackedOut || isNextGigPast;
+            const nextGigTooltip = isNextGigPast
+              ? "Event is in the past"
+              : isNextGigBlackedOut
+              ? "in my blackout"
+              : undefined;
+
             return (
               <div
                 suppressHydrationWarning
@@ -630,16 +643,19 @@ export default function MusicianPortalOverviewPage() {
                       {userRsvps[nextGig.id] === "declined" && (
                         <span className="text-rose-400 font-bold">Declined</span>
                       )}
-                      {!userRsvps[nextGig.id] && (
+                      {!userRsvps[nextGig.id] && !isNextGigPast && (
                         <span className="text-amber-400 font-bold animate-pulse">Required</span>
+                      )}
+                      {!userRsvps[nextGig.id] && isNextGigPast && (
+                        <span className="text-slate-500 font-bold">No response</span>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       <button
                         type="button"
-                        disabled={isUpdatingRsvp || isNextGigBlackedOut}
-                        title={isNextGigBlackedOut ? "in my blackout" : undefined}
+                        disabled={isNextGigRsvpDisabled}
+                        title={nextGigTooltip}
                         onClick={() => handleRsvpChange(nextGig.id, "attending")}
                         className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                           userRsvps[nextGig.id] === "attending"
@@ -651,8 +667,8 @@ export default function MusicianPortalOverviewPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={isUpdatingRsvp || isNextGigBlackedOut}
-                        title={isNextGigBlackedOut ? "in my blackout" : undefined}
+                        disabled={isNextGigRsvpDisabled}
+                        title={nextGigTooltip}
                         onClick={() => handleRsvpChange(nextGig.id, "probable")}
                         className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                           userRsvps[nextGig.id] === "probable"
@@ -664,8 +680,8 @@ export default function MusicianPortalOverviewPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={isUpdatingRsvp || isNextGigBlackedOut}
-                        title={isNextGigBlackedOut ? "in my blackout" : undefined}
+                        disabled={isNextGigRsvpDisabled}
+                        title={nextGigTooltip}
                         onClick={() => handleRsvpChange(nextGig.id, "tentative")}
                         className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                           userRsvps[nextGig.id] === "tentative"
@@ -677,8 +693,8 @@ export default function MusicianPortalOverviewPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={isUpdatingRsvp || isNextGigBlackedOut}
-                        title={isNextGigBlackedOut ? "in my blackout" : undefined}
+                        disabled={isNextGigRsvpDisabled}
+                        title={nextGigTooltip}
                         onClick={() => handleRsvpChange(nextGig.id, "declined")}
                         className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                           userRsvps[nextGig.id] === "declined"
@@ -869,6 +885,13 @@ export default function MusicianPortalOverviewPage() {
               upcomingGigs.map((gig) => {
                 const status = userRsvps[gig.id];
                 const isGigBlackedOut = isDateInBlackout(gig.date);
+                const isGigPast = isGigInPast(gig);
+                const isGigRsvpDisabled = isUpdatingRsvp || isGigBlackedOut || isGigPast;
+                const rsvpTooltip = isGigPast
+                  ? "Event is in the past"
+                  : isGigBlackedOut
+                  ? "in my blackout"
+                  : undefined;
                 const title =
                   gig.internalLogistics?.title || gig.publicDetails?.title || "Eagleburger Gig";
                 const venue =
@@ -968,9 +991,14 @@ export default function MusicianPortalOverviewPage() {
                             <HelpCircle className="w-3 h-3" /> Tentative
                           </span>
                         )}
-                        {!status && (
+                        {!status && !isGigPast && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg animate-pulse">
                             RSVP Needed
+                          </span>
+                        )}
+                        {!status && isGigPast && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-800/40 border border-slate-700/50 px-2 py-0.5 rounded-lg">
+                            No response
                           </span>
                         )}
                       </div>
@@ -978,8 +1006,8 @@ export default function MusicianPortalOverviewPage() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
-                          disabled={isUpdatingRsvp || isGigBlackedOut}
-                          title={isGigBlackedOut ? "in my blackout" : undefined}
+                          disabled={isGigRsvpDisabled}
+                          title={rsvpTooltip}
                           onClick={() => handleRsvpChange(gig.id, "attending")}
                           className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                             status === "attending"
@@ -991,8 +1019,8 @@ export default function MusicianPortalOverviewPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={isUpdatingRsvp || isGigBlackedOut}
-                          title={isGigBlackedOut ? "in my blackout" : undefined}
+                          disabled={isGigRsvpDisabled}
+                          title={rsvpTooltip}
                           onClick={() => handleRsvpChange(gig.id, "probable")}
                           className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                             status === "probable"
@@ -1004,8 +1032,8 @@ export default function MusicianPortalOverviewPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={isUpdatingRsvp || isGigBlackedOut}
-                          title={isGigBlackedOut ? "in my blackout" : undefined}
+                          disabled={isGigRsvpDisabled}
+                          title={rsvpTooltip}
                           onClick={() => handleRsvpChange(gig.id, "tentative")}
                           className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                             status === "tentative"
@@ -1017,8 +1045,8 @@ export default function MusicianPortalOverviewPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={isUpdatingRsvp || isGigBlackedOut}
-                          title={isGigBlackedOut ? "in my blackout" : undefined}
+                          disabled={isGigRsvpDisabled}
+                          title={rsvpTooltip}
                           onClick={() => handleRsvpChange(gig.id, "declined")}
                           className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed ${
                             status === "declined"

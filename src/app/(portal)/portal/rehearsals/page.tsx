@@ -38,6 +38,7 @@ import {
   formatTimeRange,
   formatFriendlyDate,
   formatEasternTimestamp,
+  isEventInPast,
 } from "@/lib/utils/dateTimeFormat";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -340,6 +341,10 @@ export default function RehearsalsPage() {
     return isDateInUserBlackout(activeRehearsal.date, myBlackouts);
   }, [activeRehearsal, myBlackouts, profile]);
 
+  const isRehearsalPast = useMemo(() => {
+    return isEventInPast(activeRehearsal?.date, activeRehearsal?.endTime);
+  }, [activeRehearsal]);
+
   // Current user's RSVP status for active rehearsal
   const myRsvp = useMemo(() => {
     if (!profile?.uid) return null;
@@ -352,6 +357,10 @@ export default function RehearsalsPage() {
   const handleRsvp = async (status: RsvpStatus, note?: string) => {
     if (!profile?.uid) {
       toast.error("Please sign in to RSVP.");
+      return;
+    }
+    if (isRehearsalPast) {
+      toast.error("RSVP cannot be updated for rehearsals that are in the past.");
       return;
     }
     if (isMyRehearsalBlackout) {
@@ -1009,8 +1018,14 @@ export default function RehearsalsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout}
-                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  title={
+                    isRehearsalPast
+                      ? "Rehearsal is in the past"
+                      : isMyRehearsalBlackout
+                      ? "in my blackout"
+                      : undefined
+                  }
                   onClick={() => handleRsvp("attending")}
                   className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "attending"
@@ -1024,8 +1039,14 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout}
-                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  title={
+                    isRehearsalPast
+                      ? "Rehearsal is in the past"
+                      : isMyRehearsalBlackout
+                      ? "in my blackout"
+                      : undefined
+                  }
                   onClick={() => handleRsvp("probable")}
                   className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "probable"
@@ -1039,8 +1060,14 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout}
-                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  title={
+                    isRehearsalPast
+                      ? "Rehearsal is in the past"
+                      : isMyRehearsalBlackout
+                      ? "in my blackout"
+                      : undefined
+                  }
                   onClick={() => handleRsvp("tentative")}
                   className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "tentative"
@@ -1054,8 +1081,14 @@ export default function RehearsalsPage() {
 
                 <button
                   type="button"
-                  disabled={isMyRehearsalBlackout}
-                  title={isMyRehearsalBlackout ? "in my blackout" : undefined}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast}
+                  title={
+                    isRehearsalPast
+                      ? "Rehearsal is in the past"
+                      : isMyRehearsalBlackout
+                      ? "in my blackout"
+                      : undefined
+                  }
                   onClick={() => handleRsvp("declined")}
                   className={`p-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed ${
                     myRsvp?.status === "declined"
@@ -1073,27 +1106,29 @@ export default function RehearsalsPage() {
                 <input
                   type="text"
                   placeholder={
-                    isMyRehearsalBlackout
+                    isRehearsalPast
+                      ? "Rehearsal is in the past"
+                      : isMyRehearsalBlackout
                       ? "RSVP locked during your blackout period"
                       : "Add note or call-time reason (e.g. Arriving 15 min late, bringing extra stands)..."
                   }
                   value={effectiveRsvpNote}
-                  disabled={isMyRehearsalBlackout}
+                  disabled={isMyRehearsalBlackout || isRehearsalPast}
                   onChange={(e) => setUserRsvpNote(e.target.value)}
                   onBlur={() => {
-                    if (!isMyRehearsalBlackout && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "")) {
+                    if (!isMyRehearsalBlackout && !isRehearsalPast && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "")) {
                       handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (!isMyRehearsalBlackout && myRsvp) handleRsvp(myRsvp.status, effectiveRsvpNote);
+                      if (!isMyRehearsalBlackout && !isRehearsalPast && myRsvp) handleRsvp(myRsvp.status, effectiveRsvpNote);
                     }
                   }}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
-                {!isMyRehearsalBlackout && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "") && (
+                {!isMyRehearsalBlackout && !isRehearsalPast && myRsvp && effectiveRsvpNote !== (myRsvp.notes || "") && (
                   <button
                     type="button"
                     onClick={() => handleRsvp(myRsvp.status, effectiveRsvpNote)}
