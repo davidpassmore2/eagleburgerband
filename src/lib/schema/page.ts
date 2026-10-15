@@ -722,7 +722,7 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
           buttonText: "Connect with Management",
           buttonHref: "/contact",
           buttonStyle: "outline",
-          variant: "secondary",
+          variant: "dark",
         },
       },
     ],
