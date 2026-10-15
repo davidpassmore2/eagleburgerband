@@ -163,6 +163,20 @@ export const StatsCounterSectionSchema = z.object({
   ]),
 });
 
+export const AuditionCalloutSectionSchema = z.object({
+  title: z.string().default("Musician Auditions & Applications"),
+  description: z.string().default("Are you a brass player or battery drummer interested in performing with the band?"),
+  buttonText: z.string().default("Audition With Us →"),
+  buttonHref: z.string().default("/join"),
+  badgeText: z.string().default(""),
+});
+
+export const IntakeCardsSectionSchema = z.object({
+  badgeText: z.string().default("Connect & Collaborate"),
+  headline: z.string().default("How Can We Help You?"),
+  subheadline: z.string().default("Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below."),
+});
+
 export const SectionTypeEnum = z.enum([
   "hero",
   "rich_text",
@@ -174,6 +188,8 @@ export const SectionTypeEnum = z.enum([
   "faq",
   "cta_banner",
   "stats_counter",
+  "audition_callout",
+  "intake_cards",
 ]);
 
 export const ContentSectionSchema = z.object({
@@ -193,6 +209,8 @@ export const ContentSectionSchema = z.object({
   faq: FaqSectionSchema.optional(),
   ctaBanner: CtaBannerSectionSchema.optional(),
   statsCounter: StatsCounterSectionSchema.optional(),
+  auditionCallout: AuditionCalloutSectionSchema.optional(),
+  intakeCards: IntakeCardsSectionSchema.optional(),
 });
 
 export const PageSeoSchema = z.object({
@@ -342,6 +360,30 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
           showTicketLinks: true,
           ctaText: "View Full Performance Schedule",
           ctaHref: "/gigs",
+        },
+      },
+      {
+        id: "sec_intake_cards",
+        type: "intake_cards",
+        order: 5,
+        isVisible: true,
+        intakeCards: {
+          badgeText: "Connect & Collaborate",
+          headline: "How Can We Help You?",
+          subheadline: "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
+        },
+      },
+      {
+        id: "sec_audition_callout",
+        type: "audition_callout",
+        order: 6,
+        isVisible: true,
+        auditionCallout: {
+          title: "Musician Auditions & Applications",
+          description: "Are you a brass player or battery drummer interested in performing with the band?",
+          buttonText: "Audition With Us →",
+          buttonHref: "/join",
+          badgeText: "",
         },
       },
     ],

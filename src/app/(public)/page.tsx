@@ -103,6 +103,34 @@ const DEFAULT_HOME_SECTIONS: ContentSection[] = [
       buttonText: "Submit Booking Request",
     },
   },
+  {
+    id: "sec_intake_cards",
+    type: "intake_cards",
+    order: 6,
+    isVisible: true,
+    background: "default",
+    padding: "standard",
+    intakeCards: {
+      badgeText: "Connect & Collaborate",
+      headline: "How Can We Help You?",
+      subheadline: "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
+    },
+  },
+  {
+    id: "sec_audition_callout",
+    type: "audition_callout",
+    order: 7,
+    isVisible: true,
+    background: "default",
+    padding: "compact",
+    auditionCallout: {
+      title: "Musician Auditions & Applications",
+      description: "Are you a brass player or battery drummer interested in performing with the band?",
+      buttonText: "Audition With Us →",
+      buttonHref: "/join",
+      badgeText: "",
+    },
+  },
 ];
 
 export default function PublicHomePage() {
@@ -191,8 +219,12 @@ export default function PublicHomePage() {
         <PublicSectionRenderer key={section.id} section={section} />
       ))}
 
-      {/* Three Intake Flows Cards Section */}
-      <IntakeCardsSection />
+      {/* Fallback Intake Cards Section if not defined in dynamic sections */}
+      {!sectionsToRender.some((s) => s.type === "intake_cards") && (
+        <IntakeCardsSection
+          showAuditionBanner={!sectionsToRender.some((s) => s.type === "audition_callout")}
+        />
+      )}
     </div>
   );
 }

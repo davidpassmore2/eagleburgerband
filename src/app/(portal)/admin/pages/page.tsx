@@ -88,6 +88,7 @@ import {
   Star,
   Sliders,
   Type,
+  Music2,
 } from "lucide-react";
 
 export default function CMSPagesStudio() {
@@ -156,6 +157,33 @@ export default function CMSPagesStudio() {
             pageMap.set(sysPage.id, sysPage);
           }
         });
+
+        // Ensure home page includes intake_cards and audition_callout sections if missing from saved state
+        const homePage = pageMap.get("home");
+        if (homePage && homePage.sections) {
+          let updated = false;
+          const newSections = [...homePage.sections];
+          const hasIntake = newSections.some((s) => s.type === "intake_cards");
+          const hasAudition = newSections.some((s) => s.type === "audition_callout");
+
+          if (!hasIntake) {
+            const defaultIntake = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "intake_cards");
+            if (defaultIntake) {
+              newSections.push({ ...defaultIntake, order: newSections.length + 1 });
+              updated = true;
+            }
+          }
+          if (!hasAudition) {
+            const defaultAudition = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "audition_callout");
+            if (defaultAudition) {
+              newSections.push({ ...defaultAudition, order: newSections.length + 1 });
+              updated = true;
+            }
+          }
+          if (updated) {
+            pageMap.set("home", { ...homePage, sections: newSections });
+          }
+        }
 
         const loadedPages = Array.from(pageMap.values());
         const SYSTEM_ORDER = ["home", "gigs", "book", "join", "testimonials", "giving", "contact"];
@@ -400,6 +428,26 @@ export default function CMSPagesStudio() {
             { value: "25+", label: "Active Musicians", description: "Horns, saxes, sousaphones & battery", icon: "Users" },
             { value: "10K+", label: "Smiles Brought", description: "Dancing crowds at every downbeat", icon: "Sparkles" },
           ],
+        },
+      };
+    } else if (type === "audition_callout") {
+      newSection = {
+        ...newSection,
+        auditionCallout: {
+          title: "Musician Auditions & Applications",
+          description: "Are you a brass player or battery drummer interested in performing with the band?",
+          buttonText: "Audition With Us →",
+          buttonHref: "/join",
+          badgeText: "",
+        },
+      };
+    } else if (type === "intake_cards") {
+      newSection = {
+        ...newSection,
+        intakeCards: {
+          badgeText: "Connect & Collaborate",
+          headline: "How Can We Help You?",
+          subheadline: "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
         },
       };
     }
@@ -1426,6 +1474,30 @@ export default function CMSPagesStudio() {
                       <div className="text-[10px] text-slate-400">Live calendar preview</div>
                     </div>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("audition_callout")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Music2 className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Musician Auditions Banner</div>
+                      <div className="text-[10px] text-slate-400">Recruitment callout & audition CTA</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("intake_cards")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <FolderOpen className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Intake Flow Cards</div>
+                      <div className="text-[10px] text-slate-400">Booking, reviews & contact grid</div>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -1470,7 +1542,13 @@ export default function CMSPagesStudio() {
                         {section.type === "media_highlight" && <Video className="w-3.5 h-3.5 text-red-400" />}
                         {section.type === "features" && <Layers className="w-3.5 h-3.5 text-blue-400" />}
                         {section.type === "gig_feed_preview" && <Calendar className="w-3.5 h-3.5 text-emerald-400" />}
-                        {section.type.replace("_", " ")}
+                        {section.type === "audition_callout" && <Music2 className="w-3.5 h-3.5 text-yellow-400" />}
+                        {section.type === "intake_cards" && <FolderOpen className="w-3.5 h-3.5 text-cyan-400" />}
+                        {section.type === "audition_callout"
+                          ? "Musician Auditions Banner"
+                          : section.type === "intake_cards"
+                          ? "Intake Flow Cards"
+                          : section.type.replace(/_/g, " ")}
                       </span>
                     </div>
 
@@ -2976,6 +3054,212 @@ export default function CMSPagesStudio() {
                               </div>
                             </div>
                           ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Audition Callout Editor Form */}
+                  {section.type === "audition_callout" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Callout Title / Headline
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionCallout?.title ?? "MUSICIAN AUDITIONS & APPLICATIONS"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionCallout: {
+                                  title: e.target.value,
+                                  description: section.auditionCallout?.description ?? "Are you a brass player or battery drummer interested in performing with the band?",
+                                  buttonText: section.auditionCallout?.buttonText ?? "Audition With Us →",
+                                  buttonHref: section.auditionCallout?.buttonHref ?? "/join",
+                                  badgeText: section.auditionCallout?.badgeText ?? "",
+                                },
+                              })
+                            }
+                            placeholder="e.g. MUSICIAN AUDITIONS & APPLICATIONS"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Description / Pitch
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={section.auditionCallout?.description ?? "Are you a brass player or battery drummer interested in performing with the band?"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionCallout: {
+                                  title: section.auditionCallout?.title ?? "MUSICIAN AUDITIONS & APPLICATIONS",
+                                  description: e.target.value,
+                                  buttonText: section.auditionCallout?.buttonText ?? "Audition With Us →",
+                                  buttonHref: section.auditionCallout?.buttonHref ?? "/join",
+                                  badgeText: section.auditionCallout?.badgeText ?? "",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Are you a brass player or battery drummer interested in performing with the band?"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            CTA Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionCallout?.buttonText ?? "Audition With Us →"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionCallout: {
+                                  title: section.auditionCallout?.title ?? "MUSICIAN AUDITIONS & APPLICATIONS",
+                                  description: section.auditionCallout?.description ?? "Are you a brass player or battery drummer interested in performing with the band?",
+                                  buttonText: e.target.value,
+                                  buttonHref: section.auditionCallout?.buttonHref ?? "/join",
+                                  badgeText: section.auditionCallout?.badgeText ?? "",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Audition With Us →"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Button Link URL
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionCallout?.buttonHref ?? "/join"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionCallout: {
+                                  title: section.auditionCallout?.title ?? "MUSICIAN AUDITIONS & APPLICATIONS",
+                                  description: section.auditionCallout?.description ?? "Are you a brass player or battery drummer interested in performing with the band?",
+                                  buttonText: section.auditionCallout?.buttonText ?? "Audition With Us →",
+                                  buttonHref: e.target.value,
+                                  badgeText: section.auditionCallout?.badgeText ?? "",
+                                },
+                              })
+                            }
+                            placeholder="e.g. /join"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Visual Preview */}
+                      <div className="mt-4 pt-4 border-t border-slate-800/80">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                          Live In-Editor Preview
+                        </span>
+                        <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 text-center md:text-left">
+                            <div className="w-12 h-12 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center shrink-0">
+                              <Music2 className="w-6 h-6 text-yellow-400" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-extrabold text-white tracking-wide uppercase">
+                                {section.auditionCallout?.title || "MUSICIAN AUDITIONS & APPLICATIONS"}
+                              </h4>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {section.auditionCallout?.description || "Are you a brass player or battery drummer interested in performing with the band?"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="shrink-0 px-4 py-2 rounded-xl bg-yellow-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-yellow-400/10">
+                            <span>{section.auditionCallout?.buttonText || "Audition With Us →"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Intake Cards Editor Form */}
+                  {section.type === "intake_cards" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Badge Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.intakeCards?.badgeText ?? "Connect & Collaborate"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                intakeCards: {
+                                  badgeText: e.target.value,
+                                  headline: section.intakeCards?.headline ?? "How Can We Help You?",
+                                  subheadline: section.intakeCards?.subheadline ?? "Whether you're looking to hire the band for a private party, share feedback from a recent show, or inquire about press and media.",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Connect & Collaborate"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Headline
+                          </label>
+                          <input
+                            type="text"
+                            value={section.intakeCards?.headline ?? "How Can We Help You?"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                intakeCards: {
+                                  badgeText: section.intakeCards?.badgeText ?? "Connect & Collaborate",
+                                  headline: e.target.value,
+                                  subheadline: section.intakeCards?.subheadline ?? "Whether you're looking to hire the band for a private party, share feedback from a recent show, or inquire about press and media.",
+                                },
+                              })
+                            }
+                            placeholder="e.g. How Can We Help You?"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Subheadline / Description
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={section.intakeCards?.subheadline ?? "Whether you're looking to hire the band for a private party, share feedback from a recent show, or inquire about press and media."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                intakeCards: {
+                                  badgeText: section.intakeCards?.badgeText ?? "Connect & Collaborate",
+                                  headline: section.intakeCards?.headline ?? "How Can We Help You?",
+                                  subheadline: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="Description text above cards..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center shrink-0 text-cyan-400 font-bold text-[10px]">
+                          i
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-200">Public Intake Cards Flow</p>
+                          <p className="text-[11px] mt-0.5 text-slate-400">
+                            This section renders the three interactive intake pathway cards: <strong>Book the Band</strong> (/book), <strong>Leave a Testimonial</strong> (/testimonials), and <strong>General Inquiries &amp; Press</strong> (/contact). Use the separate <em>Musician Auditions Banner</em> section to highlight brass &amp; drum auditions.
+                          </p>
                         </div>
                       </div>
                     </div>

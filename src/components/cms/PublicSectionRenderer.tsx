@@ -6,6 +6,7 @@ import type { DocumentData } from "firebase/firestore";
 import { ContentSection } from "@/lib/schema/page";
 import { sanitizeHtml } from "@/components/cms/WysiwygEditor";
 import BookingFormSection from "@/components/public/BookingFormSection";
+import IntakeCardsSection from "@/components/public/IntakeCardsSection";
 import { 
   Sparkles, 
   Send, 
@@ -25,6 +26,7 @@ import {
   Volume2,
   Heart,
   Clock,
+  Music2,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -470,6 +472,44 @@ export default function PublicSectionRenderer({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* 11. INTAKE FLOW CARDS SECTION */}
+      {section.type === "intake_cards" && (
+        <IntakeCardsSection
+          badgeText={section.intakeCards?.badgeText}
+          headline={section.intakeCards?.headline}
+          subheadline={section.intakeCards?.subheadline}
+          showAuditionBanner={false}
+        />
+      )}
+
+      {/* 12. AUDITION CALLOUT BANNER SECTION */}
+      {section.type === "audition_callout" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 flex items-center justify-center shrink-0">
+                <Music2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                  {section.auditionCallout?.title || "Musician Auditions & Applications"}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {section.auditionCallout?.description || "Are you a brass player or battery drummer interested in performing with the band?"}
+                </span>
+              </div>
+            </div>
+            <Link
+              href={section.auditionCallout?.buttonHref || "/join"}
+              suppressHydrationWarning
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700 text-xs font-bold whitespace-nowrap transition"
+            >
+              {section.auditionCallout?.buttonText || "Audition With Us →"}
+            </Link>
           </div>
         </div>
       )}

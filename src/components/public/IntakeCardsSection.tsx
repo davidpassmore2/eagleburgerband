@@ -11,7 +11,19 @@ import {
   Music2,
 } from "lucide-react";
 
-export default function IntakeCardsSection() {
+interface IntakeCardsSectionProps {
+  badgeText?: string;
+  headline?: string;
+  subheadline?: string;
+  showAuditionBanner?: boolean;
+}
+
+export default function IntakeCardsSection({
+  badgeText = "Connect & Collaborate",
+  headline = "How Can We Help You?",
+  subheadline = "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
+  showAuditionBanner = true,
+}: IntakeCardsSectionProps = {}) {
   const intakeCards = [
     {
       id: "booking",
@@ -65,13 +77,13 @@ export default function IntakeCardsSection() {
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Connect & Collaborate</span>
+            <span>{badgeText}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight">
-            How Can We Help You?
+            {headline}
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.
+            {subheadline}
           </p>
         </div>
 
@@ -150,28 +162,30 @@ export default function IntakeCardsSection() {
         </div>
 
         {/* Musician Auditions Sub-Callout Banner */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 flex items-center justify-center shrink-0">
-              <Music2 className="w-4 h-4" />
+        {showAuditionBanner && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 flex items-center justify-center shrink-0">
+                <Music2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                  Musician Auditions & Applications
+                </span>
+                <span className="text-xs text-slate-400">
+                  Are you a brass player or battery drummer interested in performing with the band?
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-bold text-white uppercase tracking-wider block">
-                Musician Auditions & Applications
-              </span>
-              <span className="text-xs text-slate-400">
-                Are you a brass player or battery drummer interested in performing with the band?
-              </span>
-            </div>
+            <Link
+              href="/join"
+              suppressHydrationWarning
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700 text-xs font-bold whitespace-nowrap transition"
+            >
+              Audition With Us &rarr;
+            </Link>
           </div>
-          <Link
-            href="/join"
-            suppressHydrationWarning
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700 text-xs font-bold whitespace-nowrap transition"
-          >
-            Audition With Us &rarr;
-          </Link>
-        </div>
+        )}
       </div>
     </section>
   );
