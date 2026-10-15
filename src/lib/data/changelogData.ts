@@ -7,6 +7,21 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 60,
+    title: "Theme Inheritance, Suggestion Archiving, Blackout & Hiatus Attendance Guardrails & Past Event Locks",
+    category: "Member Portal UX, Availability & Governance",
+    accomplishments: [
+      "Inherited active portal theme in Notifications fly-out panel, honoring custom member palettes, surfaces, and borders.",
+      "Added submission archiving and unarchiving workflows across Suggestion Triage and Member Voice with toggleable archived items drawer.",
+      "Hardened Firestore Security Rules for suggestions to permit authors and reviewers to manage archival fields safely.",
+      "Engineered automated personal blackout detection with 'In My Blackout' badges on conflicting gigs and rehearsals.",
+      "Disabled RSVP and attendance confirmation controls during member blackout periods with informative tooltips and toast alerts.",
+      "Implemented past-event attendance locking across gigs and rehearsals, disabling retroactive RSVP changes once an event has passed.",
+      "Added 'On Hiatus' status chips across all gig cards, call sheets, rehearsals, dashboard spotlight, day modal, and calendar grid.",
+      "Enforced complete attendance control lockouts for musicians on hiatus with explanatory tooltips and mutation guards.",
+    ],
+  },
+  {
     stage: 59,
     title: "Band Rehearsal Hub, OpenStreetMap Geocoding, Blackout Intelligence & 'What's Next' Portal UX",
     category: "Rehearsals, Scheduling & Member Portal UX",
