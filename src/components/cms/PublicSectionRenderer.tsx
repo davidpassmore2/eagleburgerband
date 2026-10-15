@@ -7,6 +7,8 @@ import { ContentSection } from "@/lib/schema/page";
 import { sanitizeHtml } from "@/components/cms/WysiwygEditor";
 import BookingFormSection from "@/components/public/BookingFormSection";
 import IntakeCardsSection from "@/components/public/IntakeCardsSection";
+import AuditionFormSection from "@/components/public/AuditionFormSection";
+import ContactFormSection from "@/components/public/ContactFormSection";
 import { 
   Sparkles, 
   Send, 
@@ -512,6 +514,27 @@ export default function PublicSectionRenderer({
             </Link>
           </div>
         </div>
+      )}
+
+      {/* 13. AUDITION FORM SECTION */}
+      {section.type === "audition_form" && (
+        <AuditionFormSection
+          headline={section.auditionForm?.headline}
+          subheadline={section.auditionForm?.subheadline}
+          badgeText={section.auditionForm?.badgeText}
+          buttonText={section.auditionForm?.buttonText}
+          compact={section.padding === "compact"}
+        />
+      )}
+
+      {/* 14. CONTACT FORM SECTION */}
+      {section.type === "contact_form" && (
+        <ContactFormSection
+          headline={section.contactForm?.headline}
+          subheadline={section.contactForm?.subheadline}
+          badgeText={section.contactForm?.badgeText}
+          buttonText={section.contactForm?.buttonText}
+        />
       )}
     </div>
   );

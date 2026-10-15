@@ -177,6 +177,21 @@ export const IntakeCardsSectionSchema = z.object({
   subheadline: z.string().default("Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below."),
 });
 
+export const AuditionFormSectionSchema = z.object({
+  headline: z.string().default("Audition for the Eagleburger Band"),
+  subheadline: z.string().default("Do you play brass or battery percussion? Submit an application to march, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery."),
+  badgeText: z.string().default("Musician Recruitment & Auditions"),
+  buttonText: z.string().default("Submit Audition Request"),
+  compact: z.boolean().default(false),
+});
+
+export const ContactFormSectionSchema = z.object({
+  headline: z.string().default("Contact the Eagleburger Band"),
+  subheadline: z.string().default("Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you."),
+  badgeText: z.string().default("Get in Touch"),
+  buttonText: z.string().default("Send Message"),
+});
+
 export const SectionTypeEnum = z.enum([
   "hero",
   "rich_text",
@@ -190,6 +205,8 @@ export const SectionTypeEnum = z.enum([
   "stats_counter",
   "audition_callout",
   "intake_cards",
+  "audition_form",
+  "contact_form",
 ]);
 
 export const ContentSectionSchema = z.object({
@@ -211,6 +228,8 @@ export const ContentSectionSchema = z.object({
   statsCounter: StatsCounterSectionSchema.optional(),
   auditionCallout: AuditionCalloutSectionSchema.optional(),
   intakeCards: IntakeCardsSectionSchema.optional(),
+  auditionForm: AuditionFormSectionSchema.optional(),
+  contactForm: ContactFormSectionSchema.optional(),
 });
 
 export const PageSeoSchema = z.object({
@@ -412,7 +431,25 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "eagleburger shows, brass band schedule, pittsburgh parade band, live outdoor music",
       structuredDataType: "Event",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_gigs_booking_cta",
+        type: "cta_banner",
+        order: 1,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        ctaBanner: {
+          headline: "Want Eagleburger at Your Parade or Festival?",
+          subheadline: "We bring high-decibel horns, drum cadences, and street choreography to events across Western PA. Let our gig manager know about your date!",
+          badgeText: "Event Coordination",
+          buttonText: "Request Booking Availability",
+          buttonHref: "/book",
+          buttonStyle: "solid-yellow",
+          variant: "primary",
+        },
+      },
+    ],
   }),
 
   book: ContentPageSchema.parse({
@@ -438,7 +475,52 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "hire brass band, parade entertainment booking, mobile drumline, event band pittsburgh",
       structuredDataType: "WebPage",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_book_form",
+        type: "booking_form",
+        order: 1,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        bookingForm: {
+          headline: "Book the Eagleburger Band",
+          subheadline: "Tell us about your event. We will check band availability, outline performance options, and follow up promptly.",
+          badgeText: "Direct Event Inquiry",
+          defaultEventType: "Community Parade & Festival",
+          buttonText: "Submit Booking Request",
+        },
+      },
+      {
+        id: "sec_book_faq",
+        type: "faq",
+        order: 2,
+        isVisible: true,
+        background: "default",
+        padding: "standard",
+        faq: {
+          title: "Booking & Event Coordination FAQ",
+          subtitle: "Everything you need to know about booking the band for your parade, festival, or gathering.",
+          items: [
+            {
+              question: "What equipment or power does the band require?",
+              answer: "Zero electrical power, amplifiers, or sound systems are needed! The Eagleburger Band is 100% acoustic and mobile, performing while marching, dancing, or stationary.",
+              category: "Logistics",
+            },
+            {
+              question: "How far in advance should we inquire?",
+              answer: "For major holiday parades (St. Patrick's Day, Memorial Day, 4th of July, Halloween) we recommend inquiring 2–4 months in advance. For community events and private parties, 3–6 weeks is usually sufficient.",
+              category: "Scheduling",
+            },
+            {
+              question: "How long can the band perform?",
+              answer: "We typically perform parade routes (1–2 miles) or festival sets ranging from 30 to 75 minutes of high-energy continuous brass and percussion music.",
+              category: "Performance",
+            },
+          ],
+        },
+      },
+    ],
   }),
 
   join: ContentPageSchema.parse({
@@ -464,7 +546,81 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "join brass band, marching auditions pittsburgh, drumline auditions, brass players wanted",
       structuredDataType: "WebPage",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_join_highlights",
+        type: "features",
+        order: 1,
+        isVisible: true,
+        background: "default",
+        padding: "compact",
+        features: {
+          title: "Why March With Eagleburger?",
+          subtitle: "Mobile acoustic excitement, camaraderie, and infectious brass energy.",
+          items: [
+            {
+              icon: "Layers",
+              title: "100% Acoustic & Mobile",
+              description: "No cords, amps, or stages. We march through crowds, dance down streets, and perform in dynamic open-air spaces across Western PA.",
+            },
+            {
+              icon: "Calendar",
+              title: "Rehearsals & Gigs",
+              description: "Weekly sectionals and full ensemble rehearsals in Pittsburgh. Gigs range from major holiday parades to art walks and private bashes.",
+            },
+            {
+              icon: "Award",
+              title: "Welcoming Culture",
+              description: "From former college marching band vets to seasoned brass players and street drummers, we value camaraderie, groove, and heart.",
+            },
+          ],
+        },
+      },
+      {
+        id: "sec_join_form",
+        type: "audition_form",
+        order: 2,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        auditionForm: {
+          headline: "Audition Application",
+          subheadline: "Tell us about your musical background and what section you want to rock with.",
+          badgeText: "Musician Recruitment",
+          buttonText: "Submit Audition Request",
+          compact: false,
+        },
+      },
+      {
+        id: "sec_join_faq",
+        type: "faq",
+        order: 3,
+        isVisible: true,
+        background: "default",
+        padding: "compact",
+        faq: {
+          title: "Auditions & Membership FAQ",
+          subtitle: "Common questions about auditioning and playing with the Eagleburger Band.",
+          items: [
+            {
+              question: "What instruments do you accept?",
+              answer: "Sousaphones, tubas, trombones, trumpets, mellophones/horns, saxophones (alto, tenor, bari), and marching battery percussion (snare, bass, quads, cymbals).",
+              category: "Instrumentation",
+            },
+            {
+              question: "What is the rehearsal commitment?",
+              answer: "We rehearse weekly during parade seasons in the Pittsburgh area, plus additional sectional rehearsals as needed.",
+              category: "Commitment",
+            },
+            {
+              question: "Do I need to own my own instrument?",
+              answer: "Most brass players bring their own horns. The band maintains a limited inventory of percussion equipment and sousaphones for active performing members.",
+              category: "Gear",
+            },
+          ],
+        },
+      },
+    ],
   }),
 
   testimonials: ContentPageSchema.parse({
@@ -490,7 +646,25 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "eagleburger band reviews, parade band testimonials, event entertainment reviews",
       structuredDataType: "WebPage",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_testimonials_cta",
+        type: "cta_banner",
+        order: 1,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        ctaBanner: {
+          headline: "Bring This Unforgettable Energy to Your Event",
+          subheadline: "Join dozens of satisfied festival directors, parade committees, and party hosts across Western Pennsylvania.",
+          badgeText: "Direct Event Booking",
+          buttonText: "Check Band Availability",
+          buttonHref: "/book",
+          buttonStyle: "solid-yellow",
+          variant: "primary",
+        },
+      },
+    ],
   }),
 
   giving: ContentPageSchema.parse({
@@ -516,7 +690,42 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "community giving, charity band, music philanthropy, grassroots pittsburgh support",
       structuredDataType: "WebPage",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_giving_cta_benefit",
+        type: "cta_banner",
+        order: 1,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        ctaBanner: {
+          headline: "Support These Worthy Causes Directly",
+          subheadline: "We invite our fans, parade attendees, and community partners to get involved. Volunteer your time or contribute directly to these inspiring Pittsburgh non-profits.",
+          badgeText: "Join the Movement",
+          buttonText: "Book Band for a Benefit",
+          buttonHref: "/book",
+          buttonStyle: "solid-yellow",
+          variant: "primary",
+        },
+      },
+      {
+        id: "sec_giving_cta_suggest",
+        type: "cta_banner",
+        order: 2,
+        isVisible: true,
+        background: "default",
+        padding: "standard",
+        ctaBanner: {
+          headline: "Know an Inspiring Grassroots Cause?",
+          subheadline: "We are always looking to partner with worthy non-profits, youth music programs, and community initiatives across Pittsburgh.",
+          badgeText: "Community Partnerships",
+          buttonText: "Connect with Management",
+          buttonHref: "/contact",
+          buttonStyle: "outline",
+          variant: "secondary",
+        },
+      },
+    ],
   }),
 
   contact: ContentPageSchema.parse({
@@ -542,7 +751,51 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       keywords: "contact eagleburger band, pittsburgh brass band contact, band management email",
       structuredDataType: "WebPage",
     },
-    sections: [],
+    sections: [
+      {
+        id: "sec_contact_paths",
+        type: "features",
+        order: 1,
+        isVisible: true,
+        background: "default",
+        padding: "compact",
+        features: {
+          title: "Need Quick Answers?",
+          subtitle: "Choose an intake path below for faster turnaround.",
+          items: [
+            {
+              icon: "Calendar",
+              title: "Book the Band",
+              description: "Planning a parade, street festival, wedding, or block party? Request booking dates and pricing directly at /book.",
+            },
+            {
+              icon: "Music",
+              title: "Musician Auditions",
+              description: "Brass musician or percussionist looking to play with us? Check our audition process and submit an application at /join.",
+            },
+            {
+              icon: "Sparkles",
+              title: "Client & Fan Reviews",
+              description: "Share feedback from a recent show or read testimonials from parade and festival organizers at /testimonials.",
+            },
+          ],
+        },
+      },
+      {
+        id: "sec_contact_form",
+        type: "contact_form",
+        order: 2,
+        isVisible: true,
+        background: "surface",
+        padding: "standard",
+        contactForm: {
+          headline: "Send Us a Message",
+          subheadline: "Have questions about band merchandise, media requests, or general inquiries? Send our coordination team a note.",
+          badgeText: "Direct Band Contact",
+          buttonText: "Send Message",
+        },
+      },
+    ],
   }),
 };
 

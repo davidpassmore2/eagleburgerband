@@ -50,14 +50,16 @@ export default function BookingPage() {
         <PublicSectionRenderer key={section.id} section={section} />
       ))}
 
-      {/* Core Booking Form Engine */}
-      <BookingFormSection
-        headline={pageData?.headerImage?.customTitle || pageData?.title || "Book the Eagleburger Band"}
-        subheadline={pageData?.headerImage?.customSubtitle || pageData?.description || "Tell us about your event. We will check band availability, outline performance options, and follow up with you promptly."}
-        badgeText={pageData?.headerImage?.badgeText || "Direct Event Inquiry"}
-        defaultEventType="Community Parade & Festival"
-        buttonText="Submit Booking Request"
-      />
+      {/* Core Booking Form Fallback (if not configured in dynamic sections) */}
+      {!pageData?.sections?.some((s) => s.type === "booking_form") && (
+        <BookingFormSection
+          headline={pageData?.headerImage?.customTitle || pageData?.title || "Book the Eagleburger Band"}
+          subheadline={pageData?.headerImage?.customSubtitle || pageData?.description || "Tell us about your event. We will check band availability, outline performance options, and follow up with you promptly."}
+          badgeText={pageData?.headerImage?.badgeText || "Direct Event Inquiry"}
+          defaultEventType="Community Parade & Festival"
+          buttonText="Submit Booking Request"
+        />
+      )}
     </div>
   );
 }

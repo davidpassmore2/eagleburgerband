@@ -89,6 +89,8 @@ import {
   Sliders,
   Type,
   Music2,
+  Music,
+  Mail,
 } from "lucide-react";
 
 export default function CMSPagesStudio() {
@@ -158,32 +160,40 @@ export default function CMSPagesStudio() {
           }
         });
 
-        // Ensure home page includes intake_cards and audition_callout sections if missing from saved state
-        const homePage = pageMap.get("home");
-        if (homePage && homePage.sections) {
-          let updated = false;
-          const newSections = [...homePage.sections];
-          const hasIntake = newSections.some((s) => s.type === "intake_cards");
-          const hasAudition = newSections.some((s) => s.type === "audition_callout");
+        // Ensure system pages include default sections if missing or empty in saved state
+        (["home", "gigs", "book", "join", "testimonials", "giving", "contact"] as const).forEach((pageId) => {
+          const page = pageMap.get(pageId);
+          const defaultSections = DEFAULT_SYSTEM_PAGES[pageId]?.sections || [];
+          if (page && defaultSections.length > 0) {
+            if (!page.sections || page.sections.length === 0) {
+              pageMap.set(pageId, { ...page, sections: defaultSections });
+            } else if (pageId === "home") {
+              // Ensure home page includes intake_cards and audition_callout sections
+              let updated = false;
+              const newSections = [...page.sections];
+              const hasIntake = newSections.some((s) => s.type === "intake_cards");
+              const hasAudition = newSections.some((s) => s.type === "audition_callout");
 
-          if (!hasIntake) {
-            const defaultIntake = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "intake_cards");
-            if (defaultIntake) {
-              newSections.push({ ...defaultIntake, order: newSections.length + 1 });
-              updated = true;
+              if (!hasIntake) {
+                const defaultIntake = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "intake_cards");
+                if (defaultIntake) {
+                  newSections.push({ ...defaultIntake, order: newSections.length + 1 });
+                  updated = true;
+                }
+              }
+              if (!hasAudition) {
+                const defaultAudition = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "audition_callout");
+                if (defaultAudition) {
+                  newSections.push({ ...defaultAudition, order: newSections.length + 1 });
+                  updated = true;
+                }
+              }
+              if (updated) {
+                pageMap.set("home", { ...page, sections: newSections });
+              }
             }
           }
-          if (!hasAudition) {
-            const defaultAudition = DEFAULT_SYSTEM_PAGES.home.sections?.find((s) => s.type === "audition_callout");
-            if (defaultAudition) {
-              newSections.push({ ...defaultAudition, order: newSections.length + 1 });
-              updated = true;
-            }
-          }
-          if (updated) {
-            pageMap.set("home", { ...homePage, sections: newSections });
-          }
-        }
+        });
 
         const loadedPages = Array.from(pageMap.values());
         const SYSTEM_ORDER = ["home", "gigs", "book", "join", "testimonials", "giving", "contact"];
@@ -448,6 +458,27 @@ export default function CMSPagesStudio() {
           badgeText: "Connect & Collaborate",
           headline: "How Can We Help You?",
           subheadline: "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
+        },
+      };
+    } else if (type === "audition_form") {
+      newSection = {
+        ...newSection,
+        auditionForm: {
+          headline: "Audition Application",
+          subheadline: "Tell us about your musical background and what section you want to rock with.",
+          badgeText: "Musician Recruitment",
+          buttonText: "Submit Audition Request",
+          compact: false,
+        },
+      };
+    } else if (type === "contact_form") {
+      newSection = {
+        ...newSection,
+        contactForm: {
+          headline: "Send Us a Message",
+          subheadline: "Have questions about band appearances, media requests, or general inquiries? Send our coordination team a note.",
+          badgeText: "Direct Band Contact",
+          buttonText: "Send Message",
         },
       };
     }
@@ -1498,6 +1529,30 @@ export default function CMSPagesStudio() {
                       <div className="text-[10px] text-slate-400">Booking, reviews & contact grid</div>
                     </div>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("audition_form")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Music className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Audition Application Form</div>
+                      <div className="text-[10px] text-slate-400">Interactive musician recruitment form</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("contact_form")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Mail className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">General Contact Form</div>
+                      <div className="text-[10px] text-slate-400">Direct message inquiry form</div>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -1544,10 +1599,16 @@ export default function CMSPagesStudio() {
                         {section.type === "gig_feed_preview" && <Calendar className="w-3.5 h-3.5 text-emerald-400" />}
                         {section.type === "audition_callout" && <Music2 className="w-3.5 h-3.5 text-yellow-400" />}
                         {section.type === "intake_cards" && <FolderOpen className="w-3.5 h-3.5 text-cyan-400" />}
+                        {section.type === "audition_form" && <Music className="w-3.5 h-3.5 text-emerald-400" />}
+                        {section.type === "contact_form" && <Mail className="w-3.5 h-3.5 text-blue-400" />}
                         {section.type === "audition_callout"
                           ? "Musician Auditions Banner"
                           : section.type === "intake_cards"
                           ? "Intake Flow Cards"
+                          : section.type === "audition_form"
+                          ? "Audition Application Form"
+                          : section.type === "contact_form"
+                          ? "General Contact Form"
                           : section.type.replace(/_/g, " ")}
                       </span>
                     </div>
@@ -3259,6 +3320,224 @@ export default function CMSPagesStudio() {
                           <p className="font-semibold text-slate-200">Public Intake Cards Flow</p>
                           <p className="text-[11px] mt-0.5 text-slate-400">
                             This section renders the three interactive intake pathway cards: <strong>Book the Band</strong> (/book), <strong>Leave a Testimonial</strong> (/testimonials), and <strong>General Inquiries &amp; Press</strong> (/contact). Use the separate <em>Musician Auditions Banner</em> section to highlight brass &amp; drum auditions.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Audition Form Editor Form */}
+                  {section.type === "audition_form" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Badge Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionForm?.badgeText ?? "Musician Recruitment & Auditions"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionForm: {
+                                  badgeText: e.target.value,
+                                  headline: section.auditionForm?.headline ?? "Audition for the Eagleburger Band",
+                                  subheadline: section.auditionForm?.subheadline ?? "Do you play brass or battery percussion? Submit an application to march, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery.",
+                                  buttonText: section.auditionForm?.buttonText ?? "Submit Audition Request",
+                                  compact: section.auditionForm?.compact ?? false,
+                                },
+                              })
+                            }
+                            placeholder="e.g. Musician Recruitment & Auditions"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            CTA Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionForm?.buttonText ?? "Submit Audition Request"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionForm: {
+                                  badgeText: section.auditionForm?.badgeText ?? "Musician Recruitment & Auditions",
+                                  headline: section.auditionForm?.headline ?? "Audition for the Eagleburger Band",
+                                  subheadline: section.auditionForm?.subheadline ?? "Do you play brass or battery percussion? Submit an application to march, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery.",
+                                  buttonText: e.target.value,
+                                  compact: section.auditionForm?.compact ?? false,
+                                },
+                              })
+                            }
+                            placeholder="e.g. Submit Audition Request"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Section Headline
+                          </label>
+                          <input
+                            type="text"
+                            value={section.auditionForm?.headline ?? "Audition for the Eagleburger Band"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionForm: {
+                                  badgeText: section.auditionForm?.badgeText ?? "Musician Recruitment & Auditions",
+                                  headline: e.target.value,
+                                  subheadline: section.auditionForm?.subheadline ?? "Do you play brass or battery percussion? Submit an application to march, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery.",
+                                  buttonText: section.auditionForm?.buttonText ?? "Submit Audition Request",
+                                  compact: section.auditionForm?.compact ?? false,
+                                },
+                              })
+                            }
+                            placeholder="e.g. Audition for the Eagleburger Band"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Subheadline / Description
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={section.auditionForm?.subheadline ?? "Do you play brass or battery percussion? Submit an application to march, groove, and blow the roof off Pittsburgh's streets with our brass and drum battery."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                auditionForm: {
+                                  badgeText: section.auditionForm?.badgeText ?? "Musician Recruitment & Auditions",
+                                  headline: section.auditionForm?.headline ?? "Audition for the Eagleburger Band",
+                                  subheadline: e.target.value,
+                                  buttonText: section.auditionForm?.buttonText ?? "Submit Audition Request",
+                                  compact: section.auditionForm?.compact ?? false,
+                                },
+                              })
+                            }
+                            placeholder="Describe audition details or welcome message..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded bg-emerald-400/10 border border-emerald-400/30 flex items-center justify-center shrink-0 text-emerald-400 font-bold text-[10px]">
+                          i
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-200">Interactive Musician Audition Engine</p>
+                          <p className="text-[11px] mt-0.5 text-slate-400">
+                            This section embeds the interactive musician audition application with contact info, instrument & section picker, experience level, availability, audio links, and anti-bot protection. Submissions automatically dispatch to section leaders in the Auditions Admin.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact Form Editor Form */}
+                  {section.type === "contact_form" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Badge Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.contactForm?.badgeText ?? "Get in Touch"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                contactForm: {
+                                  badgeText: e.target.value,
+                                  headline: section.contactForm?.headline ?? "Contact the Eagleburger Band",
+                                  subheadline: section.contactForm?.subheadline ?? "Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you.",
+                                  buttonText: section.contactForm?.buttonText ?? "Send Message",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Get in Touch"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            CTA Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.contactForm?.buttonText ?? "Send Message"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                contactForm: {
+                                  badgeText: section.contactForm?.badgeText ?? "Get in Touch",
+                                  headline: section.contactForm?.headline ?? "Contact the Eagleburger Band",
+                                  subheadline: section.contactForm?.subheadline ?? "Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you.",
+                                  buttonText: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="e.g. Send Message"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Section Headline
+                          </label>
+                          <input
+                            type="text"
+                            value={section.contactForm?.headline ?? "Contact the Eagleburger Band"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                contactForm: {
+                                  badgeText: section.contactForm?.badgeText ?? "Get in Touch",
+                                  headline: e.target.value,
+                                  subheadline: section.contactForm?.subheadline ?? "Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you.",
+                                  buttonText: section.contactForm?.buttonText ?? "Send Message",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Contact the Eagleburger Band"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Subheadline / Description
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={section.contactForm?.subheadline ?? "Have a question about our community appearances, press inquiries, merchandise, or general feedback? Send us a message and our team will get back to you."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                contactForm: {
+                                  badgeText: section.contactForm?.badgeText ?? "Get in Touch",
+                                  headline: section.contactForm?.headline ?? "Contact the Eagleburger Band",
+                                  subheadline: e.target.value,
+                                  buttonText: section.contactForm?.buttonText ?? "Send Message",
+                                },
+                              })
+                            }
+                            placeholder="Describe response times or topics..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded bg-blue-400/10 border border-blue-400/30 flex items-center justify-center shrink-0 text-blue-400 font-bold text-[10px]">
+                          i
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-200">General Inquiry Messaging Engine</p>
+                          <p className="text-[11px] mt-0.5 text-slate-400">
+                            This section embeds the direct messaging form featuring categorized intake (General, Press &amp; Media, Community, Merchandise), phone, subject, and honeypot spam protection. Messages arrive in the Contact Inbox.
                           </p>
                         </div>
                       </div>

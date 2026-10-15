@@ -299,26 +299,35 @@ export default function PublicGigsPage() {
         )}
       </div>
 
-      {/* Booking CTA Footer Box */}
-      <div 
-        className="max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4"
-        suppressHydrationWarning
-      >
-        <h3 className="text-2xl font-black text-white uppercase tracking-tight font-arvo">
-          Want Eagleburger at Your Parade or Festival?
-        </h3>
-        <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-          We bring high-decibel horns, drum cadences, and street choreography to events across Western PA. Let our gig manager know about your date!
-        </p>
-        <Link
-          href="/book"
+      {/* Dynamic CMS Sections from CMS Studio */}
+      {pageData?.sections && pageData.sections.length > 0 ? (
+        <div className="space-y-12">
+          {pageData.sections.map((section) => (
+            <PublicSectionRenderer key={section.id} section={section} />
+          ))}
+        </div>
+      ) : (
+        /* Fallback Booking CTA Footer Box if no CMS sections defined */
+        <div 
+          className="max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4"
           suppressHydrationWarning
-          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 font-arvo btn-cta"
         >
-          <Send className="w-3.5 h-3.5" />
-          Request Booking Availability
-        </Link>
-      </div>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight font-arvo">
+            Want Eagleburger at Your Parade or Festival?
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+            We bring high-decibel horns, drum cadences, and street choreography to events across Western PA. Let our gig manager know about your date!
+          </p>
+          <Link
+            href="/book"
+            suppressHydrationWarning
+            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 font-arvo btn-cta"
+          >
+            <Send className="w-3.5 h-3.5" />
+            Request Booking Availability
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

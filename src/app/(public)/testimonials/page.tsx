@@ -394,10 +394,12 @@ export default function TestimonialsPublicPage() {
         </div>
       )}
 
-      {/* Dynamic CMS Sections */}
+      {/* Dynamic CMS Sections from CMS Studio */}
       {pageData?.sections && pageData.sections.length > 0 && (
         <div className="space-y-12">
-          <PublicSectionRenderer sections={pageData.sections} />
+          {pageData.sections.map((section) => (
+            <PublicSectionRenderer key={section.id} section={section} />
+          ))}
         </div>
       )}
 

@@ -201,31 +201,33 @@ export default function PublicGivingPage() {
         </section>
       )}
 
-      {/* Call to Join in Support */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
-          <div className="space-y-2 max-w-2xl">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-yellow-400">
-              Join the Movement
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Support These Worthy Causes Directly
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              We invite our fans, parade attendees, and community partners to get involved. Click any organization below to learn about their initiatives, volunteer your time, or contribute directly to their programs.
-            </p>
-          </div>
+      {/* Call to Join in Support (Fallback if no CTA banners in CMS sections) */}
+      {!pageData?.sections?.some((s) => s.type === "cta_banner") && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+            <div className="space-y-2 max-w-2xl">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-yellow-400">
+                Join the Movement
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+                Support These Worthy Causes Directly
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                We invite our fans, parade attendees, and community partners to get involved. Click any organization below to learn about their initiatives, volunteer your time, or contribute directly to their programs.
+              </p>
+            </div>
 
-          <Link
-            href="/book"
-            suppressHydrationWarning
-            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 hover:scale-105 active:scale-95 shrink-0 flex items-center gap-2"
-          >
-            <span>Book Band for a Benefit</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
+            <Link
+              href="/book"
+              suppressHydrationWarning
+              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-lg shadow-yellow-400/20 hover:scale-105 active:scale-95 shrink-0 flex items-center gap-2"
+            >
+              <span>Book Band for a Benefit</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Search & Category Filter */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -358,33 +360,35 @@ export default function PublicGivingPage() {
         )}
       </section>
 
-      {/* Suggest a Cause CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-4">
-          <Building className="w-8 h-8 mx-auto text-yellow-400" />
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Know an Inspiring Grassroots Cause?
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-            We are always looking to partner with worthy non-profits, youth programs, and community initiatives across Pittsburgh. Tell us about your organization when booking the band or getting in touch!
-          </p>
-          <div className="pt-2">
-            <Link
-              href="/book"
-              suppressHydrationWarning
-              className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
-            >
-              <span>Connect with Management</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Dynamic CMS Sections */}
-      {pageData?.sections && pageData.sections.length > 0 && (
+      {/* Dynamic CMS Sections from CMS Studio */}
+      {pageData?.sections && pageData.sections.length > 0 ? (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <PublicSectionRenderer sections={pageData.sections} />
+          {pageData.sections.map((section) => (
+            <PublicSectionRenderer key={section.id} section={section} />
+          ))}
+        </section>
+      ) : (
+        /* Fallback Suggest a Cause CTA if no CMS sections configured */
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-4">
+            <Building className="w-8 h-8 mx-auto text-yellow-400" />
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Know an Inspiring Grassroots Cause?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+              We are always looking to partner with worthy non-profits, youth programs, and community initiatives across Pittsburgh. Tell us about your organization when booking the band or getting in touch!
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/book"
+                suppressHydrationWarning
+                className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md"
+              >
+                <span>Connect with Management</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </section>
       )}
     </div>
