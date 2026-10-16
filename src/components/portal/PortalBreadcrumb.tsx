@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { WORKSPACE_TOOLS } from "@/lib/portal/workspaceRegistry";
+import { getSectionHref, getSectionBySlug } from "@/lib/portal/portalSections";
 
 export interface PortalBreadcrumbProps {
   section?: string;
@@ -24,8 +25,8 @@ const ROUTE_OVERRIDES: Record<string, { section: string; pageTitle: string; page
 
 /**
  * Standard portal breadcrumb navigation component.
- * Directly aligns the breadcrumb section text with the category header in the sidebar,
- * and the link text with the tool title used in the navigation bar.
+ * Always begins with "Portal Home", followed by a link to the section homepage,
+ * and then the specific sub areas or child pages.
  */
 export default function PortalBreadcrumb({
   section: customSection,
@@ -35,6 +36,47 @@ export default function PortalBreadcrumb({
   className = "",
 }: PortalBreadcrumbProps) {
   const pathname = usePathname();
+
+  // Handle portal home root
+  if (pathname === "/portal") {
+    return (
+      <nav aria-label="Breadcrumb" className={`flex items-center gap-2 text-xs text-slate-400 ${className}`}>
+        <span className="text-white font-medium">Portal Home</span>
+      </nav>
+    );
+  }
+
+  // Handle all-sections index
+  if (pathname === "/portal/sections") {
+    return (
+      <nav aria-label="Breadcrumb" className={`flex items-center gap-2 text-xs text-slate-400 ${className}`}>
+        <Link href="/portal" className="hover:text-amber-400 transition">
+          Portal Home
+        </Link>
+        <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+        <span className="text-white font-medium">Portal Sections</span>
+      </nav>
+    );
+  }
+
+  // Check if currently on a section homepage (/portal/sections/[slug])
+  const isSectionHomePage = pathname.startsWith("/portal/sections/");
+  const sectionSlug = isSectionHomePage
+    ? pathname.replace("/portal/sections/", "").split("/")[0]
+    : null;
+  const sectionFromSlug = sectionSlug ? getSectionBySlug(sectionSlug) : null;
+
+  if (isSectionHomePage && sectionFromSlug) {
+    return (
+      <nav aria-label="Breadcrumb" className={`flex items-center gap-2 text-xs text-slate-400 ${className}`}>
+        <Link href="/portal" className="hover:text-amber-400 transition">
+          Portal Home
+        </Link>
+        <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+        <span className="text-white font-medium">{sectionFromSlug.title}</span>
+      </nav>
+    );
+  }
 
   // Find exact matching tool or prefix parent
   const matchedTool = WORKSPACE_TOOLS.find((t) => t.href === pathname);
@@ -64,11 +106,16 @@ export default function PortalBreadcrumb({
     matchedTool?.href ||
     prefixTool?.href;
 
+  const sectionHref = getSectionHref(section);
   const isSubPage = Boolean(subPage || (prefixTool && pathname !== prefixTool.href));
 
   return (
     <nav aria-label="Breadcrumb" className={`flex items-center gap-2 text-xs text-slate-400 ${className}`}>
       <Link href="/portal" className="hover:text-amber-400 transition">
+        Portal Home
+      </Link>
+      <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+      <Link href={sectionHref} className="hover:text-amber-400 transition">
         {section}
       </Link>
       <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />

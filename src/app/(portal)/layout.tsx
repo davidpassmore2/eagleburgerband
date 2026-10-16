@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from "@/lib/context/ThemeContext";
 import { SidebarNavProvider, useSidebarNav } from "@/lib/context/SidebarNavContext";
 import { hasRole } from "@/lib/auth/permissions";
 import { WORKSPACE_TOOLS } from "@/lib/portal/workspaceRegistry";
+import { getSectionHref } from "@/lib/portal/portalSections";
 import AccessDenied from "@/components/portal/AccessDenied";
 import { 
   LogIn, 
@@ -407,17 +408,18 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
 
                   return (
                     <div key={section.id} className="space-y-1">
-                      <div 
+                      <Link
+                        href={getSectionHref(section.id)}
                         style={{
                           color: "var(--ebb-primary)",
                           fontFamily: "var(--ebb-font-heading, var(--font-arvo), serif)",
                           letterSpacing: "var(--ebb-tracking-heading, 0.05em)",
                           textTransform: "var(--ebb-transform-heading, uppercase)",
                         }}
-                        className="section-title px-3 pt-2 pb-0.5 text-[11px] font-bold tracking-wider"
+                        className="section-title block px-3 pt-2 pb-0.5 text-[11px] font-bold tracking-wider hover:opacity-80 transition"
                       >
                         {section.title || section.id}
-                      </div>
+                      </Link>
                       <div className="space-y-0.5">
                         {visibleAuthorizedLinks.map((link) => {
                           const tool = link.tool;
