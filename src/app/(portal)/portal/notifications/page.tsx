@@ -969,7 +969,7 @@ export default function MemberNotificationsPage() {
 
                 <label className="flex items-center justify-between pt-3 cursor-pointer">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-white block">Repertoire & Tune Proposals</span>
+                    <span className="text-xs font-bold text-white block">Repertoire & Tune Suggestions</span>
                     <span className="text-[11px] text-slate-400">
                       Updates when suggested tunes are reviewed, approved, or charted.
                     </span>

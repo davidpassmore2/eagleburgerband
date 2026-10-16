@@ -84,6 +84,8 @@ const CATEGORIES = [
     reviewerLabel: "All Leadership",
     icon: Layers,
     color: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+    description: "Review, vote, and discuss member suggestions across all categories including repertoire, gig leads, web features, and band operations. Triage status and reviewer notes from leadership are tracked in real time.",
+    tip: "Vote to signal priority to band leadership during production triage",
   },
   {
     id: "tune_request" as const,
@@ -91,6 +93,8 @@ const CATEGORIES = [
     reviewerLabel: "Catalog Manager",
     icon: Music2,
     color: "text-purple-400 bg-purple-500/10 border-purple-500/30",
+    description: "Propose new charts, song arrangements, and repertoire additions. Include original artist, genre, reference audio links, and style notes to assist the Catalog and Setlist Manager with review.",
+    tip: "Include reference YouTube or audio links for expedited review",
   },
   {
     id: "gig_outreach" as const,
@@ -98,6 +102,8 @@ const CATEGORIES = [
     reviewerLabel: "Gig Manager",
     icon: Calendar,
     color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+    description: "Submit prospective performance opportunities, festival bookings, parade invitations, and venue contacts for leadership evaluation and scheduling.",
+    tip: "Provide event dates, contact persons, and venue location details",
   },
   {
     id: "website_request" as const,
@@ -105,6 +111,8 @@ const CATEGORIES = [
     reviewerLabel: "Web Manager",
     icon: Globe,
     color: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+    description: "Suggest portal enhancements, public site features, bug fixes, digital tool requests, or UX improvements for the band's web presence.",
+    tip: "Describe workflow improvements or report specific bugs",
   },
   {
     id: "general_feedback" as const,
@@ -112,6 +120,8 @@ const CATEGORIES = [
     reviewerLabel: "Community Manager",
     icon: MessageSquare,
     color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+    description: "Share constructive thoughts on rehearsals, uniforms and merchandise, social events, section dynamics, and general band operations.",
+    tip: "Constructive feedback and creative ideas keep our ensemble thriving",
   },
 ];
 
@@ -394,7 +404,7 @@ export default function SuggestionTriagePage() {
         keySignature: "Bb Major",
         tempoBpm: 120,
         driveLink: sug.referenceUrl || "",
-        tags: ["Ensemble Proposal", "In Development"],
+        tags: ["Ensemble Suggestion", "In Development"],
         updatedAt: new Date().toISOString(),
       };
 
@@ -417,12 +427,12 @@ export default function SuggestionTriagePage() {
 
   // Delete suggestion
   const handleDeleteSuggestion = async (id: string, title: string) => {
-    if (!confirm(`Delete proposal for "${title}"?`)) return;
+    if (!confirm(`Delete suggestion for "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, "suggestions", id));
-      toast.success("Proposal deleted.");
+      toast.success("Suggestion deleted.");
     } catch (err) {
-      toast.error("Failed to delete proposal: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to delete suggestion: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -649,14 +659,14 @@ export default function SuggestionTriagePage() {
               Ensemble Voice & Governance
             </span>
             <span className="text-[11px] font-mono text-slate-400">
-              {suggestions.length} Total Proposal{suggestions.length === 1 ? "" : "s"}
+              {suggestions.length} Total Suggestion{suggestions.length === 1 ? "" : "s"}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 mt-1">
             <Lightbulb className="w-6 h-6 text-yellow-400" /> Suggestion Triage & Member Voice
           </h1>
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Submit ideas for tunes, gig outreach, website features, or general feedback. All members can vote with thumbs up or down. Category role managers triage and review proposals.
+            Submit ideas for tunes, gig outreach, website features, or general feedback. All members can vote with thumbs up or down. Category role managers triage and review suggestions.
           </p>
         </div>
 
@@ -674,7 +684,7 @@ export default function SuggestionTriagePage() {
       {/* Telemetry Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
-          <span className="text-[10px] font-mono text-slate-400 uppercase">Total Proposals</span>
+          <span className="text-[10px] font-mono text-slate-400 uppercase">Total Suggestions</span>
           <div className="text-2xl font-bold text-white">{telemetry.totalCount}</div>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
@@ -722,6 +732,48 @@ export default function SuggestionTriagePage() {
           );
         })}
       </div>
+
+      {/* Active Category Description Panel */}
+      {(() => {
+        const activeCat = CATEGORIES.find((c) => c.id === activeCategory) || CATEGORIES[0];
+        const IconComp = activeCat.icon;
+        const count = categoryCounts[activeCat.id] || 0;
+        return (
+          <div 
+            suppressHydrationWarning
+            style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+            className="border rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm transition-colors"
+          >
+            <div className="flex items-start gap-3.5">
+              <div className={`p-2.5 rounded-xl shrink-0 border ${activeCat.color}`}>
+                <IconComp className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-slate-100 text-sm">{activeCat.label}</h3>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700/60">
+                    Reviewer: {activeCat.reviewerLabel}
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    • {count} {count === 1 ? "suggestion" : "suggestions"}
+                  </span>
+                </div>
+                <p className="text-slate-300 text-xs leading-relaxed max-w-3xl">
+                  {activeCat.description}
+                </p>
+              </div>
+            </div>
+            {activeCat.tip && (
+              <div className="flex items-center gap-2 text-slate-400 text-xs bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl shrink-0 self-start md:self-center">
+                <span className="text-amber-400 text-sm shrink-0">💡</span>
+                <span className="text-[11px] leading-tight">
+                  <strong className="text-slate-200 font-semibold">Tip:</strong> {activeCat.tip}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Filter and Search Bar */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -786,7 +838,7 @@ export default function SuggestionTriagePage() {
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search proposals..."
+            placeholder="Search suggestions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
@@ -802,7 +854,7 @@ export default function SuggestionTriagePage() {
         >
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-yellow-400" /> Submit Proposal / Request
+              <Lightbulb className="w-5 h-5 text-yellow-400" /> Submit Suggestion / Request
             </h2>
             <button
               type="button"
@@ -817,7 +869,7 @@ export default function SuggestionTriagePage() {
             {/* Category */}
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
-                Proposal Category *
+                Suggestion Category *
               </label>
               <select
                 value={createForm.category}
@@ -846,7 +898,7 @@ export default function SuggestionTriagePage() {
                     ? "e.g. Millvale Riverfront Porchfest Pitch"
                     : createForm.category === "website_request"
                     ? "e.g. Add dark mode toggle to rehearsal vault"
-                    : "e.g. Rehearsal warm-up format proposal"
+                    : "e.g. Rehearsal warm-up format suggestion"
                 }
                 value={createForm.title}
                 onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
@@ -893,7 +945,7 @@ export default function SuggestionTriagePage() {
             <textarea
               required
               rows={3}
-              placeholder="Explain why this proposal is great for the Eagleburger Band (e.g. arrangement viability, parade energy, community impact, tech improvement)..."
+              placeholder="Explain why this suggestion is great for the Eagleburger Band (e.g. arrangement viability, parade energy, community impact, tech improvement)..."
               value={createForm.description}
               onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 resize-none"
@@ -1008,7 +1060,7 @@ export default function SuggestionTriagePage() {
                   </div>
                 </div>
 
-                {/* Proposal Title & Metadata */}
+                {/* Suggestion Title & Metadata */}
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <span>{sug.title}</span>
@@ -1174,7 +1226,7 @@ export default function SuggestionTriagePage() {
                         type="button"
                         onClick={() => handleDeleteSuggestion(sug.id, sug.title)}
                         className="text-slate-500 hover:text-rose-400 transition p-1 text-xs flex items-center gap-1"
-                        title="Delete proposal"
+                        title="Delete suggestion"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Delete</span>
@@ -1291,7 +1343,7 @@ export default function SuggestionTriagePage() {
                       </button>
                     </div>
 
-                    {/* Proposal Title & Metadata */}
+                    {/* Suggestion Title & Metadata */}
                     <div>
                       <h3 className="text-base sm:text-lg font-bold text-white/90 flex items-center gap-2">
                         <span>{sug.title}</span>
@@ -1415,7 +1467,7 @@ export default function SuggestionTriagePage() {
                             type="button"
                             onClick={() => handleDeleteSuggestion(sug.id, sug.title)}
                             className="text-slate-500 hover:text-rose-400 transition p-1 text-xs flex items-center gap-1"
-                            title="Delete proposal"
+                            title="Delete suggestion"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete</span>

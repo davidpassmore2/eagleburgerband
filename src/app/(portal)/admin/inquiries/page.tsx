@@ -313,7 +313,7 @@ export default function InquiriesAdminPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Booking Leads & Intake</h1>
           <p className="text-xs text-slate-400">
-            Triage incoming public gig inquiries, manage client proposals, and promote approved leads directly to performance gigs.
+            Triage incoming public gig inquiries, manage client requests, and promote approved leads directly to performance gigs.
           </p>
         </div>
 

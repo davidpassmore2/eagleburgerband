@@ -113,5 +113,20 @@ Located at [`src/app/(portal)/portal/finance/page.tsx`](file:///c:/repos/eaglebu
   * `/admin/finance` -> Redirects to `/portal/finance?tab=ledger`
   * `/portal/reimbursements` -> Redirects to `/portal/finance?tab=reimbursements`
   * `/admin/giving` -> Redirects to `/portal/finance?tab=giving`
-* **[`src/lib/portal/portalSections.ts`](file:///c:/repos/eagleburgerband/src/lib/portal/portalSections.ts):**
-  * Updated `whatCanIDo` highlighting the centralized finance hub capabilities.
+---
+
+## 5. Suggestion Triage Guidance & Terminology Alignment
+
+* **Suggestion Category Guide ([`src/app/(portal)/admin/suggestions/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/suggestions/page.tsx)):**
+  * Added dynamic description section directly below category filter buttons that dynamically updates when toggling between suggestion categories (`all`, `tune_request`, `gig_outreach`, `website_request`, `general_feedback`).
+  * Displays reviewer roles (`Catalog Manager`, `Gig Manager`, `Web Manager`, `Community Manager`, `All Leadership`), item counts, comprehensive descriptions of what belongs in each category, and submission tips.
+* **Portal-Wide Terminology Alignment ("Suggestion" over "Proposal"):**
+  * Updated all UI strings, telemetry stats, form labels, tooltips, and notification preferences from "proposal" to "suggestion".
+  * Aligned files:
+    * [`src/app/(portal)/admin/suggestions/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/suggestions/page.tsx)
+    * [`src/app/(portal)/portal/notifications/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/notifications/page.tsx)
+    * [`src/app/(portal)/portal/status-matrix/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/status-matrix/page.tsx)
+    * [`src/app/(portal)/portal/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/page.tsx)
+    * [`src/app/(portal)/portal/help/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/help/page.tsx)
+    * [`src/app/(portal)/admin/inquiries/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/admin/inquiries/page.tsx)
+

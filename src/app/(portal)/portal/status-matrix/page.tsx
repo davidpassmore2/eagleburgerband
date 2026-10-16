@@ -67,7 +67,7 @@ const STATUS_DATA: StatusDefinition[] = [
     badgeBg: "rgba(59, 130, 246, 0.15)",
     badgeBorder: "rgba(59, 130, 246, 0.4)",
     badgeText: "#60a5fa",
-    phase: "Intake & Proposal",
+    phase: "Intake & Review",
     actor: "Public Host / Manager / Member",
     summary: "Freshly submitted booking inquiry or suggested gig opportunity awaiting review.",
     impact: "Unreviewed by band management. No musician notifications or calendar holds.",
@@ -563,7 +563,7 @@ export default function StatusMatrixGuidePage() {
                 </span>
                 <span className="text-[11px] text-slate-500">Intake</span>
               </div>
-              <h3 className="text-sm font-bold text-white">Lead Proposal</h3>
+              <h3 className="text-sm font-bold text-white">Lead Intake</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Public booking form, client email, or member suggestion enters the Lead pipeline.
               </p>

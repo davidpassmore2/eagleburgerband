@@ -129,3 +129,18 @@ This guide walks through verifying the Stage 62 deliverables:
    - Open `/portal/reimbursements` -> Verify automatic redirect to `/portal/finance?tab=reimbursements`.
    - Open `/admin/finance` -> Verify automatic redirect to `/portal/finance?tab=ledger`.
    - Open `/admin/giving` -> Verify automatic redirect to `/portal/finance?tab=giving`.
+
+---
+
+### Scenario 8: Suggestion Triage Guidance & Terminology Alignment
+
+1. **Category Guidance Dynamic Panel:**
+   - Navigate to `/admin/suggestions`.
+   - Click through each of the category filter buttons: `[All Suggestions]`, `[Tune Requests]`, `[Gig Outreach]`, `[Website Requests]`, `[General Feedback]`.
+   - Verify that the card directly below the tabs dynamically updates with:
+     - Reviewer leadership role (`Catalog Manager`, `Gig Manager`, `Web Manager`, `Community Manager`, or `All Leadership`).
+     - Real-time active suggestion count.
+     - Specific purpose description for that category.
+     - Practical submission tip (e.g., YouTube/Spotify links, dates & contacts, etc.).
+2. **Terminology Consistency:**
+   - Verify all page headers, search placeholders, modal titles, form labels, and delete prompts use **"Suggestion"** consistently (with zero references to "proposal" across portal pages).

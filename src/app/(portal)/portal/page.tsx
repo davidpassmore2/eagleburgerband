@@ -151,7 +151,7 @@ export default function MusicianPortalOverviewPage() {
       (err) => console.warn("Notice: tunes subscriber note:", err)
     );
 
-    // Listen to song proposals
+    // Listen to song suggestions
     const unsubSuggestions = onSnapshot(
       collection(db, "suggestions"),
       (snapshot) => {

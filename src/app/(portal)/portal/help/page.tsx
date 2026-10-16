@@ -1887,7 +1887,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     target: "PR Leads, Social Media Coordinators & Community Liaisons",
     summary: "Builds bridges between the Eagleburger Band, our fan community, local civic organizations, festival directors, and charitable partners.",
     responsibilities: [
-      "Respond to public inquiries, fan messages, and event collaboration proposals.",
+      "Respond to public inquiries, fan messages, and event collaboration suggestions.",
       "Coordinate philanthropic appearances, non-profit benefit parades, and school brass clinics.",
       "Collaborate with Web Managers to publish news, parade photos, and community donation highlights.",
       "Moderate public fan comments and guestbook messages."
