@@ -29,6 +29,7 @@ import {
   X,
   Clock,
   Shield,
+  ThumbsUp,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -61,6 +62,7 @@ export default function CommentsStream({
   const [flagReason, setFlagReason] = useState("Inappropriate or offensive");
   const [customReason, setCustomReason] = useState("");
   const [isFlagSubmitting, setIsFlagSubmitting] = useState(false);
+  const [likePendingIds, setLikePendingIds] = useState<Record<string, boolean>>({});
 
   const commentsEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -145,6 +147,8 @@ export default function CommentsStream({
         isFlagged: false,
         flagReason: "",
         flaggedByUid: "",
+        likes: [],
+        likedBy: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -162,6 +166,57 @@ export default function CommentsStream({
       setError("Unable to post comment. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleLike = async (comment: Comment) => {
+    if (!currentUid) {
+      toast.error("Please sign in to like comments.");
+      return;
+    }
+    if (likePendingIds[comment.id]) return;
+
+    setLikePendingIds((prev) => ({ ...prev, [comment.id]: true }));
+
+    const isLiked =
+      Boolean(comment.likes?.includes(currentUid)) ||
+      Boolean(comment.likedBy?.some((item) => item.uid === currentUid));
+
+    const newLikes = isLiked
+      ? (comment.likes || []).filter((id) => id !== currentUid)
+      : [...(comment.likes || []).filter((id) => id !== currentUid), currentUid];
+
+    const newLikedBy = isLiked
+      ? (comment.likedBy || []).filter((item) => item.uid !== currentUid)
+      : [
+          ...(comment.likedBy || []).filter((item) => item.uid !== currentUid),
+          {
+            uid: currentUid,
+            name: currentDisplayName,
+            likedAt: new Date().toISOString(),
+          },
+        ];
+
+    try {
+      await updateDoc(doc(db, "comments", comment.id), {
+        likes: newLikes,
+        likedBy: newLikedBy,
+        updatedAt: new Date().toISOString(),
+      });
+      dispatchPortalInteraction(
+        isLiked ? "unlike_comment" : "like_comment",
+        `${isLiked ? "Unliked" : "Liked"} comment by ${comment.authorName}`,
+        { commentId: comment.id, targetType, targetId }
+      );
+    } catch (err) {
+      console.error("Failed to toggle comment like:", err);
+      toast.error("Unable to update like.");
+    } finally {
+      setLikePendingIds((prev) => {
+        const copy = { ...prev };
+        delete copy[comment.id];
+        return copy;
+      });
     }
   };
 
@@ -382,6 +437,119 @@ export default function CommentsStream({
                 <div className="mt-1.5 text-slate-300 text-xs leading-relaxed break-words whitespace-pre-wrap">
                   {comment.content}
                 </div>
+
+                {/* Comment Reactions / Like Row */}
+                {(() => {
+                  const isLiked =
+                    Boolean(comment.likes?.includes(currentUid)) ||
+                    Boolean(comment.likedBy?.some((item) => item.uid === currentUid));
+                  const likeCount = Math.max(
+                    comment.likes?.length || 0,
+                    comment.likedBy?.length || 0
+                  );
+
+                  // Extract distinct liked names
+                  const namesSet = new Set<string>();
+                  if (Array.isArray(comment.likedBy)) {
+                    comment.likedBy.forEach((item) => {
+                      if (item?.name?.trim()) namesSet.add(item.name.trim());
+                    });
+                  }
+                  // Fallback: if user liked but name isn't in likedBy yet, ensure current user shows if liked
+                  if (isLiked && currentDisplayName) {
+                    namesSet.add(currentDisplayName);
+                  }
+                  const likedNames = Array.from(namesSet);
+
+                  return (
+                    <div className="mt-2 flex items-center justify-between gap-2 pt-1.5 border-t border-slate-900/80 text-[11px]">
+                      <div className="relative group/like inline-flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleLike(comment)}
+                          disabled={!currentUid || likePendingIds[comment.id]}
+                          className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1.5 border cursor-pointer ${
+                            isLiked
+                              ? "bg-amber-400/15 text-amber-300 border-amber-400/35 hover:bg-amber-400/25 shadow-xs"
+                              : "text-slate-400 hover:text-slate-200 bg-slate-900/60 border-slate-800/80 hover:bg-slate-800 hover:border-slate-700"
+                          } disabled:opacity-50`}
+                          title={
+                            likedNames.length > 0
+                              ? `Liked by: ${likedNames.join(", ")}`
+                              : isLiked
+                              ? "Click to remove like"
+                              : "Like this comment"
+                          }
+                          aria-label={isLiked ? "Unlike comment" : "Like comment"}
+                        >
+                          <ThumbsUp
+                            className={`w-3.5 h-3.5 transition-all ${
+                              isLiked
+                                ? "fill-amber-400 text-amber-400 scale-105"
+                                : "text-slate-400 group-hover/like:text-slate-200"
+                            }`}
+                          />
+                          <span className="font-semibold">
+                            {likeCount > 0 ? likeCount : "Like"}
+                          </span>
+                        </button>
+
+                        {/* Hover Tooltip with Member Names */}
+                        <div
+                          role="tooltip"
+                          className="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover/like:flex flex-col z-30 min-w-[140px] max-w-xs bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 rounded-xl p-2.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+                        >
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 border-b border-slate-800 pb-1.5 mb-1.5">
+                            <ThumbsUp className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span>
+                              {likeCount === 0
+                                ? "Like this comment"
+                                : `${likeCount} ${likeCount === 1 ? "Member Liked" : "Members Liked"}`}
+                            </span>
+                          </div>
+                          {likedNames.length === 0 ? (
+                            <span className="text-slate-400 text-[10px]">
+                              Be the first to like this comment!
+                            </span>
+                          ) : (
+                            <div className="space-y-0.5 max-h-36 overflow-y-auto">
+                              {likedNames.map((name, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-1.5 text-slate-200 text-[11px] truncate"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                  <span className="truncate">
+                                    {name === currentDisplayName ? (
+                                      <strong className="text-amber-300 font-semibold">{name} (You)</strong>
+                                    ) : (
+                                      name
+                                    )}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Tooltip arrow */}
+                          <div className="absolute top-full left-3 -mt-1 border-4 border-transparent border-t-slate-700/80" />
+                        </div>
+                      </div>
+
+                      {likeCount > 0 && (
+                        <span className="text-[10px] text-slate-500 truncate max-w-[200px] hidden sm:inline">
+                          {isLiked && likeCount === 1
+                            ? "You liked this"
+                            : isLiked && likeCount === 2
+                            ? `You and ${likedNames.find((n) => n !== currentDisplayName) || "1 other"} liked this`
+                            : isLiked
+                            ? `You and ${likeCount - 1} others liked this`
+                            : likedNames.slice(0, 2).join(", ") +
+                              (likeCount > 2 ? ` +${likeCount - 2}` : "")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })

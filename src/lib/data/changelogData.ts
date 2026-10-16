@@ -7,6 +7,18 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 63,
+    title: "Discussion Stream Comment Likes & Interactive Member Tooltips",
+    category: "Member Portal UX, Engagement & Discussions",
+    accomplishments: [
+      "Added comment liking and unliking capabilities to the Discussion Stream (CommentsStream), enabling members to react to discussion threads across tunes, gigs, announcements, and suggestions.",
+      "Engineered an interactive floating hover tooltip displaying the complete list of member Display Names who liked each comment, with real-time updates and active user indicators.",
+      "Implemented seamless toggle behavior where re-clicking a previously liked comment removes the member's like and immediately removes their name from the tooltip list.",
+      "Extended CommentSchema with preprocessed likes and likedBy array structures, upholding Schema Invariance (Rule 2) with safe default values.",
+      "Hardened Firestore Security Rules for comments, strictly scoping member mutations to likes, likedBy, and updatedAt using addsOrRemovesOnlyMe security validation.",
+    ],
+  },
+  {
     stage: 62,
     title: "Multi-Provider OAuth Authentication (Apple, Microsoft, GitHub & Google)",
     category: "Identity, Authentication & Onboarding",
@@ -19,6 +31,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Hardened client-side OAuth provider integrations for Google, Apple (email/name scopes, locale), Microsoft (multi-tenant common prompt), and GitHub (read:user, user:email).",
       "Enhanced login page error handling with informative messages for pending provider activations, existing account linking conflicts, and popup blocker warnings.",
       "Upgraded the Musician Invite Claiming workflow (/claim) with dynamic multi-provider claim buttons and strict email verification matching.",
+      "Added dynamic Category Description guidance section to Suggestion Triage (/admin/suggestions) with real-time leadership reviewer roles, active item counts, purpose descriptions, and practical submission tips.",
+      "Aligned terminology across the entire portal codebase to use 'suggestion' consistently, eliminating mixed 'proposal' references across forms, telemetry stats, and preferences.",
     ],
   },
   {

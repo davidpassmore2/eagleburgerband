@@ -268,7 +268,10 @@ service cloud.firestore {
         || (isMember()
             && changedKeys().hasOnly(['isFlagged', 'flagReason', 'flaggedByUid', 'updatedAt'])
             && request.resource.data.isFlagged == true
-            && request.resource.data.flaggedByUid == request.auth.uid);
+            && request.resource.data.flaggedByUid == request.auth.uid)
+        || (isMember()
+            && changedKeys().hasOnly(['likes', 'likedBy', 'updatedAt'])
+            && addsOrRemovesOnlyMe('likes'));
       allow delete: if canManageContent()
         || (isMember() && resource.data.get('authorUid', '') == request.auth.uid);
     }
