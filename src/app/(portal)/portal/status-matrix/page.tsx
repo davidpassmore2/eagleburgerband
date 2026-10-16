@@ -294,7 +294,7 @@ const STATUS_DATA: StatusDefinition[] = [
     actor: "Musician & Leadership",
     summary: "Standard active performing member. Available for gigs, rehearsals, and street parades.",
     impact: "Receives all availability dispatch requests, rehearsals, and band-wide alerts.",
-    nextSteps: "Keep blackout dates updated on /portal/availability.",
+    nextSteps: "Keep personal schedule and blackout dates updated in My Availability & Blackouts (/portal/availability).",
     automation: "Included in all initial gig availability dispatches (unless date is blacked out).",
   },
   {
@@ -408,7 +408,7 @@ export default function StatusMatrixGuidePage() {
             }}
           >
             <CalendarOff className="w-3.5 h-3.5 text-amber-400" />
-            <span>My Blackouts</span>
+            <span>My Availability & Blackouts</span>
           </Link>
         </div>
       </div>

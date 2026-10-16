@@ -46,9 +46,9 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: "/icon-192.png", sizes: "192x192" }],
       },
       {
-        name: "Availability Calendar",
-        short_name: "Availability",
-        description: "Manage your gig availability and blackouts",
+        name: "My Availability & Blackouts",
+        short_name: "My Availability",
+        description: "Manage your personal availability and blackout dates",
         url: "/portal/availability",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }],
       },

@@ -49,7 +49,7 @@ interface ScheduledGig {
   venue: string;
 }
 
-export default function MusicianAvailabilityPage() {
+export default function MyAvailabilityPage() {
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [blackouts, setBlackouts] = useState<BlackoutDate[]>([]);
   const [gigs, setGigs] = useState<ScheduledGig[]>([]);
@@ -208,6 +208,10 @@ export default function MusicianAvailabilityPage() {
     );
   };
 
+  const conflictingBlackoutsCount = useMemo(() => {
+    return blackouts.filter((b) => getBlackoutConflicts(b).length > 0).length;
+  }, [blackouts, gigs]);
+
   const handleCreateBlackout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firebaseUser || !formData.startDate) return;
@@ -315,7 +319,7 @@ export default function MusicianAvailabilityPage() {
     return (
       <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
         <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-        Loading your availability profile...
+        Loading your personal availability...
       </div>
     );
   }
@@ -323,23 +327,31 @@ export default function MusicianAvailabilityPage() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
+      <div 
+        suppressHydrationWarning
+        style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+        className="border rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl transition-colors"
+      >
         <div className="space-y-1">
           <PortalBreadcrumb className="mb-2" />
           <div className="flex items-center gap-2">
             <Link
               href="/portal"
               className="p-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white transition"
+              title="Return to Portal Home"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-yellow-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              Musician Availability
+              Personal Schedule &amp; Leave
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white">Blackout Dates &amp; Conflict Engine</h1>
-          <p className="text-xs text-slate-400">
-            Keep section leaders informed when you are out of town. Automatic detection alerts you if blackouts clash with scheduled gigs.
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
+            <CalendarOff className="w-6 h-6 text-yellow-400 shrink-0" />
+            My Availability &amp; Blackouts
+          </h1>
+          <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+            Manage your personal schedule, log blackout dates, and control your hiatus dispatch status so band leadership and section leaders know your availability for upcoming performances.
           </p>
         </div>
 
@@ -384,6 +396,40 @@ export default function MusicianAvailabilityPage() {
         </div>
       </div>
 
+      {/* Personal Schedule Telemetry Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+          <span className="text-[10px] font-mono text-slate-400 uppercase">My Dispatch Status</span>
+          <div className={`text-sm sm:text-base font-bold flex items-center gap-1.5 mt-0.5 ${isOnHiatus ? "text-amber-400" : "text-emerald-400"}`}>
+            {isOnHiatus ? (
+              <>
+                <Palmtree className="w-4 h-4 shrink-0" />
+                <span>On Hiatus</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>Active Musician</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+          <span className="text-[10px] font-mono text-slate-400 uppercase">My Blackout Windows</span>
+          <div className="text-2xl font-bold text-white">{blackouts.length}</div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+          <span className="text-[10px] font-mono uppercase text-slate-400">Gig Conflicts</span>
+          <div className={`text-2xl font-bold ${conflictingBlackoutsCount > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+            {conflictingBlackoutsCount}
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+          <span className="text-[10px] font-mono text-slate-400 uppercase">Band Performances</span>
+          <div className="text-2xl font-bold text-sky-400">{gigs.length}</div>
+        </div>
+      </div>
+
       {/* Musician Hiatus Mode Banner */}
       <div
         className={`rounded-2xl p-5 border transition shadow-lg ${
@@ -406,7 +452,7 @@ export default function MusicianAvailabilityPage() {
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono uppercase tracking-wider font-bold">
-                  Member Dispatch Status:
+                  My Dispatch Status:
                 </span>
                 <span
                   className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded border uppercase ${
@@ -461,7 +507,7 @@ export default function MusicianAvailabilityPage() {
         >
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <CalendarOff className="w-4 h-4 text-yellow-400" /> Declare Blackout Range
+              <CalendarOff className="w-4 h-4 text-yellow-400" /> Log My Blackout Range
             </h2>
             <button
               type="button"
@@ -500,7 +546,7 @@ export default function MusicianAvailabilityPage() {
                 </span>
               </div>
               <p className="text-[11px] text-rose-200/80">
-                Declaring this blackout will flag an absence for section leaders on the roster.
+                Logging this blackout will notify section leaders on the roster of your absence and suppress automated dispatches.
               </p>
               <div className="space-y-1.5 pt-1">
                 {formConflicts.map((gig) => {
@@ -731,7 +777,7 @@ export default function MusicianAvailabilityPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" /> Scheduled Unavailable Dates ({blackouts.length})
+            <Clock className="w-3.5 h-3.5" /> My Scheduled Blackout Dates ({blackouts.length})
           </h2>
           {blackouts.length > 0 && (
             <span className="text-[11px] text-slate-500">
@@ -811,7 +857,7 @@ export default function MusicianAvailabilityPage() {
       {/* Confirm Delete Dialog (replaces raw confirm()) */}
       <ConfirmDialog
         isOpen={Boolean(deleteTargetId)}
-        title="Remove Blackout Period?"
+        title="Remove My Blackout Period?"
         description="Are you sure you want to remove this blackout window? Your availability status for upcoming performances during this date range will revert to open."
         confirmLabel="Remove Blackout"
         confirmVariant="danger"

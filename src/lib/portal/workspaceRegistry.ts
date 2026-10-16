@@ -106,7 +106,7 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
   },
   {
     id: "availability",
-    title: "Musician Availability & Blackouts",
+    title: "My Availability & Blackouts",
     href: "/portal/availability",
     icon: CalendarOff,
     requiredRoles: ["member", "guest"],

@@ -2932,7 +2932,7 @@ async function runSeed() {
   const activeToolList = [
     { id: "member-gigs", title: "Performance Calendar & RSVPs", path: "/portal/gigs", cat: "Performances & Logistics" },
     { id: "library", title: "Repertoire Catalog", path: "/portal/library", cat: "Music & Repertoire" },
-    { id: "availability", title: "Musician Availability & Blackouts", path: "/portal/availability", cat: "Performances & Logistics" },
+    { id: "availability", title: "My Availability & Blackouts", path: "/portal/availability", cat: "Performances & Logistics" },
     { id: "call-sheets", title: "Call Sheet Dispatch", path: "/admin/dispatch", cat: "Performances & Logistics" },
     { id: "setlists", title: "Setlist Studio", path: "/admin/setlists", cat: "Performances & Logistics" },
     { id: "suggestions", title: "Suggestion Triage & Voting", path: "/admin/suggestions", cat: "Music & Repertoire" },

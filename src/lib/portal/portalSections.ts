@@ -84,8 +84,8 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
         description: "Access complete call sheets with schedules, map links, uniform requirements, and logistics notes.",
       },
       {
-        title: "Schedule Blackout Windows",
-        description: "Lock in personal blackout dates in advance so section leaders and managers know your availability.",
+        title: "My Availability & Blackouts",
+        description: "Manage your personal schedule, log blackout dates, and toggle hiatus mode so leadership knows your availability.",
       },
       {
         title: "Day-of-Show Check-In & Dispatch",

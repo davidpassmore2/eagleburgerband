@@ -58,3 +58,27 @@ This walkthrough validates the comment liking workflow and interactive member to
    - Non-authenticated requests are blocked with a toast prompt (`"Please sign in to like comments"`).
    - Firestore security rules verify `addsOrRemovesOnlyMe('likes')`, ensuring no user can alter another musician's reaction.
 
+---
+
+### Scenario 6: "My Availability & Blackouts" Member Experience
+1. **Navigate to the Member Availability Hub:**
+   - From the Portal sidebar or `/portal/sections/performances-logistics`, click **"My Availability & Blackouts"** (`/portal/availability`).
+   - Also test opening via the PWA manifest app shortcut or the Portal dashboard quick actions.
+2. **Review Personal Schedule Telemetry:**
+   - Confirm the 4 telemetry summary cards are rendered:
+     - **My Dispatch Status**: Shows active call sheet readiness or hiatus badge.
+     - **My Blackout Windows**: Total number of your active personal blackout ranges.
+     - **Gig Conflicts**: Live tally of personal blackouts overlapping with scheduled band gigs.
+     - **Band Performances**: Total upcoming gigs.
+3. **Log a Personal Blackout Date Range:**
+   - Click **"Add Blackout Dates"**.
+   - Select a date range or click on the interactive calendar.
+   - Enter an optional reason (e.g. *"Family Camping Trip"*).
+   - Note the live conflict engine warning if any scheduled performances fall within that range.
+   - Click **"Log My Blackout Range"**.
+   - Verify the blackout appears under **"My Scheduled Blackout Dates"**.
+4. **Remove a Blackout Period:**
+   - Click the trash icon next to a scheduled blackout window.
+   - Verify the custom modal appears: `"Remove My Blackout Period?"`.
+   - Click **"Remove Blackout"** and confirm it is removed from your calendar.
+

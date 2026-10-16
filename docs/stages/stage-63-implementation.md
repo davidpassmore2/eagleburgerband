@@ -75,7 +75,38 @@ Stage 63 introduces peer engagement and social feedback within the Eagleburger B
 
 ---
 
-## 4. Verification & Testing
+## 4. "My Availability & Blackouts" Member-Centric Redesign
+
+### Overview
+The availability hub was previously titled "Musician Availability" with coordinator-oriented copy. In Stage 63, the entire section was aligned to focus directly on the individual member: **"My Availability & Blackouts"**, providing musicians with personal ownership of their schedule, blackout windows, conflict detection, and hiatus mode.
+
+### Modified Files & Architectural Updates
+1. **Workspace Registry & Navigation** ([`src/lib/portal/workspaceRegistry.ts`](file:///c:/repos/eagleburgerband/src/lib/portal/workspaceRegistry.ts)):
+   - Renamed item title to `"My Availability & Blackouts"` (`/portal/availability`).
+   - Retained member and guest access under `Performances & Logistics`.
+2. **Section Overview & Directory** ([`src/lib/portal/portalSections.ts`](file:///c:/repos/eagleburgerband/src/lib/portal/portalSections.ts)):
+   - Updated overview item to `"My Availability & Blackouts"` with member-first description: *"Manage your personal schedule, log blackout dates, and toggle hiatus mode so leadership knows your availability."*
+3. **PWA Web App Manifest** ([`src/app/manifest.ts`](file:///c:/repos/eagleburgerband/src/app/manifest.ts)):
+   - Updated shortcut to `name: "My Availability & Blackouts"`, `short_name: "My Availability"`, and `description: "Manage your personal availability and blackout dates"`.
+4. **Portal Dashboard Quick Links** ([`src/app/(portal)/portal/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/page.tsx)):
+   - Aligned the Availability dashboard quick action card to `"My Availability & Blackouts"`.
+5. **Status Matrix & Help Center Documentation** ([`src/app/(portal)/portal/status-matrix/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/status-matrix/page.tsx), [`src/app/(portal)/portal/help/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/help/page.tsx)):
+   - Updated operational cross-references and user guides to `"My Availability & Blackouts"`.
+6. **Availability Page Component** ([`src/app/(portal)/portal/availability/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/availability/page.tsx)):
+   - Renamed component to `MyAvailabilityPage()`.
+   - Updated page header with badge `Personal Schedule & Leave` and member-centric subtitle.
+   - Introduced a 4-card **Personal Schedule Telemetry Grid**:
+     - *My Dispatch Status*: Shows active dispatch readiness vs. hiatus state with live toggle indicator.
+     - *My Blackout Windows*: Live count of the member's scheduled blackout ranges.
+     - *Gig Conflicts*: Live count of blackout windows colliding with scheduled band performances.
+     - *Band Performances*: Live count of scheduled gigs in the season.
+   - Refactored form actions to `"Log My Blackout Range"`, conflict notices to *"Logging this blackout will notify section leaders on the roster of your absence and suppress automated dispatches."*, list headers to `"My Scheduled Blackout Dates"`, and dialogs to `"Remove My Blackout Period?"`.
+7. **Seed Database Configuration** ([`scripts/seed.ts`](file:///c:/repos/eagleburgerband/scripts/seed.ts)):
+   - Updated default navigation configuration seed data to `"My Availability & Blackouts"`.
+
+---
+
+## 5. Verification & Testing
 
 * **TypeScript Compilation**: `npx tsc --noEmit` verified clean with `0` errors.
 * **Next.js Production Build**: `npm run build` compiled 82 static and dynamic pages with 0 prerendering issues.

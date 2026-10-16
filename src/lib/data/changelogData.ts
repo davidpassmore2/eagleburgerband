@@ -8,14 +8,16 @@ export interface StageChangelogItem {
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
     stage: 63,
-    title: "Discussion Stream Comment Likes & Interactive Member Tooltips",
-    category: "Member Portal UX, Engagement & Discussions",
+    title: "Comment Likes, Tooltips & 'My Availability & Blackouts' Member Redesign",
+    category: "Member Portal UX, Availability & Engagement",
     accomplishments: [
       "Added comment liking and unliking capabilities to the Discussion Stream (CommentsStream), enabling members to react to discussion threads across tunes, gigs, announcements, and suggestions.",
       "Engineered an interactive floating hover tooltip displaying the complete list of member Display Names who liked each comment, with real-time updates and active user indicators.",
       "Implemented seamless toggle behavior where re-clicking a previously liked comment removes the member's like and immediately removes their name from the tooltip list.",
       "Extended CommentSchema with preprocessed likes and likedBy array structures, upholding Schema Invariance (Rule 2) with safe default values.",
       "Hardened Firestore Security Rules for comments, strictly scoping member mutations to likes, likedBy, and updatedAt using addsOrRemovesOnlyMe security validation.",
+      "Redesigned the Musician Availability section to be strictly member-focused and renamed to 'My Availability & Blackouts' across workspace registry, portal navigation, PWA manifest shortcuts, dashboard quick links, section overviews, and help documentation.",
+      "Transformed /portal/availability into a personal schedule command center featuring 4 personal schedule telemetry cards (My Dispatch Status, My Blackout Windows, Gig Conflicts, Band Performances), member-centric actions ('Log My Blackout Range', 'Remove My Blackout Period'), and self-service hiatus controls.",
     ],
   },
   {

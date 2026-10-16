@@ -477,20 +477,20 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
-      { title: "Musician Availability", path: "/portal/availability" },
+      { title: "My Availability & Blackouts", path: "/portal/availability" },
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
     ]
   },
   {
     id: "portal-availability",
-    title: "Musician Availability & Blackout Dates",
+    title: "My Availability & Blackouts",
     path: "/portal/availability",
     category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "section_leader", "member", "guest"],
     badge: "Availability Calendar",
     iconName: "Calendar",
     summary: "Log out-of-town dates, vacation windows, and personal blackouts to prevent gig scheduling conflicts.",
-    description: "Musician Availability empowers every player to schedule blackout date ranges. The platform cross-references your logged blackout windows during gig creation, availability polling, and call sheet dispatch—automatically alerting gig managers to conflicts and suppressing notifications on dates you cannot play.",
+    description: "My Availability & Blackouts empowers every musician to manage their personal schedule, log blackout date ranges, and control hiatus mode. The platform cross-references your logged blackout windows during gig creation, availability polling, and call sheet dispatch—automatically alerting gig managers to conflicts and suppressing notifications on dates you cannot play.",
     keyFeatures: [
       "Interactive multi-day date range picker for logging upcoming vacations and travel.",
       "Optional blackout reason notes (e.g. Work Travel, Family Vacation, Out of Town).",
@@ -499,7 +499,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Complete historical list of active and upcoming blackout windows with 1-click deletion."
     ],
     howToUse: [
-      "Navigate to Musician Availability (/portal/availability) from the Gigs menu.",
+      "Navigate to My Availability & Blackouts (/portal/availability) from the Performances & Logistics menu.",
       "Click your start date and end date on the calendar to select a blackout date range.",
       "Optionally add a note explaining your absence, then click 'Save Blackout Range'.",
       "Review your active blackout windows below the calendar."
@@ -580,7 +580,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
       { title: "Downbeat Check-In", path: "/admin/checkin" },
       { title: "Setlist Studio", path: "/admin/setlists" },
-      { title: "Musician Availability", path: "/portal/availability" }
+      { title: "My Availability & Blackouts", path: "/portal/availability" }
     ]
   },
   {

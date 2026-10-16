@@ -1164,7 +1164,7 @@ export default function MusicianPortalOverviewPage() {
               >
                 <span className="flex items-center gap-2">
                   <CalendarOff className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Blackout Dates Calendar</span>
+                  <span>My Availability & Blackouts</span>
                 </span>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
               </Link>
