@@ -7,6 +7,21 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 61,
+    title: "CMS Modernization, Smart Form Wrappers, Portal Section Homepages & Hierarchical Breadcrumbs",
+    category: "CMS Studio, Public Forms, Navigation & Section Architecture",
+    accomplishments: [
+      "Transitioned all 7 public system pages (/home, /gigs, /book, /join, /testimonials, /giving, /contact) to dynamic CMS-managed sections in Pages Studio.",
+      "Engineered smart form wrapper components (AuditionFormSection, ContactFormSection) preserving full Zod validation, bot honeypots, and Firestore writes while exposing headline, pitch, and button copy to CMS Studio.",
+      "Extended SectionTypeEnum to 14 supported section types and populated rich default sections in DEFAULT_SYSTEM_PAGES.",
+      "Built resilient fallback guards across public routes ensuring core application pathways and intake forms never disappear.",
+      "Created dedicated Section Homepages (/portal/sections/[slug]) and an All Sections Directory (/portal/sections) for all 7 portal categories.",
+      "Added structured 'What Can I Do in This Section?' overview highlight cards to each section homepage, establishing a clean foundation for future feature discovery.",
+      "Upgraded PortalBreadcrumb to consistently begin with 'Portal Home' (/portal), followed by an interactive link to the active section homepage, and concluding with tool and sub-page paths.",
+      "Connected sidebar category headers directly to their corresponding section homepages for one-click access.",
+    ],
+  },
+  {
     stage: 60,
     title: "Theme Inheritance, Suggestion Archiving, Blackout & Hiatus Attendance Guardrails & Past Event Locks",
     category: "Member Portal UX, Availability & Governance",
