@@ -249,8 +249,8 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
         description: "Evaluate active user trends, popular studio features, and navigation heatmaps to improve workflows.",
       },
       {
-        title: "Configure Integrations & Navigation",
-        description: "Manage Cloudinary, Twilio SMS, Resend email keys, and customize sidebar navigation section order.",
+        title: "Configure Integrations & Auth Methods",
+        description: "Manage external authentication providers (Google, Apple, Microsoft, GitHub), third-party API keys, and navigation.",
       },
     ],
   },

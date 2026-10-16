@@ -38,6 +38,7 @@ import {
   History,
   SlidersHorizontal,
   KeyRound,
+  Lock,
 } from "lucide-react";
 import { Role } from "@/lib/auth/permissions";
 
@@ -398,6 +399,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     title: "Environment & Integrations",
     href: "/admin/integrations",
     icon: KeyRound,
+    requiredRoles: ["admin"],
+    category: "Business & Admin",
+  },
+  {
+    id: "auth-providers",
+    title: "Authentication Providers Studio",
+    href: "/admin/auth-providers",
+    icon: Lock,
     requiredRoles: ["admin"],
     category: "Business & Admin",
   },

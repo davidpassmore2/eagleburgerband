@@ -7,6 +7,17 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 62,
+    title: "Multi-Provider OAuth Authentication (Apple, Microsoft, GitHub & Google)",
+    category: "Identity, Authentication & Onboarding",
+    accomplishments: [
+      "Hardened client-side OAuth provider integrations for Google, Apple (email/name scopes, locale), Microsoft (multi-tenant common prompt), and GitHub (read:user, user:email).",
+      "Enhanced login page error handling with informative messages for pending provider activations, existing account linking conflicts, and popup blocker warnings.",
+      "Upgraded the Musician Invite Claiming workflow (/claim) with full multi-provider support, allowing new members to claim roster invitations using any of the 4 identity providers.",
+      "Maintained strict invite email matching across all external identity providers to prevent unauthorized roster claims.",
+    ],
+  },
+  {
     stage: 61,
     title: "CMS Modernization, Smart Form Wrappers, Portal Section Homepages & Hierarchical Breadcrumbs",
     category: "CMS Studio, Public Forms, Navigation & Section Architecture",

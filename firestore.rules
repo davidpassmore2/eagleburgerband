@@ -409,7 +409,7 @@ service cloud.firestore {
     }
 
     match /system_config/{configId} {
-      allow read: if isMember();
+      allow read: if configId == 'auth_providers' || isMember();
       allow write: if isAdmin();
     }
 

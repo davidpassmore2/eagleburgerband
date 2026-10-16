@@ -219,6 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new OAuthProvider("apple.com");
       provider.addScope("email");
       provider.addScope("name");
+      provider.setCustomParameters({
+        locale: "en",
+      });
       await signInWithPopup(auth, provider);
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
@@ -235,7 +238,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthNotice(null);
     try {
       const provider = new OAuthProvider("microsoft.com");
-      provider.setCustomParameters({ prompt: "select_account" });
+      provider.setCustomParameters({
+        prompt: "select_account",
+        tenant: "common",
+      });
       await signInWithPopup(auth, provider);
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
