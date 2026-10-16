@@ -30,38 +30,111 @@ interface RehearsalBlackoutCalendarProps {
   onSelectRehearsal?: (rehearsal: RehearsalSession) => void;
 }
 
+const WEEKDAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 export default function RehearsalBlackoutCalendar({
   rehearsals,
   blackouts,
   onSelectRehearsal,
 }: RehearsalBlackoutCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const today = useMemo(() => new Date(), []);
+  const todayDateStr = useMemo(() => {
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const d = String(today.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [today]);
+
+  const [activeDate, setActiveDate] = useState(() => {
+    // If there is an upcoming rehearsal, start at that month
+    const nowStr = today.toISOString().split("T")[0];
+    const nextRehearsal = rehearsals.find((r) => r.date >= nowStr && !r.isCancelled);
+    if (nextRehearsal) {
+      const parts = nextRehearsal.date.split("-");
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+      }
+    }
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+
   const [selectedDayInfo, setSelectedDayInfo] = useState<{
     dateStr: string;
     dayRehearsal?: RehearsalSession;
     dayBlackouts: BlackoutDate[];
   } | null>(null);
 
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth();
+  const currentYear = activeDate.getFullYear();
+  const currentMonth = activeDate.getMonth();
+
+  // Compute available years for dropdown selection
+  const availableYears = useMemo(() => {
+    const currentY = today.getFullYear();
+    const set = new Set<number>([
+      currentY - 3,
+      currentY - 2,
+      currentY - 1,
+      currentY,
+      currentY + 1,
+      currentY + 2,
+      currentY + 3,
+      currentY + 4,
+    ]);
+    rehearsals.forEach((r) => {
+      if (r.date) {
+        const y = parseInt(r.date.split("-")[0], 10);
+        if (!isNaN(y)) set.add(y);
+      }
+    });
+    blackouts.forEach((b) => {
+      if (b.startDate) {
+        const y = parseInt(b.startDate.split("-")[0], 10);
+        if (!isNaN(y)) set.add(y);
+      }
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [rehearsals, blackouts, today]);
 
   // Month navigation
+  const handleMonthChange = (newMonth: number) => {
+    setActiveDate(new Date(currentYear, newMonth, 1));
+  };
+
+  const handleYearChange = (newYear: number) => {
+    setActiveDate(new Date(newYear, currentMonth, 1));
+  };
+
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+    setActiveDate(new Date(currentYear, currentMonth - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+    setActiveDate(new Date(currentYear, currentMonth + 1, 1));
   };
 
-  const handleToday = () => {
-    setCurrentDate(new Date());
+  const handleGoToday = () => {
+    setActiveDate(new Date(today.getFullYear(), today.getMonth(), 1));
   };
 
   // Calendar matrix calculation
   const calendarDays = useMemo(() => {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sun
     const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
     const days: Array<{
       dayNumber: number;
       dateStr: string;
@@ -69,12 +142,9 @@ export default function RehearsalBlackoutCalendar({
       isToday: boolean;
     }> = [];
 
-    const todayStr = new Date().toISOString().split("T")[0];
-
     // Previous month padding
-    const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
     for (let i = firstDayIndex - 1; i >= 0; i--) {
-      const prevD = prevMonthDays - i;
+      const prevD = daysInPrevMonth - i;
       const prevM = currentMonth === 0 ? 12 : currentMonth;
       const prevY = currentMonth === 0 ? currentYear - 1 : currentYear;
       const dateStr = `${prevY}-${String(prevM).padStart(2, "0")}-${String(prevD).padStart(2, "0")}`;
@@ -82,7 +152,7 @@ export default function RehearsalBlackoutCalendar({
         dayNumber: prevD,
         dateStr,
         isCurrentMonth: false,
-        isToday: dateStr === todayStr,
+        isToday: dateStr === todayDateStr,
       });
     }
 
@@ -93,7 +163,7 @@ export default function RehearsalBlackoutCalendar({
         dayNumber: d,
         dateStr,
         isCurrentMonth: true,
-        isToday: dateStr === todayStr,
+        isToday: dateStr === todayDateStr,
       });
     }
 
@@ -107,12 +177,12 @@ export default function RehearsalBlackoutCalendar({
         dayNumber: i,
         dateStr,
         isCurrentMonth: false,
-        isToday: dateStr === todayStr,
+        isToday: dateStr === todayDateStr,
       });
     }
 
     return days;
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, todayDateStr]);
 
   // Month Statistics
   const monthStats = useMemo(() => {
@@ -134,78 +204,238 @@ export default function RehearsalBlackoutCalendar({
     };
   }, [rehearsals, blackouts, currentYear, currentMonth]);
 
-  const monthLabel = currentDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = MONTH_NAMES[currentMonth] + " " + currentYear;
 
   return (
     <div className="space-y-4">
-      {/* Calendar Header Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 flex items-center gap-1">
+      {/* Calendar Header with Month/Year Dropdowns & Date Controls */}
+      <div
+        suppressHydrationWarning
+        style={{
+          backgroundColor: "var(--ebb-surface)",
+          borderColor: "var(--ebb-border)",
+        }}
+        className="border rounded-2xl p-4 sm:p-5 shadow flex flex-col justify-between"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-white/5">
+          {/* Left: Icon + Month Dropdown + Year Dropdown */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              suppressHydrationWarning
+              style={{
+                backgroundColor: "var(--ebb-surface-muted)",
+                borderColor: "var(--ebb-border)",
+                color: "var(--ebb-primary)",
+              }}
+              className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0"
+            >
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+
+            {/* Month Select Dropdown */}
+            <select
+              value={currentMonth}
+              onChange={(e) => handleMonthChange(parseInt(e.target.value, 10))}
+              aria-label="Select month"
+              className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-white/20 rounded-lg px-2.5 py-1 text-xs sm:text-sm font-extrabold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-yellow-400 transition"
+            >
+              {MONTH_NAMES.map((name, idx) => (
+                <option key={name} value={idx} className="bg-slate-900 text-white">
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            {/* Year Select Dropdown */}
+            <select
+              value={currentYear}
+              onChange={(e) => handleYearChange(parseInt(e.target.value, 10))}
+              aria-label="Select year"
+              className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-white/20 rounded-lg px-2 py-1 text-xs sm:text-sm font-extrabold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-yellow-400 transition"
+            >
+              {availableYears.map((yr) => (
+                <option key={yr} value={yr} className="bg-slate-900 text-white">
+                  {yr}
+                </option>
+              ))}
+            </select>
+
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 hidden md:inline-flex items-center gap-1">
               <Palmtree className="w-3 h-3 text-emerald-400" /> Availability & Blackouts
             </span>
-            <span className="text-xs text-slate-400 font-mono">
-              {blackouts.length} Active Blackout Windows
-            </span>
           </div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4 text-yellow-400" />
-            Rehearsal & Musician Blackout Calendar
-          </h3>
-          <p className="text-xs text-slate-400">
-            View scheduled band rehearsals alongside member out-of-town blackouts to gauge rehearsal quorum.
-          </p>
-        </div>
 
-        {/* Month Navigation Controls */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-          <button
-            type="button"
-            onClick={handleToday}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition"
-          >
-            Today
-          </button>
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1">
+          {/* Right: Today Button + Prev/Next Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Today Reset Button */}
+            <button
+              type="button"
+              onClick={handleGoToday}
+              className={`text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 border ${
+                currentYear === today.getFullYear() && currentMonth === today.getMonth()
+                  ? "bg-white/5 border-white/5 text-slate-400 cursor-default"
+                  : "bg-white/10 hover:bg-white/20 border-white/10 text-white hover:text-yellow-400 shadow-sm"
+              }`}
+              title="Reset date controls to today's active month"
+            >
+              <span>Today</span>
+            </button>
+
+            {/* Prev Month */}
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-              title="Previous month"
+              aria-label="Previous Month"
+              className="p-1.5 rounded-lg border border-white/5 hover:border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition"
+              title="Previous Month"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-bold text-white px-2 min-w-32 text-center">
-              {monthLabel}
-            </span>
+
+            {/* Next Month */}
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-              title="Next month"
+              aria-label="Next Month"
+              className="p-1.5 rounded-lg border border-white/5 hover:border-white/15 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition"
+              title="Next Month"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* Days of Week Row */}
+        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+          {WEEKDAY_NAMES.map((name) => (
+            <div
+              key={name}
+              className="text-[10px] sm:text-xs font-mono font-bold uppercase text-slate-400 py-1"
+            >
+              {name}
+            </div>
+          ))}
+        </div>
+
+        {/* Month Day Grid */}
+        <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
+          {calendarDays.map((cell) => {
+            const dayRehearsal = rehearsals.find((r) => r.date === cell.dateStr);
+            const dayBlackouts = getBlackoutsForDate(cell.dateStr, blackouts);
+            const hasActivity = Boolean(dayRehearsal || dayBlackouts.length > 0);
+
+            return (
+              <button
+                key={cell.dateStr}
+                type="button"
+                onClick={() => {
+                  setSelectedDayInfo({
+                    dateStr: cell.dateStr,
+                    dayRehearsal,
+                    dayBlackouts,
+                  });
+                }}
+                className={`group relative rounded-xl transition select-none min-h-[5.5rem] sm:min-h-[6.5rem] p-1.5 sm:p-2 flex flex-col items-start justify-start border border-white/5 text-left ${
+                  !cell.isCurrentMonth
+                    ? "opacity-30 hover:opacity-50"
+                    : "opacity-100"
+                } ${
+                  hasActivity
+                    ? "cursor-pointer hover:bg-white/10 ring-1 ring-white/10 hover:ring-white/30"
+                    : "cursor-pointer hover:bg-white/5"
+                } ${
+                  cell.isToday
+                    ? "font-black bg-white/5 ring-1 ring-yellow-400/50"
+                    : ""
+                }`}
+                title={
+                  hasActivity
+                    ? `${cell.dateStr}: ${dayRehearsal ? "Rehearsal scheduled. " : ""}${dayBlackouts.length} blackout(s). Click to view details`
+                    : cell.dateStr
+                }
+              >
+                {/* Cell Header: Day Number and Indicators */}
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span
+                    className={`text-xs sm:text-sm font-mono ${
+                      cell.isToday
+                        ? "text-yellow-400 font-bold"
+                        : cell.isCurrentMonth
+                        ? "text-slate-200 font-bold"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {cell.dayNumber}
+                  </span>
+
+                  {dayBlackouts.length > 0 && (
+                    <span
+                      className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
+                      title={`${dayBlackouts.length} musicians on blackout`}
+                    >
+                      <Palmtree className="w-2.5 h-2.5 text-amber-400" />
+                      <span>{dayBlackouts.length}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Day Content Badges */}
+                <div className="w-full space-y-1 overflow-hidden mt-0.5">
+                  {dayRehearsal && (
+                    <div
+                      className={`w-full text-left truncate text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded border transition-transform group-hover:scale-[1.02] flex items-center justify-between gap-1 ${
+                        dayRehearsal.isCancelled
+                          ? "bg-red-950/40 text-red-300 border-red-500/30 line-through"
+                          : "bg-yellow-400/20 text-yellow-300 border-yellow-400/40"
+                      }`}
+                    >
+                      <span className="truncate flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 shrink-0" />
+                        <span>{formatNonMilitaryTime(dayRehearsal.startTime, false)}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Blackout Member Name Badges */}
+                  {dayBlackouts.length > 0 && (
+                    <div className="w-full truncate text-[9px] font-mono text-slate-400 group-hover:text-slate-300 px-0.5">
+                      {dayBlackouts.slice(0, 2).map((b) => b.userName.split(" ")[0]).join(", ")}
+                      {dayBlackouts.length > 2 && ` +${dayBlackouts.length - 2}`}
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Month KPI Strip */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+      {/* Month KPI Summary Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-xl p-3 shadow-xs"
+        >
           <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-            <Music className="w-3 h-3 text-yellow-400" /> Rehearsals in {monthLabel.split(" ")[0]}
+            <Music className="w-3 h-3 text-yellow-400" /> Rehearsals in {MONTH_NAMES[currentMonth]}
           </div>
           <div className="text-lg font-bold text-white font-mono mt-0.5">
             {monthStats.rehearsalCount}
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+        <div
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-xl p-3 shadow-xs"
+        >
           <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" /> Rehearsals with Blackouts
           </div>
@@ -214,107 +444,20 @@ export default function RehearsalBlackoutCalendar({
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+        <div
+          suppressHydrationWarning
+          style={{
+            backgroundColor: "var(--ebb-surface)",
+            borderColor: "var(--ebb-border)",
+          }}
+          className="border rounded-xl p-3 shadow-xs"
+        >
           <div className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
             <Palmtree className="w-3 h-3" /> Total Registered Blackouts
           </div>
           <div className="text-lg font-bold text-emerald-400 font-mono mt-0.5">
             {monthStats.totalBlackoutRecords}
           </div>
-        </div>
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        {/* Day-of-week header */}
-        <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-950/70 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider py-2">
-          <span>Sun</span>
-          <span>Mon</span>
-          <span>Tue</span>
-          <span>Wed</span>
-          <span>Thu</span>
-          <span>Fri</span>
-          <span>Sat</span>
-        </div>
-
-        {/* Days grid */}
-        <div className="grid grid-cols-7 divide-x divide-y divide-slate-800/60">
-          {calendarDays.map((cell) => {
-            const dayRehearsal = rehearsals.find((r) => r.date === cell.dateStr);
-            const dayBlackouts = getBlackoutsForDate(cell.dateStr, blackouts);
-            const isClickable = Boolean(dayRehearsal || dayBlackouts.length > 0);
-
-            return (
-              <div
-                key={cell.dateStr}
-                onClick={() => {
-                  if (isClickable) {
-                    setSelectedDayInfo({
-                      dateStr: cell.dateStr,
-                      dayRehearsal,
-                      dayBlackouts,
-                    });
-                  }
-                }}
-                className={`min-h-[100px] p-2 flex flex-col justify-between transition group ${
-                  cell.isCurrentMonth ? "bg-slate-900" : "bg-slate-950/40 opacity-40"
-                } ${cell.isToday ? "ring-2 ring-yellow-400/50 inset-0" : ""} ${
-                  isClickable ? "cursor-pointer hover:bg-slate-800/50" : ""
-                }`}
-              >
-                {/* Day Number and Badges */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-mono font-bold ${
-                      cell.isToday
-                        ? "text-yellow-400 bg-yellow-400/20 px-1.5 py-0.2 rounded"
-                        : "text-slate-400"
-                    }`}
-                  >
-                    {cell.dayNumber}
-                  </span>
-
-                  {dayBlackouts.length > 0 && (
-                    <span
-                      className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-0.5"
-                      title={`${dayBlackouts.length} musicians away`}
-                    >
-                      <Palmtree className="w-2.5 h-2.5" />
-                      <span>{dayBlackouts.length}</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Day Events */}
-                <div className="space-y-1 my-1">
-                  {dayRehearsal && (
-                    <div
-                      className={`p-1 rounded text-[10px] font-medium leading-tight border transition ${
-                        dayRehearsal.isCancelled
-                          ? "bg-red-950/40 text-red-300 border-red-500/30 line-through"
-                          : "bg-yellow-400/15 text-yellow-300 border-yellow-400/30 font-bold"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-2.5 h-2.5 shrink-0" />
-                        <span className="truncate">{formatNonMilitaryTime(dayRehearsal.startTime, false)} Rehearsal</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Blackout summary names preview */}
-                  {dayBlackouts.length > 0 && (
-                    <div className="text-[9px] text-slate-400 truncate">
-                      {dayBlackouts.map((b) => b.userName.split(" ")[0]).join(", ")}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom hint */}
-                <div className="h-1" />
-              </div>
-            );
-          })}
         </div>
       </div>
 

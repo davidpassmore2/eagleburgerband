@@ -82,3 +82,28 @@ This walkthrough validates the comment liking workflow and interactive member to
    - Verify the custom modal appears: `"Remove My Blackout Period?"`.
    - Click **"Remove Blackout"** and confirm it is removed from your calendar.
 
+---
+
+### Scenario 7: Band Rehearsals Hub Tabs, Admin Guard & Calendar View
+1. **Navigate to Band Rehearsals Hub:**
+   - Visit `/portal/rehearsals`.
+2. **Verify Tab Titles:**
+   - Confirm Tab 1 is titled **"My RSVPs"**.
+   - Confirm Tab 2 is titled **"Rehearsal Locations"**.
+   - Confirm Tab 3 is titled **"All-Member Blackout Calendar"**.
+3. **Verify Recurrence Tab RBAC Guardrails:**
+   - When signed in with the `admin` role:
+     - Verify Tab 4 appears titled **"Recurrence"**.
+     - Click **"Recurrence"** and verify the weekly rehearsal schedule settings form renders.
+   - When signed in as a standard `member` or `guest`:
+     - Verify the **"Recurrence"** tab button is completely omitted from the navigation bar.
+     - Verify direct state tampering cannot render the settings form.
+4. **Inspect the Redesigned All-Member Blackout Calendar:**
+   - Click on the **"All-Member Blackout Calendar"** tab.
+   - Verify the calendar now uses the pleasing month-view grid layout from the Gig Calendar & RSVPs page (`PortalMonthCalendar` design):
+     - Month and year `<select>` jump controls with dynamic year selection.
+     - `Today` quick reset button and month chevrons (`<` and `>`).
+     - Spacious date cells with day numbers, "Today" gold ring highlights, rehearsal event pills, and blackout indicators with member name previews.
+     - 3-card monthly KPI summary strip below the grid (Rehearsals in Month, Rehearsals with Blackouts, Total Registered Blackouts).
+     - Clicking any active date opens the date detail inspection modal.
+

@@ -106,7 +106,33 @@ The availability hub was previously titled "Musician Availability" with coordina
 
 ---
 
-## 5. Verification & Testing
+## 5. Band Rehearsals Hub Redesign & Admin Recurrence Guardrails
+
+### Overview
+The Band Rehearsals Hub (`/portal/rehearsals`) was updated to align with the member-centric workflow, secure operational configuration, and elevate calendar visuals:
+
+### Enhancements
+1. **Tab Structure Alignment**:
+   - Tab 1: **"My RSVPs"** (formerly *"Rehearsal Schedule & RSVPs"*) — Direct member focus on rehearsal calls, personal attendance plans, and section roster breakdowns.
+   - Tab 2: **"Rehearsal Locations"** (formerly *"Locations & Map Pins"*) — Dedicated venue directory with Leaflet interactive map pins, parking instructions, and acoustic notes.
+   - Tab 3: **"All-Member Blackout Calendar"** — Preserved title; maps member unavailabilities against rehearsal dates.
+   - Tab 4: **"Recurrence"** (formerly *"Weekly Recurring Settings"*) — Configures weekly downbeat days, default start/end times, default venue, and standard rehearsal agendas.
+2. **Role-Based Access Control (Admin-Only Recurrence Guard)**:
+   - Evaluates `isAdmin(profile)`.
+   - The **"Recurrence"** navigation tab is hidden from non-admin musicians, preventing unauthorized access.
+   - The tab content block itself (`activeTab === "settings" && isAdmin(profile)`) strictly rejects non-admin rendering, ensuring complete UI/component-level RBAC protection (Rule 3).
+3. **Pleasing Monthly Calendar Redesign ([`src/components/portal/RehearsalBlackoutCalendar.tsx`](file:///c:/repos/eagleburgerband/src/components/portal/RehearsalBlackoutCalendar.tsx))**:
+   - Replaced basic border layout with the modern, theme-aware calendar system established in `PortalMonthCalendar.tsx` (`/portal/gigs`).
+   - Features custom month and year `<select>` jump controls with dynamic year bounds.
+   - Displays a clean `Today` quick reset button, previous/next chevron navigation, and weekday abbreviation rows.
+   - Expanded grid cells (`min-h-[5.5rem] sm:min-h-[6.5rem]`) with day-number styling, active "Today" gold ring highlights, and high-visibility activity badges:
+     - Gold badges for scheduled band rehearsals (with time and crossed-out cancelled styling).
+     - Amber palm-tree badges displaying the count of musicians unavailable on that date, plus member name preview chips.
+   - 3-card monthly KPI summary strip below the calendar displaying rehearsals in the active month, rehearsals with blackout conflicts, and total registered blackouts.
+
+---
+
+## 6. Verification & Testing
 
 * **TypeScript Compilation**: `npx tsc --noEmit` verified clean with `0` errors.
 * **Next.js Production Build**: `npm run build` compiled 82 static and dynamic pages with 0 prerendering issues.

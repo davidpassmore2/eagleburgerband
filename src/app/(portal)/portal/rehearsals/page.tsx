@@ -47,6 +47,7 @@ import RehearsalBlackoutCalendar from "@/components/portal/RehearsalBlackoutCale
 import { isDateInUserBlackout } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
 import OnHiatusChip from "@/components/portal/OnHiatusChip";
+import { isAdmin } from "@/lib/auth/permissions";
 import {
   Music2,
   Calendar,
@@ -818,7 +819,7 @@ export default function RehearsalsPage() {
           }`}
         >
           <Calendar className="w-4 h-4" />
-          <span>Rehearsal Schedule &amp; RSVPs</span>
+          <span>My RSVPs</span>
         </button>
 
         <button
@@ -831,7 +832,7 @@ export default function RehearsalsPage() {
           }`}
         >
           <MapPin className="w-4 h-4" />
-          <span>Locations &amp; Map Pins</span>
+          <span>Rehearsal Locations</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-black/20">
             {locations.length}
           </span>
@@ -853,18 +854,20 @@ export default function RehearsalsPage() {
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => startTransition(() => setActiveTab("settings"))}
-          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 shrink-0 ${
-            activeTab === "settings"
-              ? "bg-yellow-400 text-slate-950 shadow-md"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>Weekly Recurring Settings</span>
-        </button>
+        {isAdmin(profile) && (
+          <button
+            type="button"
+            onClick={() => startTransition(() => setActiveTab("settings"))}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 shrink-0 ${
+              activeTab === "settings"
+                ? "bg-yellow-400 text-slate-950 shadow-md"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Recurrence</span>
+          </button>
+        )}
       </div>
 
       {/* TAB 1: PRACTICE SCHEDULE & ATTENDANCE */}
@@ -1758,15 +1761,15 @@ export default function RehearsalsPage() {
         />
       )}
 
-      {/* TAB 4: RECURRING SCHEDULE SETTINGS */}
-      {activeTab === "settings" && (
+      {/* TAB 4: RECURRING SCHEDULE SETTINGS (ADMIN ONLY) */}
+      {activeTab === "settings" && isAdmin(profile) && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 max-w-2xl shadow-xl">
           <div className="border-b border-slate-800 pb-3">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
               Admin &amp; Operations
             </span>
             <h2 className="text-lg font-bold text-white mt-1">
-              Weekly Recurring Rehearsal Schedule
+              Recurrence Settings
             </h2>
             <p className="text-xs text-slate-400">
               Configure the default rehearsal day, times, and venue for the band.

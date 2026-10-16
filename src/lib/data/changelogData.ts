@@ -18,6 +18,9 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Hardened Firestore Security Rules for comments, strictly scoping member mutations to likes, likedBy, and updatedAt using addsOrRemovesOnlyMe security validation.",
       "Redesigned the Musician Availability section to be strictly member-focused and renamed to 'My Availability & Blackouts' across workspace registry, portal navigation, PWA manifest shortcuts, dashboard quick links, section overviews, and help documentation.",
       "Transformed /portal/availability into a personal schedule command center featuring 4 personal schedule telemetry cards (My Dispatch Status, My Blackout Windows, Gig Conflicts, Band Performances), member-centric actions ('Log My Blackout Range', 'Remove My Blackout Period'), and self-service hiatus controls.",
+      "Refactored Band Rehearsals Hub (/portal/rehearsals) navigation tabs to 'My RSVPs', 'Rehearsal Locations', 'All-Member Blackout Calendar', and 'Recurrence'.",
+      "Secured the 'Recurrence' tab to be visible and accessible exclusively by administrators (isAdmin guardrails).",
+      "Redesigned the Rehearsal & Musician Blackout Calendar using the expanded, theme-aware monthly grid layout from the Gig Calendar, including month/year jump controls, full-height activity cards, and rehearsal quorum conflict indicators.",
     ],
   },
   {
