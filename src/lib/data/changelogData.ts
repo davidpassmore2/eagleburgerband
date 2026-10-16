@@ -11,10 +11,14 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
     title: "Multi-Provider OAuth Authentication (Apple, Microsoft, GitHub & Google)",
     category: "Identity, Authentication & Onboarding",
     accomplishments: [
+      "Built the Authentication Providers Studio (/admin/auth-providers) under Business & Admin, allowing administrators to toggle visibility of Google, Apple, Microsoft, GitHub, Magic Link, and Password authentication methods with lockout prevention and live modal preview.",
+      "Engineered the Centralized Finance Hub (/portal/finance) with tabbed navigation unifying Treasury Overview, Expense Reimbursements, Charitable Giving, and the Financial Ledger into a single, cohesive experience.",
+      "Provided member-facing financial transparency, allowing musicians to view overall treasury health, reserve balances, and community philanthropic investments.",
+      "Enabled members to submit expense reimbursement claims and suggest charitable nonprofit causes with automatic Display Name attribution.",
+      "Empowered treasurers and band managers to review queues, approve payouts, and create new reimbursement or donation submissions on behalf of other roster members.",
       "Hardened client-side OAuth provider integrations for Google, Apple (email/name scopes, locale), Microsoft (multi-tenant common prompt), and GitHub (read:user, user:email).",
       "Enhanced login page error handling with informative messages for pending provider activations, existing account linking conflicts, and popup blocker warnings.",
-      "Upgraded the Musician Invite Claiming workflow (/claim) with full multi-provider support, allowing new members to claim roster invitations using any of the 4 identity providers.",
-      "Maintained strict invite email matching across all external identity providers to prevent unauthorized roster claims.",
+      "Upgraded the Musician Invite Claiming workflow (/claim) with dynamic multi-provider claim buttons and strict email verification matching.",
     ],
   },
   {

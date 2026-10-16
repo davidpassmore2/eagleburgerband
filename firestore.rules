@@ -311,7 +311,11 @@ service cloud.firestore {
 
     match /donations/{donationId} {
       allow read: if isMember();
-      allow write: if hasAnyRole(['treasurer', 'community_manager']);
+      allow create: if hasAnyRole(['treasurer', 'community_manager'])
+        || (isMember()
+            && request.resource.data.status == 'suggested'
+            && request.resource.data.suggestedByUid == request.auth.uid);
+      allow update, delete: if hasAnyRole(['treasurer', 'community_manager']);
     }
 
     match /testimonials/{testimonialId} {

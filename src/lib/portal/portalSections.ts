@@ -208,16 +208,20 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
     },
     whatCanIDo: [
       {
-        title: "Submit Expense Reimbursements",
-        description: "Submit receipts for band gear, trailer maintenance, supplies, or refreshments and track reimbursement status.",
+        title: "View Treasury & Reserve Health",
+        description: "Review current operating fund balances, baseline reserves, season inflows/outflows, and transparent financial metrics.",
       },
       {
-        title: "Review Band Financial Ledger",
-        description: "Authorized treasurers can track gig payouts, operational expenses, merchandise revenue, and net balances.",
+        title: "Submit & Track Expense Reimbursements",
+        description: "Submit receipts for band repairs, travel fuel, lunch, or supplies with your Display Name. Treasurers can review, approve, or submit on behalf of members.",
       },
       {
-        title: "Oversee Community Giving",
-        description: "Track charitable donations and fundraising initiatives benefiting regional Pittsburgh grassroots causes.",
+        title: "Suggest & Support Charitable Causes",
+        description: "Suggest local Pittsburgh grassroots organizations and youth music programs for band philanthropy, and explore funded beneficiaries.",
+      },
+      {
+        title: "Reconcile Financial Ledger & Settlements",
+        description: "Authorized treasurers can execute gig payout splits, record manual ledger transactions, and audit the complete history.",
       },
     ],
   },
