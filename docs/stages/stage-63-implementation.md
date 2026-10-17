@@ -143,12 +143,28 @@ Per member portal UX refinement, the **Member Season Analytics & Standing** sect
    - Cleaned up imports and unnecessary component overhead, keeping the dashboard focused on immediate next events and functional hubs.
 2. **Attendance Workstation Integration ([`src/app/(portal)/portal/checkin/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/checkin/page.tsx))**:
    - Embedded `MemberAnalyticsCard` right beneath the Active Call Sheet check-in hero card.
-   - Added subscriptions to `gig_ledgers` (calculating personal earnings), `reimbursements` (tracking pending vs paid expense claims), `tunes` (active charts count), `suggestions` (community ideas count), and individual `rsvps` across gigs.
-   - Preserves complete telemetry for **Shows Played**, **Reliability Rate**, **Upcoming Roster Commitment**, **Compensation & Claims**, and the real-time **Ironclad Roster / Reliability Standing Badge**.
+   - Added subscriptions to `rehearsals` (calculating rehearsal participation), `gig_ledgers` (calculating personal earnings), `reimbursements` (tracking pending vs paid expense claims), `tunes` (active charts count), `suggestions` (community ideas count), and individual `rsvps` across gigs.
 
 ---
 
-## 7. Verification & Testing
+## 7. Casual & Supportive Member Participation Metrics
+
+### Overview
+In alignment with the Eagleburger Band's casual, community-first ensemble culture, participation metrics were redesigned to be welcoming and positive rather than punitive, harsh, or regimented:
+1. **Participation vs. Reliability**: Replaced all instances of "reliability", "reliability rate", and "reliability scores" with "participation", "participation rate", and "participation standing".
+2. **Elimination of Excused Absences & Missed Event Metrics**: Removed all display of "Excused Absences" and missed events as metrics. Musicians are not penalized or confronted with negative tallies for having personal schedule conflicts.
+3. **Rehearsal Participation Tracking**: Replaced the absence card with positive **Rehearsal Participation** metrics tracking practices, woodshed sessions, and rehearsal RSVP engagement.
+4. **Supportive Status Badging**: Replaced punitive badge labels (`"Absent"` in error-red and `"Excused"`) with respectful, neutral status indicators (`"Away (Notified)"` and `"Not Attended"` in slate styling, and `"Arrived"` for late check-ins).
+5. **Community-Focused Standing Badges**: Updated standing tiers in [`MemberAnalyticsCard.tsx`](file:///c:/repos/eagleburgerband/src/components/portal/MemberAnalyticsCard.tsx) to celebrate music-making rather than corporate roster priority:
+   - `Core Performer` (>=90%): "Outstanding participation across band performances and rehearsals."
+   - `Active Regular` (>=75%): "Consistent participant with regular band attendance."
+   - `Casual Contributor` (>=50%): "Active contributor jamming when availability allows."
+   - `Welcome Guest` (<50%): "Joining in when schedule permits."
+6. **Rehearsals Hub Integration**: Connected `MemberAnalyticsCard` footer to `/portal/rehearsals`, displaying the member's rehearsal attendance count and direct RSVP link.
+
+---
+
+## 8. Verification & Testing
 
 * **TypeScript Compilation**: `npx tsc --noEmit` verified clean with `0` errors.
 * **Next.js Production Build**: `npm run build` compiled 82 static and dynamic pages with 0 prerendering issues.

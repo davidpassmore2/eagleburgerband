@@ -37,7 +37,14 @@ import {
   XCircle,
   HelpCircle,
   Radio,
+  Music2,
 } from "lucide-react";
+import {
+  RehearsalSession,
+  RehearsalSessionSchema,
+  RehearsalRsvp,
+  RehearsalRsvpSchema,
+} from "@/lib/schema/rehearsal";
 
 interface GigItem {
   id: string;
@@ -75,6 +82,8 @@ export default function MemberSelfCheckInPage() {
   );
 
   const [gigs, setGigs] = useState<GigItem[]>([]);
+  const [rehearsals, setRehearsals] = useState<RehearsalSession[]>([]);
+  const [rehearsalRsvps, setRehearsalRsvps] = useState<Record<string, RehearsalRsvp>>({});
   const [userCheckIns, setUserCheckIns] = useState<Record<string, CheckInRecord>>({});
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
   const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
@@ -138,6 +147,38 @@ export default function MemberSelfCheckInPage() {
       }
     );
 
+    // Listen to rehearsal sessions and member rehearsal RSVPs
+    const unsubRehearsals = onSnapshot(
+      collection(db, "rehearsals"),
+      async (snapshot) => {
+        const list: RehearsalSession[] = [];
+        snapshot.forEach((d) => {
+          const parsed = RehearsalSessionSchema.safeParse({ id: d.id, ...d.data() });
+          if (parsed.success) list.push(parsed.data);
+        });
+        setRehearsals(list);
+
+        const rsvpMap: Record<string, RehearsalRsvp> = {};
+        await Promise.all(
+          list.map(async (sess) => {
+            try {
+              const rDocSnap = await getDoc(doc(db, "rehearsals", sess.id, "rsvps", currentUserId));
+              if (rDocSnap.exists()) {
+                const parsedRsvp = RehearsalRsvpSchema.safeParse(rDocSnap.data());
+                if (parsedRsvp.success) {
+                  rsvpMap[sess.id] = parsedRsvp.data;
+                }
+              }
+            } catch (err) {
+              console.warn(`Notice: rehearsal rsvp note for ${sess.id}:`, err);
+            }
+          })
+        );
+        setRehearsalRsvps(rsvpMap);
+      },
+      (err) => console.warn("Notice: rehearsals subscriber note:", err)
+    );
+
     // Listen to financial ledgers to compute personal earnings
     const unsubLedgers = onSnapshot(
       collection(db, "gig_ledgers"),
@@ -196,6 +237,7 @@ export default function MemberSelfCheckInPage() {
 
     return () => {
       unsubGigs();
+      unsubRehearsals();
       unsubLedgers();
       unsubTunes();
       unsubSuggestions();
@@ -217,12 +259,24 @@ export default function MemberSelfCheckInPage() {
     return upcoming[0] || gigs[0] || null;
   }, [gigs]);
 
-  // Attendance metrics calculation
+  // Rehearsal participation calculation (positive practice engagement)
+  const rehearsalParticipation = useMemo(() => {
+    let attendedCount = 0;
+    Object.values(rehearsalRsvps).forEach((r) => {
+      if (r.status === "attending") {
+        attendedCount++;
+      }
+    });
+
+    return {
+      attendedCount,
+      totalSessions: rehearsals.length,
+    };
+  }, [rehearsals, rehearsalRsvps]);
+
+  // Attendance metrics calculation (positive, casual community culture)
   const metrics = useMemo(() => {
     let attendedCount = 0;
-    let lateCount = 0;
-    let excusedCount = 0;
-    let missedCount = 0;
     let currentStreak = 0;
 
     // Past gigs sorted chronologically
@@ -235,29 +289,23 @@ export default function MemberSelfCheckInPage() {
 
     pastGigs.forEach((gig) => {
       const record = userCheckIns[gig.id];
-      if (record?.status === "checked_in") {
+      if (record?.status === "checked_in" || record?.status === "late") {
         attendedCount++;
         if (streakActive) currentStreak++;
-      } else if (record?.status === "late") {
-        lateCount++;
-        if (streakActive) currentStreak++;
       } else if (record?.status === "excused") {
-        excusedCount++;
-        // Excused does not break streak
+        // Notified absence preserves personal participation streak
       } else {
-        missedCount++;
         streakActive = false;
       }
     });
 
-    const totalEvaluated = attendedCount + lateCount + missedCount;
-    const ratePercent = totalEvaluated > 0 ? Math.round(((attendedCount + lateCount) / totalEvaluated) * 100) : 100;
+    const ratePercent =
+      pastGigs.length > 0
+        ? Math.round((attendedCount / pastGigs.length) * 100)
+        : 100;
 
     return {
       attendedCount,
-      lateCount,
-      excusedCount,
-      missedCount,
       currentStreak,
       ratePercent,
     };
@@ -335,19 +383,19 @@ export default function MemberSelfCheckInPage() {
       case "late":
         return (
           <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-            <Clock className="w-3 h-3" /> Late Arrival
+            <Clock className="w-3 h-3" /> Arrived
           </span>
         );
       case "excused":
         return (
-          <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-            <HelpCircle className="w-3 h-3" /> Excused
+          <span className="text-[10px] font-bold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+            <HelpCircle className="w-3 h-3 text-slate-400" /> Away (Notified)
           </span>
         );
       case "no_show":
         return (
-          <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-            <XCircle className="w-3 h-3" /> Absent
+          <span className="text-[10px] font-bold text-slate-400 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+            <XCircle className="w-3 h-3 text-slate-500" /> Not Attended
           </span>
         );
       default:
@@ -487,7 +535,7 @@ export default function MemberSelfCheckInPage() {
         </div>
       )}
 
-      {/* Member Season Analytics & Standing */}
+      {/* Member Season Participation & Standing */}
       <MemberAnalyticsCard
         profile={userProfile}
         gigs={gigs}
@@ -496,17 +544,18 @@ export default function MemberSelfCheckInPage() {
         reimbursements={personalReimbursements}
         tuneCount={tuneCount}
         suggestionCount={suggestionCount}
+        rehearsalCount={rehearsalParticipation.attendedCount}
       />
 
       {/* Attendance Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1 shadow-sm">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase font-bold">Attendance Rate</span>
+            <span className="text-[11px] font-mono uppercase font-bold">Participation Rate</span>
             <Award className="w-4 h-4 text-yellow-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{metrics.ratePercent}%</div>
-          <div className="text-[11px] text-slate-400">Historical show reliability</div>
+          <div className="text-[11px] text-slate-400">Band performance involvement</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1 shadow-sm">
@@ -523,20 +572,23 @@ export default function MemberSelfCheckInPage() {
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1 shadow-sm">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase font-bold">Shows Performed</span>
+            <span className="text-[11px] font-mono uppercase font-bold">Shows Played</span>
             <CheckCheck className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">{metrics.attendedCount}</div>
-          <div className="text-[11px] text-slate-400">Total checked-in gigs</div>
+          <div className="text-[11px] text-slate-400">Checked-in performances</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-1 shadow-sm">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-mono uppercase font-bold">Excused Absences</span>
-            <HelpCircle className="w-4 h-4 text-sky-400" />
+            <span className="text-[11px] font-mono uppercase font-bold">Rehearsal Participation</span>
+            <Music2 className="w-4 h-4 text-sky-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-sky-400">{metrics.excusedCount}</div>
-          <div className="text-[11px] text-slate-400">Recorded with prior notice</div>
+          <div className="text-2xl sm:text-3xl font-black text-sky-400 flex items-center gap-1.5">
+            {rehearsalParticipation.attendedCount}
+            <span className="text-xs font-normal text-slate-400">attended</span>
+          </div>
+          <div className="text-[11px] text-slate-400">Practices &amp; jam sessions</div>
         </div>
       </div>
 
