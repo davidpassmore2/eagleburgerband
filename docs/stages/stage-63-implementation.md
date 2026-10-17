@@ -132,7 +132,23 @@ The Band Rehearsals Hub (`/portal/rehearsals`) was updated to align with the mem
 
 ---
 
-## 6. Verification & Testing
+## 6. Member Season Analytics & Standing Centralization
+
+### Overview
+Per member portal UX refinement, the **Member Season Analytics & Standing** section was relocated from the Member Home Page (`/portal`) directly into the **My Attendance & Check-In** workstation (`/portal/checkin`). This eliminates visual clutter on the home dashboard while centralizing all attendance metrics, reliability scoring, roster standing, and compensation tracking into the member's dedicated attendance workflow.
+
+### Architecture & Implementation
+1. **Home Page Streamlining ([`src/app/(portal)/portal/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/page.tsx))**:
+   - Removed `MemberAnalyticsCard` from the home page layout.
+   - Cleaned up imports and unnecessary component overhead, keeping the dashboard focused on immediate next events and functional hubs.
+2. **Attendance Workstation Integration ([`src/app/(portal)/portal/checkin/page.tsx`](file:///c:/repos/eagleburgerband/src/app/(portal)/portal/checkin/page.tsx))**:
+   - Embedded `MemberAnalyticsCard` right beneath the Active Call Sheet check-in hero card.
+   - Added subscriptions to `gig_ledgers` (calculating personal earnings), `reimbursements` (tracking pending vs paid expense claims), `tunes` (active charts count), `suggestions` (community ideas count), and individual `rsvps` across gigs.
+   - Preserves complete telemetry for **Shows Played**, **Reliability Rate**, **Upcoming Roster Commitment**, **Compensation & Claims**, and the real-time **Ironclad Roster / Reliability Standing Badge**.
+
+---
+
+## 7. Verification & Testing
 
 * **TypeScript Compilation**: `npx tsc --noEmit` verified clean with `0` errors.
 * **Next.js Production Build**: `npm run build` compiled 82 static and dynamic pages with 0 prerendering issues.

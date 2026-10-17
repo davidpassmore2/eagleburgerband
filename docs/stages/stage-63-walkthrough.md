@@ -107,3 +107,21 @@ This walkthrough validates the comment liking workflow and interactive member to
      - 3-card monthly KPI summary strip below the grid (Rehearsals in Month, Rehearsals with Blackouts, Total Registered Blackouts).
      - Clicking any active date opens the date detail inspection modal.
 
+---
+
+### Scenario 8: Centralized Member Season Analytics in My Attendance & Check-In
+1. **Verify Member Home Page Streamlining:**
+   - Visit `/portal` (Member Home).
+   - Verify the dashboard layout flows smoothly from **What's Next** directly into **Thematic & Functional Action Hubs**.
+   - Confirm the redundant **Member Season Analytics & Standing** section is no longer taking up vertical real estate on the home page.
+2. **Navigate to My Attendance & Check-In:**
+   - Go to `/portal/checkin` via the portal navigation or sidebar.
+3. **Verify Centralized Analytics Card:**
+   - Confirm **Member Season Analytics & Standing** is rendered prominently directly below the Active Call Sheet check-in hero banner.
+   - Verify the 4 primary telemetry metric cards display personal data accurately:
+     - **Shows Played**: Completed shows attended / total completed gigs.
+     - **Reliability Rate**: Percentage reliability score with visual progress bar and standing badge (e.g. `Ironclad Roster`).
+     - **Upcoming Roster**: Confirmed upcoming gigs / total upcoming season dates.
+     - **Compensation**: Season earnings (Paid vs. Pending) and Reimbursement claims summary.
+   - Verify the secondary footer audit links (Song Catalog, Peer Pitches, SMS Dispatch status, Claims Hub, Update Profile, Full Gig Roster) are fully functional.
+
