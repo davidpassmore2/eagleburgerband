@@ -21,7 +21,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Refactored Band Rehearsals Hub (/portal/rehearsals) navigation tabs to 'My RSVPs', 'Rehearsal Locations', 'All-Member Blackout Calendar', and 'Recurrence'.",
       "Secured the 'Recurrence' tab to be visible and accessible exclusively by administrators (isAdmin guardrails).",
       "Redesigned the Rehearsal & Musician Blackout Calendar using the expanded, theme-aware monthly grid layout from the Gig Calendar, including month/year jump controls, full-height activity cards, and rehearsal quorum conflict indicators.",
-      "Consolidated 'Member Season Analytics & Standing' centrally into the My Attendance & Check-In workstation (/portal/checkin), removing redundancy from the Member Portal home page (/portal) and centralizing shows played, reliability score, roster standing, and compensation tracking.",
+      "Consolidated 'Member Season Participation & Standing' centrally into the My Attendance & Check-In workstation (/portal/checkin), removing redundancy from the Member Portal home page (/portal).",
+      "Softened participation metrics across the portal to celebrate casual, welcoming band culture: replaced 'reliability' with 'participation', eliminated 'excused absences' and missed event metrics, introduced positive rehearsal participation tracking, and updated status badges with supportive, non-punitive terminology ('Away (Notified)', 'Not Attended').",
     ],
   },
   {

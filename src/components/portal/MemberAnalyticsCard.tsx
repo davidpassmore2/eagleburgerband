@@ -14,6 +14,7 @@ import {
   Smartphone,
   ChevronRight,
   Receipt,
+  Music2,
 } from "lucide-react";
 import { User } from "@/lib/schema/user";
 import { AttendanceStatus } from "./PortalDayEventsModal";
@@ -36,6 +37,7 @@ interface MemberAnalyticsCardProps {
   reimbursements?: { paid: number; pending: number };
   tuneCount: number | null;
   suggestionCount: number | null;
+  rehearsalCount?: number | null;
 }
 
 export default function MemberAnalyticsCard({
@@ -46,6 +48,7 @@ export default function MemberAnalyticsCard({
   reimbursements,
   tuneCount,
   suggestionCount,
+  rehearsalCount,
 }: MemberAnalyticsCardProps) {
   const todayStr = useMemo(() => {
     const now = new Date();
@@ -89,9 +92,9 @@ export default function MemberAnalyticsCard({
       (g) => !userRsvps[g.id]
     ).length;
 
-    // Reliability score (based on completed past gigs with member responses)
+    // Participation rate (based on completed past gigs with member responses)
     const pastAnswered = attendedPastCount + probablePastCount + declinedPastCount;
-    const reliabilityRate =
+    const participationRate =
       pastGigs.length > 0
         ? Math.round((attendedPastCount / Math.max(1, pastAnswered || pastGigs.length)) * 100)
         : 100;
@@ -109,41 +112,41 @@ export default function MemberAnalyticsCard({
       upcomingGigsCount: upcomingGigs.length,
       confirmedUpcomingCount,
       unansweredUpcomingCount,
-      reliabilityRate,
+      participationRate,
       totalEarnings,
       avgEarningsPerGig,
     };
   }, [gigs, userRsvps, todayStr, earnings]);
 
   // Standing tier description
-  const reliabilityBadge = useMemo(() => {
-    const rate = analytics.reliabilityRate;
+  const participationBadge = useMemo(() => {
+    const rate = analytics.participationRate;
     if (rate >= 90) {
       return {
-        label: "Ironclad Roster",
+        label: "Core Performer",
         colorClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-        description: "Exemplary reliability. Frontline priority for stage rosters.",
+        description: "Outstanding participation across band performances and rehearsals.",
       };
     } else if (rate >= 75) {
       return {
-        label: "High Reliability",
+        label: "Active Regular",
         colorClass: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-        description: "Consistent performer with active attendance records.",
+        description: "Consistent participant with regular band attendance.",
       };
     } else if (rate >= 50) {
       return {
-        label: "Active Musician",
+        label: "Casual Contributor",
         colorClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-        description: "Active contributor with balanced availability.",
+        description: "Active contributor jamming when availability allows.",
       };
     } else {
       return {
-        label: "Growing Record",
+        label: "Welcome Guest",
         colorClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-        description: "Establishing season gig history.",
+        description: "Joining in when schedule permits.",
       };
     }
-  }, [analytics.reliabilityRate]);
+  }, [analytics.participationRate]);
 
   return (
     <div
@@ -171,16 +174,16 @@ export default function MemberAnalyticsCard({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base sm:text-lg font-black text-white">
-                Member Season Analytics &amp; Standing
+                Member Season Participation &amp; Standing
               </h3>
               <span
-                className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${reliabilityBadge.colorClass}`}
+                className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${participationBadge.colorClass}`}
               >
-                {reliabilityBadge.label}
+                {participationBadge.label}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Personal gig telemetry, call sheet reliability, and season compensation.
+              Personal gig and rehearsal involvement, participation rate, and season compensation.
             </p>
           </div>
         </div>
@@ -240,7 +243,7 @@ export default function MemberAnalyticsCard({
           </p>
         </div>
 
-        {/* Metric 2: Attendance Reliability */}
+        {/* Metric 2: Attendance Participation */}
         <div
           suppressHydrationWarning
           style={{
@@ -251,25 +254,25 @@ export default function MemberAnalyticsCard({
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1">
-              <Award className="w-3 h-3 text-yellow-400" /> Reliability Rate
+              <Award className="w-3 h-3 text-yellow-400" /> Participation Rate
             </span>
             <span className="text-[10px] font-mono text-yellow-400 bg-yellow-500/10 px-1.5 py-0.5 rounded">
-              Score
+              Rate
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-black text-white">
-              {analytics.reliabilityRate}%
+              {analytics.participationRate}%
             </span>
           </div>
           <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden mt-1">
             <div
               className="bg-yellow-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${analytics.reliabilityRate}%` }}
+              style={{ width: `${analytics.participationRate}%` }}
             />
           </div>
           <p className="text-[11px] text-slate-400 leading-tight">
-            {reliabilityBadge.description}
+            {participationBadge.description}
           </p>
         </div>
 
@@ -373,6 +376,19 @@ export default function MemberAnalyticsCard({
       >
         <div className="flex items-center gap-4 flex-wrap text-slate-400">
           <Link
+            href="/portal/rehearsals"
+            className="flex items-center gap-1.5 hover:text-white transition group"
+          >
+            <Music2 className="w-3.5 h-3.5 text-slate-500 group-hover:text-yellow-400 transition" />
+            <span>Rehearsals:</span>
+            <strong className="text-white group-hover:text-yellow-300 transition">
+              {rehearsalCount !== undefined && rehearsalCount !== null
+                ? `${rehearsalCount} Attended`
+                : "Schedule & RSVPs"}
+            </strong>
+          </Link>
+
+          <Link
             href="/portal/catalog"
             className="flex items-center gap-1.5 hover:text-white transition group"
           >
@@ -388,7 +404,7 @@ export default function MemberAnalyticsCard({
               href="/portal/suggestions"
               className="flex items-center gap-1.5 hover:text-white transition group"
             >
-              <span>Peer Pitches:</span>
+              <span>Peer Suggestions:</span>
               <strong className="text-white group-hover:text-yellow-300 transition">{suggestionCount} Ideas</strong>
             </Link>
           )}

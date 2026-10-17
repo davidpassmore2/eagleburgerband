@@ -109,19 +109,36 @@ This walkthrough validates the comment liking workflow and interactive member to
 
 ---
 
-### Scenario 8: Centralized Member Season Analytics in My Attendance & Check-In
+### Scenario 8: Centralized Member Season Participation in My Attendance & Check-In
 1. **Verify Member Home Page Streamlining:**
    - Visit `/portal` (Member Home).
    - Verify the dashboard layout flows smoothly from **What's Next** directly into **Thematic & Functional Action Hubs**.
-   - Confirm the redundant **Member Season Analytics & Standing** section is no longer taking up vertical real estate on the home page.
+   - Confirm the redundant analytics section is no longer taking up vertical real estate on the home page.
 2. **Navigate to My Attendance & Check-In:**
    - Go to `/portal/checkin` via the portal navigation or sidebar.
-3. **Verify Centralized Analytics Card:**
-   - Confirm **Member Season Analytics & Standing** is rendered prominently directly below the Active Call Sheet check-in hero banner.
-   - Verify the 4 primary telemetry metric cards display personal data accurately:
+3. **Verify Centralized Participation Card:**
+   - Confirm **Member Season Participation & Standing** is rendered prominently directly below the Active Call Sheet check-in hero banner.
+   - Verify the 4 primary telemetry metric cards display personal data with casual, supportive phrasing:
      - **Shows Played**: Completed shows attended / total completed gigs.
-     - **Reliability Rate**: Percentage reliability score with visual progress bar and standing badge (e.g. `Ironclad Roster`).
+     - **Participation Rate**: Percentage involvement rate with visual progress bar and friendly standing badge (`Core Performer`, `Active Regular`, `Casual Contributor`, or `Welcome Guest`).
      - **Upcoming Roster**: Confirmed upcoming gigs / total upcoming season dates.
      - **Compensation**: Season earnings (Paid vs. Pending) and Reimbursement claims summary.
-   - Verify the secondary footer audit links (Song Catalog, Peer Pitches, SMS Dispatch status, Claims Hub, Update Profile, Full Gig Roster) are fully functional.
+   - Verify the secondary footer audit links (Rehearsals attended, Song Catalog, Peer Suggestions, SMS Dispatch status, Claims Hub, Update Profile, Full Gig Roster) are fully functional.
+
+---
+
+### Scenario 9: Casual Participation Metrics Grid & Rehearsal Tracking
+1. **Inspect Attendance & Participation Grid:**
+   - Underneath `MemberAnalyticsCard`, verify the 4-card grid displays positive, casual metrics:
+     - **Participation Rate**: Shows percentage band performance involvement (no mentions of "reliability").
+     - **Current Streak**: Shows consecutive performances.
+     - **Shows Played**: Shows total checked-in gigs.
+     - **Rehearsal Participation**: Replaces the old "Excused Absences" card, displaying total rehearsal practices and sessions attended with `Music2` icon.
+2. **Check-In History Status Badging:**
+   - Review past events in the Performance & Rehearsal Ledger table.
+   - Confirm status badges use respectful, supportive labels:
+     - Checked in on site: `Checked In` (emerald).
+     - Arrival after call time: `Arrived` (amber).
+     - Member notified schedule conflict: `Away (Notified)` (slate/neutral, no punitive red or clinical "excused" phrasing).
+     - Event not attended: `Not Attended` (slate/neutral).
 

@@ -737,7 +737,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     keyFeatures: [
       "Personal on-time arrival percentage and season gig tally.",
       "Active day-of-show check-in banner when an upcoming gig call time window is open.",
-      "Comprehensive timeline of past gigs and confirmed attendance records (Present, Tardy, Excused, Absent).",
+      "Comprehensive timeline of past gigs and confirmed attendance records (Checked In, Arrived, Away, Not Attended).",
       "Section leader verification confirmation status."
     ],
     howToUse: [
@@ -747,7 +747,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     proTips: [
       "Section leaders can also verify your arrival on-site using the Downbeat Check-In Studio (/admin/checkin).",
-      "High attendance reliability directly impacts priority invitation for premium contracted and paid gigs."
+      "Consistent band participation helps section leaders ensure strong instrumentation across performances and practices."
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
@@ -889,28 +889,28 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-attendance-mgmt",
-    title: "Section Attendance & Reliability Tracker",
+    title: "Section Attendance & Participation Tracker",
     path: "/admin/attendance",
     category: "Personnel & Attendance",
     roles: ["admin", "section_leader"],
     badge: "Attendance Analytics",
     iconName: "CheckSquare",
-    summary: "Historical attendance metrics, reliability scores, excused absence records, and rehearsal participation.",
-    description: "The Attendance Tracker compiles attendance records from gig roll calls and rehearsals. Section leaders use this data to evaluate lineup reliability, reward high-attendance players with feature solo slots, and identify musicians who may need support.",
+    summary: "Historical attendance metrics, participation rates, and rehearsal involvement.",
+    description: "The Attendance Tracker compiles attendance records from gig roll calls and rehearsals. Section leaders use this data to understand lineup turnout, celebrate active participants, and support musicians with scheduling questions.",
     keyFeatures: [
-      "Ensemble-wide and section-filtered attendance rate percentages.",
-      "Individual musician attendance histories: Gigs Attended, Excused Absences, No-Shows.",
+      "Ensemble-wide and section-filtered participation rate percentages.",
+      "Individual musician participation histories: Gigs Attended, Rehearsal Turnout, and Season Streaks.",
       "Date range filtering (Full Year, Spring Season, Fall Parades).",
-      "Reliability badge indicators (High Reliability > 85%, Moderate 60-84%, Needs Review < 60%)."
+      "Participation badge indicators celebrating active ensemble members."
     ],
     howToUse: [
       "Filter records by instrument section or gig date range.",
-      "Review attendance trends ahead of high-profile civic parades to select dependable core lineups.",
-      "Manually record excused absences when musicians give advance notice of work or family conflicts."
+      "Review turnout trends ahead of parades and concerts to plan balanced instrumentation.",
+      "Note member schedule conflicts when musicians share advance notice."
     ],
     proTips: [
-      "Reliability ratings help gig coordinators fairly distribute high-paying private gigs and VIP festival slots.",
-      "Cross-reference low attendance with instrument shortages to proactively recruit section subs."
+      "Participation insights help coordinate balanced instrument sections and casual jam sessions.",
+      "Cross-reference section numbers with upcoming events to invite guest players or section subs as needed."
     ],
     relatedRoutes: [
       { title: "Downbeat Check-In", path: "/admin/checkin" },
@@ -1775,7 +1775,7 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     authorities: [
       "Access the Section Command workspace (/admin/sections) to review section rosters and balance.",
       "Execute Downbeat Check-In verification for their section (/admin/checkin).",
-      "Review historical attendance reliability and gig analytics for their section (/admin/attendance)."
+      "Review historical attendance participation and gig analytics for their section (/admin/attendance)."
     ],
     routes: [
       { title: "Section Command", path: "/admin/sections" },
