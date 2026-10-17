@@ -6,10 +6,12 @@ import {
   collection,
   query,
   orderBy,
+  where,
   onSnapshot,
   setDoc,
   doc,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -18,6 +20,8 @@ import { User } from "@/lib/schema/user";
 import { CheckInSchema, CheckInRecord, CheckInStatus } from "@/lib/schema/attendance";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
+import MemberAnalyticsCard from "@/components/portal/MemberAnalyticsCard";
+import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import {
   CheckCircle2,
   Clock,
@@ -48,7 +52,18 @@ interface GigItem {
     callTime: string;
     downbeat: string;
     unloadingAddress: string;
+    compensation?: number;
+    payPerMusician?: number;
   };
+}
+
+interface LedgerRecord {
+  gigId: string;
+  distributions?: {
+    uid: string;
+    amount: number;
+    paidStatus?: "paid" | "unpaid";
+  }[];
 }
 
 export default function MemberSelfCheckInPage() {
@@ -61,6 +76,14 @@ export default function MemberSelfCheckInPage() {
 
   const [gigs, setGigs] = useState<GigItem[]>([]);
   const [userCheckIns, setUserCheckIns] = useState<Record<string, CheckInRecord>>({});
+  const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
+  const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
+  const [tuneCount, setTuneCount] = useState<number | null>(null);
+  const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
+  const [personalReimbursements, setPersonalReimbursements] = useState<{ pending: number; paid: number }>({
+    pending: 0,
+    paid: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null);
@@ -79,8 +102,9 @@ export default function MemberSelfCheckInPage() {
         });
         setGigs(gigList);
 
-        // Fetch user's individual check-ins across these gigs
+        // Fetch user's individual check-ins and RSVPs across these gigs
         const checkInMap: Record<string, CheckInRecord> = {};
+        const rsvpMap: Record<string, AttendanceStatus> = {};
         await Promise.all(
           gigList.map(async (gig) => {
             try {
@@ -93,13 +117,19 @@ export default function MemberSelfCheckInPage() {
                   }
                 }
               });
+
+              const rsvpDocSnap = await getDoc(doc(db, "gigs", gig.id, "rsvps", currentUserId));
+              if (rsvpDocSnap.exists()) {
+                rsvpMap[gig.id] = (rsvpDocSnap.data().status as AttendanceStatus) || "tentative";
+              }
             } catch (err) {
-              console.warn(`Notice: checkin read note for ${gig.id}:`, err);
+              console.warn(`Notice: checkin/rsvp read note for ${gig.id}:`, err);
             }
           })
         );
 
         setUserCheckIns(checkInMap);
+        setUserRsvps(rsvpMap);
         setLoading(false);
       },
       (err) => {
@@ -108,7 +138,69 @@ export default function MemberSelfCheckInPage() {
       }
     );
 
-    return () => unsubGigs();
+    // Listen to financial ledgers to compute personal earnings
+    const unsubLedgers = onSnapshot(
+      collection(db, "gig_ledgers"),
+      (snapshot) => {
+        const list: LedgerRecord[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push(docSnap.data() as LedgerRecord);
+        });
+        setLedgers(list);
+      },
+      (err) => console.warn("Notice: ledger subscriber note:", err)
+    );
+
+    // Listen to active repertoire charts
+    const unsubTunes = onSnapshot(
+      collection(db, "tunes"),
+      (snapshot) => {
+        setTuneCount(snapshot.size);
+      },
+      (err) => console.warn("Notice: tunes subscriber note:", err)
+    );
+
+    // Listen to song suggestions
+    const unsubSuggestions = onSnapshot(
+      collection(db, "suggestions"),
+      (snapshot) => {
+        const activeCount = snapshot.docs.filter((d) => !d.data().isArchived).length;
+        setSuggestionCount(activeCount);
+      },
+      (err) => console.warn("Notice: suggestions subscriber note:", err)
+    );
+
+    // Listen to personal reimbursements
+    const qReimburse = query(
+      collection(db, "reimbursements"),
+      where("applicantUid", "==", currentUserId)
+    );
+    const unsubReimburse = onSnapshot(
+      qReimburse,
+      (snapshot) => {
+        let pending = 0;
+        let paid = 0;
+        snapshot.forEach((d) => {
+          const data = d.data();
+          const amt = Number(data.amount) || 0;
+          if (data.status === "paid") {
+            paid += amt;
+          } else if (data.status === "submitted" || data.status === "approved") {
+            pending += amt;
+          }
+        });
+        setPersonalReimbursements({ pending, paid });
+      },
+      (err) => console.warn("Notice: reimbursements subscriber note:", err)
+    );
+
+    return () => {
+      unsubGigs();
+      unsubLedgers();
+      unsubTunes();
+      unsubSuggestions();
+      unsubReimburse();
+    };
   }, [authLoading, currentUserId]);
 
   // Determine active/today's gig or nearest upcoming gig
@@ -170,6 +262,28 @@ export default function MemberSelfCheckInPage() {
       ratePercent,
     };
   }, [gigs, userCheckIns]);
+
+  // Derived personal financial earnings
+  const personalEarnings = useMemo(() => {
+    if (!currentUserId) return { paid: 0, unpaid: 0 };
+    let paid = 0;
+    let unpaid = 0;
+
+    ledgers.forEach((l) => {
+      if (Array.isArray(l.distributions)) {
+        const mySplit = l.distributions.find((d) => d.uid === currentUserId);
+        if (mySplit) {
+          if (mySplit.paidStatus === "unpaid") {
+            unpaid += mySplit.amount;
+          } else {
+            paid += mySplit.amount;
+          }
+        }
+      }
+    });
+
+    return { paid, unpaid };
+  }, [ledgers, currentUserId]);
 
   // One-tap self check-in handler
   const handleSelfCheckIn = async (gig: GigItem) => {
@@ -372,6 +486,17 @@ export default function MemberSelfCheckInPage() {
           )}
         </div>
       )}
+
+      {/* Member Season Analytics & Standing */}
+      <MemberAnalyticsCard
+        profile={userProfile}
+        gigs={gigs}
+        userRsvps={userRsvps}
+        earnings={personalEarnings}
+        reimbursements={personalReimbursements}
+        tuneCount={tuneCount}
+        suggestionCount={suggestionCount}
+      />
 
       {/* Attendance Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
