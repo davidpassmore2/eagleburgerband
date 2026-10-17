@@ -2111,13 +2111,13 @@ export default function GigsAdminStudioPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           {filteredGigs.map((g) => (
           <div
             key={g.id}
             className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 shadow transition flex flex-col justify-between"
           >
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
@@ -2160,7 +2160,7 @@ export default function GigsAdminStudioPage() {
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(g)}
-                    className="text-slate-500 hover:text-yellow-400 p-1 rounded transition"
+                    className="text-slate-500 hover:text-yellow-400 p-1 rounded transition cursor-pointer"
                     title="Edit performance details & map navigation"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -2168,7 +2168,7 @@ export default function GigsAdminStudioPage() {
                   <button
                     type="button"
                     onClick={() => handleDeleteGig(g.id, g.publicDetails?.title || g.id)}
-                    className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                    className="text-slate-500 hover:text-rose-400 p-1 rounded transition cursor-pointer"
                     title="Delete gig"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -2177,7 +2177,7 @@ export default function GigsAdminStudioPage() {
               </div>
 
               {g.publicDetails?.headerImageUrl && (
-                <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 mb-1">
+                <div className="relative w-full h-24 sm:h-32 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 mb-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={g.publicDetails.headerImageUrl}
@@ -2193,17 +2193,17 @@ export default function GigsAdminStudioPage() {
                 </div>
               )}
 
-              <h2 className="text-base font-bold text-white truncate">
+              <h2 className="text-base sm:text-lg font-bold text-white truncate">
                 {g.publicDetails?.title || g.id}
               </h2>
 
-              <div className="space-y-1 text-xs text-slate-400">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+                <div className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                  <span>{g.date}</span>
+                  <span className="font-semibold text-slate-200">{g.date}</span>
                 </div>
                 {g.publicDetails?.venue && (
-                  <div className="flex items-center gap-2 truncate">
+                  <div className="flex items-center gap-1.5 truncate max-w-md">
                     <MapPin className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                     <span className="truncate">{g.publicDetails.venue}</span>
                   </div>
@@ -2216,33 +2216,27 @@ export default function GigsAdminStudioPage() {
 
                   if (compType === "community") {
                     return (
-                      <div className="pt-1">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                          <Heart className="w-3 h-3 text-sky-400" />
-                          <span>Community (Volunteer / $0 intake)</span>
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        <Heart className="w-3 h-3 text-sky-400" />
+                        <span>Community (Volunteer / $0 intake)</span>
+                      </span>
                     );
                   }
                   if (compType === "band_fund") {
                     const fee = g.financials?.totalFee || g.financials?.bandFundCut || 0;
                     return (
-                      <div className="pt-1">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          <Landmark className="w-3 h-3 text-amber-400" />
-                          <span>100% to Band Fund {fee > 0 ? `($${fee} fee)` : ""}</span>
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <Landmark className="w-3 h-3 text-amber-400" />
+                        <span>100% to Band Fund {fee > 0 ? `($${fee} fee)` : ""}</span>
+                      </span>
                     );
                   }
                   const payout = g.internalLogistics?.compensation || g.financials?.fixedPerformerAmount || 0;
                   return (
-                    <div className="pt-1">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <DollarSign className="w-3 h-3 text-emerald-400" />
-                        <span>Individual (${payout} / musician)</span>
-                      </span>
-                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <DollarSign className="w-3 h-3 text-emerald-400" />
+                      <span>Individual (${payout} / musician)</span>
+                    </span>
                   );
                 })()}
               </div>
@@ -2371,8 +2365,8 @@ export default function GigsAdminStudioPage() {
               })()}
 
               {/* Quick Toggles: Public Visibility & 1-Click Navigation */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
-                <div className="flex items-center justify-between gap-2">
+              <div className="pt-2 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
                     <Globe className="w-3 h-3 text-sky-400 shrink-0" />
                     Public Visibility:
@@ -2385,7 +2379,7 @@ export default function GigsAdminStudioPage() {
                         ? "Gig is published to public site schedule. Click to hide (make private)."
                         : "Gig is hidden from public site schedule. Click to publish."
                     }
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 ${
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 cursor-pointer ${
                       g.publicDetails?.isPublic !== false
                         ? "bg-sky-500/10 text-sky-400 border-sky-500/30 hover:bg-sky-500/20"
                         : "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
@@ -2396,7 +2390,7 @@ export default function GigsAdminStudioPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
                     <Navigation className="w-3 h-3 text-yellow-400 shrink-0" />
                     1-Click Navigation:
@@ -2409,7 +2403,7 @@ export default function GigsAdminStudioPage() {
                         ? "Directions buttons visible on public map. Click to toggle OFF."
                         : "Directions buttons hidden on public map. Click to toggle ON."
                     }
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 ${
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition flex items-center gap-1 cursor-pointer ${
                       g.publicDetails?.showExternalDirections !== false
                         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
                         : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
@@ -2456,7 +2450,7 @@ export default function GigsAdminStudioPage() {
                     ) : (
                       <Send className="w-3 h-3" />
                     )}
-                    <span>Dispatch Confirmed</span>
+                    <span>Dispatch to Confirmed</span>
                   </button>
                 )}
                 <Link
