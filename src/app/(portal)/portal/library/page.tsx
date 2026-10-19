@@ -730,8 +730,8 @@ export default function UnifiedRepertoireLibraryPage() {
         </div>
       )}
 
-      {/* Repertoire Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      {/* Repertoire Cards List (One per line for intuitive scanning and sorting) */}
+      <div className="flex flex-col gap-3">
         {filteredTunes.map((tune) => {
           const norm = normalizeSongTitle(tune.title);
           const stat = analytics[norm];
@@ -744,22 +744,30 @@ export default function UnifiedRepertoireLibraryPage() {
           return (
             <div
               key={tune.id}
-              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-sm transition group"
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 sm:p-4.5 shadow-sm transition group flex flex-col justify-between gap-3"
             >
               <div className="space-y-2">
-                {/* Title & Key Row */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-0.5 min-w-0">
-                    <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5 truncate">
-                      <Music2 className="w-4 h-4 text-yellow-400 shrink-0" />
-                      <span className="truncate">{tune.title}</span>
-                    </h2>
-                    {tune.artist && (
-                      <p className="text-xs text-slate-400 truncate">By {tune.artist}</p>
-                    )}
+                {/* Header Row: Title, Artist, and Badges */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center shrink-0 text-yellow-400 group-hover:scale-105 transition-transform">
+                      <Music2 className="w-3.5 h-3.5" />
+                    </div>
+
+                    <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+                      <h2 className="text-sm sm:text-base font-extrabold text-white group-hover:text-yellow-400 transition truncate">
+                        {tune.title}
+                      </h2>
+                      {tune.artist && (
+                        <span className="text-xs text-slate-400 truncate">
+                          by <strong className="text-slate-300 font-medium">{tune.artist}</strong>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Right Badges: Status & Key Signature */}
+                  <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
                     {/* Status Badge */}
                     {tune.status === "in_repertoire" && (
                       <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded flex items-center gap-1">
@@ -791,72 +799,49 @@ export default function UnifiedRepertoireLibraryPage() {
                   </div>
                 </div>
 
-                {/* Arranger, Meter, Tempo Meta */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400 font-mono">
+                {/* Musical Specs, Tags, and Notes Line */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-400 font-mono">
+                  {tune.tempoBpm ? (
+                    <span className="bg-slate-950 text-yellow-400/90 font-bold px-2 py-0.5 rounded border border-slate-800 text-[11px]">
+                      {tune.tempoBpm} BPM
+                    </span>
+                  ) : null}
+                  {tune.meter && <span className="text-slate-300 font-semibold">{tune.meter}</span>}
                   {tune.arranger && <span>Arr: {tune.arranger}</span>}
-                  {tune.tempoBpm ? <span>{tune.tempoBpm} BPM</span> : null}
-                  {tune.meter && <span>{tune.meter}</span>}
                   {tune.chartContactName && (
                     <span className="text-yellow-400/80">Lead: {tune.chartContactName}</span>
                   )}
-                </div>
 
-                {/* Notes if present */}
-                {tune.notes && (
-                  <p className="text-[11px] text-slate-400 italic line-clamp-2 bg-slate-950/50 p-2 rounded-lg border border-slate-800/50">
-                    {tune.notes}
-                  </p>
-                )}
+                  {/* Tags Chips */}
+                  {tune.tags && tune.tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {tune.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-                {/* Tags Chips */}
-                {tune.tags && tune.tags.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                    {tune.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {/* 1-5 Star Member Rating & Score Row */}
-                <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Score:</span>
-                    <StarRating
-                      score={tune.ratingAverage || 0}
-                      count={tune.ratingCount || 0}
-                      size="sm"
-                      showCount={true}
-                      showScoreText={true}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 font-medium">Rate:</span>
-                    <StarRating
-                      score={tune.ratingAverage || 0}
-                      count={tune.ratingCount || 0}
-                      userRating={currentUserId && tune.ratings ? tune.ratings[currentUserId] : undefined}
-                      interactive={Boolean(currentUserId)}
-                      size="sm"
-                      showCount={false}
-                      showScoreText={false}
-                      onRate={(stars) => handleRateTune(tune.id, stars)}
-                    />
-                  </div>
+                  {/* Notes snippet if present */}
+                  {tune.notes && (
+                    <span className="text-[11px] text-slate-400 italic bg-slate-950/60 px-2 py-0.5 rounded border border-slate-800/60 max-w-xl truncate">
+                      &ldquo;{tune.notes}&rdquo;
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Bottom Actions & Frequency Stats */}
-              <div className="pt-2.5 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
-                {/* Performance History / Stat */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Bottom Row: Performance History, Ratings, and Action Controls */}
+              <div className="pt-2.5 border-t border-slate-800/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+                {/* Left: Performance Frequency & Rating Score */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Performance History / Stat */}
                   {stat ? (
-                    <>
+                    <div className="flex items-center gap-1.5">
                       <span className="bg-slate-950 text-slate-300 font-mono text-[10px] px-2 py-0.5 rounded border border-slate-800">
                         Played {stat.playCount} {stat.playCount === 1 ? "time" : "times"}
                       </span>
@@ -872,22 +857,53 @@ export default function UnifiedRepertoireLibraryPage() {
                           <Archive className="w-3 h-3" /> In Vault
                         </span>
                       )}
-                    </>
+                    </div>
                   ) : (
                     <span className="text-slate-500 text-[11px] flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-yellow-400/60" /> Ready for setlists
                     </span>
                   )}
+
+                  {/* 1-5 Star Member Rating & Score */}
+                  <div className="bg-slate-950/70 border border-slate-800/80 rounded-lg px-2.5 py-1 flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Score:</span>
+                      <StarRating
+                        score={tune.ratingAverage || 0}
+                        count={tune.ratingCount || 0}
+                        size="sm"
+                        showCount={true}
+                        showScoreText={true}
+                      />
+                    </div>
+
+                    <div className="w-px h-3 bg-slate-800 mx-0.5" />
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400 font-medium">Rate:</span>
+                      <StarRating
+                        score={tune.ratingAverage || 0}
+                        count={tune.ratingCount || 0}
+                        userRating={currentUserId && tune.ratings ? tune.ratings[currentUserId] : undefined}
+                        interactive={Boolean(currentUserId)}
+                        size="sm"
+                        showCount={false}
+                        showScoreText={false}
+                        onRate={(stars) => handleRateTune(tune.id, stars)}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Right Action Buttons */}
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-auto flex-wrap">
                   {/* Reaction Up/Down Voting */}
                   <div className="flex items-center gap-1 bg-slate-950 px-1.5 py-1 rounded-lg border border-slate-800">
                     <button
                       type="button"
                       onClick={() => handleVote(tune.id, "up")}
-                      className={`flex items-center gap-1 text-[11px] font-mono px-1 py-0.5 rounded transition ${
+                      className={`flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 rounded transition ${
                         hasUpvoted ? "text-emerald-400 bg-emerald-500/10 font-bold" : "text-slate-500 hover:text-slate-300"
                       }`}
                       title="Favorite / Vote Up"
@@ -898,7 +914,7 @@ export default function UnifiedRepertoireLibraryPage() {
                     <button
                       type="button"
                       onClick={() => handleVote(tune.id, "down")}
-                      className={`flex items-center gap-1 text-[11px] font-mono px-1 py-0.5 rounded transition ${
+                      className={`flex items-center gap-1 text-[11px] font-mono px-1.5 py-0.5 rounded transition ${
                         hasDownvoted ? "text-rose-400 bg-rose-500/10 font-bold" : "text-slate-500 hover:text-slate-300"
                       }`}
                       title="Needs Work / Vote Down"
@@ -913,7 +929,7 @@ export default function UnifiedRepertoireLibraryPage() {
                     <button
                       type="button"
                       onClick={() => handleTogglePlayAudio(tune)}
-                      className={`p-1.5 rounded-lg border transition ${
+                      className={`px-2 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
                         isPlayingAudio
                           ? "bg-yellow-400 text-slate-950 border-yellow-400"
                           : "bg-slate-950 text-slate-300 border-slate-800 hover:border-yellow-400/40 hover:text-yellow-400"
@@ -921,6 +937,7 @@ export default function UnifiedRepertoireLibraryPage() {
                       title={isPlayingAudio ? "Pause Audio Preview" : "Play Audio Reference Sample"}
                     >
                       {isPlayingAudio ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                      <span>Sample</span>
                     </button>
                   )}
 
@@ -928,7 +945,7 @@ export default function UnifiedRepertoireLibraryPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedTuneForComments(tune)}
-                    className="px-2 py-1.5 rounded-lg bg-slate-950 text-slate-300 hover:text-yellow-400 border border-slate-800 hover:border-yellow-400/40 transition flex items-center gap-1.5 text-xs font-semibold"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-950 text-slate-300 hover:text-yellow-400 border border-slate-800 hover:border-yellow-400/40 transition flex items-center gap-1.5 text-xs font-semibold"
                     title="View & Add Rehearsal Discussion"
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
@@ -943,7 +960,7 @@ export default function UnifiedRepertoireLibraryPage() {
                         dispatchPortalInteraction("open_charts_modal", tune.title, { tuneId: tune.id });
                         setSelectedTuneForCharts(tune);
                       }}
-                      className="px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/20 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
                       title="View Sheet Music Charts & Reference Audio"
                     >
                       <Music2 className="w-3.5 h-3.5" />
