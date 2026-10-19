@@ -229,6 +229,12 @@ export default function MediaResourcesStudioPage() {
   };
 
   const handleTriggerCloudinaryUpload = async () => {
+    try {
+      await fetchPersistentCloudinaryConfig();
+    } catch {
+      // ignore
+    }
+
     if (!isCloudinaryConfigured()) {
       setIsConfigModalOpen(true);
       toast.info("Please configure Cloudinary credentials to enable direct uploads.");
@@ -271,11 +277,22 @@ export default function MediaResourcesStudioPage() {
           toast.success("File uploaded to Cloudinary! Please verify metadata and save.");
         },
         onError: (err) => {
-          toast.error("Upload error: " + (err instanceof Error ? err.message : String(err)));
+          const message = err instanceof Error ? err.message : String(err);
+          toast.error("Upload error: " + message);
+          if (message.toLowerCase().includes("preset") || message.toLowerCase().includes("not found")) {
+            setIsConfigModalOpen(true);
+          }
+        },
+        onClose: () => {
+          setIsUploadingCloudinary(false);
         },
       });
     } catch (err) {
-      toast.error("Failed to open upload widget: " + (err instanceof Error ? err.message : String(err)));
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Failed to open upload widget: " + message);
+      if (message.toLowerCase().includes("preset") || message.toLowerCase().includes("credentials")) {
+        setIsConfigModalOpen(true);
+      }
     } finally {
       setIsUploadingCloudinary(false);
     }

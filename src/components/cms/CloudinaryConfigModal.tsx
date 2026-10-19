@@ -13,6 +13,9 @@ import {
   Download,
   Loader2,
   Folder,
+  RotateCcw,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import {
   getCloudinaryConfig,
@@ -20,6 +23,7 @@ import {
   isCloudinaryConfigured,
   fetchPersistentCloudinaryConfig,
   CloudinaryStoredConfig,
+  CANONICAL_CLOUDINARY_CONFIG,
 } from "@/lib/cloudinary/widget";
 import { useAuth } from "@/lib/context/AuthContext";
 import { toast } from "@/lib/context/ToastContext";
@@ -41,6 +45,8 @@ export default function CloudinaryConfigModal({
   const [uploadPreset, setUploadPreset] = useState(config.uploadPreset);
   const [folder, setFolder] = useState(config.folder || "eagleburgerband_media");
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Environment variables detected from Next.js runtime
   const envCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
@@ -56,9 +62,9 @@ export default function CloudinaryConfigModal({
       .then((active) => {
         if (!isMounted) return;
         setConfig(active);
-        setCloudName(active.cloudName || envCloudName);
-        setUploadPreset(active.uploadPreset || envUploadPreset);
-        setFolder(active.folder || "eagleburgerband_media");
+        setCloudName(active.cloudName || envCloudName || CANONICAL_CLOUDINARY_CONFIG.cloudName);
+        setUploadPreset(active.uploadPreset || envUploadPreset || CANONICAL_CLOUDINARY_CONFIG.uploadPreset);
+        setFolder(active.folder || CANONICAL_CLOUDINARY_CONFIG.folder);
       })
       .catch((err) => {
         console.warn("Failed to load persistent Cloudinary config:", err);
@@ -70,6 +76,67 @@ export default function CloudinaryConfigModal({
   }, [isOpen, envCloudName, envUploadPreset]);
 
   if (!isOpen) return null;
+
+  const handleTestConnection = async () => {
+    const cleanCloud = cloudName.trim();
+    const cleanPreset = uploadPreset.trim();
+    const cleanFolder = (folder.trim() || CANONICAL_CLOUDINARY_CONFIG.folder);
+
+    if (!cleanCloud || !cleanPreset) {
+      toast.error("Please provide both Cloud Name and Upload Preset to test.");
+      return;
+    }
+
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      // 1x1 transparent PNG data URI
+      const pixelPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+      const formData = new FormData();
+      formData.append("file", pixelPng);
+      formData.append("upload_preset", cleanPreset);
+      formData.append("folder", cleanFolder);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cleanCloud}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.secure_url || data.public_id)) {
+        setTestResult({
+          success: true,
+          message: `Connection verified! Cloud "${cleanCloud}" accepted upload preset "${cleanPreset}".`,
+        });
+        toast.success("Cloudinary connection verified successfully!");
+      } else {
+        const errorMsg = data?.error?.message || "Cloudinary connection failed.";
+        setTestResult({
+          success: false,
+          message: `Cloudinary error: ${errorMsg}`,
+        });
+        toast.error(`Cloudinary error: ${errorMsg}`);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setTestResult({
+        success: false,
+        message: `Network test failed: ${errorMsg}`,
+      });
+      toast.error(`Test failed: ${errorMsg}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleResetToDefaults = () => {
+    setCloudName(CANONICAL_CLOUDINARY_CONFIG.cloudName);
+    setUploadPreset(CANONICAL_CLOUDINARY_CONFIG.uploadPreset);
+    setFolder(CANONICAL_CLOUDINARY_CONFIG.folder);
+    setTestResult(null);
+    toast.info("Reset to verified band defaults (zb1aouqg / eagleburger). Click Save to apply.");
+  };
 
   const handleUseEnvCredentials = async () => {
     if (!envCloudName || !envUploadPreset) {
@@ -307,6 +374,29 @@ export default function CloudinaryConfigModal({
               </div>
             </div>
 
+            {/* Test Result Banner */}
+            {testResult && (
+              <div
+                className={`p-3 rounded-2xl border text-xs flex items-start gap-2.5 ${
+                  testResult.success
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                }`}
+              >
+                {testResult.success ? (
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <span className="font-bold block">
+                    {testResult.success ? "Connection Verified" : "Verification Failed"}
+                  </span>
+                  <p className="text-[11px] opacity-90 mt-0.5">{testResult.message}</p>
+                </div>
+              </div>
+            )}
+
             <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-[11px] text-slate-400 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-slate-300">
                 <Database className="w-3.5 h-3.5 text-yellow-400" />
@@ -317,26 +407,54 @@ export default function CloudinaryConfigModal({
               </p>
             </div>
 
-            <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition"
-              >
-                Close
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Check className="w-3.5 h-3.5" />
-                )}
-                <span>Save Persistently</span>
-              </button>
+            <div className="pt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={isTesting || isSaving}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 font-bold text-xs transition flex items-center gap-1.5 border border-slate-700"
+                >
+                  {isTesting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span>Test Connection</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetToDefaults}
+                  disabled={isSaving}
+                  className="px-2.5 py-2 rounded-xl text-slate-400 hover:text-slate-200 text-xs transition flex items-center gap-1 hover:bg-slate-800"
+                  title="Reset to verified project defaults (zb1aouqg / eagleburger)"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset Defaults</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Save Persistently</span>
+                </button>
+              </div>
             </div>
           </form>
         </div>

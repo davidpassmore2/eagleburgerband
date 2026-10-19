@@ -24,6 +24,7 @@ import {
   Loader2,
   FolderOpen,
   Cloud,
+  Settings,
 } from "lucide-react";
 import {
   openCloudinaryUploadWidget,
@@ -131,6 +132,12 @@ export default function ResourceAssetPickerModal({
   };
 
   const handleUploadCloudinary = async () => {
+    try {
+      await fetchPersistentCloudinaryConfig();
+    } catch {
+      // ignore
+    }
+
     if (!isCloudinaryConfigured()) {
       setIsConfigModalOpen(true);
       toast.info("Please configure Cloudinary credentials to upload media directly.");
@@ -179,11 +186,22 @@ export default function ResourceAssetPickerModal({
           onClose();
         },
         onError: (err) => {
-          toast.error("Upload failed: " + (err instanceof Error ? err.message : String(err)));
+          const message = err instanceof Error ? err.message : String(err);
+          toast.error("Upload failed: " + message);
+          if (message.toLowerCase().includes("preset") || message.toLowerCase().includes("not found")) {
+            setIsConfigModalOpen(true);
+          }
+        },
+        onClose: () => {
+          setIsUploadingCloudinary(false);
         },
       });
     } catch (err) {
-      toast.error("Failed to open upload widget: " + (err instanceof Error ? err.message : String(err)));
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Failed to open upload widget: " + message);
+      if (message.toLowerCase().includes("preset") || message.toLowerCase().includes("credentials")) {
+        setIsConfigModalOpen(true);
+      }
     } finally {
       setIsUploadingCloudinary(false);
     }
@@ -305,20 +323,31 @@ export default function ResourceAssetPickerModal({
               ))}
             </div>
 
-            {/* Upload Media via Cloudinary Button */}
-            <button
-              type="button"
-              onClick={handleUploadCloudinary}
-              disabled={isUploadingCloudinary}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md shadow-sky-500/20"
-            >
-              {isUploadingCloudinary ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Cloud className="w-3.5 h-3.5" />
-              )}
-              <span>Upload Media</span>
-            </button>
+            {/* Upload Media via Cloudinary Button & Settings */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={handleUploadCloudinary}
+                disabled={isUploadingCloudinary}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-md shadow-sky-500/20"
+              >
+                {isUploadingCloudinary ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5" />
+                )}
+                <span>Upload Media</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsConfigModalOpen(true)}
+                title="Cloudinary Upload Settings"
+                aria-label="Cloudinary Upload Settings"
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             {/* Add New Button Toggle */}
             <button
@@ -655,6 +684,9 @@ export default function ResourceAssetPickerModal({
       <CloudinaryConfigModal
         isOpen={isConfigModalOpen}
         onClose={() => setIsConfigModalOpen(false)}
+        onConfigSaved={() => {
+          fetchPersistentCloudinaryConfig().catch(() => {});
+        }}
       />
     </div>
   );
