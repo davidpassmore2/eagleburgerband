@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { 
   collection, 
   onSnapshot, 
@@ -146,7 +147,8 @@ const normalizeCategory = (rawCategory?: string): SuggestionCategory => {
   return "general_feedback";
 };
 
-export default function SuggestionTriagePage() {
+function SuggestionTriageContent() {
+  const searchParams = useSearchParams();
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,6 +168,31 @@ export default function SuggestionTriagePage() {
     originalArtist: "",
     referenceUrl: "",
   });
+
+  // URL query parameter synchronization (e.g. ?category=tune_request&action=new)
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    const actionParam = searchParams.get("action");
+    const newParam = searchParams.get("new");
+    const submitParam = searchParams.get("submit");
+
+    if (categoryParam) {
+      const normalized = normalizeCategory(categoryParam);
+      setActiveCategory(categoryParam === "all" ? "all" : normalized);
+      setCreateForm((prev) => ({ ...prev, category: normalized }));
+    }
+
+    if (
+      actionParam === "new" ||
+      actionParam === "create" ||
+      newParam === "true" ||
+      newParam === "1" ||
+      submitParam === "true" ||
+      submitParam === "1"
+    ) {
+      setIsCreating(true);
+    }
+  }, [searchParams]);
 
   // Edit Review Notes Modal
   const [notesTarget, setNotesTarget] = useState<SuggestionItem | null>(null);
@@ -1554,5 +1581,25 @@ export default function SuggestionTriagePage() {
         </div>
       )}
     </div>
+  );
+}
+
+function SuggestionTriageWrapper() {
+  const searchParams = useSearchParams();
+  return <SuggestionTriageContent key={searchParams.toString()} />;
+}
+
+export default function SuggestionTriagePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center p-12 text-slate-400 gap-2 text-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+          Loading suggestion triage & voting workstation...
+        </div>
+      }
+    >
+      <SuggestionTriageWrapper />
+    </Suspense>
   );
 }

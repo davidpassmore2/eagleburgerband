@@ -131,7 +131,7 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
     category: "Music & Repertoire",
     title: "Music & Repertoire",
     badge: "Charts & Audio",
-    description: "Sheet music charts, audio reference recordings, suggestion triage, and repertoire analytics.",
+    description: "Sheet music charts, setlist sequencing, audio reference recordings, suggestion triage, and repertoire analytics.",
     icon: Music2,
     href: "/portal/sections/music-repertoire",
     colorScheme: {
@@ -144,6 +144,10 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
       {
         title: "Access Song Catalog & Sheet Music",
         description: "Search charts by title, tempo, key, and instrumentation. Download part PDFs for rehearsal or performance.",
+      },
+      {
+        title: "Curate & Sequence Setlists",
+        description: "Design balanced gig setlists, calculate set timing, organize transitions, and publish running orders.",
       },
       {
         title: "Listen to the Rehearsal Vault",

@@ -121,14 +121,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     category: "Performances & Logistics",
   },
   {
-    id: "setlists",
-    title: "Setlist Studio",
-    href: "/admin/setlists",
-    icon: ListMusic,
-    requiredRoles: ["admin", "setlist_manager", "gig_manager", "catalog_manager"],
-    category: "Performances & Logistics",
-  },
-  {
     id: "checkin",
     title: "Downbeat Check-In",
     href: "/admin/checkin",
@@ -242,6 +234,14 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     href: "/portal/library",
     icon: Music2,
     requiredRoles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    category: "Music & Repertoire",
+  },
+  {
+    id: "setlists",
+    title: "Setlist Studio",
+    href: "/admin/setlists",
+    icon: ListMusic,
+    requiredRoles: ["admin", "setlist_manager", "gig_manager", "catalog_manager"],
     category: "Music & Repertoire",
   },
   {
