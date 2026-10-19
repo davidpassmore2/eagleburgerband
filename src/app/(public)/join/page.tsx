@@ -33,7 +33,7 @@ export default function JoinBandPage() {
   const hasFeatures = pageData?.sections?.some((s) => s.type === "features");
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12" suppressHydrationWarning>
+    <div className="pb-16" suppressHydrationWarning>
       {/* Dynamic SEO Meta */}
       <title>{pageData?.seo?.metaTitle || pageData?.title || "Join the Band | Eagleburger Band"}</title>
       <meta
@@ -43,7 +43,7 @@ export default function JoinBandPage() {
       {pageData?.seo?.keywords && <meta name="keywords" content={pageData.seo.keywords} />}
 
       {/* Hero Header */}
-      {isBannerActive ? (
+      {isBannerActive && (
         <PublicPageHeader
           headerImage={pageData?.headerImage}
           fallbackTitle={pageData?.title || "Join the Eagleburger Band"}
@@ -52,21 +52,24 @@ export default function JoinBandPage() {
             "Do you play brass or battery percussion? We are always looking for passionate, energetic musicians to blow the roof off Pittsburgh’s streets, parades, and festivals."
           }
         />
-      ) : (
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
-            <Music className="w-3.5 h-3.5" />
-            <span>Musician Recruitment</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight font-arvo">
-            {pageData?.title || "Join the Eagleburger Band"}
-          </h1>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            {pageData?.description ||
-              "Do you play brass or battery percussion? We are always looking for passionate, energetic musicians to blow the roof off Pittsburgh’s streets, parades, and festivals."}
-          </p>
-        </div>
       )}
+
+      <div className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "py-12"}`}>
+        {!isBannerActive && (
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
+              <Music className="w-3.5 h-3.5" />
+              <span>Musician Recruitment</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight font-arvo">
+              {pageData?.title || "Join the Eagleburger Band"}
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+              {pageData?.description ||
+                "Do you play brass or battery percussion? We are always looking for passionate, energetic musicians to blow the roof off Pittsburgh’s streets, parades, and festivals."}
+            </p>
+          </div>
+        )}
 
       {/* Fallback Info Highlights if no features section configured */}
       {!hasFeatures && (
@@ -121,6 +124,7 @@ export default function JoinBandPage() {
           buttonText="Submit Audition Request"
         />
       )}
+      </div>
     </div>
   );
 }

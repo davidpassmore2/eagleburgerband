@@ -143,7 +143,7 @@ export default function PublicGivingPage() {
   }, [beneficiaries, selectedCategory, searchQuery]);
 
   return (
-    <div className="space-y-16 pb-20" suppressHydrationWarning>
+    <div className="pb-20" suppressHydrationWarning>
       {/* Dynamic SEO Meta */}
       <title>{pageData?.seo?.metaTitle || pageData?.title || "Community Giving & Impact | Eagleburger Band"}</title>
       <meta name="description" content={pageData?.seo?.metaDescription || pageData?.description || "The Eagleburger Band community philanthropy and giving initiatives."} />
@@ -151,16 +151,14 @@ export default function PublicGivingPage() {
 
       {/* Hero Section */}
       {isBannerActive ? (
-        <div className="w-full">
-          <PublicPageHeader
-            headerImage={pageData?.headerImage}
-            defaultTitle={pageData?.title || "Community Giving & Philanthropy"}
-            defaultDescription={
-              pageData?.description ||
-              "The Eagleburger Band believes brass and drumline groove should uplift our region in every way. A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone."
-            }
-          />
-        </div>
+        <PublicPageHeader
+          headerImage={pageData?.headerImage}
+          defaultTitle={pageData?.title || "Community Giving & Philanthropy"}
+          defaultDescription={
+            pageData?.description ||
+            "The Eagleburger Band believes brass and drumline groove should uplift our region in every way. A portion of our performance proceeds is donated to grassroots organizations making Pittsburgh a healthier, more vibrant, and more musical place for everyone."
+          }
+        />
       ) : (
         <section className="relative overflow-hidden pt-12 pb-16 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
@@ -201,8 +199,10 @@ export default function PublicGivingPage() {
         </section>
       )}
 
-      {/* Call to Join in Support (Fallback if no CTA banners in CMS sections) */}
-      {!pageData?.sections?.some((s) => s.type === "cta_banner") && (
+      {/* Content Sections */}
+      <div className={`space-y-16 ${isBannerActive ? "pt-12 sm:pt-16" : ""}`}>
+        {/* Call to Join in Support (Fallback if no CTA banners in CMS sections) */}
+        {!pageData?.sections?.some((s) => s.type === "cta_banner") && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
             <div className="space-y-2 max-w-2xl">
@@ -391,6 +391,7 @@ export default function PublicGivingPage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }

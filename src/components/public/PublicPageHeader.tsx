@@ -68,7 +68,7 @@ export default function PublicPageHeader({
 
   return (
     <div
-      className={`relative w-full overflow-hidden flex flex-col justify-center border-b border-slate-800 ${heightClasses}`}
+      className={`relative w-full overflow-hidden flex flex-col justify-center ${heightClasses}`}
       suppressHydrationWarning
     >
       {/* Background Image */}

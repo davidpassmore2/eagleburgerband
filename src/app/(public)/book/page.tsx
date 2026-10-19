@@ -33,7 +33,7 @@ export default function BookingPage() {
   const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Request the Eagleburger Band for parades, street festivals, weddings, and private events. Check musician availability and rates.";
 
   return (
-    <div className="space-y-8 pb-16" suppressHydrationWarning>
+    <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDesc} />
       {seo?.keywords && <meta name="keywords" content={seo.keywords} />}
@@ -46,20 +46,24 @@ export default function BookingPage() {
       />
 
       {/* Custom Sections from CMS Studio (e.g. FAQ or Info Cards) */}
-      {pageData?.sections?.map((section) => (
-        <PublicSectionRenderer key={section.id} section={section} />
-      ))}
+      <div>
+        {pageData?.sections?.map((section) => (
+          <PublicSectionRenderer key={section.id} section={section} />
+        ))}
 
-      {/* Core Booking Form Fallback (if not configured in dynamic sections) */}
-      {!pageData?.sections?.some((s) => s.type === "booking_form") && (
-        <BookingFormSection
-          headline={pageData?.headerImage?.customTitle || pageData?.title || "Book the Eagleburger Band"}
-          subheadline={pageData?.headerImage?.customSubtitle || pageData?.description || "Tell us about your event. We will check band availability, outline performance options, and follow up with you promptly."}
-          badgeText={pageData?.headerImage?.badgeText || "Direct Event Inquiry"}
-          defaultEventType="Community Parade & Festival"
-          buttonText="Submit Booking Request"
-        />
-      )}
+        {/* Core Booking Form Fallback (if not configured in dynamic sections) */}
+        {!pageData?.sections?.some((s) => s.type === "booking_form") && (
+          <div className="py-12">
+            <BookingFormSection
+              headline={pageData?.headerImage?.customTitle || pageData?.title || "Book the Eagleburger Band"}
+              subheadline={pageData?.headerImage?.customSubtitle || pageData?.description || "Tell us about your event. We will check band availability, outline performance options, and follow up with you promptly."}
+              badgeText={pageData?.headerImage?.badgeText || "Direct Event Inquiry"}
+              defaultEventType="Community Parade & Festival"
+              buttonText="Submit Booking Request"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

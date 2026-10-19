@@ -38,7 +38,7 @@ export default function ContactPage() {
   const hasFeatures = pageData?.sections?.some((s) => s.type === "features");
 
   return (
-    <div className="space-y-8 pb-16" suppressHydrationWarning>
+    <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDesc} />
       {seo?.keywords && <meta name="keywords" content={seo.keywords} />}
@@ -50,7 +50,7 @@ export default function ContactPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "pt-8"}`}>
         {/* Header (rendered if no header image banner is active) */}
         {!isBannerActive && (
           <div className="text-center space-y-4 max-w-3xl mx-auto">

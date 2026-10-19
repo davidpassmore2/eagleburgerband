@@ -222,7 +222,7 @@ export default function BookingFormSection({
 
   if (isSubmitted) {
     return (
-      <div className={`max-w-3xl mx-auto px-4 ${compact ? "py-6" : "py-12"}`}>
+      <div className={`max-w-3xl mx-auto px-4 ${compact ? "py-2" : "py-12"}`}>
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-6 shadow-2xl animate-in fade-in duration-300">
           <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 className="w-8 h-8" />
@@ -283,7 +283,7 @@ export default function BookingFormSection({
   }
 
   return (
-    <div className={`max-w-4xl mx-auto px-4 sm:px-6 ${compact ? "py-6" : "py-12"} space-y-8`}>
+    <div className={`max-w-4xl mx-auto px-4 sm:px-6 ${compact ? "py-0" : "py-12"} space-y-8`}>
       {/* Section Header */}
       <div className="text-center space-y-3">
         {badgeText && (

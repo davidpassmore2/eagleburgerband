@@ -100,9 +100,9 @@ export default function PublicSectionRenderer({
 
   const backgroundClass =
     section.background === "surface"
-      ? "bg-slate-900/60 border-y border-slate-800/80"
+      ? "bg-slate-900/60 border-y first:border-t-0 border-slate-800/80"
       : section.background === "gradient"
-      ? "bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-y border-slate-800/80"
+      ? "bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-y first:border-t-0 border-slate-800/80"
       : section.background === "muted"
       ? "bg-slate-950/80"
       : "";
@@ -267,6 +267,7 @@ export default function PublicSectionRenderer({
       {/* 6. BOOKING FORM PRESET SECTION */}
       {section.type === "booking_form" && (
         <BookingFormSection
+          compact={true}
           headline={section.bookingForm?.headline}
           subheadline={section.bookingForm?.subheadline}
           badgeText={section.bookingForm?.badgeText}

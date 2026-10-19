@@ -101,7 +101,7 @@ export default function PublicGigsPage() {
   const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Parades, street rallies, outdoor festivals, and community celebrations across Western PA.";
 
   return (
-    <div className="space-y-8 pb-16" suppressHydrationWarning>
+    <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDesc} />
       {seo?.keywords && <meta name="keywords" content={seo.keywords} />}
@@ -113,7 +113,7 @@ export default function PublicGigsPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "pt-8"}`}>
         {/* Page Header (rendered if no header image banner is active) */}
         {!isBannerActive && (
           <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -296,7 +296,7 @@ export default function PublicGigsPage() {
 
       {/* Dynamic CMS Sections from CMS Studio */}
       {pageData?.sections && pageData.sections.length > 0 ? (
-        <div className="space-y-12">
+        <div className="space-y-12 mt-16">
           {pageData.sections.map((section) => (
             <PublicSectionRenderer key={section.id} section={section} />
           ))}
@@ -304,7 +304,7 @@ export default function PublicGigsPage() {
       ) : (
         /* Fallback Booking CTA Footer Box if no CMS sections defined */
         <div 
-          className="max-w-4xl mx-auto bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4"
+          className="max-w-4xl mx-auto mt-16 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 text-center space-y-4"
           suppressHydrationWarning
         >
           <h3 className="text-2xl font-black text-white uppercase tracking-tight font-arvo">

@@ -187,7 +187,7 @@ export default function PublicHomePage() {
   });
 
   return (
-    <div className="space-y-4 pb-16" suppressHydrationWarning>
+    <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDesc} />
       {keywords && <meta name="keywords" content={keywords} />}
@@ -215,16 +215,18 @@ export default function PublicHomePage() {
       />
 
       {/* Render All Dynamic Sections */}
-      {sectionsToRender.map((section) => (
-        <PublicSectionRenderer key={section.id} section={section} />
-      ))}
+      <div>
+        {sectionsToRender.map((section) => (
+          <PublicSectionRenderer key={section.id} section={section} />
+        ))}
 
-      {/* Fallback Intake Cards Section if not defined in dynamic sections */}
-      {!sectionsToRender.some((s) => s.type === "intake_cards") && (
-        <IntakeCardsSection
-          showAuditionBanner={!sectionsToRender.some((s) => s.type === "audition_callout")}
-        />
-      )}
+        {/* Fallback Intake Cards Section if not defined in dynamic sections */}
+        {!sectionsToRender.some((s) => s.type === "intake_cards") && (
+          <IntakeCardsSection
+            showAuditionBanner={!sectionsToRender.some((s) => s.type === "audition_callout")}
+          />
+        )}
+      </div>
     </div>
   );
 }

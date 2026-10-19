@@ -168,7 +168,7 @@ export default function DynamicPublicCmsPage({
   const jsonLd = getStructuredDataJson(page);
 
   return (
-    <div className="space-y-16 pb-20" suppressHydrationWarning>
+    <div className="pb-20" suppressHydrationWarning>
       <title>{seoTitle}</title>
       <meta name="description" content={seoDesc} />
       {keywords && <meta name="keywords" content={keywords} />}
@@ -197,9 +197,11 @@ export default function DynamicPublicCmsPage({
         fallbackSubtitle={page.description}
       />
 
-      {sortedSections.map((section) => (
-        <PublicSectionRenderer key={section.id} section={section} />
-      ))}
+      <div>
+        {sortedSections.map((section) => (
+          <PublicSectionRenderer key={section.id} section={section} />
+        ))}
+      </div>
     </div>
   );
 }
