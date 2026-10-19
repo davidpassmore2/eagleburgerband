@@ -42,6 +42,8 @@ export default function PublicPageHeader({
     badgeText,
   } = activeBanner;
 
+  const textDropShadow = "textDropShadow" in activeBanner ? Boolean(activeBanner.textDropShadow) : false;
+
   const customTitle = "customTitle" in activeBanner ? activeBanner.customTitle : undefined;
   const customSubtitle = "customSubtitle" in activeBanner ? activeBanner.customSubtitle : undefined;
 
@@ -95,27 +97,40 @@ export default function PublicPageHeader({
         className={`relative z-20 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 flex flex-col ${alignmentClasses} space-y-4`}
       >
         {badgeText?.trim() && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-xs font-mono font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+          <div
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-xs font-mono font-bold uppercase tracking-wider backdrop-blur-md shadow-lg ${
+              textDropShadow ? "drop-shadow-md" : ""
+            }`}
+          >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{badgeText.trim()}</span>
           </div>
         )}
 
         {title && (
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white uppercase tracking-tight leading-tight drop-shadow-md font-arvo">
+          <h1
+            className={`text-3xl sm:text-5xl md:text-6xl font-bold text-white uppercase tracking-tight leading-tight font-arvo ${
+              textDropShadow
+                ? "drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] [text-shadow:_0_2px_12px_rgba(0,0,0,0.9),_0_1px_3px_rgba(0,0,0,0.95)]"
+                : "drop-shadow-none"
+            }`}
+          >
             {title}
           </h1>
         )}
 
         {subtitle && (
-          <p className="text-sm sm:text-base md:text-lg text-slate-200 max-w-2xl leading-relaxed drop-shadow font-medium">
+          <p
+            className={`text-sm sm:text-base md:text-lg text-slate-200 max-w-2xl leading-relaxed font-medium ${
+              textDropShadow
+                ? "drop-shadow-[0_1px_8px_rgba(0,0,0,0.8)] [text-shadow:_0_1px_8px_rgba(0,0,0,0.85),_0_1px_2px_rgba(0,0,0,0.9)]"
+                : "drop-shadow-none"
+            }`}
+          >
             {subtitle}
           </p>
         )}
       </div>
-
-      {/* Bottom Accent Line */}
-      <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-yellow-400/60 to-transparent z-20 pointer-events-none" />
     </div>
   );
 }

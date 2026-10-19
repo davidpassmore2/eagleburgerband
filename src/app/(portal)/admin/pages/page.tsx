@@ -3906,6 +3906,32 @@ export default function CMSPagesStudio() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Subtle Drop Shadow Toggle */}
+                    <div className="pt-3 border-t border-slate-900 flex items-center justify-between gap-4">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block">
+                          Typography Drop Shadow
+                        </label>
+                        <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">
+                          Add a subtle dark shadow behind overlay text for enhanced legibility on brighter images
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(header.textDropShadow)}
+                            onChange={(e) => updateHeaderImage({ textDropShadow: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                        </label>
+                        <span className={`text-xs font-mono font-bold min-w-[28px] ${header.textDropShadow ? "text-yellow-400" : "text-slate-500"}`}>
+                          {header.textDropShadow ? "On" : "Off"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

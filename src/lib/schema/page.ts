@@ -255,6 +255,7 @@ export const PageHeaderImageSchema = z.object({
   badgeText: z.string().default(""),
   customTitle: z.string().default(""),
   customSubtitle: z.string().default(""),
+  textDropShadow: z.boolean().default(false),
 });
 
 export const ContentPageSchema = z.object({
