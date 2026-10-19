@@ -564,25 +564,23 @@ export default function UnifiedRepertoireLibraryPage() {
             />
           </div>
 
-          {/* Pitch a Song — available to all members */}
+          {/* View Song Suggestions — available to all members */}
           <Link
             href="/admin/suggestions?category=tune_request"
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-700 hover:border-slate-600 shrink-0"
-            title="Suggest a new song for the band's catalog"
+            title="Browse tune requests and vote on song suggestions"
           >
-            <Lightbulb className="w-4 h-4 text-yellow-400" /> Pitch a Song
+            <Lightbulb className="w-4 h-4 text-yellow-400" /> Song Suggestions
           </Link>
 
-          {/* Manager Action: Add Song */}
-          {canManage && (
-            <button
-              type="button"
-              onClick={handleOpenCreateModal}
-              className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow shrink-0"
-            >
-              <Plus className="w-4 h-4" /> Add New Song
-            </button>
-          )}
+          {/* Add New Song — points to Suggestion Triage and Voting with submit form active */}
+          <Link
+            href="/admin/suggestions?category=tune_request&action=new"
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow shrink-0"
+            title="Submit a new song suggestion for catalog triage & voting"
+          >
+            <Plus className="w-4 h-4" /> Add New Song
+          </Link>
         </div>
 
       </div>
