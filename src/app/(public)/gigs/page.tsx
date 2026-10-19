@@ -113,10 +113,10 @@ export default function PublicGigsPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "pt-8"}`}>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${isBannerActive ? "pt-10 sm:pt-14 pb-8 sm:pb-10" : "py-10 sm:py-12"}`}>
         {/* Page Header (rendered if no header image banner is active) */}
         {!isBannerActive && (
-          <div className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-8">
             <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
               <Calendar className="w-3.5 h-3.5" />
               Live Performance Schedule
@@ -131,14 +131,14 @@ export default function PublicGigsPage() {
         )}
 
         {/* Toggle between Upcoming and Past */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2.5">
           <button
             type="button"
             onClick={() => setShowPast(false)}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${
               !showPast
                 ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
-                : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700"
             }`}
           >
             Upcoming Appearances ({upcomingGigs.length})
@@ -146,10 +146,10 @@ export default function PublicGigsPage() {
           <button
             type="button"
             onClick={() => setShowPast(true)}
-            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1.5 ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer ${
               showPast
                 ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
-                : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700"
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -159,7 +159,7 @@ export default function PublicGigsPage() {
       </div>
 
       {/* Gigs List */}
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
         {loading ? (
           <div className="text-center py-16 space-y-3">
             <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto" />
