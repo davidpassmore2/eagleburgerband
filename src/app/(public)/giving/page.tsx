@@ -200,7 +200,7 @@ export default function PublicGivingPage() {
       )}
 
       {/* Content Sections */}
-      <div className={`space-y-16 ${isBannerActive ? "pt-12 sm:pt-16" : ""}`}>
+      <div className={`space-y-16 ${isBannerActive ? "pt-8 sm:pt-12" : ""}`}>
         {/* Call to Join in Support (Fallback if no CTA banners in CMS sections) */}
         {!pageData?.sections?.some((s) => s.type === "cta_banner") && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

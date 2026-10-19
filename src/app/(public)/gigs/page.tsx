@@ -131,7 +131,7 @@ export default function PublicGigsPage() {
         )}
 
         {/* Toggle between Upcoming and Past */}
-        <div className="pt-2 flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => setShowPast(false)}

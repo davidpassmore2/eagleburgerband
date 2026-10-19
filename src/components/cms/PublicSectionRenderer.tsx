@@ -93,10 +93,10 @@ export default function PublicSectionRenderer({
   // Background and padding presets
   const paddingClass =
     section.padding === "compact"
-      ? "py-8"
+      ? "py-8 first:pt-6"
       : section.padding === "generous"
-      ? "py-20 sm:py-28"
-      : "py-12 sm:py-16";
+      ? "py-20 sm:py-28 first:pt-12 first:sm:pt-16"
+      : "py-12 sm:py-16 first:pt-8 first:sm:pt-12";
 
   const backgroundClass =
     section.background === "surface"

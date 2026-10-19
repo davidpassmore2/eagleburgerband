@@ -68,7 +68,7 @@ export default function PublicPageHeader({
 
   return (
     <div
-      className={`relative w-full overflow-hidden flex flex-col justify-center ${heightClasses}`}
+      className={`relative w-full overflow-hidden flex flex-col justify-center border-b border-slate-800 ${heightClasses}`}
       suppressHydrationWarning
     >
       {/* Background Image */}
@@ -89,8 +89,8 @@ export default function PublicPageHeader({
         style={{ backgroundColor: `rgba(2, 6, 23, ${opacityDecimal})` }}
       />
 
-      {/* Decorative Gradient Vignette at Top and Bottom for Smooth Blend */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950 via-transparent to-black/40 pointer-events-none" />
+      {/* Decorative Gradient Vignette at Top and Bottom */}
+      <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/60 via-transparent to-black/40 pointer-events-none" />
 
       {/* Content Container */}
       <div
