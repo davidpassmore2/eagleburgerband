@@ -113,11 +113,6 @@ export default function PublicGigsPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      {/* Render Any Custom Intro Sections from CMS Studio */}
-      {pageData?.sections?.map((section) => (
-        <PublicSectionRenderer key={section.id} section={section} />
-      ))}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Page Header (rendered if no header image banner is active) */}
         {!isBannerActive && (
