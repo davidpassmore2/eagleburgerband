@@ -149,7 +149,7 @@ service cloud.firestore {
         || (isSignedIn()
             && request.auth.token.get('email_verified', false) == true
             && resource.data.email == request.auth.token.email.lower());
-      allow create: if canManageRoster();
+      allow create: if canManageRoster() || hasAnyRole(['section_leader', 'gig_manager']);
       allow update: if canManageRoster()
         || (isSignedIn()
             && changedKeys().hasOnly(['status', 'claimedAt', 'claimedByUid'])

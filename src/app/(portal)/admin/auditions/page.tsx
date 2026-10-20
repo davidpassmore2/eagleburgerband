@@ -7,6 +7,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -16,6 +17,8 @@ import {
   Audition,
   AuditionStatus,
 } from "@/lib/schema/audition";
+import { InviteSchema } from "@/lib/schema/invite";
+import { authedFetch } from "@/lib/firebase/authedFetch";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import {
@@ -34,11 +37,28 @@ import {
   ShieldAlert,
   MessageSquare,
   Award,
+  Copy,
+  Send,
 } from "lucide-react";
+
+interface SectionOption {
+  id: string;
+  name: string;
+}
+
+const DEFAULT_SECTIONS: SectionOption[] = [
+  { id: "percussion", name: "Drumline & Percussion" },
+  { id: "sousaphones", name: "Sousaphones & Tubas" },
+  { id: "trombones", name: "Trombones" },
+  { id: "trumpets", name: "Trumpets" },
+  { id: "saxophones", name: "Saxophones & Woodwinds" },
+  { id: "auxiliary", name: "Auxiliary & Visuals" },
+];
 
 export default function AuditionsAdminStudio() {
   const { profile, loading: authLoading } = useAuth();
   const [auditions, setAuditions] = useState<Audition[]>([]);
+  const [sections, setSections] = useState<SectionOption[]>(DEFAULT_SECTIONS);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
@@ -52,7 +72,7 @@ export default function AuditionsAdminStudio() {
   useEffect(() => {
     if (authLoading) return;
 
-    const unsub = onSnapshot(
+    const unsubAuditions = onSnapshot(
       collection(db, "auditions"),
       (snap) => {
         const list: Audition[] = [];
@@ -73,7 +93,25 @@ export default function AuditionsAdminStudio() {
       }
     );
 
-    return () => unsub();
+    const unsubSections = onSnapshot(
+      collection(db, "sections"),
+      (snap) => {
+        if (!snap.empty) {
+          const list: SectionOption[] = [];
+          snap.forEach((d) => {
+            const data = d.data();
+            list.push({ id: d.id, name: data.name || d.id });
+          });
+          if (list.length > 0) setSections(list);
+        }
+      },
+      (err) => console.warn("Could not load sections in auditions studio:", err)
+    );
+
+    return () => {
+      unsubAuditions();
+      unsubSections();
+    };
   }, [authLoading]);
 
   if (authLoading || loading) {
@@ -94,10 +132,155 @@ export default function AuditionsAdminStudio() {
     );
   }
 
-  const handleUpdateStatus = async (id: string, newStatus: AuditionStatus) => {
-    setActionInProgress(id);
+  const handleAcceptApplication = async (item: Audition) => {
+    setActionInProgress(item.id);
     try {
-      await updateDoc(doc(db, "auditions", id), {
+      // 1. Generate unique onboarding invite token
+      const token =
+        item.inviteToken ||
+        `inv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const claimUrl = `${window.location.origin}/claim?token=${token}`;
+
+      // 2. Prepare instruments array
+      const instruments = [
+        item.primaryInstrument,
+        item.secondaryInstruments,
+      ]
+        .map((i) => i?.trim())
+        .filter(Boolean) as string[];
+
+      // 3. Resolve section name
+      const sectionName =
+        sections.find((s) => s.id === item.targetSectionId)?.name ||
+        item.targetSectionId ||
+        "General Roster";
+
+      // 4. Create or ensure invite document in Firestore invites collection
+      const invitePayload = {
+        token,
+        email: item.email.trim().toLowerCase(),
+        displayName: item.name.trim(),
+        sectionId: item.targetSectionId || null,
+        instruments,
+        notes: `Accepted from audition application (${item.primaryInstrument})`,
+        roles: ["member" as const],
+        status: "pending" as const,
+        createdAt: new Date().toISOString(),
+      };
+      const validatedInvite = InviteSchema.parse(invitePayload);
+      await setDoc(doc(db, "invites", token), validatedInvite, { merge: true });
+
+      // 5. Dispatch onboarding invitation email via /api/email/invite
+      let emailDispatched = false;
+      try {
+        const res = await authedFetch("/api/email/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            recipientEmail: item.email.trim().toLowerCase(),
+            musicianName: item.name.trim(),
+            sectionName,
+            instruments,
+            notes: "Welcome to the Eagleburger Band! Your audition application has been accepted. Complete onboarding to claim your Musician Portal account.",
+            sectionId: item.targetSectionId || null,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          emailDispatched = true;
+        } else {
+          console.warn("Could not dispatch invite email automatically:", data.error);
+        }
+      } catch (emailErr) {
+        console.warn("Invite email dispatch error:", emailErr);
+      }
+
+      // 6. Update audition record
+      const nowIso = new Date().toISOString();
+      await updateDoc(doc(db, "auditions", item.id), {
+        status: "accepted",
+        inviteToken: token,
+        onboardingUrl: claimUrl,
+        inviteSentAt: emailDispatched ? nowIso : (item.inviteSentAt || nowIso),
+        updatedAt: nowIso,
+      });
+
+      toast.success(
+        emailDispatched
+          ? `Audition accepted! Onboarding invitation email sent to ${item.email}.`
+          : `Audition accepted and onboarding link generated!`
+      );
+    } catch (err) {
+      console.error("Error accepting application:", err);
+      toast.error("Failed to accept application: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleCopyOnboardingLink = (item: Audition) => {
+    const token = item.inviteToken;
+    if (!token) return;
+    const link = item.onboardingUrl || `${window.location.origin}/claim?token=${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success(`Onboarding link for ${item.name} copied to clipboard!`);
+  };
+
+  const handleResendInviteEmail = async (item: Audition) => {
+    if (!item.inviteToken) {
+      await handleAcceptApplication(item);
+      return;
+    }
+    setActionInProgress(item.id);
+    try {
+      const sectionName =
+        sections.find((s) => s.id === item.targetSectionId)?.name ||
+        item.targetSectionId ||
+        "General Roster";
+      const instruments = [item.primaryInstrument, item.secondaryInstruments]
+        .map((i) => i?.trim())
+        .filter(Boolean) as string[];
+
+      const res = await authedFetch("/api/email/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: item.inviteToken,
+          recipientEmail: item.email.trim().toLowerCase(),
+          musicianName: item.name.trim(),
+          sectionName,
+          instruments,
+          notes: "Reminder: Complete your onboarding to claim your Musician Portal account.",
+          sectionId: item.targetSectionId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend invitation email");
+
+      const nowIso = new Date().toISOString();
+      await updateDoc(doc(db, "auditions", item.id), {
+        inviteSentAt: nowIso,
+        updatedAt: nowIso,
+      });
+
+      toast.success(`Onboarding invitation email resent to ${item.email}!`);
+    } catch (err) {
+      console.error("Resend invite error:", err);
+      toast.error("Failed to resend invite: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleUpdateStatus = async (item: Audition, newStatus: AuditionStatus) => {
+    if (newStatus === "accepted") {
+      await handleAcceptApplication(item);
+      return;
+    }
+    setActionInProgress(item.id);
+    try {
+      await updateDoc(doc(db, "auditions", item.id), {
         status: newStatus,
         updatedAt: new Date().toISOString(),
       });
@@ -241,12 +424,11 @@ export default function AuditionsAdminStudio() {
             className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-yellow-400"
           >
             <option value="all">All Sections</option>
-            <option value="percussion">Drumline</option>
-            <option value="sousaphones">Sousaphones</option>
-            <option value="trombones">Trombones</option>
-            <option value="trumpets">Trumpets</option>
-            <option value="saxophones">Saxophones</option>
-            <option value="auxiliary">Auxiliary</option>
+            {sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.name}
+              </option>
+            ))}
           </select>
 
           <div className="relative min-w-[180px]">
@@ -388,6 +570,49 @@ export default function AuditionsAdminStudio() {
                       </div>
                     )}
 
+                    {/* Onboarding & Invite Link (if accepted) */}
+                    {item.status === "accepted" && (
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Accepted to Roster &bull; Onboarding Active</span>
+                          </div>
+                          {item.inviteSentAt && (
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              Invite Sent: {new Date(item.inviteSentAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+
+                        {item.inviteToken && (
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <span className="text-[11px] text-slate-400 font-medium">Claim Link:</span>
+                            <code className="text-[11px] bg-slate-950 px-2 py-0.5 rounded border border-emerald-500/30 font-mono text-emerald-300 select-all">
+                              /claim?token={item.inviteToken}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyOnboardingLink(item)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition shadow-sm"
+                            >
+                              <Copy className="w-3 h-3 text-yellow-400" />
+                              <span>Copy Link</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isProcessing}
+                              onClick={() => handleResendInviteEmail(item)}
+                              className="px-2.5 py-1 rounded-lg bg-yellow-400/15 hover:bg-yellow-400/25 text-yellow-300 border border-yellow-400/30 text-xs font-semibold flex items-center gap-1 transition disabled:opacity-50 shadow-sm"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>Resend Email</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Reviewer Notes Thread */}
                     <div className="pt-2">
                       {isEditingNote ? (
@@ -458,7 +683,7 @@ export default function AuditionsAdminStudio() {
                       <button
                         type="button"
                         disabled={isProcessing}
-                        onClick={() => handleUpdateStatus(item.id, "under_review")}
+                        onClick={() => handleUpdateStatus(item, "under_review")}
                         className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5"
                       >
                         <Clock className="w-3.5 h-3.5" />
@@ -471,7 +696,7 @@ export default function AuditionsAdminStudio() {
                       <button
                         type="button"
                         disabled={isProcessing}
-                        onClick={() => handleUpdateStatus(item.id, "invited_to_rehearsal")}
+                        onClick={() => handleUpdateStatus(item, "invited_to_rehearsal")}
                         className="px-3 py-1.5 rounded-xl bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 text-xs font-bold transition flex items-center justify-center gap-1.5"
                       >
                         <Calendar className="w-3.5 h-3.5" />
@@ -479,17 +704,37 @@ export default function AuditionsAdminStudio() {
                       </button>
                     )}
 
-                    {/* Accept to Roster */}
-                    {item.status !== "accepted" && (
+                    {/* Accept to Roster & Send Onboarding Link */}
+                    {item.status !== "accepted" ? (
                       <button
                         type="button"
                         disabled={isProcessing}
-                        onClick={() => handleUpdateStatus(item.id, "accepted")}
+                        onClick={() => handleAcceptApplication(item)}
                         className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Accept to Roster</span>
                       </button>
+                    ) : (
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyOnboardingLink(item)}
+                          className="w-full px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Copy className="w-3 h-3 text-yellow-400" />
+                          <span>Copy Link</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isProcessing}
+                          onClick={() => handleResendInviteEmail(item)}
+                          className="w-full px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                        >
+                          <Send className="w-3 h-3 text-slate-400" />
+                          <span>Resend Email</span>
+                        </button>
+                      </div>
                     )}
 
                     {/* Decline */}
@@ -497,7 +742,7 @@ export default function AuditionsAdminStudio() {
                       <button
                         type="button"
                         disabled={isProcessing}
-                        onClick={() => handleUpdateStatus(item.id, "declined")}
+                        onClick={() => handleUpdateStatus(item, "declined")}
                         className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 border border-slate-700 text-xs font-medium transition flex items-center justify-center gap-1.5"
                       >
                         <XCircle className="w-3.5 h-3.5" />

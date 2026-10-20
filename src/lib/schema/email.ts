@@ -8,6 +8,7 @@ export const SendInviteEmailSchema = z.object({
   sectionName: z.string().default(""),
   instruments: z.array(z.string()).default([]),
   notes: z.string().default(""),
+  sectionId: z.string().nullable().optional(),
 });
 export type SendInviteEmailPayload = z.infer<typeof SendInviteEmailSchema>;
 

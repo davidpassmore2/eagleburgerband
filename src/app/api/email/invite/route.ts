@@ -4,7 +4,7 @@ import { renderInviteEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { requireCaller } from "@/lib/auth/serverAuth";
-import { getDocument, updateDocument } from "@/lib/firebase/serverFirestore";
+import { getDocument, updateDocument, setDocument } from "@/lib/firebase/serverFirestore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
   try {
     const caller = await requireCaller(
       req,
-      ["membership_manager"],
-      "Unauthorized: Administrator clearance required to dispatch invitations."
+      ["membership_manager", "section_leader", "gig_manager"],
+      "Unauthorized: Administrator or Section Leader clearance required to dispatch invitations."
     );
     if (caller instanceof NextResponse) return caller;
 
@@ -28,16 +28,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { token, recipientEmail, musicianName, sectionName, instruments, notes } = parsed.data;
+    const { token, recipientEmail, musicianName, sectionName, instruments, notes, sectionId } = parsed.data;
     const actorUid = caller.uid;
 
-    // 2. Fetch or verify the invite document
+    // 2. Fetch or verify the invite document (auto-provision if missing)
     const invitePath = `invites/${token}`;
-    if (!(await getDocument(invitePath))) {
-      return NextResponse.json(
-        { error: "Invite token record not found in system." },
-        { status: 404 }
-      );
+    const existingInvite = await getDocument(invitePath);
+    if (!existingInvite) {
+      await setDocument(invitePath, {
+        token,
+        email: recipientEmail.trim().toLowerCase(),
+        displayName: musicianName.trim(),
+        sectionId: sectionId || null,
+        instruments,
+        notes,
+        roles: ["member"],
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        claimedAt: null,
+        claimedByUid: null,
+        revokedAt: null,
+        lastEmailSentAt: null,
+      });
     }
 
     const origin = req.headers.get("origin") || req.nextUrl?.origin;
