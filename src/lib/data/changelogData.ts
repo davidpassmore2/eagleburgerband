@@ -22,6 +22,10 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added direct 'Roll Call' action buttons to every performance card in the Gig Management Studio (/admin/gigs) to launch /portal/checkin/[gigId] with one click.",
       "Updated leadership roll call switcher in My Attendance (/portal/checkin) to launch the active day-of roll call kiosk directly.",
       "Cleaned up breadcrumb and return navigation throughout the live Day-of-Show Roll Call Kiosk (/portal/checkin/[gigId]).",
+      "Engineered the in-context Section Readiness & Quorum Drawer (GigReadinessDrawer) directly inside the Gig Management Studio (/admin/gigs).",
+      "Unified acoustic quorum monitoring and RSVP analysis on gig cards with real-time section breakdown, progress bars, and minimum staffing targets.",
+      "Added color-coded member status tags (Confirmed In, Probable, Tentative, Declined) and 1-click 'Copy Needs Blast' generating pre-formatted shortage announcements for texting the band.",
+      "Consolidated Section Attendance by redirecting /admin/attendance directly into the Gig Management Studio and deep-linking into the readiness drawer.",
     ],
   },
   {

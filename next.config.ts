@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
         destination: "/portal/checkin",
         permanent: false,
       },
+      {
+        source: "/admin/attendance",
+        destination: "/admin/gigs",
+        permanent: false,
+      },
     ];
   },
 };

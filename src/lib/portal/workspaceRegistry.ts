@@ -187,14 +187,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     category: "Personnel & Attendance",
   },
   {
-    id: "attendance",
-    title: "Section Attendance",
-    href: "/admin/attendance",
-    icon: CheckSquare,
-    requiredRoles: ["admin", "section_leader", "gig_manager", "membership_manager"],
-    category: "Personnel & Attendance",
-  },
-  {
     id: "assets",
     title: "Equipment & Assets",
     href: "/admin/inventory",

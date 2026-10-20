@@ -45,10 +45,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   UserCheck,
+  Users,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
 import GigSetlistAssignmentModal from "@/components/portal/GigSetlistAssignmentModal";
+import GigReadinessDrawer from "@/components/portal/GigReadinessDrawer";
 import ResourceAssetPickerModal from "@/components/cms/ResourceAssetPickerModal";
 import { ResourceAsset } from "@/lib/schema/resource";
 import { GigCompensationType } from "@/lib/schema/gig";
@@ -126,6 +128,7 @@ export default function GigsAdminStudioPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingGig, setEditingGig] = useState<GigItem | null>(null);
   const [managingSetlistGig, setManagingSetlistGig] = useState<GigItem | null>(null);
+  const [readinessGig, setReadinessGig] = useState<GigItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const [setlistMap, setSetlistMap] = useState<Record<string, { name: string; category: string; tuneCount: number }>>({});
@@ -264,6 +267,19 @@ export default function GigsAdminStudioPage() {
       unsubSetlists();
     };
   }, [authLoading]);
+
+  // Handle deep-link to open readiness drawer directly (e.g. from attendance redirect)
+  useEffect(() => {
+    if (typeof window === "undefined" || gigs.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetGigId = params.get("readiness") || params.get("readinessGigId") || params.get("gigId");
+    if (targetGigId) {
+      const found = gigs.find((g) => g.id === targetGigId);
+      if (found) {
+        setReadinessGig(found);
+      }
+    }
+  }, [gigs]);
 
   // Derived filtered & sorted gigs
   const { filteredGigs, counts } = useMemo(() => {
@@ -2454,6 +2470,15 @@ export default function GigsAdminStudioPage() {
                     <span>Dispatch to Confirmed</span>
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setReadinessGig(g)}
+                  className="text-xs font-semibold text-slate-300 hover:text-emerald-400 flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg border border-slate-700 transition cursor-pointer"
+                  title="Open acoustic quorum and section readiness drawer"
+                >
+                  <Users className="w-3 h-3 text-emerald-400" />
+                  <span>Section Readiness</span>
+                </button>
                 <Link
                   href={`/portal/checkin/${g.id}`}
                   className="text-xs font-semibold text-slate-300 hover:text-yellow-400 flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg border border-slate-700 transition"
@@ -2494,6 +2519,13 @@ export default function GigsAdminStudioPage() {
         filterCategory="header"
         title="Choose Gig Header Image"
         subtitle="Select a header banner image from the band's resource library for this gig."
+      />
+
+      {/* Section Readiness & Quorum Slide-Over Drawer */}
+      <GigReadinessDrawer
+        isOpen={Boolean(readinessGig)}
+        onClose={() => setReadinessGig(null)}
+        gig={readinessGig}
       />
     </div>
   );

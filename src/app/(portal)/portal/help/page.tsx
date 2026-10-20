@@ -784,7 +784,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Band Roster & Invites", path: "/admin/roster" },
-      { title: "Section Attendance", path: "/admin/attendance" },
+      { title: "Gig Studio & Readiness", path: "/admin/gigs" },
       { title: "My Profile & SMS Settings", path: "/portal/profile" }
     ]
   },
@@ -889,19 +889,19 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-attendance-mgmt",
-    title: "Section Attendance & Participation Tracker",
-    path: "/admin/attendance",
+    title: "Section Readiness & Quorum Studio",
+    path: "/admin/gigs",
     category: "Personnel & Attendance",
-    roles: ["admin", "section_leader"],
-    badge: "Attendance Analytics",
-    iconName: "CheckSquare",
-    summary: "Historical attendance metrics, participation rates, and rehearsal involvement.",
-    description: "The Attendance Tracker compiles attendance records from gig roll calls and rehearsals. Section leaders use this data to understand lineup turnout, celebrate active participants, and support musicians with scheduling questions.",
+    roles: ["admin", "section_leader", "gig_manager"],
+    badge: "Quorum Analytics",
+    iconName: "Users",
+    summary: "Real-time acoustic quorum monitoring and section readiness per performance.",
+    description: "The Section Readiness Drawer in Gig Management Studio evaluates member RSVPs against each section's minimum recommended instrument staffing. Coordinators inspect quorum thresholds, spot section deficits, and copy SMS callout blasts for section recruitment.",
     keyFeatures: [
-      "Ensemble-wide and section-filtered participation rate percentages.",
-      "Individual musician participation histories: Gigs Attended, Rehearsal Turnout, and Season Streaks.",
-      "Date range filtering (Full Year, Spring Season, Fall Parades).",
-      "Participation badge indicators celebrating active ensemble members."
+      "In-context slide-over drawer accessible directly from each performance card in Gig Management Studio.",
+      "Section-by-section quorum progress tracking with minimum staffing targets.",
+      "Color-coded musician roster chips: Confirmed In, Probable, Tentative Buffer, and Declined.",
+      "1-click 'Copy Needs Blast' generating pre-formatted shortage announcements for texting the band."
     ],
     howToUse: [
       "Filter records by instrument section or gig date range.",
@@ -1775,12 +1775,12 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     authorities: [
       "Access the Section Command workspace (/admin/sections) to review section rosters and balance.",
       "Execute day-of roll call verification for their section (/portal/checkin/[gigId]).",
-      "Review historical attendance participation and gig analytics for their section (/admin/attendance)."
+      "Inspect acoustic quorum and section readiness in the Gig Management Studio (/admin/gigs)."
     ],
     routes: [
       { title: "Section Command", path: "/admin/sections" },
       { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
-      { title: "Attendance Analytics", path: "/admin/attendance" },
+      { title: "Section Readiness", path: "/admin/gigs" },
       { title: "Musician Roster", path: "/portal/roster" },
     ],
     accentBorder: "rgba(129, 140, 248, 0.5)",
@@ -2019,7 +2019,7 @@ const RBAC_ROLES = [
     title: "Section Leader",
     target: "Instrument Voicing Leads (Trumpet, Trombone, Sax, Sousaphone, Drums)",
     scope: "Day-of-show roll call via Downbeat Check-In, reviewing section attendance metrics, section rosters, and rehearsal music charts.",
-    routes: "/admin/sections, /admin/attendance, /portal/checkin/[gigId], /portal/*"
+    routes: "/admin/sections, /admin/gigs, /portal/checkin/[gigId], /portal/*"
   },
   {
     role: "asset_manager",
