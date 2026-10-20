@@ -516,8 +516,8 @@ const ROUTE_DOCS: RouteDoc[] = [
   },
   {
     id: "admin-checkin",
-    title: "Downbeat Check-In Studio",
-    path: "/admin/checkin",
+    title: "Day-of-Show Roll Call Kiosk",
+    path: "/portal/checkin/[gigId]",
     category: "Gigs & Logistics",
     roles: ["admin", "gig_manager", "section_leader"],
     badge: "Day-of-Show Roll Call",
@@ -578,7 +578,7 @@ const ROUTE_DOCS: RouteDoc[] = [
     ],
     relatedRoutes: [
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
-      { title: "Downbeat Check-In", path: "/admin/checkin" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
       { title: "Setlist Studio", path: "/admin/setlists" },
       { title: "My Availability & Blackouts", path: "/portal/availability" }
     ]
@@ -746,12 +746,12 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Review your historical attendance percentage at the top of the screen."
     ],
     proTips: [
-      "Section leaders can also verify your arrival on-site using the Downbeat Check-In Studio (/admin/checkin).",
+      "Section leaders can also verify your arrival on-site using the Day-of Roll Call Kiosk (/portal/checkin/[gigId]).",
       "Consistent band participation helps section leaders ensure strong instrumentation across performances and practices."
     ],
     relatedRoutes: [
       { title: "Gig Central", path: "/portal/gigs" },
-      { title: "Downbeat Check-In", path: "/admin/checkin" }
+      { title: "My Attendance & Check-In", path: "/portal/checkin" }
     ]
   },
   {
@@ -913,7 +913,7 @@ const ROUTE_DOCS: RouteDoc[] = [
       "Cross-reference section numbers with upcoming events to invite guest players or section subs as needed."
     ],
     relatedRoutes: [
-      { title: "Downbeat Check-In", path: "/admin/checkin" },
+      { title: "My Attendance & Check-In", path: "/portal/checkin" },
       { title: "Band Sections", path: "/admin/sections" }
     ]
   },
@@ -1720,12 +1720,12 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
       "Create and edit gigs in the Gig Management workspace (/admin/gigs).",
       "Publish and broadcast Call Sheet Dispatch emails and SMS alerts (/admin/dispatch).",
       "Triage inbound gig inquiries and convert leads into confirmed gigs (/admin/inquiries).",
-      "Verify real-time attendance during day-of-show Downbeat Check-In (/admin/checkin)."
+      "Verify real-time attendance during day-of-show roll call (/portal/checkin/[gigId] or /portal/checkin)."
     ],
     routes: [
       { title: "Gig Management", path: "/admin/gigs" },
       { title: "Setlist Designer", path: "/admin/setlists" },
-      { title: "Live Check-In", path: "/admin/checkin" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
       { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
       { title: "Gig Inquiries", path: "/admin/inquiries" },
       { title: "Broadcast Studio", path: "/admin/notifications" },
@@ -1774,12 +1774,12 @@ const ROLE_DESCRIPTIONS: RoleDocItem[] = [
     ],
     authorities: [
       "Access the Section Command workspace (/admin/sections) to review section rosters and balance.",
-      "Execute Downbeat Check-In verification for their section (/admin/checkin).",
+      "Execute day-of roll call verification for their section (/portal/checkin/[gigId]).",
       "Review historical attendance participation and gig analytics for their section (/admin/attendance)."
     ],
     routes: [
       { title: "Section Command", path: "/admin/sections" },
-      { title: "Live Check-In", path: "/admin/checkin" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
       { title: "Attendance Analytics", path: "/admin/attendance" },
       { title: "Musician Roster", path: "/portal/roster" },
     ],
@@ -1984,7 +1984,7 @@ const RBAC_ROLES = [
     title: "Gig & Operations Manager",
     target: "Gig Coordinators & Event Managers",
     scope: "Scheduling gigs, configuring logistics (call time, downbeat, pay, attire), publishing call sheets, emergency dispatch, and booking inquiries triage.",
-    routes: "/admin/gigs, /admin/setlists, /admin/checkin, /admin/dispatch, /admin/inquiries, /admin/contacts, /admin/notifications"
+    routes: "/admin/gigs, /admin/setlists, /admin/dispatch, /admin/inquiries, /admin/contacts, /admin/notifications, /portal/checkin/[gigId]"
   },
   {
     role: "catalog_manager",
@@ -2019,7 +2019,7 @@ const RBAC_ROLES = [
     title: "Section Leader",
     target: "Instrument Voicing Leads (Trumpet, Trombone, Sax, Sousaphone, Drums)",
     scope: "Day-of-show roll call via Downbeat Check-In, reviewing section attendance metrics, section rosters, and rehearsal music charts.",
-    routes: "/admin/checkin, /admin/sections, /admin/attendance, /portal/*"
+    routes: "/admin/sections, /admin/attendance, /portal/checkin/[gigId], /portal/*"
   },
   {
     role: "asset_manager",

@@ -441,11 +441,11 @@ export default function MemberSelfCheckInPage() {
         {/* Leadership Switcher */}
         {isLeader && (
           <Link
-            href="/admin/checkin"
+            href={activeGig ? `/portal/checkin/${activeGig.id}` : "/admin/attendance"}
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow shrink-0"
           >
             <Users className="w-4 h-4 text-yellow-400" />
-            <span>Section Roll Call Kiosk</span>
+            <span>{activeGig ? "Section Roll Call Kiosk" : "Section Attendance"}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         )}

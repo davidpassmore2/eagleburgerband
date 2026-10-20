@@ -2936,7 +2936,7 @@ async function runSeed() {
     { id: "call-sheets", title: "Call Sheet Dispatch", path: "/admin/dispatch", cat: "Performances & Logistics" },
     { id: "setlists", title: "Setlist Studio", path: "/admin/setlists", cat: "Performances & Logistics" },
     { id: "suggestions", title: "Suggestion Triage & Voting", path: "/admin/suggestions", cat: "Music & Repertoire" },
-    { id: "checkin", title: "Downbeat Check-In", path: "/admin/checkin", cat: "Performances & Logistics" },
+    { id: "my-attendance", title: "My Attendance & Check-In", path: "/portal/checkin", cat: "Personnel & Attendance" },
     { id: "reimbursements", title: "Expense Reimbursements", path: "/portal/reimbursements", cat: "Finance" },
     { id: "pages", title: "CMS Page Studio", path: "/admin/pages", cat: "Website & Intake" },
   ];

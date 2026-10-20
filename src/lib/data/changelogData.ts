@@ -7,6 +7,24 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 65,
+    title: "Audition Onboarding Automation, Intake Refinement & Day-of Check-In Consolidation",
+    category: "Personnel, Onboarding Automation, Auditions & Day-of Operations",
+    accomplishments: [
+      "Streamlined the public Audition Application (/join) by removing section three while retaining the musical journey textarea as an optional 'Additional Comments' field.",
+      "Engineered automated onboarding invite link generation upon applicant acceptance in the Audition Review Studio (/admin/auditions).",
+      "Created cryptographic invite tokens in the Firestore 'invites' collection with role 'member', applicant name, email, section assignment, and audition notes matching manual roster invite standards.",
+      "Connected accepted application review directly to the automated invitation email dispatch API (/api/email/invite) with personal claim URLs.",
+      "Added post-acceptance management badges to audition cards with one-click 'Copy Onboarding Link' and 'Resend Email' controls.",
+      "Expanded /api/email/invite and firestore.rules permissions to allow Section Leaders and Gig Managers to create onboarding invites when accepting recruits.",
+      "Consolidated check-in architecture by removing the redundant, non-functional /admin/checkin intermediary selector from the workspace registry.",
+      "Configured automatic Next.js redirect from /admin/checkin to /portal/checkin ('My Attendance & Check-In').",
+      "Added direct 'Roll Call' action buttons to every performance card in the Gig Management Studio (/admin/gigs) to launch /portal/checkin/[gigId] with one click.",
+      "Updated leadership roll call switcher in My Attendance (/portal/checkin) to launch the active day-of roll call kiosk directly.",
+      "Cleaned up breadcrumb and return navigation throughout the live Day-of-Show Roll Call Kiosk (/portal/checkin/[gigId]).",
+    ],
+  },
+  {
     stage: 64,
     title: "Public Polish, Cloudinary Upload Resilience, Repertoire List Layout & Setlist Navigation",
     category: "CMS Media, Public UX, Song Catalog & Portal Architecture",

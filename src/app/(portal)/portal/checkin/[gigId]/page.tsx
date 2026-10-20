@@ -256,8 +256,9 @@ export default function DayOfCheckInKioskPage({
           <PortalBreadcrumb section="Personnel & Attendance" pageTitle="My Attendance & Check-In" pageHref="/portal/checkin" subPage={gigTitle || "Day-of-Show Check-In"} className="mb-2" />
           <div className="flex items-center gap-2">
             <Link
-              href="/admin/checkin"
+              href="/portal/checkin"
               className="p-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white transition"
+              title="Return to My Attendance & Check-In"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </Link>

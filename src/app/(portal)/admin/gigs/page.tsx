@@ -44,6 +44,7 @@ import {
   Send,
   CheckCircle2,
   AlertTriangle,
+  UserCheck,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -2453,6 +2454,14 @@ export default function GigsAdminStudioPage() {
                     <span>Dispatch to Confirmed</span>
                   </button>
                 )}
+                <Link
+                  href={`/portal/checkin/${g.id}`}
+                  className="text-xs font-semibold text-slate-300 hover:text-yellow-400 flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg border border-slate-700 transition"
+                  title="Launch live day-of roll call kiosk for this performance"
+                >
+                  <UserCheck className="w-3 h-3 text-yellow-400" />
+                  <span>Roll Call</span>
+                </Link>
                 <Link
                   href={`/portal/gigs/${g.id}`}
                   className="text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"

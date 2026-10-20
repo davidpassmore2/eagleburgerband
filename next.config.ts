@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
         destination: "/admin/comments",
         permanent: false,
       },
+      {
+        source: "/admin/checkin",
+        destination: "/portal/checkin",
+        permanent: false,
+      },
     ];
   },
 };

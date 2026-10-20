@@ -121,14 +121,6 @@ export const WORKSPACE_TOOLS: WorkspaceTool[] = [
     category: "Performances & Logistics",
   },
   {
-    id: "checkin",
-    title: "Downbeat Check-In",
-    href: "/admin/checkin",
-    icon: UserCheck,
-    requiredRoles: ["admin", "gig_manager", "section_leader"],
-    category: "Performances & Logistics",
-  },
-  {
     id: "call-sheets",
     title: "Call Sheet Dispatch",
     href: "/admin/dispatch",
