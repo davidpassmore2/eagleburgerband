@@ -83,8 +83,8 @@ export const AuditionInputSchema = z.object({
   bioNotes: z
     .string()
     .trim()
-    .min(10, "Please share a brief note about yourself and why you would like to join (min 10 characters)")
-    .max(1500, "Note cannot exceed 1500 characters"),
+    .max(1500, "Additional comments cannot exceed 1500 characters")
+    .default(""),
 });
 
 export type AuditionInput = z.infer<typeof AuditionInputSchema>;

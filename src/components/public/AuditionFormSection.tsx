@@ -18,7 +18,6 @@ import {
   Loader2,
   AlertCircle,
   Sparkles,
-  Link2,
 } from "lucide-react";
 
 function cleanString(val: string): string {
@@ -71,7 +70,7 @@ export default function AuditionFormSection({
     secondaryInstruments: "",
     experienceLevel: "High School / College Marching",
     sampleLinks: "",
-    availability: "Weekly rehearsals and weekend gigs",
+    availability: "",
     bioNotes: "",
   });
 
@@ -210,7 +209,7 @@ export default function AuditionFormSection({
       secondaryInstruments: "",
       experienceLevel: "High School / College Marching",
       sampleLinks: "",
-      availability: "Weekly rehearsals and weekend gigs",
+      availability: "",
       bioNotes: "",
     });
     setErrors({});
@@ -471,68 +470,26 @@ export default function AuditionFormSection({
               </div>
             </div>
 
-            {/* Step 3: Availability & Audio Links */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-yellow-400 font-mono">
-                3. Logistics, Recordings & Bio
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                    Availability & Commitment
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Available for weeknight rehearsals & weekend parades"
-                    value={formData.availability}
-                    onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, availability: e.target.value }));
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                    Video / Audio Links (YouTube, Google Drive, Soundcloud)
-                  </label>
-                  <div className="relative">
-                    <Link2 className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      placeholder="https://youtube.com/watch?v=..."
-                      value={formData.sampleLinks}
-                      onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, sampleLinks: e.target.value }));
-                      }}
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Musical Journey & Tell Us About Yourself *
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Share your musical journey, why you want to play with the Eagleburger Band, or what kind of street tunes you love..."
-                  value={formData.bioNotes}
-                  onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, bioNotes: e.target.value }));
-                    clearFieldError("bioNotes");
-                  }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 transition resize-y ${
-                    errors.bioNotes
-                      ? "border-rose-500 focus:ring-rose-500"
-                      : "border-slate-800 focus:border-yellow-400 focus:ring-yellow-400"
-                  }`}
-                />
-                {errors.bioNotes && <p className="text-[11px] text-rose-400 font-medium">{errors.bioNotes}</p>}
-              </div>
+            {/* Additional Comments */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Additional Comments
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Share your musical journey, why you want to play with the Eagleburger Band, or any additional comments..."
+                value={formData.bioNotes}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, bioNotes: e.target.value }));
+                  clearFieldError("bioNotes");
+                }}
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 transition resize-y ${
+                  errors.bioNotes
+                    ? "border-rose-500 focus:ring-rose-500"
+                    : "border-slate-800 focus:border-yellow-400 focus:ring-yellow-400"
+                }`}
+              />
+              {errors.bioNotes && <p className="text-[11px] text-rose-400 font-medium">{errors.bioNotes}</p>}
             </div>
 
             {/* Submit */}
