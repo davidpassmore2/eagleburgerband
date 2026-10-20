@@ -7,6 +7,24 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 64,
+    title: "Public Polish, Cloudinary Upload Resilience, Repertoire List Layout & Setlist Navigation",
+    category: "CMS Media, Public UX, Song Catalog & Portal Architecture",
+    accomplishments: [
+      "Updated admin gig dispatch workflow with explicit 'Dispatch to Confirmed' action label across gig management studio.",
+      "Resolved Cloudinary upload preset failure in CMS and Page Banner Studio by establishing robust unauthenticated upload presets with fallback handling.",
+      "Fixed double-rendered CTA banner section on the public Gigs page (/gigs) by scoping dynamic CMS sections from static section components.",
+      "Added configurable subtle drop shadow toggle for overlay typography in the CMS Page Banner Manager and public HeroSection components.",
+      "Refined public header banners by removing artificial gradient lines while preserving clean border-b border-slate-800 divider aesthetics.",
+      "Standardized consistent vertical rhythm across all public system pages with unified first-section top padding (first:pt-8 first:sm:pt-12).",
+      "Balanced padding and visual alignment around the Upcoming / Past gig filter controls on the public Gigs schedule.",
+      "Redesigned the Song Catalog (/portal/library) from multi-column grid cards to a scannable, single-line list layout with aligned BPM badges, key signatures, and action controls.",
+      "Moved Setlist Studio under 'Music & Repertoire' across the workspace registry, section overviews, and hierarchical breadcrumbs.",
+      "Connected the Song Catalog '+ Add New Song' action directly to Suggestion Triage & Voting (/admin/suggestions?category=tune_request&action=new).",
+      "Enhanced Suggestion Triage with search parameter parsing to automatically activate the submission form and pre-select the tune request category with Suspense boundary wrapping.",
+    ],
+  },
+  {
     stage: 63,
     title: "Comment Likes, Tooltips & 'My Availability & Blackouts' Member Redesign",
     category: "Member Portal UX, Availability & Engagement",
