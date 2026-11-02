@@ -826,7 +826,7 @@ function PublicGiftsSectionComponent({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {config.showCategoryFilter && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              {["all", "arts_music", "community_aid", "youth_education", "hunger_relief", "environment"].map((cat) => (
+              {["all", "arts_music", "community_aid", "youth_education", "hunger_relief", "environment", "other"].map((cat) => (
                 <button
                   key={cat}
                   type="button"

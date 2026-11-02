@@ -709,9 +709,28 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
     },
     sections: [
       {
+        id: "sec_giving_public_gifts",
+        type: "public_gifts",
+        order: 1,
+        isVisible: true,
+        background: "default",
+        padding: "standard",
+        publicGifts: {
+          title: "Band Gifts & Community Philanthropy",
+          subtitle: "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+          badgeText: "Band Gifts in Action",
+          showCategoryFilter: true,
+          showSearch: true,
+          showAmountsIfAllowed: true,
+          maxItems: 24,
+          ctaText: "Book Band for a Benefit",
+          ctaHref: "/book",
+        },
+      },
+      {
         id: "sec_giving_cta_benefit",
         type: "cta_banner",
-        order: 1,
+        order: 2,
         isVisible: true,
         background: "surface",
         padding: "standard",
@@ -728,7 +747,7 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
       {
         id: "sec_giving_cta_suggest",
         type: "cta_banner",
-        order: 2,
+        order: 3,
         isVisible: true,
         background: "default",
         padding: "standard",
