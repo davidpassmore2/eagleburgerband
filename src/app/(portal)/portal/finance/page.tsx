@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   collection,
   doc,
@@ -13,8 +12,6 @@ import {
   query,
   orderBy,
   where,
-  getDoc,
-  getDocs,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
@@ -25,6 +22,8 @@ import {
   ReimbursementSchema,
   ExpenseCategoryEnum,
   PayoutMethodEnum,
+  ExpenseCategory,
+  PayoutMethod,
 } from "@/lib/schema/reimbursement";
 import {
   Donation,
@@ -138,20 +137,15 @@ function FinanceHubContent() {
   const isGivingManager = Boolean(profile && canManageGiving(profile));
 
   // Active Tab synchronized with ?tab=
-  const initialTab = (searchParams.get("tab") as FinanceTab) || "treasury";
-  const [activeTab, setActiveTab] = useState<FinanceTab>(initialTab);
+  const tabParam = searchParams.get("tab") as FinanceTab;
+  const activeTab: FinanceTab =
+    tabParam && ["treasury", "reimbursements", "giving", "ledger"].includes(tabParam)
+      ? tabParam
+      : "treasury";
 
   const switchTab = (tab: FinanceTab) => {
-    setActiveTab(tab);
     router.replace(`/portal/finance?tab=${tab}`, { scroll: false });
   };
-
-  useEffect(() => {
-    const tabParam = searchParams.get("tab") as FinanceTab;
-    if (tabParam && ["treasury", "reimbursements", "giving", "ledger"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
 
   // Data States
   const [treasuryConfig, setTreasuryConfig] = useState<TreasuryConfig>({
@@ -166,6 +160,7 @@ function FinanceHubContent() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [gigs, setGigs] = useState<GigOption[]>([]);
   const [rosterMembers, setRosterMembers] = useState<User[]>([]);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [loadingData, setLoadingData] = useState(true);
 
   // Subscriptions
@@ -365,7 +360,6 @@ function FinanceHubContent() {
 
   // Cause Comments & Discussion Stream State
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const toggleComments = (causeId: string) => {
     setExpandedComments((prev) => ({
@@ -543,13 +537,13 @@ function FinanceHubContent() {
         submittedOnBehalf,
         amount: Number(numAmount.toFixed(2)),
         description: reimbDescription.trim(),
-        category: reimbCategory as any,
+        category: reimbCategory as ExpenseCategory,
         expenseDate: reimbDate,
         gigId: reimbGigId || null,
         gigTitle: selectedGig ? selectedGig.title : null,
         receiptUrl: reimbReceiptUrl.trim(),
         receiptNote: reimbReceiptNote.trim(),
-        paymentMethod: reimbPayoutMethod as any,
+        paymentMethod: reimbPayoutMethod as PayoutMethod,
         paymentHandle: reimbPayoutHandle.trim(),
         status: "submitted",
         reviewNotes: "",
