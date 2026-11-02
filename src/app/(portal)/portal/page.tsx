@@ -21,6 +21,7 @@ import CalendarSubscribeModal from "@/components/portal/CalendarSubscribeModal";
 import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import PortalMonthCalendar from "@/components/portal/PortalMonthCalendar";
 import MemberRehearsalsSection from "@/components/portal/MemberRehearsalsSection";
+import MemberActivitySection from "@/components/portal/MemberActivitySection";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { toast } from "@/lib/context/ToastContext";
@@ -1090,7 +1091,16 @@ export default function MusicianPortalOverviewPage() {
         </div>
       </div>
 
-      {/* 4. Thematic & Functional Action Hubs */}
+      {/* 4. My Activity Feed */}
+      {profile?.uid && (
+        <MemberActivitySection
+          uid={profile.uid}
+          gigs={gigs}
+          userRsvps={userRsvps}
+        />
+      )}
+
+      {/* 5. Thematic & Functional Action Hubs */}
       <div className="space-y-3">
         <div className="px-1 flex items-center justify-between">
           <h2 className="text-xs font-mono uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">

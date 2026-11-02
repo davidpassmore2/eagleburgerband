@@ -46,6 +46,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Enforced that prospective gifts (cause suggestions awaiting review or in voting) are strictly excluded from public feeds; only completed Band Gifts that have been made are eligible for public listing.",
       "Excluded all added notes (public impact notes and internal review notes) from public feeds and schemas, ensuring public cards display clean organization and cause descriptions only.",
       "Empowered giving managers (Community Managers, Treasurers, Admins) to delete or dismiss Band Gifts with confirmation, aligning with suggested cause lifecycle controls.",
+      "Engineered the 'My Activity' personal timeline feed on the member portal home page (/portal), organizing song suggestions, suggested causes, submitted expense reimbursements, declared blackout dates, RSVP commitments, and discussion comments with interactive category filters and status tracking.",
     ],
   },
   {
