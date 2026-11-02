@@ -318,7 +318,12 @@ service cloud.firestore {
         || (isMember()
             && request.resource.data.status == 'suggested'
             && request.resource.data.suggestedByUid == request.auth.uid);
-      allow update, delete: if hasAnyRole(['treasurer', 'community_manager']);
+      allow update: if hasAnyRole(['treasurer', 'community_manager'])
+        || (isMember()
+            && resource.data.status == 'suggested'
+            && changedKeys().hasOnly(['ratings', 'ratingAverage', 'ratingCount', 'updatedAt'])
+            && changesOnlyMyRating());
+      allow delete: if hasAnyRole(['treasurer', 'community_manager']);
     }
 
     match /testimonials/{testimonialId} {

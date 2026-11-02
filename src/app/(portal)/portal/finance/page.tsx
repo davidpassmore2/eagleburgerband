@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { canManageFinances } from "@/lib/auth/permissions";
+import { canManageFinances, canManageGiving } from "@/lib/auth/permissions";
 import {
   Reimbursement,
   ReimbursementSchema,
@@ -30,6 +30,7 @@ import {
   DonationSchema,
   DonationCategory,
   DonationCategoryEnum,
+  calculateDonationPriorityScore,
 } from "@/lib/schema/donation";
 import { Transaction, TransactionSchema } from "@/lib/schema/transaction";
 import { TreasuryConfig, TreasuryConfigSchema } from "@/lib/schema/treasury";
@@ -73,6 +74,8 @@ import {
   X,
   CreditCard,
   Settings,
+  Award,
+  Trash2,
 } from "lucide-react";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -120,6 +123,7 @@ function FinanceHubContent() {
   const searchParams = useSearchParams();
   const { profile, loading: authLoading } = useAuth();
   const isManager = Boolean(profile && canManageFinances(profile));
+  const isGivingManager = Boolean(profile && canManageGiving(profile));
 
   // Active Tab synchronized with ?tab=
   const initialTab = (searchParams.get("tab") as FinanceTab) || "treasury";
@@ -299,6 +303,26 @@ function FinanceHubContent() {
   const [suggestTargetAmount, setSuggestTargetAmount] = useState("");
   const [suggestRationale, setSuggestRationale] = useState("");
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
+
+  // Community Manager / Admin: Add Cause Manually Modal
+  const [isAddCauseModalOpen, setIsAddCauseModalOpen] = useState(false);
+  const [addCauseOrgName, setAddCauseOrgName] = useState("");
+  const [addCauseDesc, setAddCauseDesc] = useState("");
+  const [addCauseWebsite, setAddCauseWebsite] = useState("");
+  const [addCauseCategory, setAddCauseCategory] = useState<DonationCategory>("community_aid");
+  const [addCauseTargetAmount, setAddCauseTargetAmount] = useState("250");
+  const [addCauseStatus, setAddCauseStatus] = useState<"suggested" | "completed">("suggested");
+  const [addCauseFiscalYear, setAddCauseFiscalYear] = useState(() => String(new Date().getFullYear()));
+  const [addCauseDate, setAddCauseDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [addCauseAmount, setAddCauseAmount] = useState("100");
+  const [addCauseImpactNote, setAddCauseImpactNote] = useState("");
+  const [addCauseNotes, setAddCauseNotes] = useState("");
+  const [addCauseAttributedMemberUid, setAddCauseAttributedMemberUid] = useState("");
+  const [isSubmittingAddCause, setIsSubmittingAddCause] = useState(false);
+
+  // Priority Voting & Sorting State
+  const [ratingInProgressId, setRatingInProgressId] = useState<string | null>(null);
+  const [suggestSortOrder, setSuggestSortOrder] = useState<"rank" | "recent">("rank");
 
   // Manager Direct Donation Modal
   const [isRecordDonationModalOpen, setIsRecordDonationModalOpen] = useState(false);
@@ -533,6 +557,9 @@ function FinanceHubContent() {
         reviewedByUid: null,
         reviewedByName: null,
         reviewedAt: null,
+        ratings: {},
+        ratingAverage: 0,
+        ratingCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -550,6 +577,133 @@ function FinanceHubContent() {
       toast.error("Failed to submit suggestion: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSubmittingSuggestion(false);
+    }
+  };
+
+  // Member: Rate Cause Priority (1-10)
+  const handleRateCausePriority = async (cause: Donation, score: number) => {
+    if (!profile) {
+      toast.error("You must be logged in to rank causes.");
+      return;
+    }
+    setRatingInProgressId(cause.id);
+    try {
+      const existingRatings = cause.ratings || {};
+      const newRatings: Record<string, number> = {
+        ...existingRatings,
+        [profile.uid]: score,
+      };
+      const { average, count } = calculateDonationPriorityScore(newRatings);
+
+      await updateDoc(doc(db, "donations", cause.id), {
+        ratings: newRatings,
+        ratingAverage: average,
+        ratingCount: count,
+        updatedAt: new Date().toISOString(),
+      });
+
+      toast.success(`Priority score ${score}/10 recorded for ${cause.organizationName}.`);
+    } catch (err) {
+      toast.error("Failed to save priority rating: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setRatingInProgressId(null);
+    }
+  };
+
+  // Community Manager / Admin: Add Cause Manually
+  const handleAddCauseManually = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addCauseOrgName.trim()) {
+      toast.error("Please enter an organization name.");
+      return;
+    }
+
+    setIsSubmittingAddCause(true);
+    try {
+      const id = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      let suggestedByName = profile?.displayName || "Community Manager";
+      let suggestedByUid: string | null = profile?.uid || null;
+      let submittedOnBehalf = false;
+
+      if (addCauseAttributedMemberUid) {
+        const member = rosterMembers.find((u) => u.uid === addCauseAttributedMemberUid);
+        if (member) {
+          suggestedByName = member.displayName || member.realName || "Musician";
+          suggestedByUid = member.uid;
+          submittedOnBehalf = true;
+        }
+      }
+
+      const targetAmt = parseFloat(addCauseTargetAmount) || 0;
+      const directAmt = parseFloat(addCauseAmount) || 0;
+
+      const payload: Donation = {
+        id,
+        organizationName: addCauseOrgName.trim(),
+        causeDescription: addCauseDesc.trim(),
+        websiteUrl: addCauseWebsite.trim(),
+        category: addCauseCategory,
+        amount: addCauseStatus === "completed" ? directAmt : 0,
+        targetAmount: targetAmt,
+        dateDonated: addCauseStatus === "completed" ? addCauseDate : new Date().toISOString().split("T")[0],
+        fiscalYear: addCauseFiscalYear,
+        status: addCauseStatus,
+        isPublic: true,
+        publicImpactNote: addCauseImpactNote.trim(),
+        notes: addCauseNotes.trim(),
+        suggestedByUid,
+        suggestedByName,
+        submittedByUid: profile?.uid || null,
+        submittedByName: profile?.displayName || "Community Manager",
+        submittedOnBehalf,
+        rationale: addCauseDesc.trim(),
+        reviewedByUid: addCauseStatus === "completed" ? (profile?.uid || null) : null,
+        reviewedByName: addCauseStatus === "completed" ? (profile?.displayName || "Community Manager") : "",
+        reviewedAt: addCauseStatus === "completed" ? new Date().toISOString() : null,
+        ratings: {},
+        ratingAverage: 0,
+        ratingCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const validated = DonationSchema.parse(payload);
+      await setDoc(doc(db, "donations", id), validated);
+
+      toast.success(
+        addCauseStatus === "suggested"
+          ? `Added "${addCauseOrgName.trim()}" to member priority voting.`
+          : `Recorded "${addCauseOrgName.trim()}" as a completed beneficiary donation.`
+      );
+
+      setIsAddCauseModalOpen(false);
+      setAddCauseOrgName("");
+      setAddCauseDesc("");
+      setAddCauseWebsite("");
+      setAddCauseCategory("community_aid");
+      setAddCauseTargetAmount("250");
+      setAddCauseStatus("suggested");
+      setAddCauseAmount("100");
+      setAddCauseImpactNote("");
+      setAddCauseNotes("");
+      setAddCauseAttributedMemberUid("");
+    } catch (err) {
+      toast.error("Failed to add cause: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSubmittingAddCause(false);
+    }
+  };
+
+  // Community Manager / Admin: Delete / Dismiss Suggestion
+  const handleDeleteSuggestion = async (cause: Donation) => {
+    if (!confirm(`Are you sure you want to dismiss and delete the suggestion for "${cause.organizationName}"?`)) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, "donations", cause.id));
+      toast.success(`Removed suggestion for "${cause.organizationName}".`);
+    } catch (err) {
+      toast.error("Failed to delete suggestion: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -605,6 +759,9 @@ function FinanceHubContent() {
         reviewedByUid: profile?.uid || null,
         reviewedByName: profile?.displayName || "Treasurer",
         reviewedAt: new Date().toISOString(),
+        ratings: {},
+        ratingAverage: 0,
+        ratingCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -812,6 +969,31 @@ function FinanceHubContent() {
       return matchesSearch && matchesType;
     });
   }, [transactions, ledgerSearch, ledgerTypeFilter]);
+
+  // Ranked Suggested Causes
+  const rankedSuggestedCauses = useMemo(() => {
+    const list = donations.filter((d) => d.status === "suggested");
+
+    if (suggestSortOrder === "recent") {
+      return [...list].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      const avgA = a.ratingAverage || 0;
+      const avgB = b.ratingAverage || 0;
+      if (avgB !== avgA) {
+        return avgB - avgA;
+      }
+      const countA = a.ratingCount || 0;
+      const countB = b.ratingCount || 0;
+      if (countB !== countA) {
+        return countB - countA;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [donations, suggestSortOrder]);
 
   // Filtered Donations
   const filteredDonations = useMemo(() => {
@@ -1461,11 +1643,11 @@ function FinanceHubContent() {
                 Charitable Philanthropy &amp; Community Causes
               </h2>
               <p className="text-xs text-slate-400">
-                Explore grassroots organizations the band funds, and suggest new causes with your Display Name.
+                Explore grassroots organizations the band funds, and suggest or vote on community priorities.
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsSuggestModalOpen(true)}
@@ -1475,81 +1657,223 @@ function FinanceHubContent() {
                 <span>Suggest a Charitable Cause</span>
               </button>
 
-              {isManager && (
+              {isGivingManager && (
+                <button
+                  type="button"
+                  onClick={() => setIsAddCauseModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>+ Add Cause Manually</span>
+                </button>
+              )}
+
+              {isGivingManager && (
                 <button
                   type="button"
                   onClick={() => setIsRecordDonationModalOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
-                  <PlusCircle className="w-4 h-4" />
+                  <DollarSign className="w-4 h-4" />
                   <span>Record Direct Donation</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Member Suggestions Showcase / Triage */}
+          {/* Member Suggestions Showcase & Priority Ranking */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
-                <span>Causes Suggested by Band Members ({donations.filter((d) => d.status === "suggested").length})</span>
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  <span>Member-Suggested Causes &amp; Priority Ranking ({rankedSuggestedCauses.length})</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Band members vote on priority (1-10) to guide how band charitable contributions are allocated.
+                </p>
+              </div>
+
+              {/* Sort Switch */}
+              <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl p-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSuggestSortOrder("rank")}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-lg transition ${
+                    suggestSortOrder === "rank"
+                      ? "bg-yellow-400 text-slate-950"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Priority Rank
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSuggestSortOrder("recent")}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-lg transition ${
+                    suggestSortOrder === "recent"
+                      ? "bg-yellow-400 text-slate-950"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Newest
+                </button>
+              </div>
             </div>
 
-            {donations.filter((d) => d.status === "suggested").length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-500 font-mono">
-                No active member suggestions awaiting review. Have a cause you love? Suggest one above!
+            {rankedSuggestedCauses.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-500 font-mono">
+                No active member suggestions awaiting review. Have a grassroots cause you love? Suggest one above!
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {donations
-                  .filter((d) => d.status === "suggested")
-                  .map((sug) => (
+                {rankedSuggestedCauses.map((sug, index) => {
+                  const ratingCount = sug.ratingCount || 0;
+                  const ratingAvg = sug.ratingAverage || 0;
+                  const hasVotes = ratingCount > 0;
+                  const overallRank = hasVotes ? index + 1 : null;
+                  const myRating = (profile?.uid && sug.ratings) ? sug.ratings[profile.uid] : undefined;
+                  const isRatingThis = ratingInProgressId === sug.id;
+
+                  return (
                     <div
                       key={sug.id}
-                      className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2.5 relative"
+                      className="p-5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-3.5 relative flex flex-col justify-between"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold text-white">{sug.organizationName}</div>
-                          <div className="text-[11px] text-slate-400">
-                            Suggested by <strong className="text-yellow-400">{sug.suggestedByName || "Bandmate"}</strong>
+                      {/* Top Header & Rank Badge */}
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-base font-bold text-white tracking-tight">{sug.organizationName}</div>
+                            <div className="text-[11px] text-slate-400">
+                              Suggested by <strong className="text-yellow-400">{sug.suggestedByName || "Bandmate"}</strong>
+                            </div>
                           </div>
+
+                          {/* Overall Rank Badge */}
+                          {overallRank === 1 ? (
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 uppercase font-black shrink-0 shadow-sm shadow-yellow-400/10">
+                              <Award className="w-3.5 h-3.5 text-yellow-400" />
+                              <span>Rank #1 Priority</span>
+                            </span>
+                          ) : overallRank ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold shrink-0">
+                              <span>Rank #{overallRank} Priority</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/60 uppercase font-medium shrink-0">
+                              Needs Votes
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 uppercase font-bold">
-                          Suggestion
-                        </span>
+
+                        {/* Rationale Quote */}
+                        <p className="text-xs text-slate-300 leading-relaxed italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40">
+                          &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
+                        </p>
+
+                        {/* Category & Website */}
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span className="capitalize font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                            {sug.category.replace(/_/g, " ")}
+                          </span>
+                          {sug.websiteUrl && (
+                            <a
+                              href={sug.websiteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>Website</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
 
-                      <p className="text-xs text-slate-300 leading-relaxed italic">
-                        &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
-                      </p>
+                      {/* Aggregated Score Bar */}
+                      <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 font-medium">Aggregated Priority:</span>
+                          <span className="font-mono font-bold text-white">
+                            {hasVotes ? (
+                              <>
+                                <strong className="text-yellow-400 text-sm">{ratingAvg.toFixed(1)}</strong>
+                                <span className="text-slate-400 text-[11px]"> / 10</span>
+                                <span className="text-slate-500 text-[10px] ml-1">
+                                  ({ratingCount} {ratingCount === 1 ? "vote" : "votes"})
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-slate-500 text-[11px]">No votes yet</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, (ratingAvg / 10) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
 
-                      <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
-                        <span className="capitalize">{sug.category.replace(/_/g, " ")}</span>
-                        {sug.websiteUrl && (
-                          <a
-                            href={sug.websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:underline inline-flex items-center gap-1"
+                      {/* Member 1-10 Priority Rating Controls */}
+                      <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400 font-mono">
+                            Your Priority Ranking:
+                          </span>
+                          {myRating ? (
+                            <span className="text-yellow-400 font-bold font-mono">
+                              Voted {myRating}/10
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-mono">Tap 1 (low) - 10 (essential)</span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-10 gap-1">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+                            const isSelected = myRating === num;
+                            return (
+                              <button
+                                key={num}
+                                type="button"
+                                disabled={isRatingThis}
+                                onClick={() => handleRateCausePriority(sug, num)}
+                                className={`py-1 rounded text-center font-mono text-xs font-bold transition cursor-pointer ${
+                                  isSelected
+                                    ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/20 ring-1 ring-yellow-300 scale-105"
+                                    : "bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800"
+                                } disabled:opacity-40`}
+                              >
+                                {num}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Manager Controls: Approve / Activate & Delete */}
+                      {isGivingManager && (
+                        <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSuggestion(sug)}
+                            className="px-2.5 py-1 rounded bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition"
+                            title="Dismiss and remove suggestion"
                           >
-                            <span>Website</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Dismiss</span>
+                          </button>
 
-                      {isManager && (
-                        <div className="pt-2 border-t border-slate-800 flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={async () => {
                               try {
                                 await updateDoc(doc(db, "donations", sug.id), {
                                   status: "completed",
-                                  reviewedByName: profile?.displayName || "Treasurer",
+                                  reviewedByName: profile?.displayName || "Community Manager",
                                   reviewedByUid: profile?.uid || null,
                                   reviewedAt: new Date().toISOString(),
                                   updatedAt: new Date().toISOString(),
@@ -1559,14 +1883,15 @@ function FinanceHubContent() {
                                 toast.error("Failed to approve suggestion.");
                               }
                             }}
-                            className="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold cursor-pointer"
+                            className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer transition"
                           >
                             Approve &amp; Activate
                           </button>
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2193,6 +2518,221 @@ function FinanceHubContent() {
                   className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
                   {isSubmittingSuggestion ? "Submitting..." : "Submit Suggestion"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: COMMUNITY MANAGER / ADMIN ADD CAUSE MANUALLY           */}
+      {/* ------------------------------------------------------------- */}
+      {isAddCauseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-black text-white uppercase tracking-tight">
+                  Add Charitable Cause Manually
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCauseModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCauseManually} className="space-y-4">
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-2">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Target Destination / Status *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAddCauseStatus("suggested")}
+                    className={`p-2.5 rounded-xl border text-left transition ${
+                      addCauseStatus === "suggested"
+                        ? "bg-yellow-400/15 border-yellow-400 text-yellow-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs">Queue for Voting</div>
+                    <div className="text-[10px] text-slate-500 font-normal">Members rank 1-10</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAddCauseStatus("completed")}
+                    className={`p-2.5 rounded-xl border text-left transition ${
+                      addCauseStatus === "completed"
+                        ? "bg-emerald-500/15 border-emerald-400 text-emerald-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs">Direct Beneficiary</div>
+                    <div className="text-[10px] text-slate-500 font-normal">Immediate band grant</div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Organization / Grassroots Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Bloomfield Community Garden, Women's Center & Shelter"
+                  value={addCauseOrgName}
+                  onChange={(e) => setAddCauseOrgName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Category *
+                  </label>
+                  <select
+                    value={addCauseCategory}
+                    onChange={(e) => setAddCauseCategory(e.target.value as DonationCategory)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  >
+                    {DonationCategoryEnum.options.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {DONATION_CATEGORY_LABELS[cat]?.label || cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    {addCauseStatus === "completed" ? "Donation Amount ($ USD) *" : "Target Amount ($ USD)"}
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    placeholder="250"
+                    value={addCauseStatus === "completed" ? addCauseAmount : addCauseTargetAmount}
+                    onChange={(e) => {
+                      if (addCauseStatus === "completed") {
+                        setAddCauseAmount(e.target.value);
+                      } else {
+                        setAddCauseTargetAmount(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              {addCauseStatus === "completed" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                      Date Donated *
+                    </label>
+                    <DatePicker
+                      value={addCauseDate}
+                      onChange={(d) => setAddCauseDate(d)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                      Fiscal Year *
+                    </label>
+                    <input
+                      type="text"
+                      value={addCauseFiscalYear}
+                      onChange={(e) => setAddCauseFiscalYear(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Website / Social Link
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={addCauseWebsite}
+                  onChange={(e) => setAddCauseWebsite(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Attributed Member (Optional)
+                </label>
+                <select
+                  value={addCauseAttributedMemberUid}
+                  onChange={(e) => setAddCauseAttributedMemberUid(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                >
+                  <option value="">-- Seeded by Management (No specific member) --</option>
+                  {rosterMembers.map((m) => (
+                    <option key={m.uid} value={m.uid}>
+                      {m.displayName || m.realName || "Musician"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Cause Description / Community Rationale *
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="Explain why this organization aligns with our community mission..."
+                  value={addCauseDesc}
+                  onChange={(e) => setAddCauseDesc(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+              </div>
+
+              {addCauseStatus === "completed" && (
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Public Impact Note
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Funded 5 youth brass band instruments for summer camp"
+                    value={addCauseImpactNote}
+                    onChange={(e) => setAddCauseImpactNote(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCauseModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingAddCause}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
+                >
+                  {isSubmittingAddCause ? "Saving..." : addCauseStatus === "suggested" ? "Add to Voting Queue" : "Record Beneficiary"}
                 </button>
               </div>
             </form>

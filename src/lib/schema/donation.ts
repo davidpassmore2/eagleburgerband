@@ -43,13 +43,34 @@ export const DonationSchema = z.object({
   reviewedByUid: z.string().nullable().default(null),
   reviewedByName: z.string().nullable().default(null),
   reviewedAt: z.string().nullable().default(null),
+  ratings: z.record(z.string(), z.number().min(1).max(10)).default({}),
+  ratingAverage: z.number().default(0),
+  ratingCount: z.number().default(0),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
 
 export type Donation = z.infer<typeof DonationSchema>;
 
-// Public Beneficiary presentation type (strictly omits internal amounts, review, and member attribution fields)
+/**
+ * Calculates average priority score (1-10) and total vote count from member ratings.
+ */
+export function calculateDonationPriorityScore(ratings: Record<string, number> = {}): {
+  average: number;
+  count: number;
+} {
+  const values = Object.values(ratings).filter(
+    (v) => typeof v === "number" && v >= 1 && v <= 10
+  );
+  if (values.length === 0) {
+    return { average: 0, count: 0 };
+  }
+  const sum = values.reduce((acc, curr) => acc + curr, 0);
+  const average = Math.round((sum / values.length) * 10) / 10;
+  return { average, count: values.length };
+}
+
+// Public Beneficiary presentation type (strictly omits internal amounts, review, ratings, and member attribution fields)
 export const PublicBeneficiarySchema = DonationSchema.omit({
   amount: true,
   notes: true,
@@ -64,6 +85,9 @@ export const PublicBeneficiarySchema = DonationSchema.omit({
   reviewedByUid: true,
   reviewedByName: true,
   reviewedAt: true,
+  ratings: true,
+  ratingAverage: true,
+  ratingCount: true,
 });
 
 export type PublicBeneficiary = z.infer<typeof PublicBeneficiarySchema>;

@@ -27,6 +27,10 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added color-coded member status tags (Confirmed In, Probable, Tentative, Declined) and 1-click 'Copy Needs Blast' generating pre-formatted shortage announcements for texting the band.",
       "Consolidated Section Attendance by redirecting /admin/attendance directly into the Gig Management Studio and deep-linking into the readiness drawer.",
       "Integrated the Treasury Baseline Starting Balance & Reconciliation summary banner directly onto the General Financial Ledger tab (/portal/finance?tab=ledger) with in-place 'Adjust Baseline' controls for Treasurers and Admins.",
+      "Empowered the Community Manager role (along with Treasurers and Admins) to manually add charitable causes to either the member voting queue or completed band beneficiaries with custom targets and fiscal attribution.",
+      "Implemented member-driven 1-10 priority ranking system for suggested causes with real-time aggregated average scores, vote tallies, and rank badges (#1 Priority, #2, etc.).",
+      "Added individual member 1-10 priority voting buttons with instant visual feedback and strict Firestore security rules allowing members to update only their own rating key.",
+      "Added 'Priority Rank' and 'Newest' sorting options to the member suggestions showcase, alongside Community Manager controls to approve/activate or dismiss causes.",
     ],
   },
   {
