@@ -16,6 +16,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Empowered members to self-withdraw pending or rejected expense reimbursement claims directly from 'My Reimbursement Claims' with confirmation safeguards.",
       "Enabled Treasurers and Admins to delete reimbursement records in the review queue and remove transactions/expenses from the General Ledger with automatic linked-record reconciliation.",
       "Hardened firestore.rules for reimbursements to permit member self-deletion for submitted and rejected claims while preserving full treasurer administrative oversight.",
+      "Added Emergency Contact Information and Dietary Preferences & Allergies management to the musician profile (/portal/profile), backed by strict Zod schema validation (UserSchema, EmergencyContactSchema, DIETARY_PREFERENCES) and confidential leadership access safeguards.",
     ],
   },
   {

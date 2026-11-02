@@ -27,6 +27,26 @@ export const PayoutPreferencesSchema = z.object({
 
 export type PayoutPreferences = z.infer<typeof PayoutPreferencesSchema>;
 
+export const DIETARY_PREFERENCES = [
+  "None / Omnivore",
+  "Vegetarian",
+  "Vegan",
+  "Gluten-Free",
+  "Dairy-Free",
+  "Nut Allergy",
+  "Kosher",
+  "Halal",
+  "Other",
+] as const;
+export type DietaryPreference = (typeof DIETARY_PREFERENCES)[number];
+
+export const EmergencyContactSchema = z.object({
+  name: z.string().default(""),
+  relationship: z.string().default(""),
+  phone: z.string().default(""),
+});
+export type EmergencyContact = z.infer<typeof EmergencyContactSchema>;
+
 export const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
 export type ShirtSize = (typeof SHIRT_SIZES)[number];
 
@@ -37,6 +57,13 @@ export const UserSchema = z.object({
   displayName: z.string().min(1),
   realName: z.string().default(""),
   shirtSize: z.string().default(""),
+  dietaryPreference: z.string().default(""),
+  dietaryNotes: z.string().default(""),
+  emergencyContact: EmergencyContactSchema.default({
+    name: "",
+    relationship: "",
+    phone: "",
+  }),
   sectionId: z.string().nullable().default(null),
   instruments: z.array(z.string()).default([]),
   selectedInstrument: z.string().default(""),

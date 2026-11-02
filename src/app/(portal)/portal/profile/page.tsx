@@ -5,7 +5,7 @@ import Link from "next/link";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
-import { User, SHIRT_SIZES } from "@/lib/schema/user";
+import { User, SHIRT_SIZES, DIETARY_PREFERENCES } from "@/lib/schema/user";
 import { Section, SectionSchema } from "@/lib/schema/section";
 import { logAdminAction } from "@/lib/logging/adminLogger";
 import { toast } from "@/lib/context/ToastContext";
@@ -33,6 +33,8 @@ import {
   Undo2,
   Check,
   Shirt,
+  HeartPulse,
+  UtensilsCrossed,
 } from "lucide-react";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import UnsavedChangesBar from "@/components/portal/UnsavedChangesBar";
@@ -45,6 +47,11 @@ interface FormValues {
   displayName: string;
   realName: string;
   shirtSize: string;
+  dietaryPreference: string;
+  dietaryNotes: string;
+  emergencyContactName: string;
+  emergencyContactRelationship: string;
+  emergencyContactPhone: string;
   selectedInstrument: string;
   phone: string;
   smsConsent: boolean;
@@ -62,6 +69,11 @@ function getInitialValues(p: User): FormValues {
     displayName: p.displayName || "",
     realName: p.realName || "",
     shirtSize: p.shirtSize || "",
+    dietaryPreference: p.dietaryPreference || "",
+    dietaryNotes: p.dietaryNotes || "",
+    emergencyContactName: p.emergencyContact?.name || "",
+    emergencyContactRelationship: p.emergencyContact?.relationship || "",
+    emergencyContactPhone: p.emergencyContact?.phone || "",
     selectedInstrument: p.selectedInstrument || p.instruments?.[0] || "",
     phone: p.phone || "",
     smsConsent: Boolean(p.smsConsent),
@@ -81,6 +93,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
   const [displayName, setDisplayName] = useState(savedValues.displayName);
   const [realName, setRealName] = useState(savedValues.realName);
   const [shirtSize, setShirtSize] = useState(savedValues.shirtSize);
+  const [dietaryPreference, setDietaryPreference] = useState(savedValues.dietaryPreference);
+  const [dietaryNotes, setDietaryNotes] = useState(savedValues.dietaryNotes);
+  const [emergencyContactName, setEmergencyContactName] = useState(savedValues.emergencyContactName);
+  const [emergencyContactRelationship, setEmergencyContactRelationship] = useState(savedValues.emergencyContactRelationship);
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState(savedValues.emergencyContactPhone);
   const [selectedInstrument, setSelectedInstrument] = useState(savedValues.selectedInstrument);
   const [phone, setPhone] = useState(savedValues.phone);
   const [smsConsent, setSmsConsent] = useState(savedValues.smsConsent);
@@ -144,6 +161,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
       displayName !== savedValues.displayName ||
       realName !== savedValues.realName ||
       shirtSize !== savedValues.shirtSize ||
+      dietaryPreference !== savedValues.dietaryPreference ||
+      dietaryNotes !== savedValues.dietaryNotes ||
+      emergencyContactName !== savedValues.emergencyContactName ||
+      emergencyContactRelationship !== savedValues.emergencyContactRelationship ||
+      emergencyContactPhone !== savedValues.emergencyContactPhone ||
       selectedInstrument !== savedValues.selectedInstrument ||
       phone !== savedValues.phone ||
       smsConsent !== savedValues.smsConsent ||
@@ -159,6 +181,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
     displayName,
     realName,
     shirtSize,
+    dietaryPreference,
+    dietaryNotes,
+    emergencyContactName,
+    emergencyContactRelationship,
+    emergencyContactPhone,
     selectedInstrument,
     phone,
     smsConsent,
@@ -188,6 +215,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
     setDisplayName(savedValues.displayName);
     setRealName(savedValues.realName);
     setShirtSize(savedValues.shirtSize);
+    setDietaryPreference(savedValues.dietaryPreference);
+    setDietaryNotes(savedValues.dietaryNotes);
+    setEmergencyContactName(savedValues.emergencyContactName);
+    setEmergencyContactRelationship(savedValues.emergencyContactRelationship);
+    setEmergencyContactPhone(savedValues.emergencyContactPhone);
     setSelectedInstrument(savedValues.selectedInstrument);
     setPhone(savedValues.phone);
     setSmsConsent(savedValues.smsConsent);
@@ -268,6 +300,13 @@ function ProfileForm({ profile }: ProfileFormProps) {
         displayName: nextDisplayName,
         realName: nextRealName,
         shirtSize: shirtSize.trim(),
+        dietaryPreference: dietaryPreference.trim(),
+        dietaryNotes: dietaryNotes.trim(),
+        emergencyContact: {
+          name: emergencyContactName.trim(),
+          relationship: emergencyContactRelationship.trim(),
+          phone: emergencyContactPhone.trim(),
+        },
         selectedInstrument: nextSelectedInstrument,
         instruments: updatedInstruments,
         phone: trimmedPhone,
@@ -292,6 +331,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
         displayName: nextDisplayName,
         realName: nextRealName,
         shirtSize: shirtSize.trim(),
+        dietaryPreference: dietaryPreference.trim(),
+        dietaryNotes: dietaryNotes.trim(),
+        emergencyContactName: emergencyContactName.trim(),
+        emergencyContactRelationship: emergencyContactRelationship.trim(),
+        emergencyContactPhone: emergencyContactPhone.trim(),
         selectedInstrument: nextSelectedInstrument,
         phone: trimmedPhone,
         smsConsent: Boolean(smsConsent && trimmedPhone.length > 0),
@@ -308,6 +352,11 @@ function ProfileForm({ profile }: ProfileFormProps) {
       setDisplayName(newSavedValues.displayName);
       setRealName(newSavedValues.realName);
       setShirtSize(newSavedValues.shirtSize);
+      setDietaryPreference(newSavedValues.dietaryPreference);
+      setDietaryNotes(newSavedValues.dietaryNotes);
+      setEmergencyContactName(newSavedValues.emergencyContactName);
+      setEmergencyContactRelationship(newSavedValues.emergencyContactRelationship);
+      setEmergencyContactPhone(newSavedValues.emergencyContactPhone);
       setSelectedInstrument(newSavedValues.selectedInstrument);
       setPhone(newSavedValues.phone);
       setSmsConsent(newSavedValues.smsConsent);
@@ -572,6 +621,84 @@ function ProfileForm({ profile }: ProfileFormProps) {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Band Hospitality & Dietary Preferences */}
+            <div className="space-y-3 pt-4 border-t" style={{ borderColor: "var(--ebb-border)" }}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <UtensilsCrossed className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Band Hospitality &amp; Dietary Preferences</span>
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Used for gig rider meals, tour dinners, soundcheck catering, and post-parade refreshments.
+                  </p>
+                </div>
+
+                {dietaryPreference && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400">Selected:</span>
+                    <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-amber-400/10 text-amber-400 border border-amber-400/20">
+                      {dietaryPreference}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDietaryPreference("")}
+                      className="text-[11px] text-slate-400 hover:text-rose-400 underline cursor-pointer ml-1"
+                      title="Clear dietary preference"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Preference Pills */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {DIETARY_PREFERENCES.map((pref) => {
+                  const isSelected = dietaryPreference === pref;
+                  return (
+                    <button
+                      key={pref}
+                      type="button"
+                      onClick={() => setDietaryPreference(isSelected ? "" : pref)}
+                      className={`text-xs px-3 py-2 rounded-xl border flex items-center gap-2 transition cursor-pointer font-medium ${
+                        isSelected
+                          ? "bg-amber-400/15 border-amber-400 text-amber-300 font-bold shadow-xs ring-1 ring-amber-400/30"
+                          : "bg-black/20 hover:bg-white/5 border-slate-700/80 text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
+                          isSelected
+                            ? "bg-amber-400 border-amber-400 text-slate-950"
+                            : "border-slate-600"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-2.5 h-2.5 stroke-3" />}
+                      </div>
+                      <span>{pref}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dietary Notes & Severe Allergies */}
+              <div className="pt-2">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Dietary Details &amp; Allergies (Optional)</span>
+                  <span className="text-[10px] text-slate-400">Allergens, restrictions, or preferences</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Severe peanut allergy (carries EpiPen), lactose intolerant, no cilantro"
+                  value={dietaryNotes}
+                  onChange={(e) => setDietaryNotes(e.target.value)}
+                  style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+                />
               </div>
             </div>
 
@@ -880,6 +1007,99 @@ function ProfileForm({ profile }: ProfileFormProps) {
                     )}
                   </div>
                 ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section: Emergency Contact Information */}
+        <div 
+          style={{ backgroundColor: "var(--ebb-surface)", borderColor: "var(--ebb-border)" }}
+          className="border rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-3 border-b pb-4" style={{ borderColor: "var(--ebb-border)" }}>
+            <div className="flex items-start gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/20">
+                <HeartPulse className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Emergency Contact Information</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                    emergencyContactName.trim() && emergencyContactPhone.trim()
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                  }`}>
+                    {emergencyContactName.trim() && emergencyContactPhone.trim() ? "Contact on File" : "Action Recommended"}
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Who should band leadership reach out to in the event of an urgent medical situation, road emergency, or travel incident?
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-xl border flex items-start gap-2.5 text-xs text-slate-300"
+              style={{
+                backgroundColor: "rgba(244, 63, 94, 0.08)",
+                borderColor: "rgba(244, 63, 94, 0.25)",
+              }}
+            >
+              <Info className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold text-rose-300">Confidential Safety Record:</span>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Emergency contact information is confidential and never shown in the public roster. Only active band leadership, gig managers, and soundcheck coordinators have access in urgent circumstances.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Contact Full Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Alex Morgan"
+                  value={emergencyContactName}
+                  onChange={(e) => setEmergencyContactName(e.target.value)}
+                  style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Relationship
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Spouse, Partner, Parent, Sibling"
+                  value={emergencyContactRelationship}
+                  onChange={(e) => setEmergencyContactRelationship(e.target.value)}
+                  style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Emergency Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <input
+                    type="tel"
+                    placeholder="(412) 555-0199"
+                    value={emergencyContactPhone}
+                    onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                    style={{ backgroundColor: "var(--ebb-surface-muted)", borderColor: "var(--ebb-border)" }}
+                    className="w-full border rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
               </div>
             </div>
           </div>
