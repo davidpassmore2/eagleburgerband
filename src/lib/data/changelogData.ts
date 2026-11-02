@@ -45,6 +45,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Refactored the public Community Giving page (/giving) by replacing hardcoded gift arrays, search bars, and card markup with the dynamic 'public_gifts' CMS section component (PublicSectionRenderer).",
       "Enforced that prospective gifts (cause suggestions awaiting review or in voting) are strictly excluded from public feeds; only completed Band Gifts that have been made are eligible for public listing.",
       "Excluded all added notes (public impact notes and internal review notes) from public feeds and schemas, ensuring public cards display clean organization and cause descriptions only.",
+      "Empowered giving managers (Community Managers, Treasurers, Admins) to delete or dismiss Band Gifts with confirmation, aligning with suggested cause lifecycle controls.",
     ],
   },
   {

@@ -778,6 +778,23 @@ function FinanceHubContent() {
     }
   };
 
+  // Community Manager / Admin / Treasurer: Delete or Dismiss Band Gift
+  const handleDeleteBandGift = async (gift: Donation) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete or dismiss the Band Gift for "${gift.organizationName}"? This will permanently remove it from the Band Gifts directory and public website.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, "donations", gift.id));
+      toast.success(`Deleted Band Gift for "${gift.organizationName}".`);
+    } catch (err) {
+      toast.error("Failed to delete Band Gift: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   // One-Click Admin Toggles for Band Gifts Public Visibility
   const handleToggleGiftPublic = async (ben: Donation) => {
     try {
@@ -2420,6 +2437,17 @@ function FinanceHubContent() {
                                 >
                                   {ben.showAmountPublicly ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                                   <span>{ben.showAmountPublicly ? "Amount Shown ($)" : "Amount Hidden"}</span>
+                                </button>
+
+                                {/* Delete / Dismiss Band Gift */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteBandGift(ben)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 ml-auto sm:ml-0"
+                                  title="Delete or dismiss this Band Gift record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete Gift</span>
                                 </button>
                               </div>
                             </div>
