@@ -22,6 +22,7 @@ import PortalThemeModal from "@/components/portal/PortalThemeModal";
 import PortalMonthCalendar from "@/components/portal/PortalMonthCalendar";
 import MemberRehearsalsSection from "@/components/portal/MemberRehearsalsSection";
 import MemberActivitySection from "@/components/portal/MemberActivitySection";
+import GettingStartedGuide from "@/components/portal/GettingStartedGuide";
 import PortalPwaCard from "@/components/portal/PortalPwaCard";
 import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { toast } from "@/lib/context/ToastContext";
@@ -503,6 +504,9 @@ export default function MusicianPortalOverviewPage() {
           </button>
         </div>
       </div>
+
+      {/* 1.5 Getting Started Guide (Collapsible) */}
+      <GettingStartedGuide />
 
       {/* 2. Action Needed Urgent Alert (if any) - Alert Branding */}
       {!loadingRsvps && unansweredGigs.length > 0 && (

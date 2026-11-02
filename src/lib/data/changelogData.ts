@@ -7,6 +7,18 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 66,
+    title: "Member Orientation Guide, Financial Record Deletions & Breakpoint Ergonomics",
+    category: "Member UX, Orientation, Financial Governance & Responsive Architecture",
+    accomplishments: [
+      "Engineered the collapsible 'Member Getting Started Guide' (GettingStartedGuide) directly under the portal header (/portal), organizing six core activity modules: Profile & Sizing, Gigs & Attendance, Calendar & Blackouts, Music Catalog & Pitches, Giving & Voting, and Expenses & Reimbursements.",
+      "Implemented responsive collapsible controls with useSyncExternalStore localStorage persistence, ensuring member preference is preserved across sessions without cascading re-renders.",
+      "Empowered members to self-withdraw pending or rejected expense reimbursement claims directly from 'My Reimbursement Claims' with confirmation safeguards.",
+      "Enabled Treasurers and Admins to delete reimbursement records in the review queue and remove transactions/expenses from the General Ledger with automatic linked-record reconciliation.",
+      "Hardened firestore.rules for reimbursements to permit member self-deletion for submitted and rejected claims while preserving full treasurer administrative oversight.",
+    ],
+  },
+  {
     stage: 65,
     title: "Audition Onboarding Automation, Intake Refinement & Day-of Check-In Consolidation",
     category: "Personnel, Onboarding Automation, Auditions & Day-of Operations",
@@ -47,7 +59,6 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Excluded all added notes (public impact notes and internal review notes) from public feeds and schemas, ensuring public cards display clean organization and cause descriptions only.",
       "Empowered giving managers (Community Managers, Treasurers, Admins) to delete or dismiss Band Gifts with confirmation, aligning with suggested cause lifecycle controls.",
       "Engineered the 'My Activity' personal timeline feed on the member portal home page (/portal), organizing song suggestions, suggested causes, submitted expense reimbursements, declared blackout dates, RSVP commitments, and discussion comments with interactive category filters and status tracking.",
-      "Implemented deletion and withdrawal capabilities for reimbursements and expenses: enabled members to withdraw their submitted claims, empowered treasurers to delete reimbursement records and ledger transactions with confirmation and automatic linked-record reconciliation, and hardened Firestore security rules to safeguard member and treasurer delete permissions.",
     ],
   },
   {
