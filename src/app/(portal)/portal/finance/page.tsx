@@ -1678,15 +1678,104 @@ function FinanceHubContent() {
             </div>
 
             {isManager && (
-              <button
-                type="button"
-                onClick={() => setIsRecordTxModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-yellow-400/10"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Record Transaction</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempBaseline(treasuryConfig.startingBalance || 0);
+                    setTempBaselineDate(treasuryConfig.startingDate || new Date().toISOString().split("T")[0]);
+                    setIsBaselineModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow"
+                  title="Adjust audited baseline starting balance and effective rollover date"
+                >
+                  <Coins className="w-4 h-4 text-yellow-400" />
+                  <span>Adjust Baseline</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsRecordTxModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-yellow-400/10"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Record Transaction</span>
+                </button>
+              </div>
             )}
+          </div>
+
+          {/* Treasury Baseline & Reconciliation Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Baseline Starting Balance */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2 shadow-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                  Starting Baseline
+                </span>
+                {isManager && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempBaseline(treasuryConfig.startingBalance || 0);
+                      setTempBaselineDate(treasuryConfig.startingDate || new Date().toISOString().split("T")[0]);
+                      setIsBaselineModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition cursor-pointer"
+                  >
+                    Adjust
+                  </button>
+                )}
+              </div>
+              <div className="text-2xl font-black text-white font-mono">
+                ${startingBal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] font-mono text-slate-500">
+                Effective: {treasuryConfig.startingDate || "2026-01-01"}
+              </div>
+            </div>
+
+            {/* Total Inflows */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2 shadow-lg">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                Ledger Inflows
+              </span>
+              <div className="text-2xl font-black text-emerald-400 font-mono">
+                +${totalInflows.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] font-mono text-slate-500">
+                Revenues, gigs &amp; deposits
+              </div>
+            </div>
+
+            {/* Total Outflows */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2 shadow-lg">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+                Ledger Outflows
+              </span>
+              <div className="text-2xl font-black text-rose-400 font-mono">
+                -${totalOutflows.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] font-mono text-slate-500">
+                Payouts, expenses &amp; giving
+              </div>
+            </div>
+
+            {/* Net Treasury Balance */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2 shadow-lg bg-gradient-to-br from-slate-900 to-slate-950">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-yellow-400" />
+                Net Treasury Reserve
+              </span>
+              <div className={`text-2xl font-black font-mono ${currentBalance >= 0 ? "text-white" : "text-rose-400"}`}>
+                ${currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[11px] font-mono text-slate-500">
+                Baseline + Inflows - Outflows
+              </div>
+            </div>
           </div>
 
           {/* Ledger Table & Filters Card */}
