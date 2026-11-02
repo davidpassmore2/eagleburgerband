@@ -47,6 +47,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Excluded all added notes (public impact notes and internal review notes) from public feeds and schemas, ensuring public cards display clean organization and cause descriptions only.",
       "Empowered giving managers (Community Managers, Treasurers, Admins) to delete or dismiss Band Gifts with confirmation, aligning with suggested cause lifecycle controls.",
       "Engineered the 'My Activity' personal timeline feed on the member portal home page (/portal), organizing song suggestions, suggested causes, submitted expense reimbursements, declared blackout dates, RSVP commitments, and discussion comments with interactive category filters and status tracking.",
+      "Implemented deletion and withdrawal capabilities for reimbursements and expenses: enabled members to withdraw their submitted claims, empowered treasurers to delete reimbursement records and ledger transactions with confirmation and automatic linked-record reconciliation, and hardened Firestore security rules to safeguard member and treasurer delete permissions.",
     ],
   },
   {

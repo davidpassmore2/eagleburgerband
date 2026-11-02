@@ -1086,6 +1086,36 @@ function FinanceHubContent() {
     }
   };
 
+  // Manager or Applicant: Delete / Withdraw Reimbursement
+  const handleDeleteReimbursement = async (reimb: Reimbursement) => {
+    const isSelf = reimb.applicantUid === profile?.uid || reimb.submittedByUid === profile?.uid;
+    const confirmMsg = isManager
+      ? `Are you sure you want to permanently delete the reimbursement claim of $${reimb.amount.toFixed(2)} for "${reimb.applicantName}" (${reimb.description})?${
+          reimb.transactionId ? " Note: This will also remove the linked expense entry from the ledger." : ""
+        }`
+      : `Are you sure you want to withdraw and delete your reimbursement claim of $${reimb.amount.toFixed(2)} (${reimb.description})?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "reimbursements", reimb.id));
+
+      if (reimb.transactionId && isManager) {
+        batch.delete(doc(db, "transactions", reimb.transactionId));
+      }
+
+      await batch.commit();
+      toast.success(
+        isSelf && !isManager
+          ? `Withdrew reimbursement claim for $${reimb.amount.toFixed(2)}.`
+          : `Deleted reimbursement claim for "${reimb.applicantName}".`
+      );
+    } catch (err) {
+      toast.error("Failed to delete reimbursement: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   // Manager: Save Baseline
   const handleSaveBaseline = async () => {
     setIsSavingBaseline(true);
@@ -1155,12 +1185,31 @@ function FinanceHubContent() {
     }
   };
 
-  // Manager: Delete Transaction
-  const handleDeleteTransaction = async (txId: string) => {
-    if (!window.confirm("Are you sure you want to delete this ledger transaction? This will affect the net balance.")) return;
+  // Manager: Delete Transaction / Expense
+  const handleDeleteTransaction = async (tx: Transaction) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete this ledger entry "${tx.description}" ($${tx.amount.toFixed(2)})? This will affect the treasury net balance.`
+      )
+    )
+      return;
     try {
-      await deleteDoc(doc(db, "transactions", txId));
-      toast.success("Transaction removed from ledger.");
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "transactions", tx.id));
+
+      const linkedReimb = reimbursements.find((r) => r.transactionId === tx.id);
+      if (linkedReimb) {
+        batch.update(doc(db, "reimbursements", linkedReimb.id), {
+          status: "approved",
+          transactionId: null,
+          paidAt: null,
+          payoutReference: "",
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      await batch.commit();
+      toast.success(`Transaction "${tx.description}" removed from ledger.`);
     } catch (err) {
       toast.error("Failed to delete transaction: " + (err instanceof Error ? err.message : String(err)));
     }
@@ -1574,14 +1623,26 @@ function FinanceHubContent() {
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div
-                        className={`text-sm font-bold font-mono ${
-                          tx.type === "income" ? "text-emerald-400" : "text-rose-400"
-                        }`}
-                      >
-                        {tx.type === "income" ? "+" : "-"}${tx.amount.toFixed(2)}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <div
+                          className={`text-sm font-bold font-mono ${
+                            tx.type === "income" ? "text-emerald-400" : "text-rose-400"
+                          }`}
+                        >
+                          {tx.type === "income" ? "+" : "-"}${tx.amount.toFixed(2)}
+                        </div>
                       </div>
+                      {isManager && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTransaction(tx)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                          title="Delete transaction / expense"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1766,6 +1827,17 @@ function FinanceHubContent() {
                               Pay Out
                             </button>
                           )}
+
+                          {isManager && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReimbursement(reimb)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                              title="Delete reimbursement claim"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1827,10 +1899,26 @@ function FinanceHubContent() {
                       )}
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="text-base font-black text-white font-mono">
-                        ${reimb.amount.toFixed(2)}
+                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                      <div className="text-right">
+                        <div className="text-base font-black text-white font-mono">
+                          ${reimb.amount.toFixed(2)}
+                        </div>
                       </div>
+
+                      {(reimb.status === "submitted" || reimb.status === "rejected" || isManager) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReimbursement(reimb)}
+                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-rose-500/15 text-slate-400 hover:text-rose-300 border border-white/5 hover:border-rose-500/30 text-xs transition cursor-pointer flex items-center gap-1.5"
+                          title={reimb.status === "submitted" ? "Withdraw this submitted claim" : "Delete this claim"}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          <span className="text-[11px] font-bold">
+                            {reimb.status === "submitted" ? "Withdraw" : "Delete"}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2653,11 +2741,11 @@ function FinanceHubContent() {
                           <td className="py-3 px-3 text-center">
                             <button
                               type="button"
-                              onClick={() => handleDeleteTransaction(tx.id)}
-                              className="text-slate-500 hover:text-rose-400 transition p-1 cursor-pointer"
-                              title="Delete transaction"
+                              onClick={() => handleDeleteTransaction(tx)}
+                              className="text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg p-1.5 transition cursor-pointer inline-flex items-center justify-center"
+                              title="Delete transaction / expense"
                             >
-                              <X className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </td>
                         )}

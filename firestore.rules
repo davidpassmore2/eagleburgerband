@@ -356,7 +356,11 @@ service cloud.firestore {
         || (isMember()
             && request.resource.data.applicantUid == request.auth.uid
             && request.resource.data.status == 'submitted');
-      allow update, delete: if hasAnyRole(['treasurer']);
+      allow update: if hasAnyRole(['treasurer']);
+      allow delete: if hasAnyRole(['treasurer'])
+        || (isMember()
+            && (resource.data.applicantUid == request.auth.uid || resource.data.get('submittedByUid', '') == request.auth.uid)
+            && (resource.data.status == 'submitted' || resource.data.status == 'rejected'));
     }
 
     match /notifications/{notificationId} {
