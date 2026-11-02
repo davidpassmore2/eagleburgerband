@@ -32,6 +32,7 @@ export const DonationSchema = z.object({
   fiscalYear: z.string().default("2026"),
   status: DonationStatusEnum.default("completed"),
   isPublic: z.boolean().default(true),
+  showAmountPublicly: z.boolean().default(false),
   publicImpactNote: z.string().default(""),
   notes: z.string().default(""), // Internal notes / check references
   suggestedByUid: z.string().nullable().default(null),
@@ -73,7 +74,6 @@ export function calculateDonationPriorityScore(ratings: Record<string, number> =
 
 // Public Beneficiary presentation type (strictly omits internal amounts, review, ratings, and member attribution fields)
 export const PublicBeneficiarySchema = DonationSchema.omit({
-  amount: true,
   notes: true,
   targetAmount: true,
   status: true,

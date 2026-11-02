@@ -36,6 +36,13 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Labeled suggested cause amounts as 'Proposed Gift Amount' across member suggestions, cause cards, and manual entry forms.",
       "Engineered an interactive 'Approve Cause & Confirm Donation' modal requiring leadership to confirm the actual dollar grant, donation date, fiscal year, and cumulative gifts given count upon activation.",
       "Integrated the shared CommentsStream into suggested cause cards, enabling bandmates to post discussions, reply, and like comments on causes with real-time comment counters.",
+      "Introduced official 'Band Gift' terminology across the Treasury & Philanthropy Hub and public website for all completed community donations.",
+      "Structured the Giving Hub (/portal/finance?tab=giving) with dedicated sub-tabs: 'Cause Suggestions' (member priority ranking & discussions) and 'Band Gifts' (confirmed recipient directory with fiscal tracking).",
+      "Empowered admins, treasurers, and community managers with one-click toggles on each Band Gift for public listing on the giving page ('Public on Giving Page' vs 'Internal Only') and amount privacy ('Amount Shown ($)' vs 'Amount Hidden').",
+      "Secured public donation endpoints (/api/public/donations and listPublicBeneficiaries) by scrubbing unapproved dollar amounts to $0 at the server layer, preventing client-side dollar exposure when amount privacy is enabled.",
+      "Created the 'public_gifts' CMS content section type with customizable title, subtitle, badge text, item limits, category filter toggle, search toggle, and section-wide dollar amount visibility controls.",
+      "Integrated the Band Gifts Showcase into the CMS Page Studio (/admin/pages) with live schema validation, preview rendering, and drag-and-drop section management.",
+      "Updated the public Community Giving page (/giving) and PublicSectionRenderer with responsive Band Gift recipient cards, category pills, confirmed dollar amount badges, and cumulative gifts given counters.",
     ],
   },
   {

@@ -91,6 +91,7 @@ import {
   Music2,
   Music,
   Mail,
+  Gift,
 } from "lucide-react";
 
 export default function CMSPagesStudio() {
@@ -479,6 +480,21 @@ export default function CMSPagesStudio() {
           subheadline: "Have questions about band appearances, media requests, or general inquiries? Send our coordination team a note.",
           badgeText: "Direct Band Contact",
           buttonText: "Send Message",
+        },
+      };
+    } else if (type === "public_gifts") {
+      newSection = {
+        ...newSection,
+        publicGifts: {
+          title: "Band Gifts & Community Philanthropy",
+          subtitle: "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+          badgeText: "Band Gifts in Action",
+          showCategoryFilter: true,
+          showSearch: true,
+          showAmountsIfAllowed: true,
+          maxItems: 12,
+          ctaText: "Explore All Community Giving",
+          ctaHref: "/giving",
         },
       };
     }
@@ -1553,6 +1569,18 @@ export default function CMSPagesStudio() {
                       <div className="text-[10px] text-slate-400">Direct message inquiry form</div>
                     </div>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSection("public_gifts")}
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-yellow-400 flex items-center gap-2 transition"
+                  >
+                    <Gift className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <div>
+                      <div className="font-bold">Band Gifts Showcase</div>
+                      <div className="text-[10px] text-slate-400">Public philanthropy and funded causes showcase</div>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -1601,6 +1629,7 @@ export default function CMSPagesStudio() {
                         {section.type === "intake_cards" && <FolderOpen className="w-3.5 h-3.5 text-cyan-400" />}
                         {section.type === "audition_form" && <Music className="w-3.5 h-3.5 text-emerald-400" />}
                         {section.type === "contact_form" && <Mail className="w-3.5 h-3.5 text-blue-400" />}
+                        {section.type === "public_gifts" && <Gift className="w-3.5 h-3.5 text-yellow-400" />}
                         {section.type === "audition_callout"
                           ? "Musician Auditions Banner"
                           : section.type === "intake_cards"
@@ -1609,6 +1638,8 @@ export default function CMSPagesStudio() {
                           ? "Audition Application Form"
                           : section.type === "contact_form"
                           ? "General Contact Form"
+                          : section.type === "public_gifts"
+                          ? "Band Gifts Showcase"
                           : section.type.replace(/_/g, " ")}
                       </span>
                     </div>
@@ -3538,6 +3569,263 @@ export default function CMSPagesStudio() {
                           <p className="font-semibold text-slate-200">General Inquiry Messaging Engine</p>
                           <p className="text-[11px] mt-0.5 text-slate-400">
                             This section embeds the direct messaging form featuring categorized intake (General, Press &amp; Media, Community, Merchandise), phone, subject, and honeypot spam protection. Messages arrive in the Contact Inbox.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Public Gifts Section Editor */}
+                  {section.type === "public_gifts" && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Badge Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.publicGifts?.badgeText ?? "Band Gifts in Action"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  badgeText: e.target.value,
+                                  title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                  subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  maxItems: section.publicGifts?.maxItems ?? 12,
+                                  ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                  ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Band Gifts in Action"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Max Items Displayed
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={50}
+                            value={section.publicGifts?.maxItems ?? 12}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  maxItems: parseInt(e.target.value) || 12,
+                                  title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                  subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                  badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                  ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                },
+                              })
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Section Title
+                          </label>
+                          <input
+                            type="text"
+                            value={section.publicGifts?.title ?? "Band Gifts & Community Philanthropy"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  title: e.target.value,
+                                  subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                  badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  maxItems: section.publicGifts?.maxItems ?? 12,
+                                  ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                  ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Band Gifts & Community Philanthropy"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            Subtitle / Description
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania."}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  subtitle: e.target.value,
+                                  title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                  badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  maxItems: section.publicGifts?.maxItems ?? 12,
+                                  ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                  ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                },
+                              })
+                            }
+                            placeholder="Describe band philanthropy..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            CTA Button Text
+                          </label>
+                          <input
+                            type="text"
+                            value={section.publicGifts?.ctaText ?? "Explore All Community Giving"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  ctaText: e.target.value,
+                                  title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                  subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                  badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  maxItems: section.publicGifts?.maxItems ?? 12,
+                                  ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                },
+                              })
+                            }
+                            placeholder="e.g. Explore All Community Giving"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                            CTA Link Target (Href)
+                          </label>
+                          <input
+                            type="text"
+                            value={section.publicGifts?.ctaHref ?? "/giving"}
+                            onChange={(e) =>
+                              handleUpdateSection(section.id, {
+                                publicGifts: {
+                                  ctaHref: e.target.value,
+                                  title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                  subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                  badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                  showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                  showSearch: section.publicGifts?.showSearch ?? true,
+                                  showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                  maxItems: section.publicGifts?.maxItems ?? 12,
+                                  ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                },
+                              })
+                            }
+                            placeholder="e.g. /giving"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                          />
+                        </div>
+
+                        {/* Interactive Toggles */}
+                        <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                          <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={section.publicGifts?.showCategoryFilter ?? true}
+                              onChange={(e) =>
+                                handleUpdateSection(section.id, {
+                                  publicGifts: {
+                                    showCategoryFilter: e.target.checked,
+                                    title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                    subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                    badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                    showSearch: section.publicGifts?.showSearch ?? true,
+                                    showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                    maxItems: section.publicGifts?.maxItems ?? 12,
+                                    ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                    ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                  },
+                                })
+                              }
+                              className="rounded border-slate-800 text-yellow-400 focus:ring-yellow-400"
+                            />
+                            <span className="text-xs text-slate-300">Category Filter</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={section.publicGifts?.showSearch ?? true}
+                              onChange={(e) =>
+                                handleUpdateSection(section.id, {
+                                  publicGifts: {
+                                    showSearch: e.target.checked,
+                                    title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                    subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                    badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                    showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                    showAmountsIfAllowed: section.publicGifts?.showAmountsIfAllowed ?? true,
+                                    maxItems: section.publicGifts?.maxItems ?? 12,
+                                    ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                    ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                  },
+                                })
+                              }
+                              className="rounded border-slate-800 text-yellow-400 focus:ring-yellow-400"
+                            />
+                            <span className="text-xs text-slate-300">Search Box</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-slate-950 border border-slate-800">
+                            <input
+                              type="checkbox"
+                              checked={section.publicGifts?.showAmountsIfAllowed ?? true}
+                              onChange={(e) =>
+                                handleUpdateSection(section.id, {
+                                  publicGifts: {
+                                    showAmountsIfAllowed: e.target.checked,
+                                    title: section.publicGifts?.title ?? "Band Gifts & Community Philanthropy",
+                                    subtitle: section.publicGifts?.subtitle ?? "A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania.",
+                                    badgeText: section.publicGifts?.badgeText ?? "Band Gifts in Action",
+                                    showCategoryFilter: section.publicGifts?.showCategoryFilter ?? true,
+                                    showSearch: section.publicGifts?.showSearch ?? true,
+                                    maxItems: section.publicGifts?.maxItems ?? 12,
+                                    ctaText: section.publicGifts?.ctaText ?? "Explore All Community Giving",
+                                    ctaHref: section.publicGifts?.ctaHref ?? "/giving",
+                                  },
+                                })
+                              }
+                              className="rounded border-slate-800 text-yellow-400 focus:ring-yellow-400"
+                            />
+                            <span className="text-xs text-slate-300">Show Gift Dollar Amounts</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center shrink-0 text-yellow-400 font-bold text-[10px]">
+                          i
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-200">Public Band Gifts Showcase</p>
+                          <p className="text-[11px] mt-0.5 text-slate-400">
+                            Dynamically streams public Band Gifts from the Treasury &amp; Giving Hub. Admins can toggle individual gift dollar amounts on or off in the portal, and control section-wide amount display here.
                           </p>
                         </div>
                       </div>

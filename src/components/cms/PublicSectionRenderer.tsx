@@ -29,7 +29,10 @@ import {
   Heart,
   Clock,
   Music2,
+  Gift,
+  ExternalLink,
 } from "lucide-react";
+import { PublicBeneficiary } from "@/lib/schema/donation";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   Zap: <Zap className="w-6 h-6 text-yellow-400" />,
@@ -537,6 +540,11 @@ export default function PublicSectionRenderer({
           buttonText={section.contactForm?.buttonText}
         />
       )}
+
+      {/* 15. PUBLIC BAND GIFTS CMS SECTION */}
+      {section.type === "public_gifts" && section.publicGifts && (
+        <PublicGiftsSectionComponent config={section.publicGifts} />
+      )}
     </div>
   );
 }
@@ -718,6 +726,217 @@ function FaqSectionComponent({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Sub-component: PublicGiftsSectionComponent
+function PublicGiftsSectionComponent({
+  config,
+}: {
+  config: {
+    title: string;
+    subtitle?: string;
+    badgeText?: string;
+    showCategoryFilter?: boolean;
+    showSearch?: boolean;
+    showAmountsIfAllowed?: boolean;
+    maxItems?: number;
+    ctaText?: string;
+    ctaHref?: string;
+  };
+}) {
+  const [beneficiaries, setBeneficiaries] = useState<PublicBeneficiary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public/donations")
+      .then((res) => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json() as Promise<{ beneficiaries: PublicBeneficiary[] }>;
+      })
+      .then(({ beneficiaries: list }) => {
+        if (Array.isArray(list)) {
+          setBeneficiaries(list);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load public gifts for CMS section:", err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = beneficiaries.filter((b) => {
+    const matchesCat = selectedCategory === "all" || b.category === selectedCategory;
+    const q = searchQuery.toLowerCase().trim();
+    const matchesQuery =
+      !q ||
+      b.organizationName.toLowerCase().includes(q) ||
+      b.causeDescription.toLowerCase().includes(q) ||
+      b.publicImpactNote.toLowerCase().includes(q);
+    return matchesCat && matchesQuery;
+  });
+
+  const displayList = filtered.slice(0, config.maxItems || 12);
+
+  const CATEGORY_TAGS: Record<string, { label: string; color: string }> = {
+    arts_music: { label: "Arts & Music", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
+    community_aid: { label: "Community Aid", color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+    youth_education: { label: "Youth & Education", color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+    hunger_relief: { label: "Hunger Relief", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+    environment: { label: "Environment", color: "bg-teal-500/10 text-teal-400 border-teal-500/30" },
+    other: { label: "General", color: "bg-slate-500/10 text-slate-400 border-slate-500/30" },
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          {config.badgeText && (
+            <span className="text-xs font-mono font-bold uppercase text-yellow-400 tracking-wider">
+              {config.badgeText}
+            </span>
+          )}
+          <h2 className="text-2xl sm:text-3xl font-arvo font-bold text-white uppercase tracking-tight mt-1">
+            {config.title || "Band Gifts & Community Philanthropy"}
+          </h2>
+          {config.subtitle && (
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              {config.subtitle}
+            </p>
+          )}
+        </div>
+
+        {config.ctaText && (
+          <Link
+            href={config.ctaHref || "/giving"}
+            suppressHydrationWarning
+            className="text-xs font-arvo font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition self-start sm:self-end shrink-0"
+          >
+            <span>{config.ctaText}</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
+      </div>
+
+      {/* Optional Filters */}
+      {(config.showCategoryFilter || config.showSearch) && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {config.showCategoryFilter && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {["all", "arts_music", "community_aid", "youth_education", "hunger_relief", "environment"].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 text-xs font-mono rounded-full border transition cursor-pointer ${
+                    selectedCategory === cat
+                      ? "bg-yellow-400 text-slate-950 border-yellow-400 font-bold"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {cat === "all" ? "All Causes" : CATEGORY_TAGS[cat]?.label || cat}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {config.showSearch && (
+            <input
+              type="text"
+              placeholder="Search gifts & causes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400 w-full md:w-56"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-48 animate-pulse" />
+          ))}
+        </div>
+      ) : displayList.length === 0 ? (
+        <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs font-mono">
+          No public band gifts found matching current filters.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayList.map((b) => {
+            const cat = CATEGORY_TAGS[b.category] || CATEGORY_TAGS.other;
+            const canShowAmount = Boolean(b.showAmountPublicly && config.showAmountsIfAllowed && b.amount > 0);
+
+            return (
+              <div
+                key={b.id}
+                className="bg-slate-900 border border-slate-800 hover:border-yellow-400/50 rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 shadow-xl group"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${cat.color}`}>
+                      {cat.label}
+                    </span>
+
+                    {canShowAmount ? (
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 font-bold">
+                        ${b.amount.toLocaleString()} Band Gift
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                        Band Gift
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-white group-hover:text-yellow-400 transition-colors">
+                      {b.organizationName}
+                    </h3>
+                    {b.causeDescription && (
+                      <p className="text-xs text-slate-400 leading-relaxed mt-2 line-clamp-3">
+                        {b.causeDescription}
+                      </p>
+                    )}
+                  </div>
+
+                  {b.publicImpactNote && (
+                    <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3 text-[11px] font-mono text-yellow-300/90 flex items-start gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                      <span className="leading-snug">{b.publicImpactNote}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
+                    <Gift className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>{b.giftsGivenCount || 1} {(b.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}</span>
+                  </div>
+
+                  {b.websiteUrl && (
+                    <a
+                      href={b.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-yellow-400 hover:text-yellow-300 transition-colors font-mono"
+                    >
+                      <span>Visit</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

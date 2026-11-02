@@ -61,3 +61,7 @@ hub-debug.log*
 next-env.d.ts
 *.tmp
 *.bak
+
+# temporary scratch scripts
+scratch/
+/scratch/

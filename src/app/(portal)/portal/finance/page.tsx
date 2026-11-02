@@ -84,6 +84,10 @@ import {
   Edit3,
   ChevronDown,
   MessageSquare,
+  Globe,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -341,7 +345,13 @@ function FinanceHubContent() {
   const [addCauseImpactNote, setAddCauseImpactNote] = useState("");
   const [addCauseNotes, setAddCauseNotes] = useState("");
   const [addCauseAttributedMemberUid, setAddCauseAttributedMemberUid] = useState("");
+  const [addCauseIsPublic, setAddCauseIsPublic] = useState(true);
+  const [addCauseShowAmountPublicly, setAddCauseShowAmountPublicly] = useState(false);
   const [isSubmittingAddCause, setIsSubmittingAddCause] = useState(false);
+
+  // Giving Sub-Tabs: "suggestions" vs "gifts"
+  const [givingSubTab, setGivingSubTab] = useState<"suggestions" | "gifts">("suggestions");
+  const [givingGiftsCategory, setGivingGiftsCategory] = useState<string>("all");
 
   // Priority Voting & Sorting State
   const [ratingInProgressId, setRatingInProgressId] = useState<string | null>(null);
@@ -372,6 +382,8 @@ function FinanceHubContent() {
   const [confirmGiftsCount, setConfirmGiftsCount] = useState<number>(1);
   const [confirmImpactNote, setConfirmImpactNote] = useState<string>("");
   const [confirmNotes, setConfirmNotes] = useState<string>("");
+  const [confirmIsPublic, setConfirmIsPublic] = useState<boolean>(true);
+  const [confirmShowAmountPublicly, setConfirmShowAmountPublicly] = useState<boolean>(false);
   const [isConfirmingDonation, setIsConfirmingDonation] = useState<boolean>(false);
 
   // Manager Direct Donation Modal
@@ -384,6 +396,7 @@ function FinanceHubContent() {
   const [recDate, setRecDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [recFiscalYear, setRecFiscalYear] = useState(() => String(new Date().getFullYear()));
   const [recIsPublic, setRecIsPublic] = useState(true);
+  const [recShowAmountPublicly, setRecShowAmountPublicly] = useState(false);
   const [recImpactNote, setRecImpactNote] = useState("");
   const [recInternalNotes, setRecInternalNotes] = useState("");
   const [recAttributedMemberUid, setRecAttributedMemberUid] = useState("");
@@ -596,6 +609,7 @@ function FinanceHubContent() {
         fiscalYear: String(new Date().getFullYear()),
         status: "suggested",
         isPublic: false,
+        showAmountPublicly: false,
         publicImpactNote: "",
         notes: "",
         suggestedByUid: profile?.uid || null,
@@ -700,7 +714,8 @@ function FinanceHubContent() {
         dateDonated: addCauseStatus === "completed" ? addCauseDate : new Date().toISOString().split("T")[0],
         fiscalYear: addCauseFiscalYear,
         status: addCauseStatus,
-        isPublic: true,
+        isPublic: addCauseIsPublic,
+        showAmountPublicly: addCauseShowAmountPublicly,
         publicImpactNote: addCauseImpactNote.trim(),
         notes: addCauseNotes.trim(),
         suggestedByUid,
@@ -741,6 +756,8 @@ function FinanceHubContent() {
       setAddCauseNotes("");
       setAddCauseAttributedMemberUid("");
       setAddCauseGiftsGiven("0");
+      setAddCauseIsPublic(true);
+      setAddCauseShowAmountPublicly(false);
     } catch (err) {
       toast.error("Failed to add cause: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -758,6 +775,35 @@ function FinanceHubContent() {
       toast.success(`Removed suggestion for "${cause.organizationName}".`);
     } catch (err) {
       toast.error("Failed to delete suggestion: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // One-Click Admin Toggles for Band Gifts Public Visibility
+  const handleToggleGiftPublic = async (ben: Donation) => {
+    try {
+      const next = !ben.isPublic;
+      await updateDoc(doc(db, "donations", ben.id), {
+        isPublic: next,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(`"${ben.organizationName}" is now ${next ? "listed on the public Giving page" : "internal only"}.`);
+    } catch (err) {
+      toast.error("Failed to update visibility: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleToggleGiftAmountPublic = async (ben: Donation) => {
+    try {
+      const next = !ben.showAmountPublicly;
+      await updateDoc(doc(db, "donations", ben.id), {
+        showAmountPublicly: next,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(
+        `Dollar amount for "${ben.organizationName}" is now ${next ? "shown publicly" : "hidden publicly"}.`
+      );
+    } catch (err) {
+      toast.error("Failed to update amount visibility: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -810,6 +856,8 @@ function FinanceHubContent() {
     setConfirmGiftsCount(Math.max(1, (cause.giftsGivenCount || 0) + 1));
     setConfirmImpactNote(cause.publicImpactNote || "");
     setConfirmNotes(cause.notes || "");
+    setConfirmIsPublic(cause.isPublic ?? true);
+    setConfirmShowAmountPublicly(cause.showAmountPublicly ?? false);
   };
 
   const handleConfirmApproveAndDonate = async (e: React.FormEvent) => {
@@ -833,6 +881,8 @@ function FinanceHubContent() {
         dateDonated: confirmDate,
         fiscalYear: confirmFiscalYear,
         giftsGivenCount: updatedGifts,
+        isPublic: confirmIsPublic,
+        showAmountPublicly: confirmShowAmountPublicly,
         publicImpactNote: confirmImpactNote.trim(),
         notes: confirmNotes.trim(),
         reviewedByName: profile?.displayName || "Community Manager",
@@ -893,6 +943,7 @@ function FinanceHubContent() {
         fiscalYear: recFiscalYear,
         status: "completed",
         isPublic: recIsPublic,
+        showAmountPublicly: recShowAmountPublicly,
         publicImpactNote: recImpactNote.trim(),
         notes: recInternalNotes.trim(),
         suggestedByUid,
@@ -917,6 +968,7 @@ function FinanceHubContent() {
 
       toast.success("Charitable donation recorded.");
       setIsRecordDonationModalOpen(false);
+      setRecShowAmountPublicly(false);
       setRecOrgName("");
       setRecCauseDesc("");
       setRecWebsite("");
@@ -1820,15 +1872,55 @@ function FinanceHubContent() {
                   onClick={() => setIsRecordDonationModalOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
-                  <DollarSign className="w-4 h-4" />
-                  <span>Record Direct Donation</span>
+                  <Gift className="w-4 h-4" />
+                  <span>+ Record Band Gift</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Member Suggestions Showcase & Priority Ranking */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+          {/* Giving Sub-Tab Switcher */}
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <button
+              type="button"
+              onClick={() => setGivingSubTab("suggestions")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                givingSubTab === "suggestions"
+                  ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/10"
+                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Cause Suggestions</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                givingSubTab === "suggestions" ? "bg-slate-950 text-yellow-400 font-bold" : "bg-slate-800 text-slate-300"
+              }`}>
+                {rankedSuggestedCauses.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setGivingSubTab("gifts")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                givingSubTab === "gifts"
+                  ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/10"
+                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+              }`}
+            >
+              <Gift className="w-4 h-4" />
+              <span>Band Gifts</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                givingSubTab === "gifts" ? "bg-slate-950 text-yellow-400 font-bold" : "bg-slate-800 text-slate-300"
+              }`}>
+                {donations.filter((d) => d.status === "completed").length}
+              </span>
+            </button>
+          </div>
+
+          {givingSubTab === "suggestions" && (
+            /* Member Suggestions Showcase & Priority Ranking */
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
@@ -2148,116 +2240,199 @@ function FinanceHubContent() {
             )}
           </div>
 
-          {/* Supported Beneficiaries Directory */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-                <Building className="w-4 h-4 text-yellow-400" />
-                <span>Supported Beneficiaries ({donations.filter((d) => d.status === "completed").length})</span>
-              </h3>
+          )}
 
-              {/* Search & Filter */}
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={givingSearchQuery}
-                    onChange={(e) => setGivingSearchQuery(e.target.value)}
-                    placeholder="Search causes..."
-                    className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
-                  />
+          {/* TAB CONTENT: BAND GIFTS DIRECTORY */}
+          {givingSubTab === "gifts" && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-yellow-400" />
+                    <span>Band Gifts Directory ({donations.filter((d) => d.status === "completed").length})</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Grassroots organizations and local causes awarded Band Gifts funded by performance proceeds.
+                  </p>
+                </div>
+
+                {/* Search & Category Filter */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={givingSearchQuery}
+                      onChange={(e) => setGivingSearchQuery(e.target.value)}
+                      placeholder="Search band gifts..."
+                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+
+                  <select
+                    value={givingGiftsCategory}
+                    onChange={(e) => setGivingGiftsCategory(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  >
+                    <option value="all">All Categories</option>
+                    {DonationCategoryEnum.options.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {DONATION_CATEGORY_LABELS[cat]?.label || cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            </div>
 
-            {filteredDonations.filter((d) => d.status === "completed").length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-500 font-mono">
-                No active beneficiary organizations found matching search criteria.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredDonations
-                  .filter((d) => d.status === "completed")
-                  .map((ben) => {
-                    const catBadge = DONATION_CATEGORY_LABELS[ben.category] || {
-                      label: ben.category,
-                      color: "bg-slate-800 text-slate-300 border-slate-700",
-                    };
-                    return (
-                      <div
-                        key={ben.id}
-                        className="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 space-y-3 flex flex-col justify-between shadow-md"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase font-bold ${catBadge.color}`}>
-                              {catBadge.label}
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-500">{ben.fiscalYear}</span>
+              {filteredDonations
+                .filter((d) => d.status === "completed")
+                .filter((d) => givingGiftsCategory === "all" || d.category === givingGiftsCategory)
+                .length === 0 ? (
+                <div className="text-center py-12 text-xs text-slate-500 font-mono bg-slate-950/60 rounded-2xl border border-slate-800">
+                  <Gift className="w-8 h-8 mx-auto text-slate-600 mb-2" />
+                  No completed Band Gifts found matching your criteria.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredDonations
+                    .filter((d) => d.status === "completed")
+                    .filter((d) => givingGiftsCategory === "all" || d.category === givingGiftsCategory)
+                    .map((ben) => {
+                      const catBadge = DONATION_CATEGORY_LABELS[ben.category] || {
+                        label: ben.category,
+                        color: "bg-slate-800 text-slate-300 border-slate-700",
+                      };
+                      return (
+                        <div
+                          key={ben.id}
+                          className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg transition"
+                        >
+                          {/* Card Header Row */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border uppercase font-bold ${catBadge.color}`}>
+                                {catBadge.label}
+                              </span>
+                              <span className="text-xs font-mono text-slate-400 px-2 py-0.5 bg-slate-900 border border-slate-800 rounded-full">
+                                FY {ben.fiscalYear}
+                              </span>
+
+                              {/* Confirmed Band Gift Amount Badge */}
+                              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                                ${ben.amount.toFixed(2)} Band Gift
+                              </span>
+                            </div>
+
+                            {/* Cumulative Gifts Tracker & Retroactive Stepper */}
+                            <div className="flex items-center gap-2">
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-mono font-bold">
+                                <Gift className="w-3.5 h-3.5" />
+                                <span>{ben.giftsGivenCount || 1} {(ben.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}</span>
+                              </div>
+
+                              {isGivingManager && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAdjustGifts(ben)}
+                                  className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-yellow-400 border border-slate-800 font-mono transition flex items-center gap-1 cursor-pointer"
+                                  title="Adjust gifts given retroactively"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>Adjust</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
 
-                          <h4 className="text-base font-bold text-white">{ben.organizationName}</h4>
-
-                          <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
-                            {ben.publicImpactNote || ben.causeDescription}
-                          </p>
-
-                          {ben.suggestedByName && (
-                            <div className="text-[11px] text-slate-400">
-                              Suggested by: <span className="text-yellow-400 font-bold">{ben.suggestedByName}</span>
+                          {/* Body: Org Name, Descriptions, Notes */}
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <h4 className="text-lg font-bold text-white tracking-tight">
+                                {ben.organizationName}
+                              </h4>
+                              {ben.websiteUrl && (
+                                <a
+                                  href={ben.websiteUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1 font-mono shrink-0"
+                                >
+                                  <span>Website</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
                             </div>
-                          )}
 
-                          {/* Gifts Given Badge */}
-                          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/60">
-                            <div className="inline-flex items-center gap-1.5 text-yellow-400 font-mono font-bold">
-                              <Gift className="w-3.5 h-3.5" />
-                              <span>{ben.giftsGivenCount || 1} {(ben.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}</span>
-                            </div>
+                            {ben.causeDescription && (
+                              <p className="text-xs text-slate-300 leading-relaxed">
+                                {ben.causeDescription}
+                              </p>
+                            )}
 
-                            {isGivingManager && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAdjustGifts(ben)}
-                                className="text-[11px] text-slate-400 hover:text-yellow-400 font-mono flex items-center gap-1 cursor-pointer transition"
-                                title="Adjust gifts given retroactively"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                                <span>Adjust</span>
-                              </button>
+                            {ben.publicImpactNote && (
+                              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-yellow-300/90 flex items-start gap-2">
+                                <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                                <span className="leading-snug"><strong>Public Impact:</strong> {ben.publicImpactNote}</span>
+                              </div>
+                            )}
+
+                            {ben.suggestedByName && (
+                              <div className="text-[11px] text-slate-400 pt-1 font-mono">
+                                Suggested by: <span className="text-yellow-400 font-bold">{ben.suggestedByName}</span>
+                              </div>
                             )}
                           </div>
-                        </div>
 
-                        <div className="pt-3 border-t border-slate-900 flex items-center justify-between text-xs">
-                          {isManager ? (
-                            <span className="font-mono font-bold text-emerald-400">${ben.amount.toFixed(2)}</span>
-                          ) : (
-                            <span className="text-[11px] text-slate-500">Funded Partner</span>
-                          )}
+                          {/* Footer & Admin Visibility Toggles */}
+                          {isGivingManager && (
+                            <div className="pt-3 border-t border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800/40">
+                              <span className="text-[11px] font-mono text-slate-400 uppercase font-bold">
+                                Public Website Controls:
+                              </span>
 
-                          {ben.websiteUrl && (
-                            <a
-                              href={ben.websiteUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1"
-                            >
-                              <span>Website</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {/* Toggle isPublic */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleGiftPublic(ben)}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                    ben.isPublic
+                                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25"
+                                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
+                                  }`}
+                                  title="Toggle whether this gift is displayed on the public Community Giving page"
+                                >
+                                  {ben.isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                                  <span>{ben.isPublic ? "Public on Giving Page" : "Internal Only"}</span>
+                                </button>
+
+                                {/* Toggle showAmountPublicly */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleGiftAmountPublic(ben)}
+                                  disabled={!ben.isPublic}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    ben.showAmountPublicly
+                                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25"
+                                      : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
+                                  }`}
+                                  title="Toggle whether the dollar amount is visible to the public or masked"
+                                >
+                                  {ben.showAmountPublicly ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                  <span>{ben.showAmountPublicly ? "Amount Shown ($)" : "Amount Hidden"}</span>
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
-
       {/* ------------------------------------------------------------- */}
       {/* TAB 4: FINANCIAL LEDGER                                      */}
       {/* ------------------------------------------------------------- */}
@@ -2995,18 +3170,47 @@ function FinanceHubContent() {
               </div>
 
               {addCauseStatus === "completed" && (
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Public Impact Note
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Funded 5 youth brass band instruments for summer camp"
-                    value={addCauseImpactNote}
-                    onChange={(e) => setAddCauseImpactNote(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
-                </div>
+                <>
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                      Public Impact Note
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Funded 5 youth brass band instruments for summer camp"
+                      value={addCauseImpactNote}
+                      onChange={(e) => setAddCauseImpactNote(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                    <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                      Public Website Listing &amp; Privacy
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                        <input
+                          type="checkbox"
+                          checked={addCauseIsPublic}
+                          onChange={(e) => setAddCauseIsPublic(e.target.checked)}
+                          className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                        />
+                        <span className="text-xs text-slate-300">List on Public Giving Page</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                        <input
+                          type="checkbox"
+                          checked={addCauseShowAmountPublicly}
+                          onChange={(e) => setAddCauseShowAmountPublicly(e.target.checked)}
+                          className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                        />
+                        <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
+                      </label>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="pt-2 flex items-center justify-end gap-2">
@@ -3191,6 +3395,34 @@ function FinanceHubContent() {
                   onChange={(e) => setConfirmNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+              </div>
+
+              {/* Public Website Listing & Privacy */}
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Public Website Listing &amp; Privacy
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                    <input
+                      type="checkbox"
+                      checked={confirmIsPublic}
+                      onChange={(e) => setConfirmIsPublic(e.target.checked)}
+                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                    />
+                    <span className="text-xs text-slate-300">List on Public Giving Page</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                    <input
+                      type="checkbox"
+                      checked={confirmShowAmountPublicly}
+                      onChange={(e) => setConfirmShowAmountPublicly(e.target.checked)}
+                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                    />
+                    <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
+                  </label>
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">
@@ -3446,6 +3678,34 @@ function FinanceHubContent() {
                   onChange={(e) => setRecInternalNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+              </div>
+
+              {/* Public Website Listing & Privacy */}
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Public Website Listing &amp; Privacy
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                    <input
+                      type="checkbox"
+                      checked={recIsPublic}
+                      onChange={(e) => setRecIsPublic(e.target.checked)}
+                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                    />
+                    <span className="text-xs text-slate-300">List on Public Giving Page</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
+                    <input
+                      type="checkbox"
+                      checked={recShowAmountPublicly}
+                      onChange={(e) => setRecShowAmountPublicly(e.target.checked)}
+                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
+                    />
+                    <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
+                  </label>
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">

@@ -24,6 +24,7 @@ import {
   Music2,
   Users,
   ShieldCheck,
+  Gift,
 } from "lucide-react";
 
 const CATEGORY_LABELS: Record<DonationCategory, { label: string; color: string }> = {
@@ -39,6 +40,8 @@ const CATEGORY_LABELS: Record<DonationCategory, { label: string; color: string }
 const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
   {
     id: "init_pgh_food_bank",
+    amount: 250,
+    showAmountPublicly: true,
     organizationName: "Greater Pittsburgh Community Food Bank",
     causeDescription: "Mobilizing community food resources across 11 Southwestern Pennsylvania counties to eradicate food insecurity and provide dignity to families.",
     websiteUrl: "https://pittsburghfoodbank.org",
@@ -53,6 +56,8 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
   },
   {
     id: "init_band_together",
+    amount: 250,
+    showAmountPublicly: true,
     organizationName: "Band Together Pittsburgh",
     causeDescription: "Enriching the lives of individuals on the autism spectrum through dynamic musical programs, drum circles, and performance workshops.",
     websiteUrl: "https://bandtogetherpgh.org",
@@ -67,6 +72,8 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
   },
   {
     id: "init_girls_write",
+    amount: 250,
+    showAmountPublicly: true,
     organizationName: "Girls Write Pittsburgh",
     causeDescription: "Fostering creative voice, youth mentorship, and literary arts empowerment for teen girls and gender-expansive youth across Allegheny County.",
     websiteUrl: "https://girlswritepgh.org",
@@ -81,6 +88,8 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
   },
   {
     id: "init_wp_conservancy",
+    amount: 250,
+    showAmountPublicly: true,
     organizationName: "Western Pennsylvania Conservancy",
     causeDescription: "Protecting exceptional natural places, conserving rivers, planting community gardens, and caring for Fallingwater.",
     websiteUrl: "https://waterlandlife.org",
@@ -310,10 +319,26 @@ export default function PublicGivingPage() {
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
-                      <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${catConfig.color}`}>
-                        {catConfig.label}
-                      </span>
-                      <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${catConfig.color}`}>
+                          {catConfig.label}
+                        </span>
+                        {b.showAmountPublicly && b.amount && b.amount > 0 ? (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            ${b.amount.toLocaleString()} Band Gift
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400">
+                            Band Gift Funded
+                          </span>
+                        )}
+                        {(b.giftsGivenCount || 1) > 1 && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300">
+                            🎁 {b.giftsGivenCount} Gifts
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform shrink-0">
                         <Heart className="w-4 h-4 fill-yellow-400/20 text-yellow-400" />
                       </div>
                     </div>
@@ -339,7 +364,7 @@ export default function PublicGivingPage() {
 
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
                     <span className="text-[10px] font-mono text-slate-500">
-                      Eagleburger Community Partner
+                      Band Gift Recipient
                     </span>
 
                     {b.websiteUrl ? (

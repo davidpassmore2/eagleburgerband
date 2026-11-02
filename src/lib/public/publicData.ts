@@ -51,7 +51,13 @@ export async function listPublicBeneficiaries(): Promise<PublicBeneficiary[]> {
   return docs.flatMap((d) => {
     if (d.data.isPublic !== true) return [];
     const parsed = PublicBeneficiarySchema.safeParse({ ...d.data, id: d.id });
-    return parsed.success ? [parsed.data] : [];
+    if (!parsed.success) return [];
+    const gift = parsed.data;
+    // Privacy guard: zero out amount if showAmountPublicly is false so raw dollars are never exposed in public payloads
+    if (!gift.showAmountPublicly) {
+      gift.amount = 0;
+    }
+    return [gift];
   });
 }
 

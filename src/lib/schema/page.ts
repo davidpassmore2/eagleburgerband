@@ -192,6 +192,20 @@ export const ContactFormSectionSchema = z.object({
   buttonText: z.string().default("Send Message"),
 });
 
+export const PublicGiftsSectionSchema = z.object({
+  title: z.string().default("Band Gifts & Community Philanthropy"),
+  subtitle: z.string().default("A portion of performance proceeds is awarded as Band Gifts to grassroots organizations across Western Pennsylvania."),
+  badgeText: z.string().default("Band Gifts in Action"),
+  showCategoryFilter: z.boolean().default(true),
+  showSearch: z.boolean().default(true),
+  showAmountsIfAllowed: z.boolean().default(true),
+  maxItems: z.number().default(12),
+  ctaText: z.string().default("Explore All Community Giving"),
+  ctaHref: z.string().default("/giving"),
+});
+
+export type PublicGiftsSection = z.infer<typeof PublicGiftsSectionSchema>;
+
 export const SectionTypeEnum = z.enum([
   "hero",
   "rich_text",
@@ -207,6 +221,7 @@ export const SectionTypeEnum = z.enum([
   "intake_cards",
   "audition_form",
   "contact_form",
+  "public_gifts",
 ]);
 
 export const ContentSectionSchema = z.object({
@@ -230,6 +245,7 @@ export const ContentSectionSchema = z.object({
   intakeCards: IntakeCardsSectionSchema.optional(),
   auditionForm: AuditionFormSectionSchema.optional(),
   contactForm: ContactFormSectionSchema.optional(),
+  publicGifts: PublicGiftsSectionSchema.optional(),
 });
 
 export const PageSeoSchema = z.object({
