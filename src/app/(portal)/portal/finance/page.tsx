@@ -12,6 +12,7 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
   getDoc,
   getDocs,
   writeBatch,
@@ -38,6 +39,7 @@ import { User, UserSchema } from "@/lib/schema/user";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import DatePicker from "@/components/ui/DatePicker";
+import CommentsStream from "@/components/portal/CommentsStream";
 import {
   DollarSign,
   TrendingUp,
@@ -80,6 +82,8 @@ import {
   Minus,
   Plus,
   Edit3,
+  ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -236,6 +240,20 @@ function FinanceHubContent() {
       setRosterMembers(list);
     });
 
+    // 7. Cause Discussion Comments Count
+    const qComments = query(collection(db, "comments"), where("targetType", "==", "cause"));
+    const unsubComments = onSnapshot(qComments, (snap) => {
+      const counts: Record<string, number> = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        const tId = data.targetId;
+        if (tId) {
+          counts[tId] = (counts[tId] || 0) + 1;
+        }
+      });
+      setCommentCounts(counts);
+    });
+
     return () => {
       unsubTreasury();
       unsubTx();
@@ -243,6 +261,7 @@ function FinanceHubContent() {
       unsubDonations();
       unsubGigs();
       unsubUsers();
+      unsubComments();
     };
   }, [authLoading]);
 
@@ -333,6 +352,27 @@ function FinanceHubContent() {
   const [adjustGiftsCause, setAdjustGiftsCause] = useState<Donation | null>(null);
   const [adjustGiftsCount, setAdjustGiftsCount] = useState<number>(0);
   const [isAdjustingGifts, setIsAdjustingGifts] = useState(false);
+
+  // Cause Comments & Discussion Stream State
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+
+  const toggleComments = (causeId: string) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [causeId]: !prev[causeId],
+    }));
+  };
+
+  // Manager: Approve Cause & Confirm Donation State
+  const [causeToApprove, setCauseToApprove] = useState<Donation | null>(null);
+  const [confirmAmount, setConfirmAmount] = useState<string>("100");
+  const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [confirmFiscalYear, setConfirmFiscalYear] = useState<string>(() => String(new Date().getFullYear()));
+  const [confirmGiftsCount, setConfirmGiftsCount] = useState<number>(1);
+  const [confirmImpactNote, setConfirmImpactNote] = useState<string>("");
+  const [confirmNotes, setConfirmNotes] = useState<string>("");
+  const [isConfirmingDonation, setIsConfirmingDonation] = useState<boolean>(false);
 
   // Manager Direct Donation Modal
   const [isRecordDonationModalOpen, setIsRecordDonationModalOpen] = useState(false);
@@ -757,6 +797,58 @@ function FinanceHubContent() {
       toast.success(`${delta > 0 ? "Recorded gift" : "Adjusted gifts"} for ${cause.organizationName} (${next} total).`);
     } catch (err) {
       toast.error("Failed to adjust gift count: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // Community Manager / Admin: Open Modal to Approve Cause & Confirm Donation Amount
+  const handleOpenApproveModal = (cause: Donation) => {
+    setCauseToApprove(cause);
+    const initialAmt = cause.targetAmount > 0 ? String(cause.targetAmount) : (cause.amount > 0 ? String(cause.amount) : "100");
+    setConfirmAmount(initialAmt);
+    setConfirmDate(new Date().toISOString().split("T")[0]);
+    setConfirmFiscalYear(String(new Date().getFullYear()));
+    setConfirmGiftsCount(Math.max(1, (cause.giftsGivenCount || 0) + 1));
+    setConfirmImpactNote(cause.publicImpactNote || "");
+    setConfirmNotes(cause.notes || "");
+  };
+
+  const handleConfirmApproveAndDonate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!causeToApprove) return;
+
+    const numAmount = parseFloat(confirmAmount);
+    if (isNaN(numAmount) || numAmount < 0) {
+      toast.error("Please enter a valid donation amount.");
+      return;
+    }
+
+    setIsConfirmingDonation(true);
+    try {
+      const updatedGifts = Math.max(1, confirmGiftsCount);
+
+      await updateDoc(doc(db, "donations", causeToApprove.id), {
+        status: "completed",
+        amount: Number(numAmount.toFixed(2)),
+        targetAmount: causeToApprove.targetAmount > 0 ? causeToApprove.targetAmount : Number(numAmount.toFixed(2)),
+        dateDonated: confirmDate,
+        fiscalYear: confirmFiscalYear,
+        giftsGivenCount: updatedGifts,
+        publicImpactNote: confirmImpactNote.trim(),
+        notes: confirmNotes.trim(),
+        reviewedByName: profile?.displayName || "Community Manager",
+        reviewedByUid: profile?.uid || null,
+        reviewedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      toast.success(
+        `Approved "${causeToApprove.organizationName}" and recorded confirmed donation of $${numAmount.toFixed(2)}.`
+      );
+      setCauseToApprove(null);
+    } catch (err) {
+      toast.error("Failed to approve and record donation: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsConfirmingDonation(false);
     }
   };
 
@@ -1908,10 +2000,13 @@ function FinanceHubContent() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400">
                           <div>
                             Suggested by <strong className="text-yellow-400">{sug.suggestedByName || "Bandmate"}</strong>
-                            {sug.targetAmount > 0 && (
-                              <span className="ml-2 font-mono text-slate-500">
-                                • Target: <strong className="text-white">${sug.targetAmount.toLocaleString()}</strong>
+                            {sug.targetAmount > 0 ? (
+                              <span className="ml-2 font-mono text-slate-400 inline-flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                                <span>Proposed Gift:</span>
+                                <strong className="text-yellow-400 font-bold">${sug.targetAmount.toLocaleString()}</strong>
                               </span>
+                            ) : (
+                              <span className="ml-2 font-mono text-slate-500">• Proposed Gift: None specified</span>
                             )}
                           </div>
                           {sug.createdAt && (
@@ -1971,52 +2066,81 @@ function FinanceHubContent() {
                           </div>
                         </div>
 
-                        {/* Manager Actions (Approve & Activate, Dismiss, Adjust Gifts) */}
-                        {isGivingManager && (
-                          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAdjustGifts(sug)}
-                              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
-                              title="Set exact gifts given count retroactively"
-                            >
-                              <Gift className="w-3.5 h-3.5 text-yellow-400" />
-                              <span>Gifts: {giftsCount}</span>
-                            </button>
+                        {/* Actions Row: Discussion Toggle & Manager Controls */}
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0 flex-wrap">
+                          {/* Discussion Stream Toggle Button (Visible to all members) */}
+                          <button
+                            type="button"
+                            onClick={() => toggleComments(sug.id)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer ${
+                              expandedComments[sug.id]
+                                ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/40"
+                                : "text-slate-400 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700"
+                            }`}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                            <span>
+                              {commentCounts[sug.id] && commentCounts[sug.id] > 0
+                                ? `Comments (${commentCounts[sug.id]})`
+                                : "Discussion"}
+                            </span>
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                expandedComments[sug.id] ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSuggestion(sug)}
-                              className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
-                              title="Dismiss and remove suggestion"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Dismiss</span>
-                            </button>
+                          {/* Manager Actions (Approve & Activate, Dismiss, Adjust Gifts) */}
+                          {isGivingManager && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAdjustGifts(sug)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+                                title="Set exact gifts given count retroactively"
+                              >
+                                <Gift className="w-3.5 h-3.5 text-yellow-400" />
+                                <span>Gifts: {giftsCount}</span>
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await updateDoc(doc(db, "donations", sug.id), {
-                                    status: "completed",
-                                    reviewedByName: profile?.displayName || "Community Manager",
-                                    reviewedByUid: profile?.uid || null,
-                                    reviewedAt: new Date().toISOString(),
-                                    updatedAt: new Date().toISOString(),
-                                  });
-                                  toast.success(`Approved and activated donation for ${sug.organizationName}.`);
-                                } catch (err) {
-                                  toast.error("Failed to approve suggestion.");
-                                }
-                              }}
-                              className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer transition"
-                            >
-                              Approve &amp; Activate
-                            </button>
-                          </div>
-                        )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSuggestion(sug)}
+                                className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+                                title="Dismiss and remove suggestion"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Dismiss</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenApproveModal(sug)}
+                                className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer transition inline-flex items-center gap-1.5"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Approve &amp; Activate</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Collapsible Comments Stream */}
+                      {expandedComments[sug.id] && (
+                        <div className="pt-3 border-t border-slate-800/80 animate-in fade-in duration-150">
+                          <CommentsStream
+                            targetType="cause"
+                            targetId={sug.id}
+                            targetTitle={sug.organizationName}
+                            compact
+                            onCommentCountChange={(count) => {
+                              setCommentCounts((prev) => ({ ...prev, [sug.id]: count }));
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2612,7 +2736,7 @@ function FinanceHubContent() {
 
                 <div className="space-y-1">
                   <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Suggested Target ($ USD)
+                    Proposed Gift Amount ($ USD)
                   </label>
                   <input
                     type="number"
@@ -2762,7 +2886,7 @@ function FinanceHubContent() {
 
                 <div className="space-y-1">
                   <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    {addCauseStatus === "completed" ? "Donation Amount ($ USD) *" : "Target Amount ($ USD)"}
+                    {addCauseStatus === "completed" ? "Confirmed Donation Amount ($ USD) *" : "Proposed Gift Amount ($ USD)"}
                   </label>
                   <input
                     type="number"
@@ -2899,6 +3023,191 @@ function FinanceHubContent() {
                   className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
                   {isSubmittingAddCause ? "Saving..." : addCauseStatus === "suggested" ? "Add to Voting Queue" : "Record Beneficiary"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: APPROVE CAUSE & CONFIRM DONATION                       */}
+      {/* ------------------------------------------------------------- */}
+      {causeToApprove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base font-black text-white uppercase tracking-tight">
+                  Approve Cause &amp; Confirm Donation
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCauseToApprove(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cause Overview Banner */}
+            <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="text-base font-bold text-white tracking-tight">{causeToApprove.organizationName}</h4>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    Category: <span className="capitalize text-slate-300 font-mono">{causeToApprove.category.replace(/_/g, " ")}</span>
+                    {causeToApprove.suggestedByName && (
+                      <span className="ml-2">• Suggested by <strong className="text-yellow-400">{causeToApprove.suggestedByName}</strong></span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold shrink-0">
+                  Activation Review
+                </span>
+              </div>
+
+              {/* Proposed vs Confirmed Callout */}
+              <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-xs text-slate-400 font-mono">Proposed Gift Amount:</span>
+                <span className="text-sm font-mono font-bold text-yellow-400">
+                  {causeToApprove.targetAmount > 0 ? `$${causeToApprove.targetAmount.toLocaleString()}` : "Not specified"}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmApproveAndDonate} className="space-y-4">
+              {/* Confirmed Amount */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Confirmed Donation Amount ($ USD) *
+                </label>
+                <div className="relative">
+                  <DollarSign className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    placeholder="250.00"
+                    value={confirmAmount}
+                    onChange={(e) => setConfirmAmount(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-base text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Verify and confirm the actual donation amount authorized from the band fund.
+                </p>
+              </div>
+
+              {/* Date Donated & Fiscal Year */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Donation Date *
+                  </label>
+                  <DatePicker
+                    value={confirmDate}
+                    onChange={(d) => setConfirmDate(d)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Fiscal Year *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={confirmFiscalYear}
+                    onChange={(e) => setConfirmFiscalYear(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Cumulative Gifts Given */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Cumulative Gifts Given (Including this grant)
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={confirmGiftsCount <= 1}
+                    onClick={() => setConfirmGiftsCount((c) => Math.max(1, c - 1))}
+                    className="w-10 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-40 transition cursor-pointer"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    required
+                    value={confirmGiftsCount}
+                    onChange={(e) => setConfirmGiftsCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-center text-sm font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setConfirmGiftsCount((c) => c + 1)}
+                    className="w-10 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Automatically increments to account for this newly activated gift.
+                </p>
+              </div>
+
+              {/* Public Impact Note */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Public Impact Note (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Band donation sponsored youth music lessons and instruments"
+                  value={confirmImpactNote}
+                  onChange={(e) => setConfirmImpactNote(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              {/* Internal Review Notes */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Internal Notes / Check Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Check #1042, Venmo confirmation, treasurer approval notes..."
+                  value={confirmNotes}
+                  onChange={(e) => setConfirmNotes(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCauseToApprove(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isConfirmingDonation}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50 inline-flex items-center gap-1.5 shadow-lg shadow-emerald-500/10 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isConfirmingDonation ? "Recording..." : "Confirm & Activate Donation"}</span>
                 </button>
               </div>
             </form>

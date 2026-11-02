@@ -33,6 +33,9 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added 'Priority Rank' and 'Newest' sorting options to the member suggestions showcase, alongside Community Manager controls to approve/activate or dismiss causes.",
       "Transformed the member-suggested causes showcase into a full-width card layout for intuitive top-to-bottom leaderboard sorting and rank scanning.",
       "Added cumulative gifts given tracking across all charitable causes with interactive inline steppers and retroactive count adjustment modals for Community Managers and Treasurers.",
+      "Labeled suggested cause amounts as 'Proposed Gift Amount' across member suggestions, cause cards, and manual entry forms.",
+      "Engineered an interactive 'Approve Cause & Confirm Donation' modal requiring leadership to confirm the actual dollar grant, donation date, fiscal year, and cumulative gifts given count upon activation.",
+      "Integrated the shared CommentsStream into suggested cause cards, enabling bandmates to post discussions, reply, and like comments on causes with real-time comment counters.",
     ],
   },
   {
