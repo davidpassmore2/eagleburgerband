@@ -49,7 +49,6 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
     dateDonated: "2026-05-01",
     fiscalYear: "2026",
     isPublic: true,
-    publicImpactNote: "Supporting regional distribution and nutritious youth meal programs.",
     giftsGivenCount: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -65,7 +64,6 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
     dateDonated: "2026-04-15",
     fiscalYear: "2026",
     isPublic: true,
-    publicImpactNote: "Providing specialized percussion clinics and adaptive instruments.",
     giftsGivenCount: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -81,7 +79,6 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
     dateDonated: "2026-03-20",
     fiscalYear: "2026",
     isPublic: true,
-    publicImpactNote: "Sponsoring teen writing anthologies and community open mics.",
     giftsGivenCount: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -97,7 +94,6 @@ const FALLBACK_BENEFICIARIES: PublicBeneficiary[] = [
     dateDonated: "2026-02-10",
     fiscalYear: "2026",
     isPublic: true,
-    publicImpactNote: "Supporting Pittsburgh community flower garden plantings and urban forestry.",
     giftsGivenCount: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -149,8 +145,7 @@ export default function PublicGivingPage() {
       const matchesCategory = selectedCategory === "all" || b.category === selectedCategory;
       const matchesSearch =
         b.organizationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.causeDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.publicImpactNote.toLowerCase().includes(searchQuery.toLowerCase());
+        b.causeDescription.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
   }, [beneficiaries, selectedCategory, searchQuery]);
@@ -353,13 +348,6 @@ export default function PublicGivingPage() {
                         </p>
                       )}
                     </div>
-
-                    {b.publicImpactNote && (
-                      <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3 text-[11px] font-mono text-yellow-300/90 flex items-start gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
-                        <span className="leading-snug">{b.publicImpactNote}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">

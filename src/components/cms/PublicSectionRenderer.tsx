@@ -774,8 +774,7 @@ function PublicGiftsSectionComponent({
     const matchesQuery =
       !q ||
       b.organizationName.toLowerCase().includes(q) ||
-      b.causeDescription.toLowerCase().includes(q) ||
-      b.publicImpactNote.toLowerCase().includes(q);
+      b.causeDescription.toLowerCase().includes(q);
     return matchesCat && matchesQuery;
   });
 
@@ -905,13 +904,6 @@ function PublicGiftsSectionComponent({
                       </p>
                     )}
                   </div>
-
-                  {b.publicImpactNote && (
-                    <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3 text-[11px] font-mono text-yellow-300/90 flex items-start gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
-                      <span className="leading-snug">{b.publicImpactNote}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">

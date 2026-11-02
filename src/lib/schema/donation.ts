@@ -75,6 +75,7 @@ export function calculateDonationPriorityScore(ratings: Record<string, number> =
 // Public Beneficiary presentation type (strictly omits internal amounts, review, ratings, and member attribution fields)
 export const PublicBeneficiarySchema = DonationSchema.omit({
   notes: true,
+  publicImpactNote: true,
   targetAmount: true,
   status: true,
   suggestedByUid: true,

@@ -43,6 +43,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Created the 'public_gifts' CMS content section type with customizable title, subtitle, badge text, item limits, category filter toggle, search toggle, and section-wide dollar amount visibility controls.",
       "Integrated the Band Gifts Showcase into the CMS Page Studio (/admin/pages) with live schema validation, preview rendering, and drag-and-drop section management.",
       "Updated the public Community Giving page (/giving) and PublicSectionRenderer with responsive Band Gift recipient cards, category pills, confirmed dollar amount badges, and cumulative gifts given counters.",
+      "Enforced that prospective gifts (cause suggestions awaiting review or in voting) are strictly excluded from public feeds; only completed Band Gifts that have been made are eligible for public listing.",
+      "Excluded all added notes (public impact notes and internal review notes) from public feeds and schemas, ensuring public cards display clean organization and cause descriptions only.",
     ],
   },
   {

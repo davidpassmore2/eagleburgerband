@@ -49,7 +49,8 @@ export async function getPublicGig(id: string): Promise<DocumentData | null> {
 export async function listPublicBeneficiaries(): Promise<PublicBeneficiary[]> {
   const docs = await listDocuments("donations");
   return docs.flatMap((d) => {
-    if (d.data.isPublic !== true) return [];
+    // Prospective gifts must not appear publicly; only completed Band Gifts that have been made are eligible
+    if (d.data.isPublic !== true || d.data.status !== "completed") return [];
     const parsed = PublicBeneficiarySchema.safeParse({ ...d.data, id: d.id });
     if (!parsed.success) return [];
     const gift = parsed.data;
