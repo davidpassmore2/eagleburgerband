@@ -76,6 +76,10 @@ import {
   Settings,
   Award,
   Trash2,
+  Gift,
+  Minus,
+  Plus,
+  Edit3,
 } from "lucide-react";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -324,6 +328,12 @@ function FinanceHubContent() {
   const [ratingInProgressId, setRatingInProgressId] = useState<string | null>(null);
   const [suggestSortOrder, setSuggestSortOrder] = useState<"rank" | "recent">("rank");
 
+  // Gifts Given Retroactive Adjust State
+  const [addCauseGiftsGiven, setAddCauseGiftsGiven] = useState("0");
+  const [adjustGiftsCause, setAdjustGiftsCause] = useState<Donation | null>(null);
+  const [adjustGiftsCount, setAdjustGiftsCount] = useState<number>(0);
+  const [isAdjustingGifts, setIsAdjustingGifts] = useState(false);
+
   // Manager Direct Donation Modal
   const [isRecordDonationModalOpen, setIsRecordDonationModalOpen] = useState(false);
   const [recOrgName, setRecOrgName] = useState("");
@@ -560,6 +570,7 @@ function FinanceHubContent() {
         ratings: {},
         ratingAverage: 0,
         ratingCount: 0,
+        giftsGivenCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -636,6 +647,7 @@ function FinanceHubContent() {
 
       const targetAmt = parseFloat(addCauseTargetAmount) || 0;
       const directAmt = parseFloat(addCauseAmount) || 0;
+      const giftsGivenNum = Math.max(0, parseInt(addCauseGiftsGiven, 10) || (addCauseStatus === "completed" ? 1 : 0));
 
       const payload: Donation = {
         id,
@@ -663,6 +675,7 @@ function FinanceHubContent() {
         ratings: {},
         ratingAverage: 0,
         ratingCount: 0,
+        giftsGivenCount: giftsGivenNum,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -687,6 +700,7 @@ function FinanceHubContent() {
       setAddCauseImpactNote("");
       setAddCauseNotes("");
       setAddCauseAttributedMemberUid("");
+      setAddCauseGiftsGiven("0");
     } catch (err) {
       toast.error("Failed to add cause: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -704,6 +718,45 @@ function FinanceHubContent() {
       toast.success(`Removed suggestion for "${cause.organizationName}".`);
     } catch (err) {
       toast.error("Failed to delete suggestion: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // Community Manager / Admin: Adjust Gifts Given Retroactively
+  const handleOpenAdjustGifts = (cause: Donation) => {
+    setAdjustGiftsCause(cause);
+    setAdjustGiftsCount(cause.giftsGivenCount || 0);
+  };
+
+  const handleSaveAdjustGifts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustGiftsCause) return;
+    setIsAdjustingGifts(true);
+    try {
+      const nextCount = Math.max(0, adjustGiftsCount);
+      await updateDoc(doc(db, "donations", adjustGiftsCause.id), {
+        giftsGivenCount: nextCount,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(`Updated gifts given to ${nextCount} for ${adjustGiftsCause.organizationName}.`);
+      setAdjustGiftsCause(null);
+    } catch (err) {
+      toast.error("Failed to update gifts count: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsAdjustingGifts(false);
+    }
+  };
+
+  const handleQuickAddGift = async (cause: Donation, delta: number) => {
+    const current = cause.giftsGivenCount || 0;
+    const next = Math.max(0, current + delta);
+    try {
+      await updateDoc(doc(db, "donations", cause.id), {
+        giftsGivenCount: next,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(`${delta > 0 ? "Recorded gift" : "Adjusted gifts"} for ${cause.organizationName} (${next} total).`);
+    } catch (err) {
+      toast.error("Failed to adjust gift count: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -762,6 +815,7 @@ function FinanceHubContent() {
         ratings: {},
         ratingAverage: 0,
         ratingCount: 0,
+        giftsGivenCount: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -1726,7 +1780,7 @@ function FinanceHubContent() {
                 No active member suggestions awaiting review. Have a grassroots cause you love? Suggest one above!
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {rankedSuggestedCauses.map((sug, index) => {
                   const ratingCount = sug.ratingCount || 0;
                   const ratingAvg = sug.ratingAverage || 0;
@@ -1734,161 +1788,235 @@ function FinanceHubContent() {
                   const overallRank = hasVotes ? index + 1 : null;
                   const myRating = (profile?.uid && sug.ratings) ? sug.ratings[profile.uid] : undefined;
                   const isRatingThis = ratingInProgressId === sug.id;
+                  const giftsCount = sug.giftsGivenCount || 0;
 
                   return (
                     <div
                       key={sug.id}
-                      className="p-5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-3.5 relative flex flex-col justify-between"
+                      className="p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-4 relative shadow-lg hover:border-slate-700/80 transition"
                     >
-                      {/* Top Header & Rank Badge */}
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-base font-bold text-white tracking-tight">{sug.organizationName}</div>
-                            <div className="text-[11px] text-slate-400">
-                              Suggested by <strong className="text-yellow-400">{sug.suggestedByName || "Bandmate"}</strong>
-                            </div>
-                          </div>
-
-                          {/* Overall Rank Badge */}
+                      {/* Top Header Row: Rank Badge, Cause Details, Gifts Given, Score */}
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-800/60">
+                        <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                          {/* Rank Badge */}
                           {overallRank === 1 ? (
-                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 uppercase font-black shrink-0 shadow-sm shadow-yellow-400/10">
-                              <Award className="w-3.5 h-3.5 text-yellow-400" />
+                            <span className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 uppercase font-black shrink-0 shadow-sm shadow-yellow-400/10">
+                              <Award className="w-4 h-4 text-yellow-400" />
                               <span>Rank #1 Priority</span>
                             </span>
                           ) : overallRank ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold shrink-0">
                               <span>Rank #{overallRank} Priority</span>
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/60 uppercase font-medium shrink-0">
+                            <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/60 uppercase font-medium shrink-0">
                               Needs Votes
                             </span>
                           )}
-                        </div>
 
-                        {/* Rationale Quote */}
-                        <p className="text-xs text-slate-300 leading-relaxed italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/40">
-                          &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
-                        </p>
+                          {/* Organization Name */}
+                          <h4 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                            {sug.organizationName}
+                          </h4>
 
-                        {/* Category & Website */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="capitalize font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                          {/* Category Badge */}
+                          <span className="capitalize font-mono text-[11px] px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
                             {sug.category.replace(/_/g, " ")}
                           </span>
+
+                          {/* Website Link */}
                           {sug.websiteUrl && (
                             <a
                               href={sug.websiteUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-400 hover:underline inline-flex items-center gap-1"
+                              className="text-xs text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-mono"
                             >
                               <span>Website</span>
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
                         </div>
-                      </div>
 
-                      {/* Aggregated Score Bar */}
-                      <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-400 font-medium">Aggregated Priority:</span>
-                          <span className="font-mono font-bold text-white">
+                        {/* Right Header: Gifts Given Tracker & Aggregated Priority */}
+                        <div className="flex items-center gap-3 flex-wrap self-end lg:self-center">
+                          {/* Gifts Given Badge & Stepper */}
+                          <div className="inline-flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                            <Gift className="w-4 h-4 text-yellow-400 shrink-0" />
+                            <span className="font-mono font-bold text-white">
+                              <strong className="text-yellow-400">{giftsCount}</strong>{" "}
+                              <span className="text-slate-400 text-[11px]">
+                                {giftsCount === 1 ? "Gift Given" : "Gifts Given"}
+                              </span>
+                            </span>
+
+                            {isGivingManager && (
+                              <div className="flex items-center gap-1 ml-1.5 pl-2 border-l border-slate-800">
+                                <button
+                                  type="button"
+                                  disabled={giftsCount <= 0}
+                                  onClick={() => handleQuickAddGift(sug, -1)}
+                                  className="w-5 h-5 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                                  title="Decrease gifts given by 1"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickAddGift(sug, 1)}
+                                  className="w-5 h-5 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                                  title="Add 1 gift given"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAdjustGifts(sug)}
+                                  className="ml-1 p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-yellow-400 transition cursor-pointer"
+                                  title="Set exact number of gifts given retroactively"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Aggregated Score Badge */}
+                          <div className="bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+                            <span className="text-slate-400">Score: </span>
                             {hasVotes ? (
                               <>
-                                <strong className="text-yellow-400 text-sm">{ratingAvg.toFixed(1)}</strong>
+                                <strong className="text-yellow-400 font-bold">{ratingAvg.toFixed(1)}</strong>
                                 <span className="text-slate-400 text-[11px]"> / 10</span>
-                                <span className="text-slate-500 text-[10px] ml-1">
+                                <span className="text-slate-500 text-[10px] ml-1.5">
                                   ({ratingCount} {ratingCount === 1 ? "vote" : "votes"})
                                 </span>
                               </>
                             ) : (
-                              <span className="text-slate-500 text-[11px]">No votes yet</span>
+                              <span className="text-slate-500">Unvoted</span>
                             )}
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                          <div
-                            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(100, (ratingAvg / 10) * 100)}%` }}
-                          />
+                          </div>
                         </div>
                       </div>
 
-                      {/* Member 1-10 Priority Rating Controls */}
-                      <div className="space-y-1.5 pt-1 border-t border-slate-800/60">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400 font-mono">
-                            Your Priority Ranking:
-                          </span>
-                          {myRating ? (
-                            <span className="text-yellow-400 font-bold font-mono">
-                              Voted {myRating}/10
+                      {/* Middle: Rationale & Attribution */}
+                      <div className="space-y-2">
+                        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic bg-slate-900/40 p-3 rounded-xl border border-slate-800/40">
+                          &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-slate-400">
+                          <div>
+                            Suggested by <strong className="text-yellow-400">{sug.suggestedByName || "Bandmate"}</strong>
+                            {sug.targetAmount > 0 && (
+                              <span className="ml-2 font-mono text-slate-500">
+                                • Target: <strong className="text-white">${sug.targetAmount.toLocaleString()}</strong>
+                              </span>
+                            )}
+                          </div>
+                          {sug.createdAt && (
+                            <span className="text-slate-500 font-mono">
+                              Submitted {new Date(sug.createdAt).toLocaleDateString()}
                             </span>
-                          ) : (
-                            <span className="text-slate-500 font-mono">Tap 1 (low) - 10 (essential)</span>
                           )}
                         </div>
-
-                        <div className="grid grid-cols-10 gap-1">
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
-                            const isSelected = myRating === num;
-                            return (
-                              <button
-                                key={num}
-                                type="button"
-                                disabled={isRatingThis}
-                                onClick={() => handleRateCausePriority(sug, num)}
-                                className={`py-1 rounded text-center font-mono text-xs font-bold transition cursor-pointer ${
-                                  isSelected
-                                    ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/20 ring-1 ring-yellow-300 scale-105"
-                                    : "bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800"
-                                } disabled:opacity-40`}
-                              >
-                                {num}
-                              </button>
-                            );
-                          })}
-                        </div>
                       </div>
 
-                      {/* Manager Controls: Approve / Activate & Delete */}
-                      {isGivingManager && (
-                        <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSuggestion(sug)}
-                            className="px-2.5 py-1 rounded bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition"
-                            title="Dismiss and remove suggestion"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Dismiss</span>
-                          </button>
+                      {/* Visual Priority Meter */}
+                      <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800/80">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, (ratingAvg / 10) * 100)}%` }}
+                        />
+                      </div>
 
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                await updateDoc(doc(db, "donations", sug.id), {
-                                  status: "completed",
-                                  reviewedByName: profile?.displayName || "Community Manager",
-                                  reviewedByUid: profile?.uid || null,
-                                  reviewedAt: new Date().toISOString(),
-                                  updatedAt: new Date().toISOString(),
-                                });
-                                toast.success(`Approved and activated donation for ${sug.organizationName}.`);
-                              } catch (err) {
-                                toast.error("Failed to approve suggestion.");
-                              }
-                            }}
-                            className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer transition"
-                          >
-                            Approve &amp; Activate
-                          </button>
+                      {/* Bottom Row: 1-10 Priority Rank Buttons & Manager Controls */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+                        {/* 1-10 Priority Buttons */}
+                        <div className="space-y-1.5 flex-1 max-w-xl">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-mono font-medium">
+                              Your Priority Rating:
+                            </span>
+                            {myRating ? (
+                              <span className="text-yellow-400 font-bold font-mono text-xs">
+                                Voted {myRating} / 10 Priority
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-mono text-[11px]">
+                                Rate 1 (lowest) to 10 (highest priority)
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-10 gap-1 sm:gap-1.5">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+                              const isSelected = myRating === num;
+                              return (
+                                <button
+                                  key={num}
+                                  type="button"
+                                  disabled={isRatingThis}
+                                  onClick={() => handleRateCausePriority(sug, num)}
+                                  className={`py-1.5 rounded-lg text-center font-mono text-xs font-bold transition cursor-pointer ${
+                                    isSelected
+                                      ? "bg-yellow-400 text-slate-950 shadow-md shadow-yellow-400/20 ring-2 ring-yellow-300 scale-105"
+                                      : "bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800"
+                                  } disabled:opacity-40`}
+                                >
+                                  {num}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
+
+                        {/* Manager Actions (Approve & Activate, Dismiss, Adjust Gifts) */}
+                        {isGivingManager && (
+                          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdjustGifts(sug)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+                              title="Set exact gifts given count retroactively"
+                            >
+                              <Gift className="w-3.5 h-3.5 text-yellow-400" />
+                              <span>Gifts: {giftsCount}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSuggestion(sug)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+                              title="Dismiss and remove suggestion"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Dismiss</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await updateDoc(doc(db, "donations", sug.id), {
+                                    status: "completed",
+                                    reviewedByName: profile?.displayName || "Community Manager",
+                                    reviewedByUid: profile?.uid || null,
+                                    reviewedAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString(),
+                                  });
+                                  toast.success(`Approved and activated donation for ${sug.organizationName}.`);
+                                } catch (err) {
+                                  toast.error("Failed to approve suggestion.");
+                                }
+                              }}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold cursor-pointer transition"
+                            >
+                              Approve &amp; Activate
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -1956,6 +2084,26 @@ function FinanceHubContent() {
                               Suggested by: <span className="text-yellow-400 font-bold">{ben.suggestedByName}</span>
                             </div>
                           )}
+
+                          {/* Gifts Given Badge */}
+                          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/60">
+                            <div className="inline-flex items-center gap-1.5 text-yellow-400 font-mono font-bold">
+                              <Gift className="w-3.5 h-3.5" />
+                              <span>{ben.giftsGivenCount || 1} {(ben.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}</span>
+                            </div>
+
+                            {isGivingManager && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAdjustGifts(ben)}
+                                className="text-[11px] text-slate-400 hover:text-yellow-400 font-mono flex items-center gap-1 cursor-pointer transition"
+                                title="Adjust gifts given retroactively"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Adjust</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <div className="pt-3 border-t border-slate-900 flex items-center justify-between text-xs">
@@ -2692,6 +2840,24 @@ function FinanceHubContent() {
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Gifts Previously Given (Retroactive Count)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={addCauseGiftsGiven}
+                  onChange={(e) => setAddCauseGiftsGiven(e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Track gifts previously given to this cause before adding it to the hub.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Cause Description / Community Rationale *
                 </label>
                 <textarea
@@ -2733,6 +2899,89 @@ function FinanceHubContent() {
                   className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
                   {isSubmittingAddCause ? "Saving..." : addCauseStatus === "suggested" ? "Add to Voting Queue" : "Record Beneficiary"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL: ADJUST GIFTS GIVEN RETROACTIVELY                       */}
+      {/* ------------------------------------------------------------- */}
+      {adjustGiftsCause && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-yellow-400" />
+                <h3 className="text-base font-black text-white uppercase tracking-tight">
+                  Adjust Gifts Given
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdjustGiftsCause(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm font-bold text-white">{adjustGiftsCause.organizationName}</div>
+              <p className="text-xs text-slate-400">
+                Track the cumulative number of gifts or grants received by this organization from the band. Update this count retroactively for prior donations.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveAdjustGifts} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Total Gifts Given
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={adjustGiftsCount <= 0}
+                    onClick={() => setAdjustGiftsCount((c) => Math.max(0, c - 1))}
+                    className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-40 transition cursor-pointer"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={adjustGiftsCount}
+                    onChange={(e) => setAdjustGiftsCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-center text-lg font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAdjustGiftsCount((c) => c + 1)}
+                    className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAdjustGiftsCause(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdjustingGifts}
+                  className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
+                >
+                  {isAdjustingGifts ? "Saving..." : "Save Gifts Count"}
                 </button>
               </div>
             </form>

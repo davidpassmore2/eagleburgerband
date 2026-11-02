@@ -31,6 +31,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Implemented member-driven 1-10 priority ranking system for suggested causes with real-time aggregated average scores, vote tallies, and rank badges (#1 Priority, #2, etc.).",
       "Added individual member 1-10 priority voting buttons with instant visual feedback and strict Firestore security rules allowing members to update only their own rating key.",
       "Added 'Priority Rank' and 'Newest' sorting options to the member suggestions showcase, alongside Community Manager controls to approve/activate or dismiss causes.",
+      "Transformed the member-suggested causes showcase into a full-width card layout for intuitive top-to-bottom leaderboard sorting and rank scanning.",
+      "Added cumulative gifts given tracking across all charitable causes with interactive inline steppers and retroactive count adjustment modals for Community Managers and Treasurers.",
     ],
   },
   {

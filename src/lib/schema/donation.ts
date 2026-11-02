@@ -46,6 +46,7 @@ export const DonationSchema = z.object({
   ratings: z.record(z.string(), z.number().min(1).max(10)).default({}),
   ratingAverage: z.number().default(0),
   ratingCount: z.number().default(0),
+  giftsGivenCount: z.number().int().min(0).default(0),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),
 });
