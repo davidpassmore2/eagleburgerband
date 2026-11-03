@@ -41,7 +41,7 @@ export async function GET(
       const gigId = gigDoc.id;
 
       // Skip cancelled or archived gigs if any
-      if (gigData.status === "cancelled" || gigData.status === "archived" || gigData.status === "historic") {
+      if (gigData.status === "cancelled" || gigData.status === "archived") {
         continue;
       }
 

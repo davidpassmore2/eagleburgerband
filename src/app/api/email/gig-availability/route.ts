@@ -41,16 +41,16 @@ export async function POST(req: NextRequest) {
       recipientEmails: explicitEmails,
     } = parsed.data;
 
-    // Guard against historic gig dispatches
+    // Guard against disabled broadcasts or archived gigs
     if (gigId) {
       const gigDoc = await getDocument(`gigs/${gigId}`);
-      if (gigDoc && (gigDoc.data?.status === "historic" || gigDoc.data?.status === "archived")) {
+      if (gigDoc && (gigDoc.data?.disableBroadcasts === true || gigDoc.data?.status === "archived")) {
         return NextResponse.json({
           success: true,
           recipientCount: 0,
           blackedOutCount: 0,
           hiatusCount: 0,
-          message: "Historic gigs do not dispatch availability notifications.",
+          message: "Broadcasts are disabled for this gig.",
         });
       }
     }

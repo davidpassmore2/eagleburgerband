@@ -46,7 +46,7 @@ import {
   AlertTriangle,
   UserCheck,
   Users,
-  History,
+  BellOff,
   MessageSquare,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
@@ -62,7 +62,8 @@ interface GigItem {
   id: string;
   slug: string;
   date: string;
-  status: "confirmed" | "draft" | "completed" | "cancelled" | "historic";
+  status: "confirmed" | "draft" | "completed" | "cancelled";
+  disableBroadcasts?: boolean;
   setlistId?: string;
   setlistName?: string;
   setlistTitle?: string;
@@ -146,7 +147,7 @@ export default function GigsAdminStudioPage() {
 
   // Search, Status Filter & Sorting
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed" | "historic">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
 
   const [formData, setFormData] = useState({
@@ -174,6 +175,7 @@ export default function GigsAdminStudioPage() {
     internalDescription: "",
     debrief: "",
     isDebriefPublic: false,
+    disableBroadcasts: false,
     dispatchAvailability: false,
   });
 
@@ -202,6 +204,7 @@ export default function GigsAdminStudioPage() {
     internalDescription: "",
     debrief: "",
     isDebriefPublic: false,
+    disableBroadcasts: false,
     setlistId: "",
   });
 
@@ -307,31 +310,21 @@ export default function GigsAdminStudioPage() {
     // Calculate base counts across all gigs
     let upcomingCount = 0;
     let completedCount = 0;
-    let historicCount = 0;
 
     for (const g of gigs) {
-      if (g.status === "historic") {
-        historicCount++;
+      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (isCompleted) {
         completedCount++;
       } else {
-        const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
-        if (isCompleted) {
-          completedCount++;
-        } else {
-          upcomingCount++;
-        }
+        upcomingCount++;
       }
     }
 
     const filtered = gigs.filter((g) => {
       // 1. Status Filter
-      if (statusFilter === "historic") {
-        if (g.status !== "historic") return false;
-      } else {
-        const isCompleted = g.status === "completed" || g.status === "historic" || (Boolean(g.date) && g.date < todayStr);
-        if (statusFilter === "upcoming" && isCompleted) return false;
-        if (statusFilter === "completed" && !isCompleted) return false;
-      }
+      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      if (statusFilter === "upcoming" && isCompleted) return false;
+      if (statusFilter === "completed" && !isCompleted) return false;
 
       // 2. Search Query (Title, Venue, City, Address, Setlist, Date)
       if (q) {
@@ -377,7 +370,6 @@ export default function GigsAdminStudioPage() {
         all: gigs.length,
         upcoming: upcomingCount,
         completed: completedCount,
-        historic: historicCount,
       },
     };
   }, [gigs, searchQuery, statusFilter, sortDirection, setlistMap]);
@@ -490,8 +482,8 @@ export default function GigsAdminStudioPage() {
         { merge: true }
       );
 
-      // Dispatch initial availability request email if requested (never for historic gigs)
-      if (formData.dispatchAvailability && formData.status !== "historic") {
+      // Dispatch initial availability request email if requested (unless broadcasts are disabled)
+      if (formData.dispatchAvailability && !formData.disableBroadcasts) {
         try {
           const dispRes = await authedFetch("/api/email/gig-availability", {
             method: "POST",
@@ -524,8 +516,8 @@ export default function GigsAdminStudioPage() {
         }
       } else {
         toast.success(
-          formData.status === "historic"
-            ? `Historic performance "${formData.title.trim()}" added to gig history (notifications suppressed).`
+          formData.disableBroadcasts
+            ? `Performance "${formData.title.trim()}" created (broadcasts disabled).`
             : `Performance "${formData.title.trim()}" created!`
         );
       }
@@ -556,6 +548,7 @@ export default function GigsAdminStudioPage() {
         internalDescription: "",
         debrief: "",
         isDebriefPublic: false,
+        disableBroadcasts: false,
         dispatchAvailability: false,
       });
     } catch (err) {
@@ -635,6 +628,7 @@ export default function GigsAdminStudioPage() {
       internalDescription: gig.internalDescription || gig.internalLogistics?.description || "",
       debrief: gig.debrief || "",
       isDebriefPublic: Boolean(gig.isDebriefPublic),
+      disableBroadcasts: Boolean(gig.disableBroadcasts),
       setlistId: gig.setlistId || gig.internalLogistics?.setlistId || "",
     });
   };
@@ -791,9 +785,9 @@ export default function GigsAdminStudioPage() {
       const isNowConfirmed = editFormData.status === "confirmed";
       const wasConfirmed = editingGig.status === "confirmed";
       const isNowCancelled = editFormData.status === "cancelled";
-      const isHistoric = editFormData.status === "historic";
+      const broadcastsMuted = Boolean(editFormData.disableBroadcasts);
 
-      if (isNowConfirmed && !wasConfirmed && !isHistoric) {
+      if (isNowConfirmed && !wasConfirmed && !broadcastsMuted) {
         try {
           const confRes = await authedFetch("/api/email/gig-confirmation", {
             method: "POST",
@@ -828,7 +822,7 @@ export default function GigsAdminStudioPage() {
       }
 
       // Trigger 3: If a confirmed gig is canceled, notify members it's not happening.
-      if (wasConfirmed && isNowCancelled && !isHistoric) {
+      if (wasConfirmed && isNowCancelled && !broadcastsMuted) {
         try {
           const cancelRes = await authedFetch("/api/email/gig-cancellation", {
             method: "POST",
@@ -864,6 +858,10 @@ export default function GigsAdminStudioPage() {
   };
 
   const handleDispatchConfirmationNow = async (gig: GigItem) => {
+    if (gig.disableBroadcasts) {
+      toast.error("Broadcasts are disabled for this gig. Uncheck 'Disable Broadcasts' in edit settings if you wish to dispatch notifications.");
+      return;
+    }
     setDispatchingConfirmationId(gig.id);
     try {
       const gigTitle = gig.internalLogistics?.title || gig.publicDetails?.title || "Gig";
@@ -911,7 +909,7 @@ export default function GigsAdminStudioPage() {
       await deleteDoc(doc(db, "gigs", id));
 
       // Trigger 3: If deleting a confirmed gig, notify members so they know it's called off
-      if (wasConfirmed && targetGig) {
+      if (wasConfirmed && targetGig && !targetGig.disableBroadcasts) {
         try {
           await authedFetch("/api/email/gig-cancellation", {
             method: "POST",
@@ -1076,7 +1074,6 @@ export default function GigsAdminStudioPage() {
                   setFormData((prev) => ({
                     ...prev,
                     status: newStatus,
-                    dispatchAvailability: newStatus === "historic" ? false : prev.dispatchAvailability,
                   }));
                 }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
@@ -1085,7 +1082,6 @@ export default function GigsAdminStudioPage() {
                 <option value="confirmed">Confirmed & Dispatched</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="historic">Historic</option>
               </select>
             </div>
           </div>
@@ -1547,8 +1543,37 @@ export default function GigsAdminStudioPage() {
             )}
           </div>
 
-          {/* Manual Availability Dispatch Option (Defaults to false, strictly hidden/disabled for historic gigs) */}
-          {formData.status !== "historic" ? (
+          {/* Universal Disable Broadcasts Toggle */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <BellOff className="w-3.5 h-3.5 text-amber-400" />
+                Disable Broadcasts (Suppress Notifications)
+              </span>
+              <span className="text-[11px] text-slate-400 block leading-relaxed">
+                Mute all email blasts and member notifications for this gig. Useful for past performances or gigs managed in other systems.
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                checked={formData.disableBroadcasts}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setFormData((prev) => ({
+                    ...prev,
+                    disableBroadcasts: val,
+                    dispatchAvailability: val ? false : prev.dispatchAvailability,
+                  }));
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+
+          {/* Manual Availability Dispatch Option (Defaults to false, hidden when broadcasts are disabled) */}
+          {!formData.disableBroadcasts && (
             <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
@@ -1568,14 +1593,6 @@ export default function GigsAdminStudioPage() {
                 />
                 <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
               </label>
-            </div>
-          ) : (
-            <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-2.5">
-              <History className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-200/90 leading-relaxed">
-                <span className="text-amber-300 font-bold block mb-0.5">Historic Gig Record</span>
-                This performance will be saved directly into past gig history. All member availability requests, email blasts, and call sheet notifications are automatically suppressed.
-              </div>
             </div>
           )}
 
@@ -1656,7 +1673,6 @@ export default function GigsAdminStudioPage() {
                   <option value="confirmed">Confirmed & Dispatched</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
-                  <option value="historic">Historic</option>
                 </select>
               </div>
 
@@ -2131,72 +2147,96 @@ export default function GigsAdminStudioPage() {
               )}
             </div>
 
+            {/* Universal Disable Broadcasts Toggle */}
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <BellOff className="w-3.5 h-3.5 text-amber-400" />
+                  Disable Broadcasts (Suppress Notifications)
+                </span>
+                <span className="text-[11px] text-slate-400 block leading-relaxed">
+                  Mute all email blasts and member notifications for this gig. When enabled, status transitions (e.g. Confirming or Cancelling) and routine saves will never broadcast alerts to members.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={editFormData.disableBroadcasts}
+                  onChange={(e) => setEditFormData({ ...editFormData, disableBroadcasts: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
             {/* Automated Dispatch Indicators & Controls */}
-            {editFormData.status === "historic" && (
+            {editFormData.disableBroadcasts ? (
               <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-2.5">
-                <History className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <BellOff className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-amber-200/90 leading-relaxed">
-                  <span className="text-amber-300 font-bold block mb-0.5">Historic Gig Record</span>
-                  This performance is logged as prior gig history. No member notifications or automated email dispatches will be triggered on save.
+                  <span className="text-amber-300 font-bold block mb-0.5">Broadcasts Disabled</span>
+                  All member email blasts, confirmation dispatches, and cancellation notices are strictly muted for this gig.
                 </div>
               </div>
-            )}
-
-            {editingGig.status !== "confirmed" && editFormData.status === "confirmed" && (
-              <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-200">
-                    Automatic Confirmation Dispatch on Save
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Saving this performance as <strong>Confirmed</strong> will automatically dispatch an official confirmation email to active musicians so they know the gig is happening.
-                </p>
-              </div>
-            )}
-
-            {editingGig.status === "confirmed" && editFormData.status === "confirmed" && (
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      Confirmed Performance — Edits Saved Without Auto-Dispatch
-                    </span>
-                    <span className="text-[11px] text-slate-400 block leading-relaxed">
-                      Routine edits to times, locations, or notes do not blast musicians automatically. To dispatch call sheet revisions, use the manual button below or Dispatch Studio.
-                    </span>
+            ) : (
+              <>
+                {editingGig.status !== "confirmed" && editFormData.status === "confirmed" && (
+                  <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-200">
+                        Automatic Confirmation Dispatch on Save
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Saving this performance as <strong>Confirmed</strong> will automatically dispatch an official confirmation email to active musicians so they know the gig is happening.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={Boolean(dispatchingConfirmationId)}
-                    onClick={() => handleDispatchConfirmationNow(editingGig)}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/30 transition disabled:opacity-50 shrink-0 self-start sm:self-auto cursor-pointer"
-                  >
-                    {dispatchingConfirmationId === editingGig.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Send className="w-3 h-3" />
-                    )}
-                    <span>Dispatch Update Now (Manual)</span>
-                  </button>
-                </div>
-              </div>
-            )}
+                )}
 
-            {editingGig.status === "confirmed" && editFormData.status === "cancelled" && (
-              <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3.5 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span className="text-xs font-bold text-rose-200">
-                    Automatic Cancellation Notice on Save
-                  </span>
-                </div>
-                <p className="text-[11px] text-rose-200/80 leading-relaxed">
-                  Saving this performance as <strong>Cancelled</strong> will automatically dispatch a cancellation alert to committed musicians so they know the performance is called off.
-                </p>
-              </div>
+                {editingGig.status === "confirmed" && editFormData.status === "confirmed" && (
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-slate-400" />
+                          Confirmed Performance — Edits Saved Without Auto-Dispatch
+                        </span>
+                        <span className="text-[11px] text-slate-400 block leading-relaxed">
+                          Routine edits to times, locations, or notes do not blast musicians automatically. To dispatch call sheet revisions, use the manual button below or Dispatch Studio.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={Boolean(dispatchingConfirmationId)}
+                        onClick={() => handleDispatchConfirmationNow(editingGig)}
+                        className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/30 transition disabled:opacity-50 shrink-0 self-start sm:self-auto cursor-pointer"
+                      >
+                        {dispatchingConfirmationId === editingGig.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Send className="w-3 h-3" />
+                        )}
+                        <span>Dispatch Update Now (Manual)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {editingGig.status === "confirmed" && editFormData.status === "cancelled" && (
+                  <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3.5 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span className="text-xs font-bold text-rose-200">
+                        Automatic Cancellation Notice on Save
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-rose-200/80 leading-relaxed">
+                      Saving this performance as <strong>Cancelled</strong> will automatically dispatch a cancellation alert to committed musicians so they know the performance is called off.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -2287,17 +2327,7 @@ export default function GigsAdminStudioPage() {
             >
               Completed ({counts.completed})
             </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter("historic")}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                statusFilter === "historic"
-                  ? "bg-yellow-400 text-slate-950 shadow-sm"
-                  : "text-slate-400 hover:text-white bg-slate-800/50"
-              }`}
-            >
-              Historic ({counts.historic})
-            </button>
+
           </div>
 
           {/* Date Sort Toggle Button */}
@@ -2360,12 +2390,19 @@ export default function GigsAdminStudioPage() {
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                       : g.status === "completed"
                       ? "bg-slate-800 text-slate-400 border-slate-700"
-                      : g.status === "historic"
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                       : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
                   }`}>
                     {g.status}
                   </span>
+                  {g.disableBroadcasts && (
+                    <span
+                      title="Member broadcast alerts and email dispatches are disabled for this gig"
+                      className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border flex items-center gap-1 bg-amber-500/10 text-amber-400 border-amber-500/30"
+                    >
+                      <BellOff className="w-3 h-3 text-amber-400" />
+                      <span>Broadcasts Muted</span>
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleTogglePublicVisibility(g.id, g.publicDetails?.isPublic)}

@@ -199,7 +199,7 @@ export function isEventInPast(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isGigInPast(gig?: any): boolean {
   if (!gig) return false;
-  if (gig.status === "completed" || gig.status === "historic") return true;
+  if (gig.status === "completed") return true;
   const rawLogistics = gig.internalLogistics as { endTime?: string } | undefined;
   const endTime =
     typeof rawLogistics?.endTime === "string"

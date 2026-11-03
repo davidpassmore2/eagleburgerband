@@ -96,8 +96,8 @@ export default function PublicGigsPage() {
   }, []);
 
   const todayStr = new Date().toISOString().split("T")[0];
-  const upcomingGigs = gigs.filter((g) => g.status !== "completed" && g.status !== "historic" && (!g.date || g.date >= todayStr));
-  const pastGigs = gigs.filter((g) => g.status === "completed" || g.status === "historic" || (g.date && g.date < todayStr)).reverse();
+  const upcomingGigs = gigs.filter((g) => g.status !== "completed" && (!g.date || g.date >= todayStr));
+  const pastGigs = gigs.filter((g) => g.status === "completed" || (g.date && g.date < todayStr)).reverse();
 
   const displayGigs = showPast ? pastGigs : upcomingGigs;
 

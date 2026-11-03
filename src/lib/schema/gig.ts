@@ -7,7 +7,6 @@ export const GigStatusEnum = z.enum([
   "completed",
   "cancelled",
   "archived",
-  "historic",
 ]);
 
 export const GigCompensationTypeEnum = z.enum([
@@ -143,6 +142,7 @@ export const GigSchema = z.object({
   internalDescription: z.string().default(""),
   debrief: z.string().default(""),
   isDebriefPublic: z.boolean().default(false),
+  disableBroadcasts: z.boolean().default(false),
   debriefUpdatedAt: z.string().optional(),
   debriefUpdatedBy: z.string().optional(),
   debriefUpdatedByName: z.string().optional(),
