@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   collection,
   onSnapshot,
-  getDocs,
   doc,
   setDoc,
 } from "firebase/firestore";
@@ -85,6 +84,7 @@ export default function PortalGigsListPage() {
   const { isDateInBlackout } = useUserBlackouts();
   const [gigs, setGigs] = useState<GigItem[]>([]);
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
+  const [attendingCounts, setAttendingCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [filterType, setFilterType] = useState<"all" | "upcoming" | "past">("upcoming");
@@ -108,30 +108,50 @@ export default function PortalGigsListPage() {
     return () => unsub();
   }, []);
 
-  // Fetch logged-in user's personal RSVPs
+  // Subscribe to live RSVPs subcollection for each gig to keep user RSVPs and confirmed counts updated in real time
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || gigs.length === 0) return;
 
-    const fetchUserRsvps = async () => {
-      const map: Record<string, AttendanceStatus> = {};
-      for (const gig of gigs) {
-        try {
-          const rsvpDocSnap = await getDocs(collection(db, "gigs", gig.id, "rsvps"));
-          rsvpDocSnap.forEach((docSnap) => {
+    const unsubs: (() => void)[] = [];
+
+    gigs.forEach((gig) => {
+      const unsub = onSnapshot(
+        collection(db, "gigs", gig.id, "rsvps"),
+        (snap) => {
+          let userStatus: AttendanceStatus | undefined = undefined;
+          let inCount = 0;
+
+          snap.forEach((docSnap) => {
+            const data = docSnap.data();
             if (docSnap.id === profile.uid) {
-              map[gig.id] = (docSnap.data().status as AttendanceStatus) || "tentative";
+              userStatus = (data.status as AttendanceStatus) || "tentative";
+            }
+            if (data.status === "attending") {
+              inCount++;
             }
           });
-        } catch (err) {
-          console.error("Error fetching user rsvp for gig", gig.id, err);
-        }
-      }
-      setUserRsvps(map);
-    };
 
-    if (gigs.length > 0) {
-      fetchUserRsvps();
-    }
+          setUserRsvps((prev) => {
+            if (userStatus === undefined) {
+              const next = { ...prev };
+              delete next[gig.id];
+              return next;
+            }
+            return { ...prev, [gig.id]: userStatus };
+          });
+
+          setAttendingCounts((prev) => ({ ...prev, [gig.id]: inCount }));
+        },
+        (err) => {
+          console.warn(`Notice: rsvps listener on gig ${gig.id}:`, err);
+        }
+      );
+      unsubs.push(unsub);
+    });
+
+    return () => {
+      unsubs.forEach((u) => u());
+    };
   }, [gigs, profile]);
 
   // Handle in-line and calendar modal RSVP changes
@@ -153,8 +173,19 @@ export default function PortalGigsListPage() {
     }
     setIsUpdatingRsvp(true);
 
-    // Optimistic update
+    // Optimistic update of personal RSVP and confirmed headcount
+    const prevStatus = userRsvps[gigId];
     setUserRsvps((prev) => ({ ...prev, [gigId]: status }));
+    setAttendingCounts((prev) => {
+      const current = prev[gigId] ?? targetGig?.rsvpSummary?.attendingCount ?? 0;
+      let next = current;
+      if (status === "attending" && prevStatus !== "attending") {
+        next = current + 1;
+      } else if (status !== "attending" && prevStatus === "attending") {
+        next = Math.max(0, current - 1);
+      }
+      return { ...prev, [gigId]: next };
+    });
 
     try {
       const rsvpRef = doc(db, "gigs", gigId, "rsvps", profile.uid);
@@ -616,12 +647,13 @@ export default function PortalGigsListPage() {
 
                       {/* Right Action Cluster */}
                       <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
-                        {g.rsvpSummary && (
-                          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 font-mono">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{g.rsvpSummary.attendingCount || 0} In</span>
-                          </div>
-                        )}
+                        <div
+                          title={`${attendingCounts[g.id] ?? g.rsvpSummary?.attendingCount ?? 0} confirmed in`}
+                          className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 font-mono"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>{attendingCounts[g.id] ?? g.rsvpSummary?.attendingCount ?? 0} In</span>
+                        </div>
 
                         {!isCancelled && (
                           <Link
