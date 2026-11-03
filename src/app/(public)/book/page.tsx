@@ -6,7 +6,6 @@ import { db } from "@/lib/firebase/client";
 import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
-import BookingFormSection from "@/components/public/BookingFormSection";
 
 export default function BookingPage() {
   const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.book);
@@ -45,24 +44,11 @@ export default function BookingPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      {/* Custom Sections from CMS Studio (e.g. FAQ or Info Cards) */}
+      {/* Dynamic CMS Sections from CMS Studio */}
       <div>
         {pageData?.sections?.map((section) => (
           <PublicSectionRenderer key={section.id} section={section} />
         ))}
-
-        {/* Core Booking Form Fallback (if not configured in dynamic sections) */}
-        {!pageData?.sections?.some((s) => s.type === "booking_form") && (
-          <div className="py-12">
-            <BookingFormSection
-              headline={pageData?.headerImage?.customTitle || pageData?.title || "Book the Eagleburger Band"}
-              subheadline={pageData?.headerImage?.customSubtitle || pageData?.description || "Tell us about your event. We will check band availability, outline performance options, and follow up with you promptly."}
-              badgeText={pageData?.headerImage?.badgeText || "Direct Event Inquiry"}
-              defaultEventType="Community Parade & Festival"
-              buttonText="Submit Booking Request"
-            />
-          </div>
-        )}
       </div>
     </div>
   );

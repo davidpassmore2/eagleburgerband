@@ -17,6 +17,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Enabled Treasurers and Admins to delete reimbursement records in the review queue and remove transactions/expenses from the General Ledger with automatic linked-record reconciliation.",
       "Hardened firestore.rules for reimbursements to permit member self-deletion for submitted and rejected claims while preserving full treasurer administrative oversight.",
       "Added Emergency Contact Information and Dietary Preferences & Allergies management to the musician profile (/portal/profile), backed by strict Zod schema validation (UserSchema, EmergencyContactSchema, DIETARY_PREFERENCES) and confidential leadership access safeguards.",
+      "Cleaned up legacy hard-coded JSX fallbacks and duplicate static content across all public system pages (/join, /contact, /gigs, /book, /giving, /, and /testimonials), making all pages fully dynamic and powered by the CMS Section Studio (PublicSectionRenderer) backed by DEFAULT_SYSTEM_PAGES and Firestore content_pages.",
+      "Updated /testimonials tag filtering to dynamically compute filter tags from active reviews, eliminating hard-coded category arrays.",
     ],
   },
   {

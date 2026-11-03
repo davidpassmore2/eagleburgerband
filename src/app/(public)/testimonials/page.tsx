@@ -222,7 +222,12 @@ export default function TestimonialsPublicPage() {
           (t) => t.tag?.toLowerCase() === selectedTag.toLowerCase()
         );
 
-  const tags = ["all", "Festival", "Parade", "Community Event", "Wedding", "Private Event"];
+  const tags = React.useMemo(() => {
+    const dynamicTags = Array.from(
+      new Set(testimonials.map((t) => t.tag).filter(Boolean))
+    );
+    return ["all", ...dynamicTags];
+  }, [testimonials]);
 
   return (
     <div className="pb-16" suppressHydrationWarning>

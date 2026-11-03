@@ -6,8 +6,7 @@ import { db } from "@/lib/firebase/client";
 import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicPageHeader, { usePageBanner } from "@/components/public/PublicPageHeader";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
-import AuditionFormSection from "@/components/public/AuditionFormSection";
-import { Music, Calendar, Layers, Award } from "lucide-react";
+import { Music } from "lucide-react";
 
 export default function JoinBandPage() {
   const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.join);
@@ -28,9 +27,6 @@ export default function JoinBandPage() {
     );
     return () => unsub();
   }, []);
-
-  const hasAuditionForm = pageData?.sections?.some((s) => s.type === "audition_form");
-  const hasFeatures = pageData?.sections?.some((s) => s.type === "features");
 
   return (
     <div className="pb-16" suppressHydrationWarning>
@@ -71,59 +67,14 @@ export default function JoinBandPage() {
           </div>
         )}
 
-      {/* Fallback Info Highlights if no features section configured */}
-      {!hasFeatures && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-arvo">100% Acoustic & Mobile</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              No cords, amps, or stages. We march through crowds, dance down streets, and perform in dynamic open-air spaces.
-            </p>
+        {/* Render Dynamic CMS Sections */}
+        {pageData?.sections && pageData.sections.length > 0 && (
+          <div className="space-y-12">
+            {pageData.sections.map((section) => (
+              <PublicSectionRenderer key={section.id} section={section} />
+            ))}
           </div>
-
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-arvo">Rehearsals & Gigs</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Weekly sectionals and full ensemble rehearsals in Pittsburgh. Gigs range from major holiday parades to art walks and private bashes.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-yellow-400">
-              <Award className="w-5 h-5" />
-            </div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-arvo">Welcoming Culture</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              From former college marching band vets to seasoned brass players and street drummers, we value camaraderie, groove, and heart.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Render Dynamic CMS Sections */}
-      {pageData?.sections && pageData.sections.length > 0 && (
-        <div className="space-y-12">
-          {pageData.sections.map((section) => (
-            <PublicSectionRenderer key={section.id} section={section} />
-          ))}
-        </div>
-      )}
-
-      {/* Fallback Audition Form if not present in CMS sections */}
-      {!hasAuditionForm && (
-        <AuditionFormSection
-          headline="Audition Application"
-          subheadline="Tell us about your musical background and what section you want to rock with."
-          badgeText="Musician Recruitment"
-          buttonText="Submit Audition Request"
-        />
-      )}
+        )}
       </div>
     </div>
   );

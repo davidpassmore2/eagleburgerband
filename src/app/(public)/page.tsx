@@ -3,135 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { ContentPage, ContentPageSchema, ContentSection, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
+import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
 import PublicSectionRenderer from "@/components/cms/PublicSectionRenderer";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
-import IntakeCardsSection from "@/components/public/IntakeCardsSection";
-
-const DEFAULT_HOME_SECTIONS: ContentSection[] = [
-  {
-    id: "sec_hero",
-    type: "hero",
-    order: 1,
-    isVisible: true,
-    background: "default",
-    padding: "standard",
-    hero: {
-      headline: "Pittsburgh's High-Energy Street Brass & Drum Powerhouse",
-      subheadline: "Unstoppable brass fanfares, infectious street percussion, and high-stepping street revelry across Western Pennsylvania.",
-      ctaText: "Book the Band",
-      ctaHref: "/book",
-      secondaryCtaText: "Upcoming Shows",
-      secondaryCtaHref: "/gigs",
-      badgeText: "Acoustic Brass & Percussion Battery",
-      backgroundImageUrl: "",
-    },
-  },
-  {
-    id: "sec_media",
-    type: "media_highlight",
-    order: 2,
-    isVisible: true,
-    background: "default",
-    padding: "standard",
-    mediaHighlight: {
-      title: "Live on the March",
-      description: "Watch the Eagleburger Band marching in full stride — battery percussion and horns in high step.",
-      mediaType: "youtube",
-      url: "https://www.youtube.com/watch?v=v0x-fut30wE",
-      caption: "Greenfield Holiday Parade — Pittsburgh, PA",
-    },
-  },
-  {
-    id: "sec_features",
-    type: "features",
-    order: 3,
-    isVisible: true,
-    background: "default",
-    padding: "standard",
-    features: {
-      title: "Why Book the Eagleburger Band?",
-      subtitle: "Mobile, acoustic, and always electrifying.",
-      items: [
-        {
-          icon: "Zap",
-          title: "100% Mobile & Acoustic",
-          description: "No stage, cables, or power outlets required. We march, dance, and blow the roof off anywhere.",
-        },
-        {
-          icon: "Drum",
-          title: "Full Brass & Drumline Battery",
-          description: "Sousaphones, trombones, trumpets, saxes, and pounding street drums that get crowds dancing.",
-        },
-        {
-          icon: "Users",
-          title: "Community & Event Focused",
-          description: "Parades, street festivals, community block parties, celebrations, and festive gatherings.",
-        },
-      ],
-    },
-  },
-  {
-    id: "sec_gigs",
-    type: "gig_feed_preview",
-    order: 4,
-    isVisible: true,
-    background: "default",
-    padding: "standard",
-    gigFeedPreview: {
-      title: "Upcoming Performances",
-      subtitle: "Catch the Eagleburger Band live on the streets and stages of Pittsburgh",
-      maxItems: 3,
-      showVenueAddress: true,
-      showTicketLinks: true,
-      ctaText: "View Full Performance Schedule",
-      ctaHref: "/gigs",
-    },
-  },
-  {
-    id: "sec_booking",
-    type: "booking_form",
-    order: 5,
-    isVisible: true,
-    background: "surface",
-    padding: "standard",
-    bookingForm: {
-      headline: "Book the Eagleburger Band",
-      subheadline: "Planning a parade, festival, or block party? Inquire directly with our gig coordination team.",
-      badgeText: "Direct Event Inquiry",
-      defaultEventType: "Community Parade & Festival",
-      buttonText: "Submit Booking Request",
-    },
-  },
-  {
-    id: "sec_intake_cards",
-    type: "intake_cards",
-    order: 6,
-    isVisible: true,
-    background: "default",
-    padding: "standard",
-    intakeCards: {
-      badgeText: "Connect & Collaborate",
-      headline: "How Can We Help You?",
-      subheadline: "Whether you are coordinating a city parade, sharing your reaction from the sidewalk, or reaching out for press and partnerships, choose an intake path below.",
-    },
-  },
-  {
-    id: "sec_audition_callout",
-    type: "audition_callout",
-    order: 7,
-    isVisible: true,
-    background: "default",
-    padding: "compact",
-    auditionCallout: {
-      title: "Musician Auditions & Applications",
-      description: "Are you a brass player or battery drummer interested in performing with the band?",
-      buttonText: "Audition With Us →",
-      buttonHref: "/join",
-      badgeText: "",
-    },
-  },
-];
 
 export default function PublicHomePage() {
   const [pageData, setPageData] = useState<ContentPage>(DEFAULT_SYSTEM_PAGES.home);
@@ -158,7 +32,7 @@ export default function PublicHomePage() {
   const sectionsToRender =
     pageData?.sections && pageData.sections.length > 0
       ? [...pageData.sections].sort((a, b) => a.order - b.order)
-      : DEFAULT_HOME_SECTIONS;
+      : DEFAULT_SYSTEM_PAGES.home.sections;
 
   const seo = pageData?.seo;
   const seoTitle = seo?.metaTitle?.trim() || "Eagleburger Band | Pittsburgh High-Energy Street Brass";
@@ -219,13 +93,6 @@ export default function PublicHomePage() {
         {sectionsToRender.map((section) => (
           <PublicSectionRenderer key={section.id} section={section} />
         ))}
-
-        {/* Fallback Intake Cards Section if not defined in dynamic sections */}
-        {!sectionsToRender.some((s) => s.type === "intake_cards") && (
-          <IntakeCardsSection
-            showAuditionBanner={!sectionsToRender.some((s) => s.type === "audition_callout")}
-          />
-        )}
       </div>
     </div>
   );
