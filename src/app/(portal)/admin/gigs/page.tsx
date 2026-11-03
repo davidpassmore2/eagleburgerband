@@ -46,6 +46,7 @@ import {
   AlertTriangle,
   UserCheck,
   Users,
+  History,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -60,7 +61,7 @@ interface GigItem {
   id: string;
   slug: string;
   date: string;
-  status: "confirmed" | "draft" | "completed" | "cancelled";
+  status: "confirmed" | "draft" | "completed" | "cancelled" | "historic";
   setlistId?: string;
   setlistName?: string;
   setlistTitle?: string;
@@ -136,7 +137,7 @@ export default function GigsAdminStudioPage() {
 
   // Search, Status Filter & Sorting
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed" | "historic">("all");
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
 
   const [formData, setFormData] = useState({
@@ -276,7 +277,7 @@ export default function GigsAdminStudioPage() {
     if (targetGigId) {
       const found = gigs.find((g) => g.id === targetGigId);
       if (found) {
-        setReadinessGig(found);
+        setTimeout(() => setReadinessGig(found), 0);
       }
     }
   }, [gigs]);
@@ -289,21 +290,31 @@ export default function GigsAdminStudioPage() {
     // Calculate base counts across all gigs
     let upcomingCount = 0;
     let completedCount = 0;
+    let historicCount = 0;
 
     for (const g of gigs) {
-      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
-      if (isCompleted) {
+      if (g.status === "historic") {
+        historicCount++;
         completedCount++;
       } else {
-        upcomingCount++;
+        const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+        if (isCompleted) {
+          completedCount++;
+        } else {
+          upcomingCount++;
+        }
       }
     }
 
     const filtered = gigs.filter((g) => {
       // 1. Status Filter
-      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
-      if (statusFilter === "upcoming" && isCompleted) return false;
-      if (statusFilter === "completed" && !isCompleted) return false;
+      if (statusFilter === "historic") {
+        if (g.status !== "historic") return false;
+      } else {
+        const isCompleted = g.status === "completed" || g.status === "historic" || (Boolean(g.date) && g.date < todayStr);
+        if (statusFilter === "upcoming" && isCompleted) return false;
+        if (statusFilter === "completed" && !isCompleted) return false;
+      }
 
       // 2. Search Query (Title, Venue, City, Address, Setlist, Date)
       if (q) {
@@ -349,6 +360,7 @@ export default function GigsAdminStudioPage() {
         all: gigs.length,
         upcoming: upcomingCount,
         completed: completedCount,
+        historic: historicCount,
       },
     };
   }, [gigs, searchQuery, statusFilter, sortDirection, setlistMap]);
@@ -453,8 +465,8 @@ export default function GigsAdminStudioPage() {
         { merge: true }
       );
 
-      // Dispatch initial availability request email if requested
-      if (formData.dispatchAvailability) {
+      // Dispatch initial availability request email if requested (never for historic gigs)
+      if (formData.dispatchAvailability && formData.status !== "historic") {
         try {
           const dispRes = await authedFetch("/api/email/gig-availability", {
             method: "POST",
@@ -486,7 +498,11 @@ export default function GigsAdminStudioPage() {
           toast.success(`Performance "${formData.title.trim()}" created!`);
         }
       } else {
-        toast.success(`Performance "${formData.title.trim()}" created!`);
+        toast.success(
+          formData.status === "historic"
+            ? `Historic performance "${formData.title.trim()}" added to gig history (notifications suppressed).`
+            : `Performance "${formData.title.trim()}" created!`
+        );
       }
 
       setIsCreating(false);
@@ -742,8 +758,9 @@ export default function GigsAdminStudioPage() {
       const isNowConfirmed = editFormData.status === "confirmed";
       const wasConfirmed = editingGig.status === "confirmed";
       const isNowCancelled = editFormData.status === "cancelled";
+      const isHistoric = editFormData.status === "historic";
 
-      if (isNowConfirmed && !wasConfirmed) {
+      if (isNowConfirmed && !wasConfirmed && !isHistoric) {
         try {
           const confRes = await authedFetch("/api/email/gig-confirmation", {
             method: "POST",
@@ -778,7 +795,7 @@ export default function GigsAdminStudioPage() {
       }
 
       // Trigger 3: If a confirmed gig is canceled, notify members it's not happening.
-      if (wasConfirmed && isNowCancelled) {
+      if (wasConfirmed && isNowCancelled && !isHistoric) {
         try {
           const cancelRes = await authedFetch("/api/email/gig-cancellation", {
             method: "POST",
@@ -1021,13 +1038,21 @@ export default function GigsAdminStudioPage() {
               <label className="text-[11px] font-semibold text-slate-300 block mb-1">Status</label>
               <select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as GigItem["status"] })}
+                onChange={(e) => {
+                  const newStatus = e.target.value as GigItem["status"];
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: newStatus,
+                    dispatchAvailability: newStatus === "historic" ? false : prev.dispatchAvailability,
+                  }));
+                }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
               >
                 <option value="draft">Draft (Unpublished)</option>
                 <option value="confirmed">Confirmed & Dispatched</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="historic">Historic</option>
               </select>
             </div>
           </div>
@@ -1425,27 +1450,37 @@ export default function GigsAdminStudioPage() {
             )}
           </div>
 
-          {/* Manual Availability Dispatch Option (Defaults to false) */}
-          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-start justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-purple-400" />
-                Dispatch Availability Request to Members Now (Manual)
-              </span>
-              <span className="text-[11px] text-slate-400 block leading-relaxed">
-                Automatic availability requests are only dispatched when public leads are converted to gigs. Check this box if you want to notify musicians immediately upon creating this draft gig.
-              </span>
+          {/* Manual Availability Dispatch Option (Defaults to false, strictly hidden/disabled for historic gigs) */}
+          {formData.status !== "historic" ? (
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-purple-400" />
+                  Dispatch Availability Request to Members Now (Manual)
+                </span>
+                <span className="text-[11px] text-slate-400 block leading-relaxed">
+                  Automatic availability requests are only dispatched when public leads are converted to gigs. Check this box if you want to notify musicians immediately upon creating this draft gig.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={formData.dispatchAvailability}
+                  onChange={(e) => setFormData({ ...formData, dispatchAvailability: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
-              <input
-                type="checkbox"
-                checked={formData.dispatchAvailability}
-                onChange={(e) => setFormData({ ...formData, dispatchAvailability: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
-            </label>
-          </div>
+          ) : (
+            <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-2.5">
+              <History className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-200/90 leading-relaxed">
+                <span className="text-amber-300 font-bold block mb-0.5">Historic Gig Record</span>
+                This performance will be saved directly into past gig history. All member availability requests, email blasts, and call sheet notifications are automatically suppressed.
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -1524,6 +1559,7 @@ export default function GigsAdminStudioPage() {
                   <option value="confirmed">Confirmed & Dispatched</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
+                  <option value="historic">Historic</option>
                 </select>
               </div>
 
@@ -1935,6 +1971,16 @@ export default function GigsAdminStudioPage() {
             </div>
 
             {/* Automated Dispatch Indicators & Controls */}
+            {editFormData.status === "historic" && (
+              <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-2.5">
+                <History className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-200/90 leading-relaxed">
+                  <span className="text-amber-300 font-bold block mb-0.5">Historic Gig Record</span>
+                  This performance is logged as prior gig history. No member notifications or automated email dispatches will be triggered on save.
+                </div>
+              </div>
+            )}
+
             {editingGig.status !== "confirmed" && editFormData.status === "confirmed" && (
               <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -2080,6 +2126,17 @@ export default function GigsAdminStudioPage() {
             >
               Completed ({counts.completed})
             </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("historic")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                statusFilter === "historic"
+                  ? "bg-yellow-400 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-white bg-slate-800/50"
+              }`}
+            >
+              Historic ({counts.historic})
+            </button>
           </div>
 
           {/* Date Sort Toggle Button */}
@@ -2142,6 +2199,8 @@ export default function GigsAdminStudioPage() {
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                       : g.status === "completed"
                       ? "bg-slate-800 text-slate-400 border-slate-700"
+                      : g.status === "historic"
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                       : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
                   }`}>
                     {g.status}

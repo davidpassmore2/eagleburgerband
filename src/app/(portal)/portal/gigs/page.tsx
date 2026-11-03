@@ -193,7 +193,7 @@ export default function PortalGigsListPage() {
     let pastCount = 0;
 
     for (const g of gigs) {
-      const isPast = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      const isPast = g.status === "completed" || g.status === "historic" || (Boolean(g.date) && g.date < todayStr);
       if (isPast) {
         pastCount++;
       } else if (g.status !== "cancelled") {
@@ -203,7 +203,7 @@ export default function PortalGigsListPage() {
 
     const filtered = gigs.filter((g) => {
       // 1. Status Filter
-      const isPast = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      const isPast = g.status === "completed" || g.status === "historic" || (Boolean(g.date) && g.date < todayStr);
       if (filterType === "upcoming") {
         if (g.status === "cancelled" || isPast) return false;
       } else if (filterType === "past") {

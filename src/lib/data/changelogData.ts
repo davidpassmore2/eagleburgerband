@@ -19,6 +19,9 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added Emergency Contact Information and Dietary Preferences & Allergies management to the musician profile (/portal/profile), backed by strict Zod schema validation (UserSchema, EmergencyContactSchema, DIETARY_PREFERENCES) and confidential leadership access safeguards.",
       "Cleaned up legacy hard-coded JSX fallbacks and duplicate static content across all public system pages (/join, /contact, /gigs, /book, /giving, /, and /testimonials), making all pages fully dynamic and powered by the CMS Section Studio (PublicSectionRenderer) backed by DEFAULT_SYSTEM_PAGES and Firestore content_pages.",
       "Updated /testimonials tag filtering to dynamically compute filter tags from active reviews, eliminating hard-coded category arrays.",
+      "Added first-class 'historic' gig status to GigStatusEnum, Gig Management Studio (/admin/gigs), and System Status Matrix (/portal/status-matrix) to backfill prior band appearances and performance records.",
+      "Engineered automated notification suppression for historic gigs: availability request toggles and automated confirmation/cancellation email dispatches are strictly disabled across client and server email routes (/api/email/gig-availability, /api/email/gig-confirmation, /api/email/gig-cancellation).",
+      "Integrated 'Historic' filtering and amber status badge aesthetics in the Gig Management Studio while seamlessly routing historic gigs to past appearance archives across public and member portal schedules.",
     ],
   },
   {

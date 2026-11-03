@@ -106,7 +106,7 @@ export default function CalendarSubscribeModal({ isOpen, onClose }: Props) {
         const gigData = gigDoc.data();
         const gigId = gigDoc.id;
 
-        if (gigData.status === "cancelled" || gigData.status === "archived") {
+        if (gigData.status === "cancelled" || gigData.status === "archived" || gigData.status === "historic") {
           continue;
         }
 

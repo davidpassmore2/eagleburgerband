@@ -363,7 +363,7 @@ export default function MusicianPortalOverviewPage() {
 
   const upcomingGigs = useMemo(() => {
     return gigs.filter(
-      (g) => g.status !== "cancelled" && g.status !== "completed" && g.date >= todayStr
+      (g) => g.status !== "cancelled" && g.status !== "completed" && g.status !== "historic" && g.date >= todayStr
     );
   }, [gigs, todayStr]);
 

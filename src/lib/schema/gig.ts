@@ -7,6 +7,7 @@ export const GigStatusEnum = z.enum([
   "completed",
   "cancelled",
   "archived",
+  "historic",
 ]);
 
 export const GigCompensationTypeEnum = z.enum([

@@ -110,6 +110,7 @@ export default function DispatchStudioPage() {
         const gList: GigSummary[] = [];
         snap.forEach((d) => {
           const data = d.data();
+          if (data.status === "historic") return;
           gList.push({
             id: d.id,
             title: data.title || data.publicDetails?.title || data.internalLogistics?.title || `Gig ${d.id.slice(0, 6)}`,

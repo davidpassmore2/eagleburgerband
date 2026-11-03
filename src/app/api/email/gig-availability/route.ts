@@ -3,6 +3,7 @@ import { SendGigAvailabilityEmailSchema } from "@/lib/schema/email";
 import { renderGigAvailabilityRequestEmail } from "@/lib/email/templates";
 import { sendTransactionalEmail, getDeliverabilityConfig } from "@/lib/email/resend";
 import { resolveGigAvailabilityRecipients } from "@/lib/portal/gigDispatchEngine";
+import { getDocument } from "@/lib/firebase/serverFirestore";
 import { logDispatchExecution } from "@/lib/logging/dispatchLogger";
 import { requireCaller } from "@/lib/auth/serverAuth";
 
@@ -39,6 +40,20 @@ export async function POST(req: NextRequest) {
       notes,
       recipientEmails: explicitEmails,
     } = parsed.data;
+
+    // Guard against historic gig dispatches
+    if (gigId) {
+      const gigDoc = await getDocument(`gigs/${gigId}`);
+      if (gigDoc && (gigDoc.data?.status === "historic" || gigDoc.data?.status === "archived")) {
+        return NextResponse.json({
+          success: true,
+          recipientCount: 0,
+          blackedOutCount: 0,
+          hiatusCount: 0,
+          message: "Historic gigs do not dispatch availability notifications.",
+        });
+      }
+    }
 
     const actorUid = caller.uid;
     const actorName = caller.displayName || "Eagleburger Gig Operations";
