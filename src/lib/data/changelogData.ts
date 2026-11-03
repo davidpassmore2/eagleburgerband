@@ -22,6 +22,10 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added first-class 'historic' gig status to GigStatusEnum, Gig Management Studio (/admin/gigs), and System Status Matrix (/portal/status-matrix) to backfill prior band appearances and performance records.",
       "Engineered automated notification suppression for historic gigs: availability request toggles and automated confirmation/cancellation email dispatches are strictly disabled across client and server email routes (/api/email/gig-availability, /api/email/gig-confirmation, /api/email/gig-cancellation).",
       "Integrated 'Historic' filtering and amber status badge aesthetics in the Gig Management Studio while seamlessly routing historic gigs to past appearance archives across public and member portal schedules.",
+      "Added explicit Public Description and Internal Description (call sheet notes & logistics) fields to gigs in the Gig Management Studio (/admin/gigs), supporting both create and edit flows with backward-compatible synchronization to publicDetails.description and internalLogistics.description.",
+      "Introduced Post-Gig Debrief & Musician Reflections system (/portal/gigs/[gigId]) allowing active band members to record post-performance reflections, thoughts, and lessons learned with member attribution timestamps.",
+      "Added Public Visibility Toggle ('Display Debrief to Public Audience') for gig debriefs, rendering debrief reflections and quotes on public past gig appearance cards (/gigs and /gigs/[id]) when enabled by the band.",
+      "Updated firestore.rules to securely permit active band members to edit and save post-gig debriefs and toggles while preserving strict role-based protection for all administrative gig fields.",
     ],
   },
   {

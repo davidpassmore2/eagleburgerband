@@ -193,7 +193,9 @@ service cloud.firestore {
             && changedKeys().hasOnly(['setlistId', 'setlistName', 'setlistTitle', 'setlist', 'internalLogistics', 'updatedAt'])
             && changesOnlySetlistLogistics())
         || (hasAnyRole(['treasurer'])
-            && changedKeys().hasOnly(['isSettled', 'settlementDetails', 'updatedAt']));
+            && changedKeys().hasOnly(['isSettled', 'settlementDetails', 'updatedAt']))
+        || (isMember()
+            && changedKeys().hasOnly(['debrief', 'isDebriefPublic', 'debriefUpdatedAt', 'debriefUpdatedBy', 'debriefUpdatedByName', 'updatedAt']));
 
       match /rsvps/{userId} {
         allow read: if isMember();

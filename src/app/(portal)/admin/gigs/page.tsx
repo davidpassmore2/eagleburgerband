@@ -47,6 +47,7 @@ import {
   UserCheck,
   Users,
   History,
+  MessageSquare,
 } from "lucide-react";
 import DatePicker from "@/components/ui/DatePicker";
 import TimePicker from "@/components/ui/TimePicker";
@@ -66,6 +67,13 @@ interface GigItem {
   setlistName?: string;
   setlistTitle?: string;
   setlist?: SetlistTuneItem[] | unknown[];
+  publicDescription?: string;
+  internalDescription?: string;
+  debrief?: string;
+  isDebriefPublic?: boolean;
+  debriefUpdatedAt?: string;
+  debriefUpdatedBy?: string;
+  debriefUpdatedByName?: string;
   publicDetails?: {
     title: string;
     venue: string;
@@ -92,6 +100,7 @@ interface GigItem {
     setlistId?: string;
     setlistName?: string;
     setlistTitle?: string;
+    description?: string;
   };
   financials?: {
     totalFee?: number;
@@ -161,6 +170,10 @@ export default function GigsAdminStudioPage() {
     compensationType: "individual" as GigCompensationType,
     totalFee: 0,
     description: "",
+    publicDescription: "",
+    internalDescription: "",
+    debrief: "",
+    isDebriefPublic: false,
     dispatchAvailability: false,
   });
 
@@ -185,6 +198,10 @@ export default function GigsAdminStudioPage() {
     compensationType: "individual" as GigCompensationType,
     totalFee: 0,
     description: "",
+    publicDescription: "",
+    internalDescription: "",
+    debrief: "",
+    isDebriefPublic: false,
     setlistId: "",
   });
 
@@ -399,6 +416,9 @@ export default function GigsAdminStudioPage() {
         ? (Number(formData.totalFee) || 0)
         : 0;
 
+      const effectivePublicDesc = (formData.publicDescription || formData.description || "").trim();
+      const effectiveInternalDesc = (formData.internalDescription || "").trim();
+
       const payload: Record<string, unknown> = {
         id: gigId,
         slug,
@@ -407,11 +427,15 @@ export default function GigsAdminStudioPage() {
         setlistId: null,
         setlistName: "",
         setlistTitle: "",
+        publicDescription: effectivePublicDesc,
+        internalDescription: effectiveInternalDesc,
+        debrief: formData.debrief.trim(),
+        isDebriefPublic: Boolean(formData.isDebriefPublic),
         publicDetails: {
           title: formData.title.trim(),
           venue: formData.venue.trim(),
           venueAddress: formData.venueAddress.trim(),
-          description: formData.description.trim(),
+          description: effectivePublicDesc,
           showExternalDirections: formData.showExternalDirections,
           isPublic: formData.isPublic,
           eventUrl: formData.eventUrl.trim(),
@@ -428,6 +452,7 @@ export default function GigsAdminStudioPage() {
           attire: formData.attire.trim(),
           compensation: finalCompensation,
           compensationType: formData.compensationType,
+          description: effectiveInternalDesc,
           setlistId: null,
           setlistName: "",
           setlistTitle: "",
@@ -527,6 +552,10 @@ export default function GigsAdminStudioPage() {
         compensationType: "individual",
         totalFee: 0,
         description: "",
+        publicDescription: "",
+        internalDescription: "",
+        debrief: "",
+        isDebriefPublic: false,
         dispatchAvailability: false,
       });
     } catch (err) {
@@ -601,7 +630,11 @@ export default function GigsAdminStudioPage() {
       compensation: gig.internalLogistics?.compensation ?? (compType === "individual" ? 50 : 0),
       compensationType: compType,
       totalFee: gig.financials?.totalFee ?? 0,
-      description: gig.publicDetails?.description || "",
+      description: gig.publicDescription || gig.publicDetails?.description || "",
+      publicDescription: gig.publicDescription || gig.publicDetails?.description || "",
+      internalDescription: gig.internalDescription || gig.internalLogistics?.description || "",
+      debrief: gig.debrief || "",
+      isDebriefPublic: Boolean(gig.isDebriefPublic),
       setlistId: gig.setlistId || gig.internalLogistics?.setlistId || "",
     });
   };
@@ -1103,6 +1136,70 @@ export default function GigsAdminStudioPage() {
             <span className="text-[10px] text-slate-500 mt-1 block">
               Optional external page for the event. If left empty, no event link button is displayed on the public site.
             </span>
+          </div>
+
+          {/* Public Description */}
+          <div>
+            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+              Public Description <span className="text-slate-500 font-normal">(Optional • Visible on public website when gig is public)</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="e.g. Join the Eagleburger Band on Main Street as we lead the parade! High-energy acoustic brass and marching drum battery."
+              value={formData.publicDescription}
+              onChange={(e) => setFormData({ ...formData, publicDescription: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+
+          {/* Internal Description */}
+          <div>
+            <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+              Internal Description &amp; Logistics Notes <span className="text-slate-500 font-normal">(Visible to musicians on the call sheet)</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="e.g. Meet behind the firehouse for tuning at 5:15 PM. Bring water; march is approx 1.5 miles on paved street. Uniform is black pants with yellow band shirts."
+              value={formData.internalDescription}
+              onChange={(e) => setFormData({ ...formData, internalDescription: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+
+          {/* Post-Gig Debrief & Reflection */}
+          <div className="space-y-2.5 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                <span>Post-Gig Debrief &amp; Reflections</span>
+                <span className="text-slate-500 font-normal">(Optional)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
+                  formData.isDebriefPublic
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : "bg-slate-800 text-slate-400 border-slate-700"
+                }`}>
+                  {formData.isDebriefPublic ? "Public on Website" : "Internal Only"}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={formData.isDebriefPublic}
+                  onChange={(e) => setFormData({ ...formData, isDebriefPublic: e.target.checked })}
+                  className="rounded bg-slate-900 border-slate-700 text-yellow-400 focus:ring-yellow-400 w-4 h-4 cursor-pointer"
+                />
+              </label>
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Reflections, crowd reactions, takeaways, tune performance notes, or recap thoughts..."
+              value={formData.debrief}
+              onChange={(e) => setFormData({ ...formData, debrief: e.target.value })}
+              className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+            />
+            <p className="text-[10px] text-slate-500">
+              When toggled to &ldquo;Public on Website&rdquo;, this reflection will be showcased on the public gig page for spectators and community supporters to read.
+            </p>
           </div>
 
           {/* Custom Image Header Banner Selection */}
@@ -1623,6 +1720,70 @@ export default function GigsAdminStudioPage() {
               <span className="text-[10px] text-slate-500 mt-1 block">
                 Optional external page for the event. If left empty, no event link button is displayed on the public site.
               </span>
+            </div>
+
+            {/* Public Description */}
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Public Description <span className="text-slate-500 font-normal">(Optional • Visible on public website when gig is public)</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Join the Eagleburger Band on Main Street as we lead the parade! High-energy acoustic brass and marching drum battery."
+                value={editFormData.publicDescription}
+                onChange={(e) => setEditFormData({ ...editFormData, publicDescription: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            {/* Internal Description */}
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Internal Description &amp; Logistics Notes <span className="text-slate-500 font-normal">(Visible to musicians on the call sheet)</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Meet behind the firehouse for tuning at 5:15 PM. Bring water; march is approx 1.5 miles on paved street. Uniform is black pants with yellow band shirts."
+                value={editFormData.internalDescription}
+                onChange={(e) => setEditFormData({ ...editFormData, internalDescription: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            {/* Post-Gig Debrief & Reflection */}
+            <div className="space-y-2.5 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>Post-Gig Debrief &amp; Reflections</span>
+                  <span className="text-slate-500 font-normal">(Optional)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
+                    editFormData.isDebriefPublic
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : "bg-slate-800 text-slate-400 border-slate-700"
+                  }`}>
+                    {editFormData.isDebriefPublic ? "Public on Website" : "Internal Only"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={editFormData.isDebriefPublic}
+                    onChange={(e) => setEditFormData({ ...editFormData, isDebriefPublic: e.target.checked })}
+                    className="rounded bg-slate-900 border-slate-700 text-yellow-400 focus:ring-yellow-400 w-4 h-4 cursor-pointer"
+                  />
+                </label>
+              </div>
+              <textarea
+                rows={3}
+                placeholder="Reflections, crowd reactions, takeaways, tune performance notes, or recap thoughts..."
+                value={editFormData.debrief}
+                onChange={(e) => setEditFormData({ ...editFormData, debrief: e.target.value })}
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+              />
+              <p className="text-[10px] text-slate-500">
+                When toggled to &ldquo;Public on Website&rdquo;, this reflection will be showcased on the public gig page for spectators and community supporters to read.
+              </p>
             </div>
 
             {/* Custom Image Header Banner Selection */}

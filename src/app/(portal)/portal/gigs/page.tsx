@@ -36,6 +36,7 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  MessageSquare,
 } from "lucide-react";
 import { GigCompensationType } from "@/lib/schema/gig";
 import { toast } from "@/lib/context/ToastContext";
@@ -45,6 +46,10 @@ import OnHiatusChip from "@/components/portal/OnHiatusChip";
 import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 
 type GigItem = MonthCalendarGig & {
+  publicDescription?: string;
+  internalDescription?: string;
+  debrief?: string;
+  isDebriefPublic?: boolean;
   publicDetails?: {
     title: string;
     venue: string;
@@ -61,6 +66,7 @@ type GigItem = MonthCalendarGig & {
     payPerMusician?: number;
     compensation?: number;
     compensationType?: GigCompensationType;
+    description?: string;
   };
   financials?: {
     totalFee?: number;
@@ -593,6 +599,19 @@ export default function PortalGigsListPage() {
                             <span className="truncate">{venue}</span>
                           </span>
                         </div>
+
+                        {Boolean(g.internalDescription || g.internalLogistics?.description) && (
+                          <p className="text-[11px] text-slate-300 line-clamp-1 italic pt-0.5">
+                            <span className="text-yellow-400 font-semibold not-italic">Note:</span>{" "}
+                            {g.internalDescription || g.internalLogistics?.description}
+                          </p>
+                        )}
+                        {Boolean(g.debrief) && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 max-w-fit">
+                            <MessageSquare className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span className="truncate max-w-xs italic">&ldquo;{g.debrief}&rdquo;</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right Action Cluster */}

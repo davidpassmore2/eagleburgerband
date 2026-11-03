@@ -12,6 +12,7 @@ import {
   History, 
   ArrowRight,
   Send,
+  MessageSquare,
 } from "lucide-react";
 import AddToCalendarButton from "@/components/public/AddToCalendarButton";
 import { ContentPage, ContentPageSchema, DEFAULT_SYSTEM_PAGES } from "@/lib/schema/page";
@@ -25,6 +26,8 @@ interface PublicGig {
   venue: string;
   city: string;
   description: string;
+  debrief?: string;
+  isDebriefPublic?: boolean;
   admission?: string;
   eventUrl?: string;
   facebookEventUrl?: string;
@@ -70,7 +73,9 @@ export default function PublicGigsPage() {
             title: pub.title || "Eagleburger Performance",
             venue: pub.venue || "TBA",
             city: pub.city || "Pittsburgh, PA",
-            description: pub.description || "",
+            description: pub.description || data.publicDescription || "",
+            debrief: data.debrief || "",
+            isDebriefPublic: Boolean(data.isDebriefPublic),
             admission: pub.admission || "Free",
             eventUrl: rawEventUrl,
             facebookEventUrl: rawEventUrl,
@@ -242,6 +247,14 @@ export default function PublicGigsPage() {
                     <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                       {gig.description}
                     </p>
+                  )}
+                  {gig.isDebriefPublic && gig.debrief && (
+                    <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300/90 leading-snug space-y-1">
+                      <span className="font-bold text-amber-400 flex items-center gap-1 text-[10px] uppercase tracking-wider">
+                        <MessageSquare className="w-3 h-3" /> Post-Gig Debrief
+                      </span>
+                      <p className="line-clamp-2 italic">&ldquo;{gig.debrief}&rdquo;</p>
+                    </div>
                   )}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     {gig.eventUrl && (

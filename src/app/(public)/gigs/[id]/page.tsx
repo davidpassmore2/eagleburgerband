@@ -21,7 +21,8 @@ import {
   Music2,
   Navigation,
   Link2,
-  Mail
+  Mail,
+  MessageSquare
 } from "lucide-react";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 import AddToCalendarButton from "@/components/public/AddToCalendarButton";
@@ -44,6 +45,10 @@ interface GigData {
   id: string;
   date: string;
   status: string;
+  publicDescription?: string;
+  debrief?: string;
+  isDebriefPublic?: boolean;
+  debriefUpdatedByName?: string;
   publicDetails: {
     title: string;
     venue: string;
@@ -119,13 +124,17 @@ export default function PublicGigDetailPage({
             id: data.id,
             date: data.date || "",
             status: data.status || "confirmed",
+            publicDescription: data.publicDescription || pub.description || "",
+            debrief: data.debrief || "",
+            isDebriefPublic: Boolean(data.isDebriefPublic),
+            debriefUpdatedByName: data.debriefUpdatedByName || "",
             publicDetails: {
               title: pub.title || data.title || "Eagleburger Band Appearance",
               venue: pub.venue || data.venue || "TBA",
               address: pub.address || pub.venueAddress || data.venueAddress || "",
               coordinates: pub.coordinates || data.coordinates,
               city: pub.city || data.city || "Pittsburgh, PA",
-              description: pub.description || "",
+              description: pub.description || data.publicDescription || "",
               admission: pub.admission || "Free",
               eventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
               facebookEventUrl: (pub.eventUrl || pub.facebookEventUrl || "").trim(),
@@ -399,6 +408,24 @@ export default function PublicGigDetailPage({
                 </p>
               )}
             </div>
+
+            {/* Public Debrief & Reflection Card */}
+            {gig.isDebriefPublic && gig.debrief && (
+              <div className="bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-5 space-y-2.5 shadow-lg">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Band Reflection &amp; Post-Gig Debrief</span>
+                </div>
+                <p className="text-sm text-amber-200/90 leading-relaxed italic whitespace-pre-line font-serif">
+                  &ldquo;{gig.debrief}&rdquo;
+                </p>
+                {gig.debriefUpdatedByName && (
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    — Shared by {gig.debriefUpdatedByName} on behalf of the ensemble
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Brass Band Expectation Card */}
             <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 flex items-start gap-4">

@@ -31,6 +31,12 @@ import {
   ExternalLink,
   Heart,
   Landmark,
+  Globe,
+  Lock,
+  Edit3,
+  Save,
+  Sparkles,
+  Quote,
 } from "lucide-react";
 import CommentsStream from "@/components/portal/CommentsStream";
 import { canManageGigs, canManageSetlists } from "@/lib/auth/permissions";
@@ -67,6 +73,13 @@ interface GigDetail {
   id: string;
   date: string;
   status: string;
+  publicDescription?: string;
+  internalDescription?: string;
+  debrief?: string;
+  isDebriefPublic?: boolean;
+  debriefUpdatedAt?: string;
+  debriefUpdatedBy?: string;
+  debriefUpdatedByName?: string;
   publicDetails?: {
     title: string;
     venue: string;
@@ -130,6 +143,10 @@ export default function MusicianGigDetailPage() {
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
   const [isTogglingNav, setIsTogglingNav] = useState(false);
   const [isManagingSetlist, setIsManagingSetlist] = useState(false);
+  const [isEditingDebrief, setIsEditingDebrief] = useState(false);
+  const [debriefDraft, setDebriefDraft] = useState("");
+  const [isDebriefPublicDraft, setIsDebriefPublicDraft] = useState(false);
+  const [isSavingDebrief, setIsSavingDebrief] = useState(false);
 
   useEffect(() => {
     if (!gigId) return;
@@ -144,7 +161,11 @@ export default function MusicianGigDetailPage() {
 
         if (isMounted) {
           if (gigSnap.exists()) {
-            setGig({ id: gigSnap.id, ...gigSnap.data() } as GigDetail);
+            const data = gigSnap.data();
+            const detail = { id: gigSnap.id, ...data } as GigDetail;
+            setGig(detail);
+            setDebriefDraft(detail.debrief || "");
+            setIsDebriefPublicDraft(Boolean(detail.isDebriefPublic));
           } else {
             setGig(null);
           }
@@ -167,7 +188,9 @@ export default function MusicianGigDetailPage() {
       (snap) => {
         if (isMounted) {
           if (snap.exists()) {
-            setGig({ id: snap.id, ...snap.data() } as GigDetail);
+            const data = snap.data();
+            const detail = { id: snap.id, ...data } as GigDetail;
+            setGig(detail);
           } else {
             setGig(null);
           }
@@ -343,6 +366,32 @@ export default function MusicianGigDetailPage() {
       );
     } finally {
       setIsUpdatingRsvp(false);
+    }
+  };
+
+  const handleSaveDebrief = async () => {
+    if (!profile?.uid || !gigId) return;
+    setIsSavingDebrief(true);
+    try {
+      await setDoc(
+        doc(db, "gigs", gigId),
+        {
+          debrief: debriefDraft.trim(),
+          isDebriefPublic: isDebriefPublicDraft,
+          debriefUpdatedAt: new Date().toISOString(),
+          debriefUpdatedBy: profile.uid,
+          debriefUpdatedByName: profile.displayName || profile.realName || "Musician",
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      setIsEditingDebrief(false);
+      toast.success("Post-gig debrief saved!");
+    } catch (err) {
+      console.error("Failed to save debrief:", err);
+      toast.error("Failed to save debrief: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSavingDebrief(false);
     }
   };
 
@@ -680,6 +729,35 @@ export default function MusicianGigDetailPage() {
         </div>
       </div>
 
+      {/* Descriptions Grid (Internal Notes & Public Description) */}
+      {Boolean((gig.internalDescription || gig.internalLogistics?.description) || (gig.publicDescription || gig.publicDetails?.description)) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(gig.internalDescription || gig.internalLogistics?.description) && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2 shadow-md">
+              <div className="text-xs font-bold uppercase tracking-wider text-yellow-400 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-yellow-400" />
+                <span>Internal Description &amp; Logistics Notes</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {gig.internalDescription || gig.internalLogistics?.description}
+              </p>
+            </div>
+          )}
+
+          {(gig.publicDescription || gig.publicDetails?.description) && (
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-2 shadow-md">
+              <div className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-sky-400" />
+                <span>Public Description (Shown on Public Website)</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {gig.publicDescription || gig.publicDetails?.description}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Section Quorum & Attendance Breakdown */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
@@ -1006,6 +1084,147 @@ export default function MusicianGigDetailPage() {
           </button>
         </div>
       ) : null}
+
+      {/* Post-Gig Debrief & Musician Reflections */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Post-Gig Debrief &amp; Reflections</span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Share post-performance thoughts, crowd reaction, tune highlights, or gear takeaways.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <span
+              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                gig.isDebriefPublic
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-slate-800 text-slate-400 border-slate-700"
+              }`}
+            >
+              {gig.isDebriefPublic ? "🌐 Public on Website" : "🔒 Internal Only"}
+            </span>
+
+            {!isEditingDebrief && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDebriefDraft(gig.debrief || "");
+                  setIsDebriefPublicDraft(Boolean(gig.isDebriefPublic));
+                  setIsEditingDebrief(true);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{gig.debrief ? "Edit Debrief" : "Add Debrief"}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {isEditingDebrief ? (
+          <div className="space-y-3.5 pt-1">
+            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+              <div>
+                <span className="text-xs font-semibold text-slate-200 block">
+                  Public Website Visibility
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  Allow spectators and community supporters to read this reflection on the public gig page.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={isDebriefPublicDraft}
+                  onChange={(e) => setIsDebriefPublicDraft(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Debrief &amp; Reflections
+              </label>
+              <textarea
+                rows={4}
+                placeholder="What went well? How was the crowd and sound? Notes on specific tunes, logistics, or what to remember for next year..."
+                value={debriefDraft}
+                onChange={(e) => setDebriefDraft(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isSavingDebrief}
+                onClick={() => setIsEditingDebrief(false)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingDebrief}
+                onClick={handleSaveDebrief}
+                className="px-4 py-1.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow disabled:opacity-50 cursor-pointer"
+              >
+                {isSavingDebrief ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Debrief</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {gig.debrief ? (
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4.5 sm:p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Quote className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic whitespace-pre-wrap font-serif">
+                    &ldquo;{gig.debrief}&rdquo;
+                  </p>
+                </div>
+                {gig.debriefUpdatedByName && (
+                  <div className="pt-2 border-t border-slate-900 text-[11px] text-slate-500 font-sans flex items-center justify-between">
+                    <span>
+                      Shared by <strong className="text-slate-400">{gig.debriefUpdatedByName}</strong>
+                      {gig.debriefUpdatedAt && ` • ${new Date(gig.debriefUpdatedAt).toLocaleDateString()}`}
+                    </span>
+                    <span className="text-[10px] text-slate-600 font-mono">
+                      {gig.isDebriefPublic ? "Visible to public visitors" : "Band eyes only"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-950/40 border border-dashed border-slate-800 rounded-2xl p-5 text-center space-y-2">
+                <p className="text-xs text-slate-400">
+                  No post-gig debrief or reflections logged for this performance yet.
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Band members can add recap notes, crowd energy highlights, and setlist takeaways anytime.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Gig Discussion Stream */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-md">
