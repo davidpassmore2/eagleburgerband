@@ -28,7 +28,8 @@ export const DonationSchema = z.object({
   category: DonationCategoryEnum.default("community_aid"),
   amount: z.number().default(0), // Internal only: excluded from public views
   targetAmount: z.number().default(0), // Suggested donation target
-  dateDonated: z.string().default(() => new Date().toISOString().split("T")[0]),
+  dateDonated: z.string().default(() => new Date().toISOString().split("T")[0]), // Date gift was given/awarded
+  dateSubmitted: z.string().default(() => new Date().toISOString().split("T")[0]), // Date gift was submitted/recorded
   fiscalYear: z.string().default("2026"),
   status: DonationStatusEnum.default("completed"),
   isPublic: z.boolean().default(true),

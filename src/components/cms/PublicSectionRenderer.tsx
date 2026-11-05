@@ -780,6 +780,18 @@ function PublicGiftsSectionComponent({
 
   const displayList = filtered.slice(0, config.maxItems || 12);
 
+  const formatGiftDate = (isoDate?: string) => {
+    if (!isoDate) return null;
+    try {
+      const [y, m, d] = isoDate.split("T")[0].split("-");
+      if (!y || !m || !d) return isoDate;
+      const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+      return dateObj.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    } catch {
+      return isoDate;
+    }
+  };
+
   const CATEGORY_TAGS: Record<string, { label: string; color: string }> = {
     arts_music: { label: "Arts & Music", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
     community_aid: { label: "Community Aid", color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
@@ -855,11 +867,11 @@ function PublicGiftsSectionComponent({
         </div>
       )}
 
-      {/* Grid */}
+      {/* List of Full-Width Band Gift Cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-48 animate-pulse" />
+            <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-36 animate-pulse" />
           ))}
         </div>
       ) : displayList.length === 0 ? (
@@ -867,69 +879,90 @@ function PublicGiftsSectionComponent({
           No public band gifts found matching current filters.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {displayList.map((b) => {
             const cat = CATEGORY_TAGS[b.category] || CATEGORY_TAGS.other;
             const canShowAmount = Boolean(b.showAmountPublicly && config.showAmountsIfAllowed && b.amount > 0);
+            const dateGivenFormatted = formatGiftDate(b.dateDonated);
 
             return (
               <div
                 key={b.id}
-                className="bg-slate-900 border border-slate-800 hover:border-yellow-400/50 rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 shadow-xl group"
+                className="bg-slate-900 border border-slate-800 hover:border-yellow-400/40 rounded-3xl p-6 sm:p-7 transition-all duration-300 space-y-4 shadow-xl group"
               >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                {/* Top Row: Meta Badges, Date Given, and Gift Amount */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${cat.color}`}>
                       {cat.label}
                     </span>
 
+                    {b.fiscalYear && (
+                      <span className="text-[11px] font-mono text-slate-400 px-2.5 py-0.5 bg-slate-950 border border-slate-800 rounded-full">
+                        FY {b.fiscalYear}
+                      </span>
+                    )}
+
+                    {dateGivenFormatted && (
+                      <span className="text-[11px] font-mono text-slate-300 px-2.5 py-0.5 bg-slate-950 border border-slate-800 rounded-full flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-yellow-400" />
+                        <span>Date Given: {dateGivenFormatted}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                    <div className="flex items-center gap-1.5 font-mono text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">
+                      <Gift className="w-3.5 h-3.5 text-yellow-400" />
+                      <span>
+                        {b.giftsGivenCount || 1} {(b.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}
+                      </span>
+                    </div>
+
                     {canShowAmount ? (
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 font-bold">
+                      <span className="text-xs font-mono px-3 py-1 rounded-full bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 font-bold">
                         ${b.amount.toLocaleString()} Band Gift
                       </span>
                     ) : (
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                      <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
                         Band Gift
                       </span>
                     )}
                   </div>
-
-                  <div>
-                    <h3 className="text-base sm:text-lg font-extrabold text-white group-hover:text-yellow-400 transition-colors">
-                      {b.organizationName}
-                    </h3>
-                    {b.causeDescription && (
-                      <p className="text-xs text-slate-400 leading-relaxed mt-2 line-clamp-3">
-                        {b.causeDescription}
-                      </p>
-                    )}
-                  </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
-                    <Gift className="w-3.5 h-3.5 text-yellow-400" />
-                    <span>{b.giftsGivenCount || 1} {(b.giftsGivenCount || 1) === 1 ? "Gift Given" : "Gifts Given"}</span>
-                  </div>
+                {/* Organization Title & Website Link */}
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                  <h3 className="text-lg sm:text-xl font-extrabold text-white group-hover:text-yellow-400 transition-colors tracking-tight">
+                    {b.organizationName}
+                  </h3>
 
                   {b.websiteUrl && (
                     <a
                       href={b.websiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-yellow-400 hover:text-yellow-300 transition-colors font-mono"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors font-mono shrink-0"
                     >
-                      <span>Visit</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <span>Visit Website</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
                 </div>
+
+                {/* Full Notes / Description (Not Truncated) */}
+                {b.causeDescription && (
+                  <div className="pt-1">
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                      {b.causeDescription}
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-      )}
-    </div>
+      )}    </div>
   );
 }
 

@@ -338,6 +338,7 @@ function FinanceHubContent() {
   const [newGiftStatus, setNewGiftStatus] = useState<DonationStatus>("completed");
   const [newGiftFiscalYear, setNewGiftFiscalYear] = useState(() => String(new Date().getFullYear()));
   const [newGiftDate, setNewGiftDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [newGiftDateSubmitted, setNewGiftDateSubmitted] = useState(() => new Date().toISOString().split("T")[0]);
   const [newGiftAmount, setNewGiftAmount] = useState("100");
   const [newGiftImpactNote, setNewGiftImpactNote] = useState("");
   const [newGiftNotes, setNewGiftNotes] = useState("");
@@ -357,6 +358,7 @@ function FinanceHubContent() {
   const [editAmount, setEditAmount] = useState("0");
   const [editTargetAmount, setEditTargetAmount] = useState("0");
   const [editDate, setEditDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [editDateSubmitted, setEditDateSubmitted] = useState(() => new Date().toISOString().split("T")[0]);
   const [editFiscalYear, setEditFiscalYear] = useState(() => String(new Date().getFullYear()));
   const [editGiftsGivenCount, setEditGiftsGivenCount] = useState<number>(0);
   const [editAttributedMemberUid, setEditAttributedMemberUid] = useState("");
@@ -393,6 +395,7 @@ function FinanceHubContent() {
   const [causeToApprove, setCauseToApprove] = useState<Donation | null>(null);
   const [confirmAmount, setConfirmAmount] = useState<string>("100");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [confirmDateSubmitted, setConfirmDateSubmitted] = useState<string>(() => new Date().toISOString().split("T")[0]);
   const [confirmFiscalYear, setConfirmFiscalYear] = useState<string>(() => String(new Date().getFullYear()));
   const [confirmGiftsCount, setConfirmGiftsCount] = useState<number>(1);
   const [confirmImpactNote, setConfirmImpactNote] = useState<string>("");
@@ -607,6 +610,7 @@ function FinanceHubContent() {
         amount: 0,
         targetAmount: targetNum,
         dateDonated: new Date().toISOString().split("T")[0],
+        dateSubmitted: new Date().toISOString().split("T")[0],
         fiscalYear: String(new Date().getFullYear()),
         status: "suggested",
         isPublic: false,
@@ -686,6 +690,7 @@ function FinanceHubContent() {
     setNewGiftStatus("completed");
     setNewGiftFiscalYear(String(new Date().getFullYear()));
     setNewGiftDate(new Date().toISOString().split("T")[0]);
+    setNewGiftDateSubmitted(new Date().toISOString().split("T")[0]);
     setNewGiftAmount("100");
     setNewGiftImpactNote("");
     setNewGiftNotes("");
@@ -737,7 +742,8 @@ function FinanceHubContent() {
         category: newGiftCategory,
         amount: newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 0,
         targetAmount: targetAmt > 0 ? Number(targetAmt.toFixed(2)) : (newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 250),
-        dateDonated: newGiftStatus === "completed" ? newGiftDate : new Date().toISOString().split("T")[0],
+        dateDonated: newGiftStatus === "completed" ? newGiftDate : newGiftDateSubmitted,
+        dateSubmitted: newGiftDateSubmitted,
         fiscalYear: newGiftFiscalYear,
         status: newGiftStatus,
         isPublic: newGiftStatus === "completed" ? newGiftIsPublic : false,
@@ -789,6 +795,7 @@ function FinanceHubContent() {
     setEditAmount(String(gift.amount ?? 0));
     setEditTargetAmount(String(gift.targetAmount ?? 0));
     setEditDate(gift.dateDonated || new Date().toISOString().split("T")[0]);
+    setEditDateSubmitted(gift.dateSubmitted || (gift.createdAt ? gift.createdAt.split("T")[0] : gift.dateDonated) || new Date().toISOString().split("T")[0]);
     setEditFiscalYear(gift.fiscalYear || String(new Date().getFullYear()));
     setEditGiftsGivenCount(gift.giftsGivenCount ?? (gift.status === "completed" ? 1 : 0));
     setEditAttributedMemberUid(gift.suggestedByUid || "");
@@ -839,6 +846,7 @@ function FinanceHubContent() {
         amount: Number(numAmount.toFixed(2)),
         targetAmount: isNaN(numTarget) ? 0 : Number(numTarget.toFixed(2)),
         dateDonated: editDate,
+        dateSubmitted: editDateSubmitted,
         fiscalYear: editFiscalYear,
         giftsGivenCount: Math.max(0, editGiftsGivenCount),
         publicImpactNote: editPublicImpactNote.trim(),
@@ -971,6 +979,7 @@ function FinanceHubContent() {
     const initialAmt = cause.targetAmount > 0 ? String(cause.targetAmount) : (cause.amount > 0 ? String(cause.amount) : "100");
     setConfirmAmount(initialAmt);
     setConfirmDate(new Date().toISOString().split("T")[0]);
+    setConfirmDateSubmitted(cause.dateSubmitted || (cause.createdAt ? cause.createdAt.split("T")[0] : new Date().toISOString().split("T")[0]));
     setConfirmFiscalYear(String(new Date().getFullYear()));
     setConfirmGiftsCount(Math.max(1, (cause.giftsGivenCount || 0) + 1));
     setConfirmImpactNote(cause.publicImpactNote || "");
@@ -998,6 +1007,7 @@ function FinanceHubContent() {
         amount: Number(numAmount.toFixed(2)),
         targetAmount: causeToApprove.targetAmount > 0 ? causeToApprove.targetAmount : Number(numAmount.toFixed(2)),
         dateDonated: confirmDate,
+        dateSubmitted: confirmDateSubmitted,
         fiscalYear: confirmFiscalYear,
         giftsGivenCount: updatedGifts,
         isPublic: confirmIsPublic,
@@ -2442,6 +2452,19 @@ function FinanceHubContent() {
                                 FY {ben.fiscalYear}
                               </span>
 
+                              {ben.dateDonated && (
+                                <span className="text-xs font-mono text-slate-300 px-2.5 py-0.5 bg-slate-900 border border-slate-800 rounded-full flex items-center gap-1.5">
+                                  <Calendar className="w-3 h-3 text-yellow-400" />
+                                  <span>Given: {ben.dateDonated}</span>
+                                </span>
+                              )}
+
+                              {ben.dateSubmitted && ben.dateSubmitted !== ben.dateDonated && (
+                                <span className="text-xs font-mono text-slate-500 px-2 py-0.5 bg-slate-900/60 border border-slate-800 rounded-full">
+                                  Submitted: {ben.dateSubmitted}
+                                </span>
+                              )}
+
                               {/* Confirmed Band Gift Amount Badge */}
                               <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                                 ${ben.amount.toFixed(2)} Band Gift
@@ -2497,7 +2520,7 @@ function FinanceHubContent() {
                             {ben.publicImpactNote && (
                               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-yellow-300/90 flex items-start gap-2">
                                 <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
-                                <span className="leading-snug"><strong>Public Impact:</strong> {ben.publicImpactNote}</span>
+                                <span className="leading-snug"><strong className="text-yellow-400">Internal Impact Note:</strong> {ben.publicImpactNote}</span>
                               </div>
                             )}
 
@@ -3235,15 +3258,28 @@ function FinanceHubContent() {
               </div>
 
               {newGiftStatus === "completed" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <DatePicker
-                      label="Date Donated *"
-                      value={newGiftDate}
-                      onChange={(d) => setNewGiftDate(d)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                    />
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <DatePicker
+                        label="Date Gift Given *"
+                        value={newGiftDate}
+                        onChange={(d) => setNewGiftDate(d)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                      />
+                      <p className="text-[10px] text-slate-500">Date grant was actually awarded/given.</p>
+                    </div>
+                    <div className="space-y-1">
+                      <DatePicker
+                        label="Date Submitted *"
+                        value={newGiftDateSubmitted}
+                        onChange={(d) => setNewGiftDateSubmitted(d)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                      />
+                      <p className="text-[10px] text-slate-500">Date record was submitted/entered.</p>
+                    </div>
                   </div>
+
                   <div className="space-y-1">
                     <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                       Fiscal Year *
@@ -3255,7 +3291,7 @@ function FinanceHubContent() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
                     />
                   </div>
-                </div>
+                </>
               )}
 
               <div className="space-y-1">
@@ -3325,7 +3361,7 @@ function FinanceHubContent() {
                 <>
                   <div className="space-y-1">
                     <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                      Public Impact Note
+                      Internal Impact Note (Visible Only Internally)
                     </label>
                     <input
                       type="text"
@@ -3334,6 +3370,7 @@ function FinanceHubContent() {
                       onChange={(e) => setNewGiftImpactNote(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                     />
+                    <p className="text-[10px] text-slate-500">Visible only to band members in the portal. Kept private from public site.</p>
                   </div>
 
                   <div className="space-y-1">
@@ -3471,31 +3508,39 @@ function FinanceHubContent() {
                 </p>
               </div>
 
-              {/* Date Donated & Fiscal Year */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Date Given & Date Submitted */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Donation Date *
-                  </label>
                   <DatePicker
+                    label="Date Gift Given *"
                     value={confirmDate}
                     onChange={(d) => setConfirmDate(d)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   />
+                  <p className="text-[10px] text-slate-500">When gift was awarded/disbursed.</p>
                 </div>
-
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Fiscal Year *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={confirmFiscalYear}
-                    onChange={(e) => setConfirmFiscalYear(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
+                  <DatePicker
+                    label="Date Submitted *"
+                    value={confirmDateSubmitted}
+                    onChange={(d) => setConfirmDateSubmitted(d)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   />
+                  <p className="text-[10px] text-slate-500">When suggestion was submitted.</p>
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Fiscal Year *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={confirmFiscalYear}
+                  onChange={(e) => setConfirmFiscalYear(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
+                />
               </div>
 
               {/* Cumulative Gifts Given */}
@@ -3537,7 +3582,7 @@ function FinanceHubContent() {
               {/* Public Impact Note */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Public Impact Note (Optional)
+                  Internal Impact Note (Optional)
                 </label>
                 <input
                   type="text"
@@ -3546,6 +3591,7 @@ function FinanceHubContent() {
                   onChange={(e) => setConfirmImpactNote(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+                <p className="text-[10px] text-slate-500">Visible only internally in the portal; kept private from public listings.</p>
               </div>
 
               {/* Internal Review Notes */}
@@ -3799,29 +3845,41 @@ function FinanceHubContent() {
                 </div>
               </div>
 
-              {/* Target Amount & Date */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Proposed Target ($ USD)
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={editTargetAmount}
-                    onChange={(e) => setEditTargetAmount(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
-                  />
-                </div>
+              {/* Target Amount */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Proposed Target ($ USD)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={editTargetAmount}
+                  onChange={(e) => setEditTargetAmount(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                />
+              </div>
 
+              {/* Date Gift Given & Date Submitted */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <DatePicker
-                    label="Award / Donation Date"
+                    label="Date Gift Given *"
                     value={editDate}
                     onChange={(d) => setEditDate(d)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   />
+                  <p className="text-[10px] text-slate-500">When gift was awarded/given.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <DatePicker
+                    label="Date Submitted *"
+                    value={editDateSubmitted}
+                    onChange={(d) => setEditDateSubmitted(d)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                  <p className="text-[10px] text-slate-500">When record was logged.</p>
                 </div>
               </div>
 
@@ -3920,7 +3978,7 @@ function FinanceHubContent() {
               {/* Public Impact Note */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Public Impact Note (Shown on Public/Portal Directory)
+                  Internal Impact Note (Visible Only Internally)
                 </label>
                 <input
                   type="text"
@@ -3929,6 +3987,7 @@ function FinanceHubContent() {
                   onChange={(e) => setEditPublicImpactNote(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+                <p className="text-[10px] text-slate-500">Visible only to band members in the portal. Kept private from public site.</p>
               </div>
 
               {/* Internal Check Reference / Audit Notes */}
