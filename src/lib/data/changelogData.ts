@@ -26,6 +26,10 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Introduced Post-Gig Debrief & Musician Reflections system (/portal/gigs/[gigId]) allowing active band members to record post-performance reflections, thoughts, and lessons learned with member attribution timestamps.",
       "Added Public Visibility Toggle ('Display Debrief to Public Audience') for gig debriefs, rendering debrief reflections and quotes on public past gig appearance cards (/gigs and /gigs/[id]) when enabled by the band.",
       "Updated firestore.rules to securely permit active band members to edit and save post-gig debriefs and toggles while preserving strict role-based protection for all administrative gig fields.",
+      "Streamlined charitable giving terminology and workflows around 'Band Gifts', consolidating member gift suggestions and awarded band donations into an intuitive, unified Giving Hub (/portal/finance?tab=giving).",
+      "Consolidated redundant management creation flows into a single unified '+ New Band Gift' modal with clear destination toggling between member priority voting ('Queue for Voting') and direct completed grants ('Awarded Band Gift').",
+      "Engineered an extensive 'Edit Band Gift' modal accessible on every suggestion and awarded gift card, enabling Admins, Treasurers, and Community Managers to adjust organization names, categories, descriptions, proposed target amounts, actual gift amounts, donation dates, fiscal years, cumulative gifts count, internal audit notes, and public website/amount visibility toggles.",
+      "Aligned terminology across Member Activity, Portal Sections guide, and the Getting Started Guide to maintain consistent 'Band Gifts' references throughout the portal.",
     ],
   },
   {

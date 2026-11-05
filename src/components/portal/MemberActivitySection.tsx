@@ -216,7 +216,7 @@ export default function MemberActivitySection({
         id: `cause_${cause.id}`,
         type: "cause",
         categoryGroup: "causes",
-        title: `Suggested Cause: ${cause.organizationName}`,
+        title: `Band Gift Suggestion: ${cause.organizationName}`,
         subtitle: isCompleted
           ? `Awarded Band Gift of $${cause.amount.toFixed(2)}${cause.giftsGivenCount ? ` (${cause.giftsGivenCount} gifts)` : ""}`
           : cause.targetAmount > 0
@@ -407,7 +407,7 @@ export default function MemberActivitySection({
             className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <HeartHandshake className="w-3.5 h-3.5 text-purple-400" />
-            <span>Suggest Cause</span>
+            <span>Suggest Band Gift</span>
           </Link>
         </div>
       </div>
@@ -456,7 +456,7 @@ export default function MemberActivitySection({
               : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
           }`}
         >
-          Causes Suggested ({counts.causes})
+          Band Gifts Suggested ({counts.causes})
         </button>
 
         <button
@@ -484,7 +484,7 @@ export default function MemberActivitySection({
             {activeFilter === "suggestions"
               ? "You haven't pitched any songs or tunes yet. Have a great melody or arrangement idea for the band? Pitch one to the catalog!"
               : activeFilter === "causes"
-              ? "You haven't suggested any charitable causes yet. Know an inspiring Pittsburgh non-profit or community project? Suggest a cause to receive a Band Gift!"
+              ? "You haven't suggested any Band Gifts yet. Know an inspiring Pittsburgh non-profit or grassroots project? Suggest a Band Gift for the band to support!"
               : activeFilter === "actions"
               ? "No recent RSVP actions, expense reimbursements, or blackout dates recorded."
               : "Get active in the band! Pitch song ideas, champion grassroots causes, and keep your gig RSVPs up to date."}
@@ -503,7 +503,7 @@ export default function MemberActivitySection({
                 href="/portal/finance?tab=giving"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold text-xs uppercase tracking-wider transition"
               >
-                <span>Suggest a Cause</span>
+                <span>Suggest a Band Gift</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (

@@ -220,8 +220,8 @@ export const PORTAL_SECTIONS: PortalSectionInfo[] = [
         description: "Submit receipts for band repairs, travel fuel, lunch, or supplies with your Display Name. Treasurers can review, approve, or submit on behalf of members.",
       },
       {
-        title: "Suggest & Support Charitable Causes",
-        description: "Suggest local Pittsburgh grassroots organizations and youth music programs for band philanthropy, and explore funded beneficiaries.",
+        title: "Suggest & Support Band Gifts",
+        description: "Suggest local Pittsburgh grassroots organizations and youth music programs for Band Gifts, vote on priorities, and explore awarded gifts.",
       },
       {
         title: "Reconcile Financial Ledger & Settlements",

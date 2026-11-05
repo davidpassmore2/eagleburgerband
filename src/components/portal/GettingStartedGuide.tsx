@@ -105,7 +105,7 @@ const GUIDE_TOPICS: GuideTopic[] = [
   },
   {
     id: "giving-voting",
-    title: "Giving Causes & Member Voting",
+    title: "Band Gifts & Member Voting",
     category: "Step 5: Community",
     icon: HeartHandshake,
     accentColor: "text-purple-400 bg-purple-500/10 border-purple-500/20",
@@ -119,7 +119,7 @@ const GUIDE_TOPICS: GuideTopic[] = [
       "Track completed Band Gifts and public community contributions",
     ],
     linkHref: "/portal/finance?tab=giving",
-    linkLabel: "Suggest & Vote on Causes",
+    linkLabel: "Suggest & Vote on Band Gifts",
   },
   {
     id: "expenses-treasury",

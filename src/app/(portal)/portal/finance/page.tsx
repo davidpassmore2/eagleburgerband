@@ -30,6 +30,7 @@ import {
   DonationSchema,
   DonationCategory,
   DonationCategoryEnum,
+  DonationStatus,
   calculateDonationPriorityScore,
 } from "@/lib/schema/donation";
 import { Transaction, TransactionSchema } from "@/lib/schema/transaction";
@@ -45,6 +46,7 @@ import {
   TrendingDown,
   Receipt,
   HeartHandshake,
+  FileText,
   BookOpen,
   PlusCircle,
   Clock,
@@ -326,23 +328,43 @@ function FinanceHubContent() {
   const [suggestRationale, setSuggestRationale] = useState("");
   const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false);
 
-  // Community Manager / Admin: Add Cause Manually Modal
-  const [isAddCauseModalOpen, setIsAddCauseModalOpen] = useState(false);
-  const [addCauseOrgName, setAddCauseOrgName] = useState("");
-  const [addCauseDesc, setAddCauseDesc] = useState("");
-  const [addCauseWebsite, setAddCauseWebsite] = useState("");
-  const [addCauseCategory, setAddCauseCategory] = useState<DonationCategory>("community_aid");
-  const [addCauseTargetAmount, setAddCauseTargetAmount] = useState("250");
-  const [addCauseStatus, setAddCauseStatus] = useState<"suggested" | "completed">("suggested");
-  const [addCauseFiscalYear, setAddCauseFiscalYear] = useState(() => String(new Date().getFullYear()));
-  const [addCauseDate, setAddCauseDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [addCauseAmount, setAddCauseAmount] = useState("100");
-  const [addCauseImpactNote, setAddCauseImpactNote] = useState("");
-  const [addCauseNotes, setAddCauseNotes] = useState("");
-  const [addCauseAttributedMemberUid, setAddCauseAttributedMemberUid] = useState("");
-  const [addCauseIsPublic, setAddCauseIsPublic] = useState(true);
-  const [addCauseShowAmountPublicly, setAddCauseShowAmountPublicly] = useState(false);
-  const [isSubmittingAddCause, setIsSubmittingAddCause] = useState(false);
+  // Manager: Add / Record Band Gift Modal (Consolidated)
+  const [isNewGiftModalOpen, setIsNewGiftModalOpen] = useState(false);
+  const [newGiftOrgName, setNewGiftOrgName] = useState("");
+  const [newGiftDesc, setNewGiftDesc] = useState("");
+  const [newGiftWebsite, setNewGiftWebsite] = useState("");
+  const [newGiftCategory, setNewGiftCategory] = useState<DonationCategory>("community_aid");
+  const [newGiftTargetAmount, setNewGiftTargetAmount] = useState("250");
+  const [newGiftStatus, setNewGiftStatus] = useState<DonationStatus>("completed");
+  const [newGiftFiscalYear, setNewGiftFiscalYear] = useState(() => String(new Date().getFullYear()));
+  const [newGiftDate, setNewGiftDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [newGiftAmount, setNewGiftAmount] = useState("100");
+  const [newGiftImpactNote, setNewGiftImpactNote] = useState("");
+  const [newGiftNotes, setNewGiftNotes] = useState("");
+  const [newGiftAttributedMemberUid, setNewGiftAttributedMemberUid] = useState("");
+  const [newGiftIsPublic, setNewGiftIsPublic] = useState(true);
+  const [newGiftShowAmountPublicly, setNewGiftShowAmountPublicly] = useState(false);
+  const [newGiftGiftsGiven, setNewGiftGiftsGiven] = useState("1");
+  const [isSubmittingNewGift, setIsSubmittingNewGift] = useState(false);
+
+  // Manager: Edit Band Gift Modal State
+  const [editingGift, setEditingGift] = useState<Donation | null>(null);
+  const [editOrgName, setEditOrgName] = useState("");
+  const [editCategory, setEditCategory] = useState<DonationCategory>("community_aid");
+  const [editDesc, setEditDesc] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
+  const [editStatus, setEditStatus] = useState<DonationStatus>("completed");
+  const [editAmount, setEditAmount] = useState("0");
+  const [editTargetAmount, setEditTargetAmount] = useState("0");
+  const [editDate, setEditDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [editFiscalYear, setEditFiscalYear] = useState(() => String(new Date().getFullYear()));
+  const [editGiftsGivenCount, setEditGiftsGivenCount] = useState<number>(0);
+  const [editAttributedMemberUid, setEditAttributedMemberUid] = useState("");
+  const [editPublicImpactNote, setEditPublicImpactNote] = useState("");
+  const [editInternalNotes, setEditInternalNotes] = useState("");
+  const [editIsPublic, setEditIsPublic] = useState(true);
+  const [editShowAmountPublicly, setEditShowAmountPublicly] = useState(false);
+  const [isSavingEditGift, setIsSavingEditGift] = useState(false);
 
   // Giving Sub-Tabs: "suggestions" vs "gifts"
   const [givingSubTab, setGivingSubTab] = useState<"suggestions" | "gifts">("suggestions");
@@ -353,7 +375,6 @@ function FinanceHubContent() {
   const [suggestSortOrder, setSuggestSortOrder] = useState<"rank" | "recent">("rank");
 
   // Gifts Given Retroactive Adjust State
-  const [addCauseGiftsGiven, setAddCauseGiftsGiven] = useState("0");
   const [adjustGiftsCause, setAdjustGiftsCause] = useState<Donation | null>(null);
   const [adjustGiftsCount, setAdjustGiftsCount] = useState<number>(0);
   const [isAdjustingGifts, setIsAdjustingGifts] = useState(false);
@@ -380,21 +401,7 @@ function FinanceHubContent() {
   const [confirmShowAmountPublicly, setConfirmShowAmountPublicly] = useState<boolean>(false);
   const [isConfirmingDonation, setIsConfirmingDonation] = useState<boolean>(false);
 
-  // Manager Direct Donation Modal
-  const [isRecordDonationModalOpen, setIsRecordDonationModalOpen] = useState(false);
-  const [recOrgName, setRecOrgName] = useState("");
-  const [recCauseDesc, setRecCauseDesc] = useState("");
-  const [recWebsite, setRecWebsite] = useState("");
-  const [recCategory, setRecCategory] = useState<DonationCategory>("community_aid");
-  const [recAmount, setRecAmount] = useState("100");
-  const [recDate, setRecDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [recFiscalYear, setRecFiscalYear] = useState(() => String(new Date().getFullYear()));
-  const [recIsPublic, setRecIsPublic] = useState(true);
-  const [recShowAmountPublicly, setRecShowAmountPublicly] = useState(false);
-  const [recImpactNote, setRecImpactNote] = useState("");
-  const [recInternalNotes, setRecInternalNotes] = useState("");
-  const [recAttributedMemberUid, setRecAttributedMemberUid] = useState("");
-  const [isRecordingDonation, setIsRecordingDonation] = useState(false);
+
 
   // Manager Starting Balance Modal
   const [isBaselineModalOpen, setIsBaselineModalOpen] = useState(false);
@@ -626,7 +633,7 @@ function FinanceHubContent() {
       const validated = DonationSchema.parse(payload);
       await setDoc(doc(db, "donations", id), validated);
 
-      toast.success("Charitable suggestion submitted! Thank you for helping our community.");
+      toast.success("Band Gift suggested! Your suggestion is now live for member priority ranking & discussion.");
       setIsSuggestModalOpen(false);
       setSuggestOrgName("");
       setSuggestWebsite("");
@@ -669,23 +676,50 @@ function FinanceHubContent() {
     }
   };
 
-  // Community Manager / Admin: Add Cause Manually
-  const handleAddCauseManually = async (e: React.FormEvent) => {
+  // Manager: Open New Band Gift Modal
+  const handleOpenNewGiftModal = () => {
+    setNewGiftOrgName("");
+    setNewGiftDesc("");
+    setNewGiftWebsite("");
+    setNewGiftCategory("community_aid");
+    setNewGiftTargetAmount("250");
+    setNewGiftStatus("completed");
+    setNewGiftFiscalYear(String(new Date().getFullYear()));
+    setNewGiftDate(new Date().toISOString().split("T")[0]);
+    setNewGiftAmount("100");
+    setNewGiftImpactNote("");
+    setNewGiftNotes("");
+    setNewGiftAttributedMemberUid("");
+    setNewGiftIsPublic(true);
+    setNewGiftShowAmountPublicly(false);
+    setNewGiftGiftsGiven("1");
+    setIsNewGiftModalOpen(true);
+  };
+
+  // Manager: Create New Band Gift (Suggested or Completed)
+  const handleCreateNewGift = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addCauseOrgName.trim()) {
-      toast.error("Please enter an organization name.");
+    if (!newGiftOrgName.trim()) {
+      toast.error("Please enter an organization or cause name.");
       return;
     }
 
-    setIsSubmittingAddCause(true);
+    const targetAmt = parseFloat(newGiftTargetAmount) || 0;
+    const directAmt = parseFloat(newGiftAmount) || 0;
+    if (newGiftStatus === "completed" && (isNaN(directAmt) || directAmt < 0)) {
+      toast.error("Please enter a valid gift amount.");
+      return;
+    }
+
+    setIsSubmittingNewGift(true);
     try {
       const id = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      let suggestedByName = profile?.displayName || "Community Manager";
+      let suggestedByName = profile?.displayName || "Giving Manager";
       let suggestedByUid: string | null = profile?.uid || null;
       let submittedOnBehalf = false;
 
-      if (addCauseAttributedMemberUid) {
-        const member = rosterMembers.find((u) => u.uid === addCauseAttributedMemberUid);
+      if (newGiftAttributedMemberUid) {
+        const member = rosterMembers.find((u) => u.uid === newGiftAttributedMemberUid);
         if (member) {
           suggestedByName = member.displayName || member.realName || "Musician";
           suggestedByUid = member.uid;
@@ -693,34 +727,32 @@ function FinanceHubContent() {
         }
       }
 
-      const targetAmt = parseFloat(addCauseTargetAmount) || 0;
-      const directAmt = parseFloat(addCauseAmount) || 0;
-      const giftsGivenNum = Math.max(0, parseInt(addCauseGiftsGiven, 10) || (addCauseStatus === "completed" ? 1 : 0));
+      const giftsGivenNum = Math.max(0, parseInt(newGiftGiftsGiven, 10) || (newGiftStatus === "completed" ? 1 : 0));
 
       const payload: Donation = {
         id,
-        organizationName: addCauseOrgName.trim(),
-        causeDescription: addCauseDesc.trim(),
-        websiteUrl: addCauseWebsite.trim(),
-        category: addCauseCategory,
-        amount: addCauseStatus === "completed" ? directAmt : 0,
-        targetAmount: targetAmt,
-        dateDonated: addCauseStatus === "completed" ? addCauseDate : new Date().toISOString().split("T")[0],
-        fiscalYear: addCauseFiscalYear,
-        status: addCauseStatus,
-        isPublic: addCauseStatus === "completed" ? addCauseIsPublic : false,
-        showAmountPublicly: addCauseStatus === "completed" ? addCauseShowAmountPublicly : false,
-        publicImpactNote: addCauseImpactNote.trim(),
-        notes: addCauseNotes.trim(),
+        organizationName: newGiftOrgName.trim(),
+        causeDescription: newGiftDesc.trim(),
+        websiteUrl: newGiftWebsite.trim(),
+        category: newGiftCategory,
+        amount: newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 0,
+        targetAmount: targetAmt > 0 ? Number(targetAmt.toFixed(2)) : (newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 250),
+        dateDonated: newGiftStatus === "completed" ? newGiftDate : new Date().toISOString().split("T")[0],
+        fiscalYear: newGiftFiscalYear,
+        status: newGiftStatus,
+        isPublic: newGiftStatus === "completed" ? newGiftIsPublic : false,
+        showAmountPublicly: newGiftStatus === "completed" ? newGiftShowAmountPublicly : false,
+        publicImpactNote: newGiftImpactNote.trim(),
+        notes: newGiftNotes.trim(),
         suggestedByUid,
         suggestedByName,
         submittedByUid: profile?.uid || null,
-        submittedByName: profile?.displayName || "Community Manager",
+        submittedByName: profile?.displayName || "Giving Manager",
         submittedOnBehalf,
-        rationale: addCauseDesc.trim(),
-        reviewedByUid: addCauseStatus === "completed" ? (profile?.uid || null) : null,
-        reviewedByName: addCauseStatus === "completed" ? (profile?.displayName || "Community Manager") : "",
-        reviewedAt: addCauseStatus === "completed" ? new Date().toISOString() : null,
+        rationale: newGiftDesc.trim(),
+        reviewedByUid: newGiftStatus === "completed" ? (profile?.uid || null) : null,
+        reviewedByName: newGiftStatus === "completed" ? (profile?.displayName || "Giving Manager") : "",
+        reviewedAt: newGiftStatus === "completed" ? new Date().toISOString() : null,
         ratings: {},
         ratingAverage: 0,
         ratingCount: 0,
@@ -733,29 +765,105 @@ function FinanceHubContent() {
       await setDoc(doc(db, "donations", id), validated);
 
       toast.success(
-        addCauseStatus === "suggested"
-          ? `Added "${addCauseOrgName.trim()}" to member priority voting.`
-          : `Recorded "${addCauseOrgName.trim()}" as a completed beneficiary donation.`
+        newGiftStatus === "suggested"
+          ? `Added "${newGiftOrgName.trim()}" to member priority voting.`
+          : `Recorded "${newGiftOrgName.trim()}" as an awarded Band Gift.`
       );
 
-      setIsAddCauseModalOpen(false);
-      setAddCauseOrgName("");
-      setAddCauseDesc("");
-      setAddCauseWebsite("");
-      setAddCauseCategory("community_aid");
-      setAddCauseTargetAmount("250");
-      setAddCauseStatus("suggested");
-      setAddCauseAmount("100");
-      setAddCauseImpactNote("");
-      setAddCauseNotes("");
-      setAddCauseAttributedMemberUid("");
-      setAddCauseGiftsGiven("0");
-      setAddCauseIsPublic(true);
-      setAddCauseShowAmountPublicly(false);
+      setIsNewGiftModalOpen(false);
     } catch (err) {
-      toast.error("Failed to add cause: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to create Band Gift: " + (err instanceof Error ? err.message : String(err)));
     } finally {
-      setIsSubmittingAddCause(false);
+      setIsSubmittingNewGift(false);
+    }
+  };
+
+  // Manager: Open Modal to Edit Any Band Gift
+  const handleOpenEditGift = (gift: Donation) => {
+    setEditingGift(gift);
+    setEditOrgName(gift.organizationName);
+    setEditCategory(gift.category || "community_aid");
+    setEditDesc(gift.causeDescription || gift.rationale || "");
+    setEditWebsite(gift.websiteUrl || "");
+    setEditStatus(gift.status);
+    setEditAmount(String(gift.amount ?? 0));
+    setEditTargetAmount(String(gift.targetAmount ?? 0));
+    setEditDate(gift.dateDonated || new Date().toISOString().split("T")[0]);
+    setEditFiscalYear(gift.fiscalYear || String(new Date().getFullYear()));
+    setEditGiftsGivenCount(gift.giftsGivenCount ?? (gift.status === "completed" ? 1 : 0));
+    setEditAttributedMemberUid(gift.suggestedByUid || "");
+    setEditPublicImpactNote(gift.publicImpactNote || "");
+    setEditInternalNotes(gift.notes || "");
+    setEditIsPublic(gift.isPublic ?? true);
+    setEditShowAmountPublicly(gift.showAmountPublicly ?? false);
+  };
+
+  // Manager: Save Edited Band Gift
+  const handleSaveEditGift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGift) return;
+    if (!editOrgName.trim()) {
+      toast.error("Please enter an organization name.");
+      return;
+    }
+
+    const numAmount = parseFloat(editAmount);
+    const numTarget = parseFloat(editTargetAmount);
+    if (isNaN(numAmount) || numAmount < 0) {
+      toast.error("Please enter a valid gift amount.");
+      return;
+    }
+
+    setIsSavingEditGift(true);
+    try {
+      let suggestedByName = editingGift.suggestedByName;
+      let suggestedByUid = editingGift.suggestedByUid;
+      let submittedOnBehalf = editingGift.submittedOnBehalf ?? false;
+
+      if (editAttributedMemberUid && editAttributedMemberUid !== editingGift.suggestedByUid) {
+        const member = rosterMembers.find((u) => u.uid === editAttributedMemberUid);
+        if (member) {
+          suggestedByName = member.displayName || member.realName || "Musician";
+          suggestedByUid = member.uid;
+          submittedOnBehalf = true;
+        }
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        organizationName: editOrgName.trim(),
+        category: editCategory,
+        causeDescription: editDesc.trim(),
+        rationale: editDesc.trim(),
+        websiteUrl: editWebsite.trim(),
+        status: editStatus,
+        amount: Number(numAmount.toFixed(2)),
+        targetAmount: isNaN(numTarget) ? 0 : Number(numTarget.toFixed(2)),
+        dateDonated: editDate,
+        fiscalYear: editFiscalYear,
+        giftsGivenCount: Math.max(0, editGiftsGivenCount),
+        publicImpactNote: editPublicImpactNote.trim(),
+        notes: editInternalNotes.trim(),
+        isPublic: editIsPublic,
+        showAmountPublicly: editShowAmountPublicly,
+        suggestedByUid,
+        suggestedByName,
+        submittedOnBehalf,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (editStatus === "completed" && editingGift.status !== "completed") {
+        updatePayload.reviewedByUid = profile?.uid || null;
+        updatePayload.reviewedByName = profile?.displayName || "Giving Manager";
+        updatePayload.reviewedAt = new Date().toISOString();
+      }
+
+      await updateDoc(doc(db, "donations", editingGift.id), updatePayload);
+      toast.success(`Updated Band Gift for "${editOrgName.trim()}".`);
+      setEditingGift(null);
+    } catch (err) {
+      toast.error("Failed to update Band Gift: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSavingEditGift(false);
     }
   };
 
@@ -877,7 +985,7 @@ function FinanceHubContent() {
 
     const numAmount = parseFloat(confirmAmount);
     if (isNaN(numAmount) || numAmount < 0) {
-      toast.error("Please enter a valid donation amount.");
+      toast.error("Please enter a valid gift amount.");
       return;
     }
 
@@ -896,101 +1004,20 @@ function FinanceHubContent() {
         showAmountPublicly: confirmShowAmountPublicly,
         publicImpactNote: confirmImpactNote.trim(),
         notes: confirmNotes.trim(),
-        reviewedByName: profile?.displayName || "Community Manager",
+        reviewedByName: profile?.displayName || "Giving Manager",
         reviewedByUid: profile?.uid || null,
         reviewedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
       toast.success(
-        `Approved "${causeToApprove.organizationName}" and recorded confirmed donation of $${numAmount.toFixed(2)}.`
+        `Approved "${causeToApprove.organizationName}" and activated Band Gift of $${numAmount.toFixed(2)}.`
       );
       setCauseToApprove(null);
     } catch (err) {
-      toast.error("Failed to approve and record donation: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to approve and activate Band Gift: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsConfirmingDonation(false);
-    }
-  };
-
-  // Manager: Record Direct Donation
-  const handleRecordDonation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const numAmount = parseFloat(recAmount);
-    if (isNaN(numAmount) || numAmount < 0) {
-      toast.error("Please enter a valid donation amount.");
-      return;
-    }
-    if (!recOrgName.trim()) {
-      toast.error("Please enter an organization name.");
-      return;
-    }
-
-    setIsRecordingDonation(true);
-    try {
-      const id = `donation_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      let suggestedByName = "";
-      let suggestedByUid: string | null = null;
-      let submittedOnBehalf = false;
-
-      if (recAttributedMemberUid) {
-        const member = rosterMembers.find((u) => u.uid === recAttributedMemberUid);
-        if (member) {
-          suggestedByName = member.displayName || member.realName || "Musician";
-          suggestedByUid = member.uid;
-          submittedOnBehalf = true;
-        }
-      }
-
-      const payload: Donation = {
-        id,
-        organizationName: recOrgName.trim(),
-        causeDescription: recCauseDesc.trim(),
-        websiteUrl: recWebsite.trim(),
-        category: recCategory,
-        amount: Number(numAmount.toFixed(2)),
-        targetAmount: Number(numAmount.toFixed(2)),
-        dateDonated: recDate,
-        fiscalYear: recFiscalYear,
-        status: "completed",
-        isPublic: recIsPublic,
-        showAmountPublicly: recShowAmountPublicly,
-        publicImpactNote: recImpactNote.trim(),
-        notes: recInternalNotes.trim(),
-        suggestedByUid,
-        suggestedByName,
-        submittedByUid: profile?.uid || null,
-        submittedByName: profile?.displayName || "Treasurer",
-        submittedOnBehalf,
-        rationale: recCauseDesc.trim(),
-        reviewedByUid: profile?.uid || null,
-        reviewedByName: profile?.displayName || "Treasurer",
-        reviewedAt: new Date().toISOString(),
-        ratings: {},
-        ratingAverage: 0,
-        ratingCount: 0,
-        giftsGivenCount: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const validated = DonationSchema.parse(payload);
-      await setDoc(doc(db, "donations", id), validated);
-
-      toast.success("Charitable donation recorded.");
-      setIsRecordDonationModalOpen(false);
-      setRecShowAmountPublicly(false);
-      setRecOrgName("");
-      setRecCauseDesc("");
-      setRecWebsite("");
-      setRecAmount("100");
-      setRecImpactNote("");
-      setRecInternalNotes("");
-      setRecAttributedMemberUid("");
-    } catch (err) {
-      toast.error("Failed to record donation: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsRecordingDonation(false);
     }
   };
 
@@ -1937,10 +1964,10 @@ function FinanceHubContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-black text-white uppercase tracking-tight">
-                Charitable Philanthropy &amp; Community Causes
+                Band Gifts &amp; Community Philanthropy
               </h2>
               <p className="text-xs text-slate-400">
-                Explore grassroots organizations the band funds, and suggest or vote on community priorities.
+                Suggest grassroots causes for band contributions, vote on priorities, and celebrate awarded Band Gifts.
               </p>
             </div>
 
@@ -1951,28 +1978,17 @@ function FinanceHubContent() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-yellow-400/10"
               >
                 <HeartHandshake className="w-4 h-4" />
-                <span>Suggest a Charitable Cause</span>
+                <span>Suggest a Band Gift</span>
               </button>
 
               {isGivingManager && (
                 <button
                   type="button"
-                  onClick={() => setIsAddCauseModalOpen(true)}
+                  onClick={handleOpenNewGiftModal}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>+ Add Cause Manually</span>
-                </button>
-              )}
-
-              {isGivingManager && (
-                <button
-                  type="button"
-                  onClick={() => setIsRecordDonationModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 font-bold text-xs uppercase tracking-wider transition cursor-pointer"
-                >
-                  <Gift className="w-4 h-4" />
-                  <span>+ Record Band Gift</span>
+                  <span>+ New Band Gift</span>
                 </button>
               )}
             </div>
@@ -1990,7 +2006,7 @@ function FinanceHubContent() {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Cause Suggestions</span>
+              <span>Gift Suggestions</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
                 givingSubTab === "suggestions" ? "bg-slate-950 text-yellow-400 font-bold" : "bg-slate-800 text-slate-300"
               }`}>
@@ -2008,7 +2024,7 @@ function FinanceHubContent() {
               }`}
             >
               <Gift className="w-4 h-4" />
-              <span>Band Gifts</span>
+              <span>Awarded Band Gifts</span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
                 givingSubTab === "gifts" ? "bg-slate-950 text-yellow-400 font-bold" : "bg-slate-800 text-slate-300"
               }`}>
@@ -2282,9 +2298,19 @@ function FinanceHubContent() {
                             />
                           </button>
 
-                          {/* Manager Actions (Approve & Activate, Dismiss, Adjust Gifts) */}
+                          {/* Manager Actions (Edit, Approve & Activate, Dismiss, Adjust Gifts) */}
                           {isGivingManager && (
                             <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditGift(sug)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-yellow-400 border border-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+                                title="Edit gift suggestion details"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => handleOpenAdjustGifts(sug)}
@@ -2480,6 +2506,13 @@ function FinanceHubContent() {
                                 Suggested by: <span className="text-yellow-400 font-bold">{ben.suggestedByName}</span>
                               </div>
                             )}
+
+                            {isGivingManager && ben.notes && (
+                              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-2">
+                                <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                                <span className="leading-snug"><strong className="text-slate-300">Internal Audit Notes:</strong> {ben.notes}</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Footer & Admin Visibility Toggles */}
@@ -2490,6 +2523,17 @@ function FinanceHubContent() {
                               </span>
 
                               <div className="flex flex-wrap items-center gap-2">
+                                {/* Edit Band Gift */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditGift(ben)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-slate-700"
+                                  title="Edit gift details, amounts, notes, and public visibility"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit Gift &amp; Notes</span>
+                                </button>
+
                                 {/* Toggle isPublic */}
                                 <button
                                   type="button"
@@ -2969,7 +3013,7 @@ function FinanceHubContent() {
               <div className="flex items-center gap-2">
                 <HeartHandshake className="w-5 h-5 text-rose-400" />
                 <h3 className="text-base font-black text-white uppercase tracking-tight">
-                  Suggest a Charitable Cause
+                  Suggest a Band Gift
                 </h3>
               </div>
               <button
@@ -3074,7 +3118,7 @@ function FinanceHubContent() {
                   disabled={isSubmittingSuggestion}
                   className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
-                  {isSubmittingSuggestion ? "Submitting..." : "Submit Suggestion"}
+                  {isSubmittingSuggestion ? "Submitting..." : "Submit Gift Suggestion"}
                 </button>
               </div>
             </form>
@@ -3082,29 +3126,29 @@ function FinanceHubContent() {
         </div>
       )}
 
+      {/* {/* ------------------------------------------------------------- */}
+      {/* MODAL: ADD OR RECORD BAND GIFT (CONSOLIDATED)                 */}
       {/* ------------------------------------------------------------- */}
-      {/* MODAL: COMMUNITY MANAGER / ADMIN ADD CAUSE MANUALLY           */}
-      {/* ------------------------------------------------------------- */}
-      {isAddCauseModalOpen && (
+      {isNewGiftModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-emerald-400" />
                 <h3 className="text-base font-black text-white uppercase tracking-tight">
-                  Add Charitable Cause Manually
+                  Add or Record Band Gift
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setIsAddCauseModalOpen(false)}
+                onClick={() => setIsNewGiftModalOpen(false)}
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddCauseManually} className="space-y-4">
+            <form onSubmit={handleCreateNewGift} className="space-y-4">
               <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-2">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Target Destination / Status *
@@ -3112,9 +3156,9 @@ function FinanceHubContent() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setAddCauseStatus("suggested")}
+                    onClick={() => setNewGiftStatus("suggested")}
                     className={`p-2.5 rounded-xl border text-left transition ${
-                      addCauseStatus === "suggested"
+                      newGiftStatus === "suggested"
                         ? "bg-yellow-400/15 border-yellow-400 text-yellow-300 font-bold"
                         : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
                     }`}
@@ -3124,14 +3168,14 @@ function FinanceHubContent() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setAddCauseStatus("completed")}
+                    onClick={() => setNewGiftStatus("completed")}
                     className={`p-2.5 rounded-xl border text-left transition ${
-                      addCauseStatus === "completed"
+                      newGiftStatus === "completed"
                         ? "bg-emerald-500/15 border-emerald-400 text-emerald-300 font-bold"
                         : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
-                    <div className="text-xs">Direct Beneficiary</div>
+                    <div className="text-xs">Awarded Band Gift</div>
                     <div className="text-[10px] text-slate-500 font-normal">Immediate band grant</div>
                   </button>
                 </div>
@@ -3145,8 +3189,8 @@ function FinanceHubContent() {
                   type="text"
                   required
                   placeholder="e.g. Bloomfield Community Garden, Women's Center & Shelter"
-                  value={addCauseOrgName}
-                  onChange={(e) => setAddCauseOrgName(e.target.value)}
+                  value={newGiftOrgName}
+                  onChange={(e) => setNewGiftOrgName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-bold"
                 />
               </div>
@@ -3157,8 +3201,8 @@ function FinanceHubContent() {
                     Category *
                   </label>
                   <select
-                    value={addCauseCategory}
-                    onChange={(e) => setAddCauseCategory(e.target.value as DonationCategory)}
+                    value={newGiftCategory}
+                    onChange={(e) => setNewGiftCategory(e.target.value as DonationCategory)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   >
                     {DonationCategoryEnum.options.map((cat) => (
@@ -3171,18 +3215,18 @@ function FinanceHubContent() {
 
                 <div className="space-y-1">
                   <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    {addCauseStatus === "completed" ? "Confirmed Donation Amount ($ USD) *" : "Proposed Gift Amount ($ USD)"}
+                    {newGiftStatus === "completed" ? "Awarded Gift Amount ($ USD) *" : "Proposed Gift Amount ($ USD)"}
                   </label>
                   <input
                     type="number"
                     step="1"
                     placeholder="250"
-                    value={addCauseStatus === "completed" ? addCauseAmount : addCauseTargetAmount}
+                    value={newGiftStatus === "completed" ? newGiftAmount : newGiftTargetAmount}
                     onChange={(e) => {
-                      if (addCauseStatus === "completed") {
-                        setAddCauseAmount(e.target.value);
+                      if (newGiftStatus === "completed") {
+                        setNewGiftAmount(e.target.value);
                       } else {
-                        setAddCauseTargetAmount(e.target.value);
+                        setNewGiftTargetAmount(e.target.value);
                       }
                     }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
@@ -3190,15 +3234,13 @@ function FinanceHubContent() {
                 </div>
               </div>
 
-              {addCauseStatus === "completed" && (
+              {newGiftStatus === "completed" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                      Date Donated *
-                    </label>
                     <DatePicker
-                      value={addCauseDate}
-                      onChange={(d) => setAddCauseDate(d)}
+                      label="Date Donated *"
+                      value={newGiftDate}
+                      onChange={(d) => setNewGiftDate(d)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                     />
                   </div>
@@ -3208,8 +3250,8 @@ function FinanceHubContent() {
                     </label>
                     <input
                       type="text"
-                      value={addCauseFiscalYear}
-                      onChange={(e) => setAddCauseFiscalYear(e.target.value)}
+                      value={newGiftFiscalYear}
+                      onChange={(e) => setNewGiftFiscalYear(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
                     />
                   </div>
@@ -3223,8 +3265,8 @@ function FinanceHubContent() {
                 <input
                   type="url"
                   placeholder="https://..."
-                  value={addCauseWebsite}
-                  onChange={(e) => setAddCauseWebsite(e.target.value)}
+                  value={newGiftWebsite}
+                  onChange={(e) => setNewGiftWebsite(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
@@ -3234,8 +3276,8 @@ function FinanceHubContent() {
                   Attributed Member (Optional)
                 </label>
                 <select
-                  value={addCauseAttributedMemberUid}
-                  onChange={(e) => setAddCauseAttributedMemberUid(e.target.value)}
+                  value={newGiftAttributedMemberUid}
+                  onChange={(e) => setNewGiftAttributedMemberUid(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 >
                   <option value="">-- Seeded by Management (No specific member) --</option>
@@ -3255,9 +3297,9 @@ function FinanceHubContent() {
                   type="number"
                   min="0"
                   step="1"
-                  value={addCauseGiftsGiven}
-                  onChange={(e) => setAddCauseGiftsGiven(e.target.value)}
-                  placeholder="0"
+                  value={newGiftGiftsGiven}
+                  onChange={(e) => setNewGiftGiftsGiven(e.target.value)}
+                  placeholder="1"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
                 />
                 <p className="text-[10px] text-slate-500">
@@ -3273,13 +3315,13 @@ function FinanceHubContent() {
                   required
                   rows={2}
                   placeholder="Explain why this organization aligns with our community mission..."
-                  value={addCauseDesc}
-                  onChange={(e) => setAddCauseDesc(e.target.value)}
+                  value={newGiftDesc}
+                  onChange={(e) => setNewGiftDesc(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
                 />
               </div>
 
-              {addCauseStatus === "completed" && (
+              {newGiftStatus === "completed" && (
                 <>
                   <div className="space-y-1">
                     <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
@@ -3288,8 +3330,21 @@ function FinanceHubContent() {
                     <input
                       type="text"
                       placeholder="e.g. Funded 5 youth brass band instruments for summer camp"
-                      value={addCauseImpactNote}
-                      onChange={(e) => setAddCauseImpactNote(e.target.value)}
+                      value={newGiftImpactNote}
+                      onChange={(e) => setNewGiftImpactNote(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                      Internal Check Reference / Audit Notes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Check #1042, Venmo confirmation, treasurer notes..."
+                      value={newGiftNotes}
+                      onChange={(e) => setNewGiftNotes(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                     />
                   </div>
@@ -3302,8 +3357,8 @@ function FinanceHubContent() {
                       <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
                         <input
                           type="checkbox"
-                          checked={addCauseIsPublic}
-                          onChange={(e) => setAddCauseIsPublic(e.target.checked)}
+                          checked={newGiftIsPublic}
+                          onChange={(e) => setNewGiftIsPublic(e.target.checked)}
                           className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
                         />
                         <span className="text-xs text-slate-300">List on Public Giving Page</span>
@@ -3312,8 +3367,8 @@ function FinanceHubContent() {
                       <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
                         <input
                           type="checkbox"
-                          checked={addCauseShowAmountPublicly}
-                          onChange={(e) => setAddCauseShowAmountPublicly(e.target.checked)}
+                          checked={newGiftShowAmountPublicly}
+                          onChange={(e) => setNewGiftShowAmountPublicly(e.target.checked)}
                           className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
                         />
                         <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
@@ -3326,17 +3381,17 @@ function FinanceHubContent() {
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddCauseModalOpen(false)}
+                  onClick={() => setIsNewGiftModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingAddCause}
+                  disabled={isSubmittingNewGift}
                   className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
-                  {isSubmittingAddCause ? "Saving..." : addCauseStatus === "suggested" ? "Add to Voting Queue" : "Record Beneficiary"}
+                  {isSubmittingNewGift ? "Saving..." : newGiftStatus === "suggested" ? "Add to Voting Queue" : "Award Band Gift"}
                 </button>
               </div>
             </form>
@@ -3354,7 +3409,7 @@ function FinanceHubContent() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <h3 className="text-base font-black text-white uppercase tracking-tight">
-                  Approve Cause &amp; Confirm Donation
+                  Approve &amp; Activate Band Gift
                 </h3>
               </div>
               <button
@@ -3396,7 +3451,7 @@ function FinanceHubContent() {
               {/* Confirmed Amount */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Confirmed Donation Amount ($ USD) *
+                  Awarded Gift Amount ($ USD) *
                 </label>
                 <div className="relative">
                   <DollarSign className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -3549,7 +3604,7 @@ function FinanceHubContent() {
                   className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50 inline-flex items-center gap-1.5 shadow-lg shadow-emerald-500/10 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isConfirmingDonation ? "Recording..." : "Confirm & Activate Donation"}</span>
+                  <span>{isConfirmingDonation ? "Recording..." : "Confirm & Activate Band Gift"}</span>
                 </button>
               </div>
             </form>
@@ -3640,94 +3695,85 @@ function FinanceHubContent() {
         </div>
       )}
 
+      {/* {/* ------------------------------------------------------------- */}
+      {/* MODAL: EDIT BAND GIFT (SUGGESTED OR AWARDED)                  */}
       {/* ------------------------------------------------------------- */}
-      {/* MODAL: MANAGER RECORD DIRECT DONATION                         */}
-      {/* ------------------------------------------------------------- */}
-      {isRecordDonationModalOpen && (
+      {editingGift && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <HeartHandshake className="w-5 h-5 text-purple-400" />
+                <Gift className="w-5 h-5 text-yellow-400" />
                 <h3 className="text-base font-black text-white uppercase tracking-tight">
-                  Record Band Philanthropic Donation
+                  Edit Band Gift
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setIsRecordDonationModalOpen(false)}
+                onClick={() => setEditingGift(null)}
                 className="text-slate-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleRecordDonation} className="space-y-4">
-              <div className="space-y-1">
+            <form onSubmit={handleSaveEditGift} className="space-y-4">
+              {/* Status Switcher */}
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-2">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Attributed Musician Suggestion (Optional)
+                  Status &amp; Lifecycle *
                 </label>
-                <select
-                  value={recAttributedMemberUid}
-                  onChange={(e) => setRecAttributedMemberUid(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                >
-                  <option value="">-- General band grant (no specific member attribution) --</option>
-                  {rosterMembers.map((m) => (
-                    <option key={m.uid} value={m.uid}>
-                      Suggested by {m.displayName || m.realName || "Musician"}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditStatus("suggested")}
+                    className={`p-2.5 rounded-xl border text-left transition ${
+                      editStatus === "suggested"
+                        ? "bg-yellow-400/15 border-yellow-400 text-yellow-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs">Gift Suggestion</div>
+                    <div className="text-[10px] text-slate-500 font-normal">Voting queue</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditStatus("completed")}
+                    className={`p-2.5 rounded-xl border text-left transition ${
+                      editStatus === "completed"
+                        ? "bg-emerald-500/15 border-emerald-400 text-emerald-300 font-bold"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs">Awarded Band Gift</div>
+                    <div className="text-[10px] text-slate-500 font-normal">Completed grant</div>
+                  </button>
+                </div>
               </div>
 
+              {/* Organization Name */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Beneficiary Organization Name *
+                  Organization / Grassroots Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Pittsburgh Arts Coalition"
-                  value={recOrgName}
-                  onChange={(e) => setRecOrgName(e.target.value)}
+                  value={editOrgName}
+                  onChange={(e) => setEditOrgName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-bold"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Amount ($ USD) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={recAmount}
-                    onChange={(e) => setRecAmount(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <DatePicker
-                    label="Date Donated *"
-                    value={recDate}
-                    onChange={setRecDate}
-                  />
-                </div>
-              </div>
-
+              {/* Category & Amounts */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                     Category *
                   </label>
                   <select
-                    value={recCategory}
-                    onChange={(e) => setRecCategory(e.target.value as DonationCategory)}
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as DonationCategory)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                   >
                     {DonationCategoryEnum.options.map((cat) => (
@@ -3740,52 +3786,161 @@ function FinanceHubContent() {
 
                 <div className="space-y-1">
                   <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Fiscal Year
+                    Awarded Amount ($ USD)
                   </label>
                   <input
-                    type="text"
-                    value={recFiscalYear}
-                    onChange={(e) => setRecFiscalYear(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
                   />
                 </div>
               </div>
 
+              {/* Target Amount & Date */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Proposed Target ($ USD)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={editTargetAmount}
+                    onChange={(e) => setEditTargetAmount(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <DatePicker
+                    label="Award / Donation Date"
+                    value={editDate}
+                    onChange={(d) => setEditDate(d)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+              </div>
+
+              {/* Fiscal Year & Cumulative Gifts */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Fiscal Year
+                  </label>
+                  <input
+                    type="text"
+                    value={editFiscalYear}
+                    onChange={(e) => setEditFiscalYear(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                    Cumulative Gifts Given
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={editGiftsGivenCount <= 0}
+                      onClick={() => setEditGiftsGivenCount((c) => Math.max(0, c - 1))}
+                      className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-40 transition cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={editGiftsGivenCount}
+                      onChange={(e) => setEditGiftsGivenCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-1.5 px-2 text-center text-xs font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditGiftsGivenCount((c) => c + 1)}
+                      className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Website */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Website URL
+                  Website / Social Link
                 </label>
                 <input
                   type="url"
                   placeholder="https://..."
-                  value={recWebsite}
-                  onChange={(e) => setRecWebsite(e.target.value)}
+                  value={editWebsite}
+                  onChange={(e) => setEditWebsite(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
+              {/* Attributed Member */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Attributed Member (Optional)
+                </label>
+                <select
+                  value={editAttributedMemberUid}
+                  onChange={(e) => setEditAttributedMemberUid(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                >
+                  <option value="">-- No specific member attributed --</option>
+                  {rosterMembers.map((m) => (
+                    <option key={m.uid} value={m.uid}>
+                      {m.displayName || m.realName || "Musician"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rationale / Description */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Cause Description / Community Rationale
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+              </div>
+
+              {/* Public Impact Note */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Public Impact Note (Shown on Public/Portal Directory)
                 </label>
                 <input
                   type="text"
-                  placeholder="Funding 10 instruments for after-school band program..."
-                  value={recImpactNote}
-                  onChange={(e) => setRecImpactNote(e.target.value)}
+                  placeholder="e.g. Sponsored instruments for after-school youth band..."
+                  value={editPublicImpactNote}
+                  onChange={(e) => setEditPublicImpactNote(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
+              {/* Internal Check Reference / Audit Notes */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Internal Check Reference / Audit Notes
                 </label>
                 <input
                   type="text"
-                  placeholder="Check #1042 or Venmo transaction link..."
-                  value={recInternalNotes}
-                  onChange={(e) => setRecInternalNotes(e.target.value)}
+                  placeholder="Check #1042, Venmo confirmation, treasurer notes..."
+                  value={editInternalNotes}
+                  onChange={(e) => setEditInternalNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
@@ -3799,8 +3954,8 @@ function FinanceHubContent() {
                   <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
                     <input
                       type="checkbox"
-                      checked={recIsPublic}
-                      onChange={(e) => setRecIsPublic(e.target.checked)}
+                      checked={editIsPublic}
+                      onChange={(e) => setEditIsPublic(e.target.checked)}
                       className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
                     />
                     <span className="text-xs text-slate-300">List on Public Giving Page</span>
@@ -3809,8 +3964,8 @@ function FinanceHubContent() {
                   <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
                     <input
                       type="checkbox"
-                      checked={recShowAmountPublicly}
-                      onChange={(e) => setRecShowAmountPublicly(e.target.checked)}
+                      checked={editShowAmountPublicly}
+                      onChange={(e) => setEditShowAmountPublicly(e.target.checked)}
                       className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
                     />
                     <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
@@ -3821,17 +3976,17 @@ function FinanceHubContent() {
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsRecordDonationModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                  onClick={() => setEditingGift(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isRecordingDonation}
-                  className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50"
+                  disabled={isSavingEditGift}
+                  className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-lg shadow-yellow-400/10"
                 >
-                  {isRecordingDonation ? "Recording..." : "Record Donation"}
+                  {isSavingEditGift ? "Saving..." : "Save Band Gift Changes"}
                 </button>
               </div>
             </form>
