@@ -11,7 +11,7 @@ import {
   TestimonialInputSchema,
   TestimonialSchema,
 } from "@/lib/schema/testimonial";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Star,
   Quote,

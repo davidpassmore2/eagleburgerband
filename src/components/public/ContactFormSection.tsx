@@ -8,7 +8,7 @@ import {
   GeneralInquirySchema,
   GeneralInquiryCategory,
 } from "@/lib/schema/generalInquiry";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Mail,
   User,

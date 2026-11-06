@@ -36,7 +36,6 @@ export const SendBookingReceiptSchema = z.object({
   budget: z.union([z.number(), z.string()]).default(""),
   message: z.string().default(""),
   phone: z.string().default(""),
-  directorAlertEmail: z.string().email().optional(),
 });
 export type SendBookingReceiptPayload = z.infer<typeof SendBookingReceiptSchema>;
 

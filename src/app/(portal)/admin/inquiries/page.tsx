@@ -171,14 +171,6 @@ export default function InquiriesAdminPage() {
         status,
         updatedAt: new Date().toISOString(),
       });
-      try {
-        await updateDoc(doc(db, "booking_leads", id), {
-          status,
-          updatedAt: new Date().toISOString(),
-        });
-      } catch {
-        // silent fallback if lead does not exist in booking_leads
-      }
       toast.success(`Inquiry status updated to ${status}.`);
     } catch (err) {
       toast.error("Failed to update status: " + (err instanceof Error ? err.message : String(err)));
@@ -189,11 +181,6 @@ export default function InquiriesAdminPage() {
     if (!confirm(`Delete inquiry for "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, "inquiries", id));
-      try {
-        await deleteDoc(doc(db, "booking_leads", id));
-      } catch {
-        // silent fallback
-      }
       toast.success("Inquiry deleted.");
     } catch (err) {
       toast.error("Failed to delete inquiry: " + (err instanceof Error ? err.message : String(err)));
@@ -249,15 +236,6 @@ export default function InquiriesAdminPage() {
         convertedGigId: gigId,
         updatedAt: new Date().toISOString(),
       });
-      try {
-        await updateDoc(doc(db, "booking_leads", inq.id), {
-          status: "converted",
-          convertedGigId: gigId,
-          updatedAt: new Date().toISOString(),
-        });
-      } catch {
-        // silent fallback
-      }
 
       // Dispatch initial availability request email (filtering blackouts & hiatus)
       try {

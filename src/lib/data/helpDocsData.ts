@@ -1,0 +1,1972 @@
+import { Role } from "@/lib/auth/permissions";
+
+export interface RouteDoc {
+  id: string;
+  title: string;
+  path: string;
+  launchPath?: string;
+  category:
+    | "Musician Essentials"
+    | "Gigs & Logistics"
+    | "Personnel & Attendance"
+    | "Music & Repertoire"
+    | "Website & Intake"
+    | "Finance"
+    | "Business & Admin";
+  roles: Role[];
+  badge: string;
+  iconName: string;
+  summary: string;
+  description: string;
+  keyFeatures: string[];
+  howToUse: string[];
+  proTips: string[];
+  relatedRoutes?: { title: string; path: string }[];
+}
+
+
+export const ROUTE_DOCS: RouteDoc[] = [
+  // --- Musician Essentials ---
+  {
+    id: "help-guides",
+    title: "Help Center & Operational Guides",
+    path: "/portal/help",
+    category: "Musician Essentials",
+    roles: ["member", "guest", "admin"],
+    badge: "Knowledge Base",
+    iconName: "BookOpen",
+    summary: "Comprehensive documentation, workspace guides, role responsibilities, permissions matrix, and FAQs.",
+    description: "The Help Center is the definitive operational reference for the Eagleburger Band platform. Explore full route guides for all 38+ workspace tools, review leadership role expectations, audit RBAC permissions, and find answers to frequently asked questions.",
+    keyFeatures: [
+      "Interactive workspace tool guides covering every member portal and admin studio screen.",
+      "Band leadership role dossiers outlining duties and authorities for each position.",
+      "Interactive Permissions Matrix displaying access levels across all stacked band roles.",
+      "Role Emulation Preview allowing administrators to preview portal views as other roles.",
+      "Searchable FAQ bank with instant answers to common logistical and musical questions."
+    ],
+    howToUse: [
+      "Use the search box at the top to quickly find guides on specific tools or workflows.",
+      "Switch category tabs (Musician Essentials, Gigs & Logistics, Personnel, Music, Website, Finance, Business) to browse tools.",
+      "Explore the 'Portal Roles & Members' tab to see who holds leadership positions and what each role does.",
+      "Check the 'Permissions Matrix' tab to understand what workspaces your roles unlock."
+    ],
+    proTips: [
+      "Administrators can click 'Emulate Role' in the top bar to test the portal exactly as viewed by a section leader, treasurer, or guest musician.",
+      "Bookmark the Help Center for quick reference during rehearsal breaks and gig warmups."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Status Matrix & Lifecycle Guide", path: "/portal/status-matrix" },
+      { title: "Stage Changelog", path: "/portal/changelog" }
+    ]
+  },
+  {
+    id: "home-base",
+    title: "Home Base & Musician Dashboard",
+    path: "/portal",
+    category: "Musician Essentials",
+    roles: ["member"],
+    badge: "Core Musician Dashboard",
+    iconName: "Compass",
+    summary: "Central hub for upcoming gigs, personal RSVP status, rehearsals, band alerts, and personal earnings.",
+    description: "Home Base is the primary landing page for every Eagleburger Band musician. It provides a real-time snapshot of the ensemble's next scheduled gigs, immediate calls for attendance confirmation, quick links to sheet music charts, and personal earnings from compensated gigs.",
+    keyFeatures: [
+      "Live countdown and overview of the next upcoming gig.",
+      "1-click RSVP status toggle (Attending, Declined, Tentative) for pending gigs.",
+      "Calendar subscription modal offering universal webcal/iCal feeds for Apple Calendar, Google Calendar, and Outlook.",
+      "Personal season gig tally and earnings reconciliation record.",
+      "Pinned band announcements and operational alerts from gig managers."
+    ],
+    howToUse: [
+      "Check your dashboard weekly for newly announced rehearsals, street parades, or private booking requests.",
+      "Click 'Subscribe to Calendar' to auto-sync gig call times directly into your smartphone's native calendar app.",
+      "Review any pending RSVPs and confirm your attendance so section leaders can monitor instrumentation balance.",
+      "Use the quick links to immediately view call sheets, setlists, and sheet music charts for upcoming appearances."
+    ],
+    proTips: [
+      "Keep calendar sync enabled—changes made by gig coordinators to call times or staging addresses sync automatically to your device.",
+      "Always update your RSVP as soon as a gig is announced, even if tentative, to help coordinators forecast section rosters."
+    ],
+    relatedRoutes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "Song Catalog", path: "/portal/library" }
+    ]
+  },
+  {
+    id: "gig-central",
+    title: "Gig Central & Gig RSVPs",
+    path: "/portal/gigs",
+    category: "Musician Essentials",
+    roles: ["member"],
+    badge: "Gig Logistics",
+    iconName: "Calendar",
+    summary: "Complete gig schedule, call times, downbeat, uniform attire, compensation, and venue addresses.",
+    description: "Gig Central displays the full roster of confirmed, tentative, and past gigs. Musicians use this view to inspect detailed gig logistics—including staging addresses, unloading instructions, attire (e.g. Band Polo, Street Brass Festive), and compensation amounts—and manage their official attendance commitments.",
+    keyFeatures: [
+      "Chronological gig timeline with status badges (Confirmed, Pending, In Progress, Completed).",
+      "Detailed logistical cards with Call Time, Downbeat, Expected End, and Venue Address.",
+      "Three-state RSVP buttons: Attending (Green), Declined (Red), and Tentative (Amber).",
+      "Real-time section attendance headcounts showing how many players are committed per instrument.",
+      "Direct Google Maps navigation links to staging addresses and musician parking areas."
+    ],
+    howToUse: [
+      "Navigate to Gig Central from the sidebar or Home Base.",
+      "Click on any gig card to expand the full logistical drawer.",
+      "Select your attendance status for upcoming shows.",
+      "Note specific attire guidelines (e.g. brass sunglasses, band t-shirt, formal black) and downbeat times.",
+      "If your status changes, update your RSVP promptly and leave a note if arriving late."
+    ],
+    proTips: [
+      "Call time is strictly enforced for warmup, tuning, and staging—plan to arrive at least 15 minutes before stated call time.",
+      "Attending counts update live: watch your section's headcount to ensure all necessary parts (e.g. Sousaphone, Snare) are covered."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
+    ]
+  },
+  {
+    id: "song-catalog",
+    title: "Song Catalog & Sheet Music",
+    path: "/portal/library",
+    category: "Musician Essentials",
+    roles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    badge: "Sheet Music & Audio",
+    iconName: "Music2",
+    summary: "Interactive chart library, instrument part PDFs, rehearsal audio recordings, key signatures, and tempo notes.",
+    description: "The Song Catalog is the digital library for all active, rehearsal, and archival arrangements played by the Eagleburger Band. Musicians can filter charts by title, tempo, key, or genre, download instrument-specific PDF parts for printing or digital tablet readers, and listen to reference audio recordings.",
+    keyFeatures: [
+      "Instant search and filter by tune title, composer, arranger, style, and difficulty.",
+      "Rotation and lifecycle filtering: Active rotation, In Repertoire (learn & maintain), Frequently Played, and Vaulted charts.",
+      "Instrument-specific PDF part downloads (Trumpet 1/2, Trombone 1/2, Alto/Tenor/Bari Sax, Sousaphone, Snare, Bass Drum, Cymbals).",
+      "Embedded reference audio recordings for practicing tempo, feel, and articulation.",
+      "Tagging system (e.g. #parade, #funk, #second-line, #fanfare, #holiday).",
+      "Direct setlist cross-referencing indicating which songs are scheduled for upcoming gigs."
+    ],
+    howToUse: [
+      "Open the Song Catalog from the sidebar navigation.",
+      "Use the search box or genre tags to find the chart you need.",
+      "Click your instrument section tab to view and download your specific part PDF.",
+      "Load PDF parts into your digital reader (e.g. forScore, MobileSheets) or print 2-up for your flip folder.",
+      "Stream the reference recording while reviewing the chart to master street cuts and solo sections."
+    ],
+    proTips: [
+      "Use the 'In Repertoire' filter to quickly audit all deep-catalog tunes you should have ready in your flip folder even if not scheduled for this weekend.",
+      "Store offline copies of all active parade charts on your tablet or smartphone before gig day in case venue reception is poor.",
+      "Listen to the rehearsal audio to learn unwritten drum breaks, vocal cues, and street march choreo."
+    ],
+    relatedRoutes: [
+      { title: "Rehearsal Vault", path: "/portal/vault" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
+    ]
+  },
+  {
+    id: "band-roster",
+    title: "Band Roster & Musician Directory",
+    path: "/portal/roster",
+    category: "Musician Essentials",
+    roles: ["member"],
+    badge: "Musician Directory",
+    iconName: "Users",
+    summary: "Ensemble membership directory, section rosters, instrument assignments, and contact channels.",
+    description: "The Musician Directory lists all active members of the Eagleburger Band organized by instrument section. It allows musicians to connect with section leaders, find subs or doubling players, and check band-wide section representation.",
+    keyFeatures: [
+      "Section breakdown (Trumpets, Trombones, Saxophones, Sousaphones, Drum Battery).",
+      "Designated Section Leader badges and contact buttons.",
+      "Musician contact details (Email, Phone, Discord handle).",
+      "Instrument doubling notes (e.g. Tenor Sax doubling on Flute or Percussion).",
+      "Member status indicators (Active, Emeritus, Sub/Guest)."
+    ],
+    howToUse: [
+      "Visit the Band Roster to locate musicians in your section or across the band.",
+      "Click on a section leader to view their contact information for rehearsal questions or excused absences.",
+      "Verify that your own profile information and instrument assignments are accurate in your profile settings."
+    ],
+    proTips: [
+      "If you play multiple instruments, notify your Section Leader so you can be placed where instrumentation needs are highest.",
+      "Use the directory to arrange carpools and gear transport for regional parades and festivals."
+    ],
+    relatedRoutes: [
+      { title: "Band Sections", path: "/admin/sections" },
+      { title: "Roster Administration", path: "/admin/roster" }
+    ]
+  },
+  {
+    id: "musician-profile",
+    title: "My Profile & SMS Settings",
+    path: "/portal/profile",
+    category: "Musician Essentials",
+    roles: ["member"],
+    badge: "Profile & SMS Consent",
+    iconName: "Smartphone",
+    summary: "Personal musician contact details, legal real name vs display name, active gig instrument, shirt sizes, and SMS briefing consent.",
+    description: "The Musician Profile allows every band member to manage their personal details, legal real name, active gig instrument, shirt size preference, and notification preferences. Band members can opt into urgent SMS text briefings with timestamped TCPA consent records, configure electronic payout handles (Venmo, PayPal, Zelle), and toggle directory privacy.",
+    keyFeatures: [
+      "Dual Name Settings: Display Name (shown across portal, setlists, and roster) and Real Legal Name (for treasurer records).",
+      "Active Gig Instrument: Switch your active instrument from your section catalog at any time for different gigs.",
+      "Band Apparel & Shirt Size: Choose your preferred size (XS, S, M, L, XL, XXL) for band t-shirts, uniforms, and merchandise fulfillment.",
+      "Interactive SMS text briefing toggle with verified opt-in/opt-out consent tracking and timestamping.",
+      "Payout Preferences: Configure preferred payout method and handles (Venmo, PayPal, Zelle, Check).",
+      "Directory Privacy: Toggles to hide email and phone numbers in the public musician directory.",
+      "Voluntary self-service band departure/hiatus workflow with administrative audit logging."
+    ],
+    howToUse: [
+      "Navigate to My Profile from the sidebar or by clicking your user avatar in the portal header.",
+      "Configure your Display Name and Real Name, and pick your active gig instrument from your section catalog.",
+      "Select your shirt size preference (XS–XXL) for upcoming band uniform and t-shirt orders.",
+      "Enter your mobile phone number and toggle 'Opt In to Band SMS Text Briefings' for urgent gig alerts.",
+      "Add your preferred payout method (Venmo, PayPal, Zelle) to receive gig disbursements.",
+      "Click 'Save Profile & SMS Preferences' to save your changes."
+    ],
+    proTips: [
+      "If you switch instruments between gigs (e.g. Tenor to Bari Sax, or Cornet to Flugelhorn), update your active gig instrument here so section leaders know your setup.",
+      "Enable SMS alerts before parade season: street road closures and last-minute staging shifts are dispatched via text briefing.",
+      "You can opt out of SMS text briefings anytime with 1 click in this studio or by replying STOP to any automated broadcast."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Notification Suite", path: "/admin/notifications" },
+      { title: "Member Shirt Sizes", path: "/admin/shirt-sizes" }
+    ]
+  },
+  {
+    id: "portal-perform",
+    title: "Stage Readiness & Live Gig Chart Viewer",
+    path: "/portal/perform/[gigId]",
+    launchPath: "/portal/gigs",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Stage Mode",
+    iconName: "Music",
+    summary: "High-contrast mobile chart viewer, offline print toolbar, downbeat countdown, and live gig setlist tracker.",
+    description: "Stage Readiness transforms any mobile phone or tablet into an outdoor stage chart reader. Designed for low-light porches, bright festival sunlight, and moving street parades, Stage View keeps the gig setlist in front of you with 1-tap sheet music chart rendering and quick transposition toggles.",
+    keyFeatures: [
+      "Gig-specific chronological setlist with tune keys, tempos, and horn notes.",
+      "1-tap sheet music viewer supporting pinch-to-zoom and dark stage mode.",
+      "Live downbeat countdown and call time status.",
+      "Offline print and PDF export toolbar for generating paper backup charts."
+    ],
+    howToUse: [
+      "Open the gig card from Home Base or Gig Central and tap 'Stage View'.",
+      "Keep the screen unlocked on your phone mount or music stand during downbeat.",
+      "Tap any tune title to immediately load your instrument part PDF."
+    ],
+    proTips: [
+      "Set your device display to maximum timeout before stepping onto the parade route.",
+      "Cache or print PDF parts ahead of time if performing at outdoor parks with poor cellular coverage."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Song Catalog", path: "/portal/library" }
+    ]
+  },
+  {
+    id: "portal-checkin",
+    title: "Downbeat Musician Gig Check-In",
+    path: "/portal/checkin/[gigId]",
+    launchPath: "/portal/gigs",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Attendance Verification",
+    iconName: "UserCheck",
+    summary: "Day-of-show attendance verification confirming your physical arrival at the staging area.",
+    description: "Downbeat Check-In enables musicians to confirm their arrival on site directly from their mobile device. Check-ins feed live into section leader roll calls and treasurer payout distributions.",
+    keyFeatures: [
+      "Geolocation or 1-tap self-check-in within the staging perimeter.",
+      "Real-time section roll call status showing who has arrived.",
+      "Emergency coordinator contacts for staging or parking delays."
+    ],
+    howToUse: [
+      "Upon arriving at the staging venue, open your gig call sheet and tap 'Check In'.",
+      "Verify your section and confirm arrival before the official downbeat.",
+      "If running late, notify your section leader immediately via the contact button."
+    ],
+    proTips: [
+      "Check in as soon as you unpack your instrument so section leaders know your part is covered.",
+      "Confirmed check-ins automatically certify your attendance for compensation payouts."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Gig Call Sheet", path: "/portal/gigs" }
+    ]
+  },
+  {
+    id: "portal-pwa",
+    title: "Progressive Web App (PWA) & Offline Mode",
+    path: "/portal",
+    category: "Musician Essentials",
+    roles: ["member", "guest"],
+    badge: "Device & Offline App",
+    iconName: "Smartphone",
+    summary: "Install the Eagleburger Musician Portal directly to your iPhone, iPad, or Android home screen.",
+    description: "The Progressive Web App enables full standalone application functionality across iOS, Android, macOS, and Windows. Launch into your personal musician dashboard with 1 tap, bypass browser bars, and access cached charts and call sheets even when cell service drops.",
+    keyFeatures: [
+      "Standalone app window without browser URL bars or navigation clutter.",
+      "App icon quick shortcuts: My Gigs, Music Library, Availability Calendar.",
+      "Offline cache resilience for sheet music charts and logistics.",
+      "Low battery consumption optimized for long festival days."
+    ],
+    howToUse: [
+      "On iOS Safari: Tap Share -> 'Add to Home Screen'.",
+      "On Android Chrome: Tap the three dots -> 'Install app' or click the banner prompt.",
+      "On Desktop: Click the Install icon in the browser address bar."
+    ],
+    proTips: [
+      "Open your charts while connected to Wi-Fi at rehearsal to ensure PDFs are cached locally before festival appearances.",
+      "Add the app to your phone dock for instant access on show days."
+    ],
+    relatedRoutes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "My Profile", path: "/portal/profile" }
+    ]
+  },
+
+  // --- Gigs & Logistics ---
+  {
+    id: "status-matrix",
+    title: "Status Matrix & Lifecycle Guide",
+    path: "/portal/status-matrix",
+    category: "Gigs & Logistics",
+    roles: ["member", "guest"],
+    badge: "Operations Reference",
+    iconName: "Workflow",
+    summary: "Complete operational guide covering Lead-to-Gig lifecycle, 4-state RSVPs, member hiatus, and dispatch automation.",
+    description: "The Status Matrix is the authoritative manual for band members and managers detailing every status phase in our gig pipeline. Learn how leads convert to tentative gigs, how the 4-state RSVP system (In, Probable, Tentative, Declined) drives playing strength quorum, and how member hiatus shields musicians from email dispatches.",
+    keyFeatures: [
+      "Visual end-to-end gig lifecycle from Lead intake to post-downbeat settlement.",
+      "Comprehensive definition table for all Lead, Gig, RSVP, and Member account statuses.",
+      "Interactive Quorum & Playing Strength Calculator testing 'Probable' availability rules.",
+      "Automated dispatch triggers: initial availability polling and confirmation dispatches.",
+      "Member Hiatus Mode guidelines and automated blackout date collision suppression."
+    ],
+    howToUse: [
+      "Navigate to the Status Matrix from the sidebar or Help & Documentation.",
+      "Use category tabs or the search bar to filter status codes and definitions.",
+      "Explore the interactive Quorum Calculator to see how 'In' + 'Probable' achieve staffing quorum.",
+      "Review the FAQ section to clarify questions on dispatches, hiatus, and calendar sync."
+    ],
+    proTips: [
+      "Remember: marking 'Probable' allows coordinators to confirm gigs faster while accounting for work contingencies.",
+      "If taking an extended absence from the band, activate Hiatus Mode in your profile to mute all gig call sheets without losing account access."
+    ],
+    relatedRoutes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "My Availability & Blackouts", path: "/portal/availability" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
+    ]
+  },
+  {
+    id: "portal-availability",
+    title: "My Availability & Blackouts",
+    path: "/portal/availability",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager", "section_leader", "member", "guest"],
+    badge: "Availability Calendar",
+    iconName: "Calendar",
+    summary: "Log out-of-town dates, vacation windows, and personal blackouts to prevent gig scheduling conflicts.",
+    description: "My Availability & Blackouts empowers every musician to manage their personal schedule, log blackout date ranges, and control hiatus mode. The platform cross-references your logged blackout windows during gig creation, availability polling, and call sheet dispatch—automatically alerting gig managers to conflicts and suppressing notifications on dates you cannot play.",
+    keyFeatures: [
+      "Interactive multi-day date range picker for logging upcoming vacations and travel.",
+      "Optional blackout reason notes (e.g. Work Travel, Family Vacation, Out of Town).",
+      "Automated conflict engine alerting gig managers when scheduling gigs on your blacked-out dates.",
+      "Dynamic suppression of automated availability invitations during active blackout periods.",
+      "Complete historical list of active and upcoming blackout windows with 1-click deletion."
+    ],
+    howToUse: [
+      "Navigate to My Availability & Blackouts (/portal/availability) from the Performances & Logistics menu.",
+      "Click your start date and end date on the calendar to select a blackout date range.",
+      "Optionally add a note explaining your absence, then click 'Save Blackout Range'.",
+      "Review your active blackout windows below the calendar."
+    ],
+    proTips: [
+      "Log summer travel and holiday vacations at least 3-4 weeks in advance so section leaders can recruit subs early.",
+      "Blackout windows do not automatically cancel gigs you have already RSVP'd 'Attending' to—remember to update your RSVP in Gig Central as well."
+    ],
+    relatedRoutes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "My Profile & SMS Settings", path: "/portal/profile" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
+    ]
+  },
+  {
+    id: "admin-checkin",
+    title: "Day-of-Show Roll Call Kiosk",
+    path: "/portal/checkin/[gigId]",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager", "section_leader"],
+    badge: "Day-of-Show Roll Call",
+    iconName: "UserCheck",
+    summary: "Real-time musician arrival monitoring, section roll call verification, and attendance lock.",
+    description: "The Downbeat Check-In Studio allows gig coordinators and section leaders to monitor musician arrivals on gig day. Leaders can perform live roll calls, manually verify musicians, and lock final attendance to certify rosters for treasurer payout distribution.",
+    keyFeatures: [
+      "Live arrival board categorized by instrument section (Trumpet, Trombone, Sax, Low Brass, Battery).",
+      "1-tap status toggles (Arrived, Running Late, Excused, Absent).",
+      "Instrumentation deficit indicator highlighting missing voice parts.",
+      "Final attendance lock button feeding verified rosters directly to the Financial Ledger."
+    ],
+    howToUse: [
+      "Open Downbeat Check-In 45 minutes prior to call time on show day.",
+      "Monitor incoming self-check-ins from musicians on site.",
+      "Manually check in members who arrive directly at warm-up.",
+      "Lock attendance after the downbeat to finalize payout rosters."
+    ],
+    proTips: [
+      "Keep the check-in board open on a mobile phone during warm-ups to spot missing sections quickly.",
+      "If a key soloist is running late, coordinate an audible substitution with the setlist leader."
+    ],
+    relatedRoutes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
+  {
+    id: "admin-gigs",
+    title: "Gig Management Studio",
+    path: "/admin/gigs",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager"],
+    badge: "Logistics Administration",
+    iconName: "Calendar",
+    summary: "Comprehensive lifecycle management for band gigs from initial booking to post-gig wrapup.",
+    description: "The Gig Management Studio is the operational control center for gig managers and band administrators. Coordinators schedule new gigs, configure call times and downbeats, establish compensation models, inspect section roll calls, manage cancellation broadcasts, and syndicate events to the public marketing site.",
+    keyFeatures: [
+      "Full CRUD lifecycle operations validated against GigSchema (Draft -> Confirmed -> In Progress -> Completed -> Cancelled).",
+      "Automated Gig Cancellation Broadcast Modal: Prompts managers to broadcast urgent cancellation alerts with custom reason notes to assigned musicians.",
+      "Musician Availability Conflict Engine: Detects player blackout dates and warns coordinators of scheduling conflicts.",
+      "Hiatus Member Safeguard: Automatically suppresses availability calls and broadcasts to members on temporary hiatus.",
+      "Logistics Editor: Call Time, Downbeat, Attire guidelines, Unloading address, Musician compensation models (Community, Band Fund, Individual).",
+      "Public marketing toggle (isPublic) controlling syndication to the public gigs page.",
+      "Live RSVP telemetry showing total attending vs required instrumentation per section."
+    ],
+    howToUse: [
+      "To schedule a gig, click '+ New Gig' or convert an approved booking inquiry.",
+      "Configure logistics (Call Time, Downbeat, Attire, Parking notes, Compensation model).",
+      "Check the section instrumentation badges to verify player commitments.",
+      "If a gig must be called off, cancel the gig and confirm the cancellation broadcast modal to alert players immediately.",
+      "Toggle 'Publish to Fan Site' when contracts and venue permits are finalized."
+    ],
+    proTips: [
+      "When cancelling a gig, the platform automatically logs the cancellation in the Admin Audit Log and prompts to notify all committed players.",
+      "Check musician blackout warnings during scheduling to avoid booking gigs when key soloists or rhythm players are out of town."
+    ],
+    relatedRoutes: [
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
+      { title: "Setlist Studio", path: "/admin/setlists" },
+      { title: "My Availability & Blackouts", path: "/portal/availability" }
+    ]
+  },
+  {
+    id: "admin-setlists",
+    title: "Setlist Studio",
+    path: "/admin/setlists",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager", "catalog_manager"],
+    badge: "Show Curation",
+    iconName: "ListMusic",
+    summary: "Curate and arrange gig setlists, tune orders, keys, transitions, and timing for specific gigs.",
+    description: "Setlist Studio allows musical directors and gig coordinators to build gig setlists tailored to each gig's venue, crowd demographic, and gig duration. Songs from the Master Catalog can be arranged into sets, annotated with tempo, key, and transition cues, and published to musician call sheets.",
+    keyFeatures: [
+      "Drag-and-drop tune ordering with estimated set duration calculation.",
+      "Direct integration with the Master Catalog showing tune keys, tempos, and style tags.",
+      "Gig notes per tune (e.g. 'Drum intro', 'Trumpet solo feature', 'Fade on repeat').",
+      "Multi-set support (e.g. Set 1: Parade March, Set 2: Beer Garden Stage Show).",
+      "1-click publish linking the curated setlist directly to the gig's digital call sheet."
+    ],
+    howToUse: [
+      "Select the target gig from the gig dropdown.",
+      "Browse the catalog drawer on the right and click '+' to add charts to the setlist.",
+      "Reorder tunes using drag handles or up/down controls to balance energy and key flow.",
+      "Add transition notes or soloist assignments directly on the tune card.",
+      "Click 'Save Setlist' to immediately update the gig's call sheet and musician views."
+    ],
+    proTips: [
+      "Avoid programming three high-register brass blowout charts in a row—alternate energetic funk tunes with vocal or rhythm features.",
+      "Include 2-3 backup parade loops in your setlist for unexpected parade bottlenecks."
+    ],
+    relatedRoutes: [
+      { title: "Catalog Studio", path: "/admin/catalog" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" }
+    ]
+  },
+  {
+    id: "admin-dispatch",
+    title: "Call Sheet Dispatch & Live Communications",
+    path: "/admin/dispatch",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager"],
+    badge: "Dispatch & Alerts",
+    iconName: "Send",
+    summary: "Publish finalized call sheets, broadcast emergency logistics changes, and track musician acknowledgments.",
+    description: "Call Sheet Dispatch is the central broadcasting station for finalized gig logistics. Gig managers use this workspace to lock in final call sheets, generate shareable links, and push real-time alerts to the band regarding parking changes, weather delays, or staging updates.",
+    keyFeatures: [
+      "Formal call sheet generation with complete itinerary, attire, setlist, and contact roster.",
+      "Broadcast alerts with priority tiers: Routine Info (Blue), Urgent Logistics (Amber), Emergency (Red).",
+      "Direct integration with Twilio SMS / Email webhooks for multi-channel dispatch.",
+      "Live acknowledgment telemetry showing which musicians have opened and read the call sheet.",
+      "Shareable public call-sheet URL for contracted guest musicians and sound engineers."
+    ],
+    howToUse: [
+      "Select the upcoming gig and review the auto-assembled call sheet details.",
+      "Verify that venue contact numbers, GPS staging links, and setlists are accurate.",
+      "Click 'Dispatch Call Sheet' to push notifications to all rostered musicians.",
+      "If rain or timing delays occur on gig day, use the 'Emergency Logistics Change' banner to blast instant updates."
+    ],
+    proTips: [
+      "Dispatch call sheets 48 to 72 hours prior to gig day to allow musicians to plan transit and childcare.",
+      "Always double check parking restrictions—remind brass players to pack their instrument cases if marching away from cars."
+    ],
+    relatedRoutes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "Broadcasts", path: "/admin/notifications" }
+    ]
+  },
+  {
+    id: "admin-notifications",
+    title: "Email & SMS Notification Suite & Broadcast Studio",
+    path: "/admin/notifications",
+    category: "Gigs & Logistics",
+    roles: ["admin", "gig_manager", "membership_manager", "community_manager", "section_leader"],
+    badge: "Email & SMS Broadcasts",
+    iconName: "Mail",
+    summary: "Full WYSIWYG email and SMS text briefing authoring, 3-mode channel routing, audience consent telemetry, and delivery audit logs.",
+    description: "The Email & SMS Broadcast Notification Suite empowers band leadership to craft and dispatch branded HTML emails, instant mobile SMS briefings, or synchronized dual-channel broadcasts. Features 6 battle-tested scenario presets (New Member Invitations, Client Thank-Yous, Gig Call Sheets, RSVP Requests, Urgent Logistics, and Custom Announcements), live SMS consent telemetry (tracking opted-in, missing phone, and opted-out recipients), interactive preview simulator with smartphone chat bubble rendering, and granular delivery audit logs.",
+    keyFeatures: [
+      "3-Mode Dispatch Selector: Rich Email Broadcast, Instant SMS Text Briefing, or Dual (Both Email & SMS).",
+      "SMS Text Briefing Editor with live character count (X/160 chars) and standard segment counter.",
+      "Audience SMS Consent Telemetry computing verified opted-in, missing phone, and opted-out recipients before dispatch.",
+      "WYSIWYG Rich-Text Editor with HTML code switching and automatic DOMPurify sanitization.",
+      "6 Scenario Presets with tailored email copy and dedicated SMS text briefings for each event.",
+      "Dynamic Variable Token Interpolation ({{recipient_name}}, {{gig_title}}, {{call_time}}, {{invite_url}}).",
+      "Interactive Multi-Viewport Simulator: Desktop Email, Mobile Email, and Smartphone SMS Chat Bubble.",
+      "Comprehensive Delivery Audit Log with channel filters (Email, SMS, Dual), search, and recipient inspection."
+    ],
+    howToUse: [
+      "Choose your dispatch channel: Email Broadcast, SMS Text Briefing, or Both Email & SMS.",
+      "Select a notification scenario preset (e.g. Gig Details or Urgent Update) or start from scratch.",
+      "Choose your target audience (All Band, Section, Gig Attending Roster, Musician, CRM Client, or Direct).",
+      "Review the Audience SMS Consent Telemetry banner to check how many recipients have opted in.",
+      "Draft your SMS briefing text or rich email body, using dynamic tokens to personalize messages.",
+      "Toggle between Desktop, Mobile, and SMS views in the live simulator to verify layout.",
+      "Click 'Dispatch' to broadcast immediately and audit the delivery in the Delivery Logs tab."
+    ],
+    proTips: [
+      "For day-of-show weather delays or gate shifts, select 'SMS Text Briefing' to reach musicians immediately without requiring them to check their inbox.",
+      "Keep SMS text briefings under 160 characters when possible to fit within a single standard carrier segment.",
+      "Check the SMS Consent Telemetry before dispatching—if key players are missing phones, remind them to update their profile."
+    ],
+    relatedRoutes: [
+      { title: "My Profile & SMS Settings", path: "/portal/profile" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
+      { title: "Band Roster & Invites", path: "/admin/roster" },
+      { title: "Client CRM & Contacts", path: "/admin/contacts" }
+    ]
+  },
+
+  // --- Personnel & Attendance ---
+  {
+    id: "portal-notifications",
+    title: "Notifications & Personal Inbox",
+    path: "/portal/notifications",
+    category: "Personnel & Attendance",
+    roles: ["admin", "web_manager", "gig_manager", "catalog_manager", "community_manager", "treasurer", "section_leader", "member"],
+    badge: "Personal Inbox",
+    iconName: "Bell",
+    summary: "Centralized inbox for personal gig invitations, call sheet dispatches, logistics updates, and announcement broadcasts.",
+    description: "The Notifications & Inbox studio brings together all personal band communications in one convenient stream. Review urgent call time updates, invitations for upcoming gigs, call sheet releases, and general announcements with instant mark-as-read controls.",
+    keyFeatures: [
+      "Real-time stream of transactional gig invitations, logistics changes, and band broadcasts.",
+      "Category badges (Gig Invite, Logistics Alert, Call Sheet, Broadcast).",
+      "1-tap 'Mark as Read' and batch read actions.",
+      "Direct action links jumping straight to referenced gig call sheets and RSVPs.",
+      "Category notification preference toggles to customize your alert feed."
+    ],
+    howToUse: [
+      "Click the notification bell in the portal top bar or navigate to /portal/notifications.",
+      "Browse unread notifications sorted chronologically.",
+      "Click on any alert card to view details and jump to the corresponding gig or RSVP action.",
+      "Use 'Mark All as Read' to keep your inbox clean."
+    ],
+    proTips: [
+      "Opt in to SMS text briefings in your profile (/portal/profile) to receive instant phone alerts for urgent, day-of-show logistics changes.",
+      "Unread badge counts update in real time across the portal navigation header."
+    ],
+    relatedRoutes: [
+      { title: "My Profile & SMS Settings", path: "/portal/profile" },
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "Email & Broadcast Suite", path: "/admin/notifications" }
+    ]
+  },
+  {
+    id: "my-checkin",
+    title: "My Attendance & Check-In",
+    path: "/portal/checkin",
+    category: "Personnel & Attendance",
+    roles: ["admin", "member", "guest"],
+    badge: "Attendance History",
+    iconName: "CheckSquare",
+    summary: "Personal attendance track record, on-time percentage, and day-of-show arrival check-in.",
+    description: "My Attendance & Check-In gives every musician complete visibility into their gig attendance history, seasonal arrival stats, and active day-of-show check-in prompts. On gig days, musicians can check in on-site or verify that their section leader recorded their arrival.",
+    keyFeatures: [
+      "Personal on-time arrival percentage and season gig tally.",
+      "Active day-of-show check-in banner when an upcoming gig call time window is open.",
+      "Comprehensive timeline of past gigs and confirmed attendance records (Checked In, Arrived, Away, Not Attended).",
+      "Section leader verification confirmation status."
+    ],
+    howToUse: [
+      "On gig day, open /portal/checkin from Home Base or the Personnel menu.",
+      "When the check-in window opens before call time, click 'Check In' to register your on-site arrival.",
+      "Review your historical attendance percentage at the top of the screen."
+    ],
+    proTips: [
+      "Section leaders can also verify your arrival on-site using the Day-of Roll Call Kiosk (/portal/checkin/[gigId]).",
+      "Consistent band participation helps section leaders ensure strong instrumentation across performances and practices."
+    ],
+    relatedRoutes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "My Attendance & Check-In", path: "/portal/checkin" }
+    ]
+  },
+  {
+    id: "admin-sections",
+    title: "Band Sections & Instrumentation",
+    path: "/admin/sections",
+    category: "Personnel & Attendance",
+    roles: ["admin", "section_leader", "membership_manager"],
+    badge: "Section Management",
+    iconName: "Layers",
+    summary: "Configure instrument sections, manage section instrument catalogs, assign section leaders, and audit instrumentation balance.",
+    description: "The Band Sections workspace organizes the ensemble's musical voices. Administrators and section leaders manage section rosters, curate instrument catalogs with presets, assign section leaders, set target headcounts, and audit instrumentation balance.",
+    keyFeatures: [
+      "Section configuration for Trumpets, Trombones, Saxes, Tubas/Low Brass, and Drum Battery.",
+      "Section Instrument Catalogs: Add, edit, and curate specific instruments per section with 1-click presets.",
+      "Active Member Instrument Assignment: Link instruments to players so members can select their active gig instrument in their profile.",
+      "Section Leader appointment with elevated section roll-call and suggestion permissions.",
+      "Minimum and optimal headcount thresholds per section for parade readiness.",
+      "Instrumentation balance audit highlighting under-represented voices (e.g. Bass Drum, Bari Sax)."
+    ],
+    howToUse: [
+      "Review each section card to verify member counts, instrument catalogs, and leadership designations.",
+      "Click 'Manage Instruments' on any section to add instruments or apply one-click presets.",
+      "Click on a section to reassign musicians or appoint a new Section Leader.",
+      "Adjust optimal headcount targets based on seasonal parade demands."
+    ],
+    proTips: [
+      "Populate your section instrument catalogs so members have exact choices when selecting their active gig instruments in their profile.",
+      "Ensure every section has an active Section Leader and an assistant leader for backup on multi-gig weekends."
+    ],
+    relatedRoutes: [
+      { title: "Band Roster & Invites", path: "/admin/roster" },
+      { title: "Gig Studio & Readiness", path: "/admin/gigs" },
+      { title: "My Profile & SMS Settings", path: "/portal/profile" }
+    ]
+  },
+  {
+    id: "admin-roster-mgmt",
+    title: "Roster Administration, Invites & Roles",
+    path: "/admin/roster",
+    category: "Personnel & Attendance",
+    roles: ["admin", "membership_manager"],
+    badge: "Member Administration",
+    iconName: "Users",
+    summary: "Manage member accounts, assign RBAC permissions, issue invite codes, and sort roster tables.",
+    description: "Roster Administration provides governance over all musician user profiles. Membership managers and admins grant role permissions, onboard new recruits via secure claim tokens, track instrument capabilities, sort column headers, and manage hiatus statuses.",
+    keyFeatures: [
+      "Multi-role assignment engine (admin, gig_manager, catalog_manager, treasurer, section_leader, member).",
+      "Interactive sortable column headers (Member Name, Recipient, Section, Status, Timeline) with ascending/descending toggles.",
+      "First-Class Hiatus Status: Mute automated gig call sheets and dispatches for taking leave while preserving account history.",
+      "Secure 1-time invite code generator for onboarding vetted new brass and percussion players via /claim?token=...",
+      "Musician profile editing: Display name, real legal name, section, instruments, contact numbers, and apparel sizes.",
+      "Active, Inactive, Hiatus, and Alumni status filters.",
+      "Fast member search and exportable CSV directory."
+    ],
+    howToUse: [
+      "To invite a new musician, click 'Generate Invite Code', choose their primary instrument, and share the claim link.",
+      "To modify a member's permissions, click 'Edit Roles' and toggle authorized RBAC checkboxes.",
+      "Sort columns by clicking on table headers (Member Name, Section, Status) to quickly organize records.",
+      "Set members taking temporary leave to 'Hiatus' status to prevent unwanted gig dispatch alerts."
+    ],
+    proTips: [
+      "Follow the principle of least privilege: assign specialized roles (e.g. 'catalog_manager' or 'gig_manager') rather than full 'admin'.",
+      "When inviting a musician, share the custom `/claim?token=...` link so their account automatically binds to their pre-assigned section."
+    ],
+    relatedRoutes: [
+      { title: "Band Sections", path: "/admin/sections" },
+      { title: "Equipment & Assets", path: "/admin/inventory" },
+      { title: "Member Shirt Sizes", path: "/admin/shirt-sizes" },
+      { title: "User & Role Studio", path: "/admin/users" }
+    ]
+  },
+  {
+    id: "admin-users-mgmt",
+    title: "User & Role Studio",
+    path: "/admin/users",
+    category: "Personnel & Attendance",
+    roles: ["admin"],
+    badge: "User Governance",
+    iconName: "UserCog",
+    summary: "Granular RBAC role assignments, authentication provider inspection, account status overrides, and user administration.",
+    description: "The User & Role Studio gives system administrators direct governance over all user accounts. Manage stacked RBAC roles, audit authentication providers, update user details, and inspect account creation dates.",
+    keyFeatures: [
+      "Stacked RBAC role toggles with real-time Firestore synchronization.",
+      "Filter users by active role, account status, or instrument section.",
+      "Search across display name, legal real name, and email address.",
+      "Inspect linked OAuth providers (Google, Apple, Microsoft, GitHub, Passwordless Email)."
+    ],
+    howToUse: [
+      "Navigate to User & Role Studio (/admin/users) from the Personnel & Attendance menu.",
+      "Search for a member and click their row to open the role configuration modal.",
+      "Toggle role permissions (e.g. Gig Manager, Section Leader, Treasurer) and save changes."
+    ],
+    proTips: [
+      "Always review a member's stacked roles before granting admin privileges—grant only the minimum roles required for their leadership position.",
+      "Use the Role Emulation feature in the top bar to verify how permissions appear from the user's perspective."
+    ],
+    relatedRoutes: [
+      { title: "Band Roster & Invites", path: "/admin/roster" },
+      { title: "Band Sections", path: "/admin/sections" }
+    ]
+  },
+  {
+    id: "admin-shirt-sizes",
+    title: "Member Shirt Sizes & Apparel Fulfillment",
+    path: "/admin/shirt-sizes",
+    category: "Personnel & Attendance",
+    roles: ["admin", "community_manager"],
+    badge: "Apparel Fulfillment",
+    iconName: "Shirt",
+    summary: "Ensemble shirt size roster, real-time sizing breakdown metrics, sortable columns, and 1-click CSV fulfillment export.",
+    description: "Member Shirt Sizes provides the Community Manager and Band Administrators with an operational studio for ordering band t-shirts, uniforms, and tour merchandise. Real-time KPI cards display headcount and percentage distribution for XS, S, M, L, XL, XXL, and Unspecified members, while the export tool generates a clean CSV with a bottom summary cell.",
+    keyFeatures: [
+      "Real-time breakdown KPI cards showing counts and percentages for XS, S, M, L, XL, XXL, and Unspecified.",
+      "Interactive size filtering—click any size card to filter the table instantly.",
+      "Sortable table columns (Member Name, Shirt Size in logical order XS to XXL, Assigned Section, Status).",
+      "Member search matching display names, legal names, emails, and sections.",
+      "1-Click CSV export containing Member Name and Shirt Size with a consolidated summary cell at the bottom."
+    ],
+    howToUse: [
+      "Navigate to Member Shirt Sizes (/admin/shirt-sizes) from the Personnel & Attendance menu.",
+      "Review the size breakdown metric cards at the top before placing a merchandise order.",
+      "Click on 'Unset' to identify members who still need to choose their shirt size in their profile.",
+      "Click 'Export Shirt Sizes (.csv)' to generate a fulfillment spreadsheet ready for the printer."
+    ],
+    proTips: [
+      "Send a broadcast notification via /admin/notifications reminding musicians to update their shirt size before ordering band merchandise.",
+      "The CSV export format includes a bottom summary row that lists counts per size, saving hours of spreadsheet tallying."
+    ],
+    relatedRoutes: [
+      { title: "My Profile & SMS Settings", path: "/portal/profile" },
+      { title: "Band Roster & Invites", path: "/admin/roster" },
+      { title: "Equipment & Assets", path: "/admin/inventory" }
+    ]
+  },
+  {
+    id: "admin-attendance-mgmt",
+    title: "Section Readiness & Quorum Studio",
+    path: "/admin/gigs",
+    category: "Personnel & Attendance",
+    roles: ["admin", "section_leader", "gig_manager"],
+    badge: "Quorum Analytics",
+    iconName: "Users",
+    summary: "Real-time acoustic quorum monitoring and section readiness per performance.",
+    description: "The Section Readiness Drawer in Gig Management Studio evaluates member RSVPs against each section's minimum recommended instrument staffing. Coordinators inspect quorum thresholds, spot section deficits, and copy SMS callout blasts for section recruitment.",
+    keyFeatures: [
+      "In-context slide-over drawer accessible directly from each performance card in Gig Management Studio.",
+      "Section-by-section quorum progress tracking with minimum staffing targets.",
+      "Color-coded musician roster chips: Confirmed In, Probable, Tentative Buffer, and Declined.",
+      "1-click 'Copy Needs Blast' generating pre-formatted shortage announcements for texting the band."
+    ],
+    howToUse: [
+      "Filter records by instrument section or gig date range.",
+      "Review turnout trends ahead of parades and concerts to plan balanced instrumentation.",
+      "Note member schedule conflicts when musicians share advance notice."
+    ],
+    proTips: [
+      "Participation insights help coordinate balanced instrument sections and casual jam sessions.",
+      "Cross-reference section numbers with upcoming events to invite guest players or section subs as needed."
+    ],
+    relatedRoutes: [
+      { title: "My Attendance & Check-In", path: "/portal/checkin" },
+      { title: "Band Sections", path: "/admin/sections" }
+    ]
+  },
+  {
+    id: "admin-inventory",
+    title: "Equipment & Gear Asset Management",
+    path: "/admin/inventory",
+    category: "Personnel & Attendance",
+    roles: ["admin", "asset_manager"],
+    badge: "Asset Tracking",
+    iconName: "PackageCheck",
+    summary: "Track band-owned marching drums, harnesses, banners, megaphones, sousaphone stands, and merch.",
+    description: "Equipment & Asset Management tracks all capital gear and instruments owned by the Eagleburger Band. The asset manager monitors who currently holds each drum or megaphone, records maintenance history and damage reports, and manages consumable supplies like drumsticks and harness padding.",
+    keyFeatures: [
+      "Complete equipment catalog with serial numbers, condition ratings (Mint, Good, Fair, Damaged), and purchase dates.",
+      "Custodian assignment linking band instruments to active musicians.",
+      "Check-in / Check-out custody logs for multi-gig festivals.",
+      "Maintenance tracking for drumhead replacements, sousaphone bell repairs, and banner cleaning."
+    ],
+    howToUse: [
+      "Click '+ Add Asset' to record newly acquired band property.",
+      "Assign custody of marching drums, cymbals, or megaphones to the responsible musician.",
+      "Log routine maintenance notes (e.g. 'Snare head replaced August 2026') and repair expenses."
+    ],
+    proTips: [
+      "Perform a full asset audit twice yearly: before the Memorial Day kickoff and after the Greenfield Holiday Parade.",
+      "Always record serial numbers—essential for filing insurance claims in the event of venue theft or damage."
+    ],
+    relatedRoutes: [
+      { title: "Roster Administration", path: "/admin/roster" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
+
+  // --- Music & Repertoire ---
+  {
+    id: "admin-catalog-mgmt",
+    title: "Master Song Catalog & Sheet Music",
+    path: "/admin/catalog",
+    category: "Music & Repertoire",
+    roles: ["admin", "catalog_manager"],
+    badge: "Catalog Administration",
+    iconName: "Library",
+    summary: "Master repository for all band charts, score uploads, instrument part PDF storage, and arrangers.",
+    description: "The Master Catalog Studio is the administrative backend for the Music Vault. Catalog managers upload and version sheet music part PDFs, attach rehearsal audio tracks, organize difficulty levels, and maintain copyright compliance and arranger attribution.",
+    keyFeatures: [
+      "Tune metadata management: Title, Composer, Arranger, Musical Key, Tempo (BPM), Style/Genre.",
+      "Direct PDF part file uploads to Firebase Storage for every instrument section.",
+      "Reference audio MP3 / streaming links.",
+      "Catalog lifecycle status: In Rehearsal, Active Gig Repertoire, Archival, Retired.",
+      "Instant sync to the musician-facing Music Vault (/portal/library)."
+    ],
+    howToUse: [
+      "Click '+ New Tune' to add a newly arranged street brass chart to the library.",
+      "Enter tune details (Title, Key, Style, Tempo, Arranger credits).",
+      "Upload individual instrument part PDFs (Trumpet, Trombone, Saxes, Sousaphone, Percussion).",
+      "Set the catalog status to 'In Rehearsal' while the band woodsheds the chart, then switch to 'Active' when gig-ready."
+    ],
+    proTips: [
+      "Label uploaded PDFs with consistent filenames (e.g. 'TuneTitle_Trumpet1.pdf') for clean mobile reader indexing.",
+      "Always upload both transposed horn parts and concert pitch master lead sheets for rhythm section reference."
+    ],
+    relatedRoutes: [
+      { title: "Music Vault", path: "/portal/library" },
+      { title: "Catalog Analytics", path: "/admin/analytics/catalog" },
+      { title: "Suggestion Triage", path: "/admin/suggestions" }
+    ]
+  },
+  {
+    id: "admin-catalog-analytics",
+    title: "Repertoire Gig Analytics",
+    path: "/admin/analytics/catalog",
+    category: "Music & Repertoire",
+    roles: ["admin", "catalog_manager"],
+    badge: "Repertoire Intelligence",
+    iconName: "BarChart3",
+    summary: "Data analytics on song gig frequency, crowd favorites, and setlist diversity.",
+    description: "Repertoire Analytics mines historical setlists to provide data-driven insights into the band's musical rotation. Musical directors can identify overplayed charts, uncover forgotten gems, and ensure the ensemble maintains a diverse, energetic catalog.",
+    keyFeatures: [
+      "Tune gig frequency leaderboard (Top 10 Most Played charts).",
+      "Dormant charts report (songs not performed in the last 6 months).",
+      "Genre and tempo distribution charts (balancing funk, second line, pop, and marches).",
+      "Gig type correlation (which charts perform best at civic parades vs craft breweries)."
+    ],
+    howToUse: [
+      "Inspect the leaderboard to see which tunes are anchoring the band's season.",
+      "Review the 'Dormant Charts' list ahead of rehearsal planning to revive fan-favorite repertoire.",
+      "Use genre breakdown charts to identify musical gaps when commissioning new arrangements."
+    ],
+    proTips: [
+      "Aim for at least 30% rotation in your standard festival set to keep gigs fresh for loyal fans.",
+      "Retire charts that haven't been called in over 18 months to keep flip folders lightweight."
+    ],
+    relatedRoutes: [
+      { title: "Master Catalog", path: "/admin/catalog" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
+    ]
+  },
+  {
+    id: "admin-tunes",
+    title: "Song Catalog & Chart Library",
+    path: "/admin/tunes",
+    category: "Music & Repertoire",
+    roles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    badge: "Song Catalog & Charts",
+    iconName: "Music",
+    summary: "Search, view, and submit band charts, tempo/key info, sheet music parts, and arrangement links.",
+    description: "The Song Catalog is the open chart library and submission hub for the Eagleburger Band. All members can search active songs, explore arrangements and sheet music links, and submit newly charted tunes with keys, tempos, genres, and difficulty levels.",
+    keyFeatures: [
+      "Open access for all musicians to browse, search, and submit band tunes and charts.",
+      "Dual-sync catalog integration syncing records across the repertoire database.",
+      "Four-stage lifecycle statuses: Active Rotation, In Repertoire (learn & maintain), In Rehearsal, and Archived.",
+      "Detailed musical metadata: Key signature, BPM tempo, genre styling, and difficulty tier.",
+      "Direct link attachment for rehearsal recordings, score PDFs, and chart contact attribution.",
+      "Submitter chart editing permissions with admin and catalog manager deletion controls."
+    ],
+    howToUse: [
+      "Open Song Catalog from the sidebar or Home Base quick actions.",
+      "Use the instant search, genre filters, and status chips (All, Active, In Repertoire, In Rehearsal) to find charts.",
+      "Click '+ Add Chart / Tune' to register a new chart or brass adaptation.",
+      "Select the appropriate Library Status: choose 'In Repertoire' for tunes musicians must learn and keep ready even if called less frequently.",
+      "Fill in the musical details (Title, Key, Tempo, Difficulty, Arranger) and external chart link.",
+      "Save your submission; it will immediately appear in the band repertoire."
+    ],
+    proTips: [
+      "'In Repertoire' status is ideal for staple secondary arrangements, crowd request songs, and festival rotation tunes that players must keep rehearsed but are not on every gig call sheet.",
+      "Include the concert key and horn transpositions in the notes when submitting brass charts.",
+      "Check existing catalog listings before submitting to ensure the tune isn't already in rehearsal."
+    ],
+    relatedRoutes: [
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Suggestion Triage", path: "/admin/suggestions" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
+    ]
+  },
+  {
+    id: "admin-suggestions",
+    title: "Song Suggestion & Arrangement Triage",
+    path: "/admin/suggestions",
+    category: "Music & Repertoire",
+    roles: ["admin", "catalog_manager", "section_leader", "member", "guest"],
+    badge: "Creative Pipeline",
+    iconName: "Lightbulb",
+    summary: "Community suggestion box where musicians pitch new tunes, vote on arrangements, and assign charts.",
+    description: "Suggestion Triage channels the band's creative ideas into an organized arranging pipeline. Musicians submit YouTube or Spotify links for potential brass band adaptations, vote on peers' pitches, and catalog managers assign approved tunes to in-house arrangers.",
+    keyFeatures: [
+      "Member song submission portal with link previews, tempo notes, and suggested instrument features.",
+      "Upvoting and discussion thread per proposed chart.",
+      "Triage workflow: New Submission -> Under Review -> Arranging -> Rehearsal -> Catalog.",
+      "Arranger assignment and deadline tracking."
+    ],
+    howToUse: [
+      "Browse member-submitted song suggestions and upvote the tunes that would work best for mobile brass.",
+      "During musical planning meetings, review top-voted songs and discuss horn voicing viability.",
+      "Move approved ideas to 'In Arranging' and designate the arranger responsible for scoring parts."
+    ],
+    proTips: [
+      "Great street brass tunes need a recognizable brass hook and a strong singable horn line—keep mobile acoustics in mind.",
+      "Encourage arrangers to write flexible percussion parts that can scale between 2 and 6 drummers."
+    ],
+    relatedRoutes: [
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
+    ]
+  },
+  {
+    id: "portal-vault",
+    title: "Rehearsal Vault & Media",
+    path: "/portal/vault",
+    category: "Music & Repertoire",
+    roles: ["admin", "catalog_manager", "section_leader", "member"],
+    badge: "Rehearsal Media",
+    iconName: "Music",
+    summary: "Archive of rehearsal audio takes, rehearsal notes, and march choreography references.",
+    description: "The Rehearsal Vault provides a permanent media library for rehearsal recordings and street staging videos. Musicians can listen to recent rehearsal takes, study tricky transition tempos, and review march drill choreography between weekly rehearsals.",
+    keyFeatures: [
+      "Dated rehearsal audio archive with built-in streaming player.",
+      "Section rehearsal notes highlighting tempo changes, cutoffs, and key soloists.",
+      "Filter by date, tune title, or rehearsal session.",
+      "Direct links to corresponding charts in the Song Catalog."
+    ],
+    howToUse: [
+      "Go to Rehearsal Vault (/portal/vault) from the Music & Repertoire navigation section.",
+      "Filter by rehearsal date or search for a specific song title.",
+      "Play rehearsal tracks directly or download them for offline listening.",
+    ],
+    proTips: [
+      "Listen to the latest rehearsal takes before dress rehearsals to lock in tight horn section harmonies and rhythm section grooves.",
+      "Section leaders can upload audio clips directly following sectionals to help sub players get up to speed."
+    ],
+    relatedRoutes: [
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Setlist Studio", path: "/admin/setlists" }
+    ]
+  },
+
+  // --- Website & Intake ---
+  {
+    id: "admin-pages-mgmt",
+    title: "Headless CMS Page Studio & SEO",
+    path: "/admin/pages",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager"],
+    badge: "Content Management",
+    iconName: "LayoutTemplate",
+    summary: "Multi-page public website builder, configurable navigation & site banner, section engine with 10 presets, and full SEO Studio.",
+    description: "The Headless CMS Page Studio empowers web managers and administrators to build and maintain the public marketing website without writing code. Managers can manage public header and footer navigation links, configure a global announcement banner, assemble polymorphic sections (Hero, Rich Text, Video Reels, Feature Grids, Booking Form, Testimonials, FAQ Accordion, CTA Banners, Stats Counters), customize section visibility, background styles, and padding, preview live in the Page Simulator, and optimize search engine visibility in the SEO Studio.",
+    keyFeatures: [
+      "Navigation & Banner Studio: reorder and toggle visibility of header and footer navigation links, designate CTA buttons, and configure a dismissible site-wide announcement banner.",
+      "Multi-page management with dynamic URL slug routing (e.g. /about, /history, /giving, /book).",
+      "10 polymorphic section presets: Hero Banner, WYSIWYG Rich Text, YouTube Media Reel, Feature Grid, Gig Feed Preview, Booking Form, Testimonials, FAQ Accordion, CTA Banner, and Stats Counter.",
+      "Per-section appearance controls: visibility toggle (Visible/Hidden), background styles (Default, Surface, Gradient, Muted), and padding presets (Compact, Standard, Generous).",
+      "Modern WYSIWYG rich text editor backed by DOMPurify sanitization with bold, italic, headings, lists, and secure links.",
+      "Interactive Page Simulator for testing desktop, tablet, and mobile layouts in real time before publishing.",
+      "Complete SEO Studio: Google SERP snippet preview, Social Share Card preview, character meters, robots directives, and Schema.org JSON-LD."
+    ],
+    howToUse: [
+      "Access 'CMS Page Studio' from the 'Website & Intake' section in the portal sidebar.",
+      "Switch to the 'Navigation & Banner' tab to reorder header/footer links, toggle link visibility, or activate a global announcement banner.",
+      "Switch between published pages or click '+ New Page' to create a custom page with a starting template.",
+      "In the 'Section Builder' tab, add new section presets, toggle visibility, customize background and padding, and edit content.",
+      "Use the 'Simulator' tab to preview live changes across desktop, tablet, and mobile views.",
+      "Open the 'SEO Studio' tab to customize Google search titles, descriptions, keywords, and OpenGraph social images.",
+      "Click 'Save Changes' to persist your updates directly to Firestore."
+    ],
+    proTips: [
+      "Use the visibility toggle on navigation links or individual sections to temporarily hide upcoming concert promos or seasonal links without deleting them.",
+      "Keep search titles between 40 and 60 characters and descriptions between 120 and 160 characters for optimal Google ranking.",
+      "Always specify a high-resolution 1200x630 OpenGraph image so links shared on social media generate compelling visual cards."
+    ],
+    relatedRoutes: [
+      { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Booking Inquiries", path: "/admin/inquiries" },
+      { title: "Public Website", path: "/" }
+    ]
+  },
+  {
+    id: "admin-theme-mgmt",
+    title: "Brand, Palette & Style Customizer",
+    path: "/admin/theme",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager"],
+    badge: "Theme & Branding",
+    iconName: "Palette",
+    summary: "Scoped theme customizer distinguishing between Public Website styling, Musician Portal dark mode, and ensemble identity.",
+    description: "The Brand & Palette Studio controls the visual identity of the entire digital platform. Web managers can independently customize color tokens for the fan-facing public site and the musician portal, configure ensemble typography, and update social media handles.",
+    keyFeatures: [
+      "Scoped theme architecture: Separate styling tokens for Public Website (marketing) and Musician Portal.",
+      "Interactive color pickers for Primary Brand Color, Accent, Navigation Background, and Card Backgrounds.",
+      "Ensemble identity editor: Band Name, Slogan/Tagline, Founded Year, and Official Logo URL.",
+      "Social media links manager: YouTube, Instagram, Facebook, TikTok, Spotify.",
+      "Live Theme Simulator providing instant visual feedback before saving changes."
+    ],
+    howToUse: [
+      "Navigate through the tabs: 'Public Website Theme', 'Musician Portal Theme', 'Ensemble Identity & Socials', or 'Live Simulator'.",
+      "Select color swatches or enter custom HEX codes to refine the band's visual identity.",
+      "Verify contrast in the Live Simulator tab to ensure strong legibility on mobile devices.",
+      "Click 'Save Theme Settings' to broadcast the new design tokens across the application."
+    ],
+    proTips: [
+      "Keep the Musician Portal in high-contrast dark tones for easy reading backstage and in low-light gig environments.",
+      "Ensure your primary brand color achieves at least 4.5:1 contrast ratio against dark backgrounds for accessibility compliance."
+    ],
+    relatedRoutes: [
+      { title: "CMS Page Studio", path: "/admin/pages" },
+      { title: "Public Website", path: "/" }
+    ]
+  },
+  {
+    id: "admin-inquiries",
+    title: "Booking Leads & Client Intake Pipeline",
+    path: "/admin/inquiries",
+    category: "Website & Intake",
+    roles: ["admin", "gig_manager"],
+    badge: "Client Pipeline",
+    iconName: "Inbox",
+    summary: "Triage incoming client gig inquiries submitted from the public site, manage quotes, and convert to gigs.",
+    description: "The Booking Leads pipeline captures client requests submitted via the public /book form. Gig managers review event details, estimate gig fees, communicate with event organizers, and seamlessly convert approved leads into confirmed gigs in the Gig Management Studio.",
+    keyFeatures: [
+      "Lead pipeline stages: New Lead -> Contacted -> Quoted -> Confirmed/Booked -> Declined.",
+      "Automated client details capture: Event Type, Date, Venue/Location, Estimated Budget, Audience Size.",
+      "1-click 'Convert to Gig' button that generates a pre-populated draft gig entry in the Gig Studio.",
+      "Internal coordinator notes and client response email templates."
+    ],
+    howToUse: [
+      "Monitor the inbox for incoming booking requests.",
+      "Review client budget and date against the existing gig calendar to verify band availability.",
+      "Follow up with the organizer to negotiate gig length, call times, and compensation.",
+      "Once agreed upon, click 'Convert to Gig' to immediately transition the lead into an active gig record."
+    ],
+    proTips: [
+      "Respond to inquiries within 24 hours—event planners frequently contact multiple bands simultaneously.",
+      "Ask clients about parade staging acoustics, parade route length, and shade/water provisions for outdoor dates."
+    ],
+    relatedRoutes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "CRM Contacts", path: "/admin/contacts" }
+    ]
+  },
+  {
+    id: "admin-testimonials",
+    title: "Testimonials & Fan Reviews Studio",
+    path: "/admin/testimonials",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager", "community_manager"],
+    badge: "Public Social Proof",
+    iconName: "Star",
+    summary: "Curate, approve, and showcase fan testimonials, reviews, and event organizer quotes on the public site.",
+    description: "The Testimonials & Reviews Studio enables band managers to review submissions collected via the public /testimonials intake flow. Managers can review star ratings, sanitize review text, toggle public approval, feature top reviews on the homepage, and archive obsolete entries.",
+    keyFeatures: [
+      "Status lifecycle pipeline: Pending Review -> Approved (Public) -> Archived / Hidden.",
+      "Direct integration with the public testimonials form with Honeypot bot protection and DOMPurify sanitization.",
+      "Star rating triage (1 to 5 stars) and organizer event type tags (Wedding, Festival, Street Parade, Corporate).",
+      "Featured badge toggle for showcasing premier quotes prominently on the homepage and booking pages."
+    ],
+    howToUse: [
+      "Review incoming testimonials in the 'Pending' queue.",
+      "Click 'Approve for Public Display' to publish the quote directly to the fan-facing site.",
+      "Toggle 'Featured' on quotes from prominent festival organizers or parade marshals.",
+      "Archive duplicate or outdated reviews as needed."
+    ],
+    proTips: [
+      "Feature reviews that mention band punctuality, crowd energy, and seamless logistics to build client booking trust.",
+      "Rotate featured testimonials at the start of each season to keep the homepage fresh."
+    ],
+    relatedRoutes: [
+      { title: "Public Testimonials Form", path: "/testimonials" },
+      { title: "CMS Page Studio", path: "/admin/pages" }
+    ]
+  },
+  {
+    id: "admin-contact-inbox",
+    title: "General Contact & Fan Inbox",
+    path: "/admin/contact-inbox",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager", "community_manager", "gig_manager"],
+    badge: "Public Communication",
+    iconName: "MessageSquareQuote",
+    summary: "Centralized inbox for fan questions, press inquiries, volunteer offers, and community outreach.",
+    description: "The General Contact Inbox gathers messages submitted through the public /contact form. Categorized by inquiry type (General Question, Press/Media, Sponsorship/Donation, Volunteer/Crew), the studio allows managers to assign coordinators, mark inquiries as resolved, and archive threads.",
+    keyFeatures: [
+      "Filter by inquiry subject: General, Press & Media, Sponsorship, Volunteer & Roadie crew.",
+      "Status flags: New Unread, In Progress / Contacted, Resolved, and Archived.",
+      "Internal coordinator notes for collaboration between web managers and gig coordinators.",
+      "Automated spam prevention and sender email validation."
+    ],
+    howToUse: [
+      "Check the inbox for new messages submitted from the public site.",
+      "Assign media inquiries to the Community Manager or press liaison.",
+      "Mark threads as 'Resolved' once the inquiry has been answered.",
+      "Archive completed conversations to keep the active inbox clear."
+    ],
+    proTips: [
+      "Route press inquiries to the administrator immediately for upcoming parade and TV features.",
+      "If a contact inquiry asks to book the band, redirect the contact to the Booking Leads pipeline."
+    ],
+    relatedRoutes: [
+      { title: "Public Contact Form", path: "/contact" },
+      { title: "Booking Inquiries", path: "/admin/inquiries" }
+    ]
+  },
+  {
+    id: "admin-auditions",
+    title: "Musician Applications & Auditions Studio",
+    path: "/admin/auditions",
+    category: "Website & Intake",
+    roles: ["admin", "membership_manager", "section_leader", "gig_manager"],
+    badge: "Auditions Pipeline",
+    iconName: "UserPlus",
+    summary: "Review prospective musician applications, instrument auditions, experience profiles, and invite players.",
+    description: "The Auditions Studio captures musician applications submitted through the public /join portal. Section leaders and membership coordinators review candidate instrument proficiencies, years of marching/street band experience, audition links, and advance qualified players to rehearsal auditions or band invites.",
+    keyFeatures: [
+      "Audition candidate pipeline: New Applicant -> Reviewing -> Audition Scheduled -> Invited -> Declined.",
+      "Section-specific sorting: Trumpets, Trombones, Saxes, Low Brass / Sousaphones, Drum Battery.",
+      "Candidate profile inspection: Marching experience, reading ability, improvisation skills, doubling instruments.",
+      "Direct 1-click generation of membership invite codes upon candidate approval."
+    ],
+    howToUse: [
+      "Review new applications submitted by prospective brass and percussion players.",
+      "Section leaders evaluate candidate experience and audition audio/video links.",
+      "Schedule candidates for an upcoming rehearsal woodshedding session.",
+      "Once approved, generate an official band invite code directly from the applicant card."
+    ],
+    proTips: [
+      "Prioritize applicants who play high-demand brass voices (Sousaphone, Tenor Trombone) or battery percussion.",
+      "Invite promising players to a casual rehearsal before parade season to test endurance and chart sight-reading."
+    ],
+    relatedRoutes: [
+      { title: "Public Audition Form", path: "/join" },
+      { title: "Roster Administration", path: "/admin/roster" },
+      { title: "Band Sections", path: "/admin/sections" }
+    ]
+  },
+  {
+    id: "admin-resources",
+    title: "Media & Resource Library",
+    path: "/admin/resources",
+    category: "Website & Intake",
+    roles: ["admin", "web_manager"],
+    badge: "Media Storage",
+    iconName: "FolderOpen",
+    summary: "Cloud media asset storage for high-resolution band photography, logos, press kits, and public downloads.",
+    description: "The Media & Resource Library allows Web Managers and Administrators to organize digital brand assets. Upload gig photography, vector logos, festival stage plots, and hospitality riders for embedding into public CMS pages and sharing with press.",
+    keyFeatures: [
+      "Asset uploads to Firebase Cloud Storage with automatic thumbnail generation.",
+      "Categorization by Asset Type (Logos, Band Photos, Stage Plots, Press Kits, Documents).",
+      "1-click public CDN URL copying for CMS page integration.",
+      "Visibility toggles (Public CDN Asset vs Internal Band Asset)."
+    ],
+    howToUse: [
+      "Open Media & Resource Library (/admin/resources).",
+      "Drag and drop high-resolution JPG, PNG, SVG, or PDF files into the upload zone.",
+      "Assign tags and descriptions, then copy the generated asset link for use in the CMS Page Studio."
+    ],
+    proTips: [
+      "Keep transparent PNG versions of the official Eagleburger crest and logo in the library for quick reuse in press announcements.",
+      "Compress large photography files before uploading to maintain fast page load times across the public website."
+    ],
+    relatedRoutes: [
+      { title: "CMS Page Studio", path: "/admin/pages" },
+      { title: "Brand & Palette", path: "/admin/theme" }
+    ]
+  },
+
+  // --- Finance ---
+  {
+    id: "admin-finance",
+    title: "Financial Ledger & Musician Compensation",
+    path: "/admin/finance",
+    category: "Finance",
+    roles: ["admin", "treasurer"],
+    badge: "Treasury & Accounting",
+    iconName: "DollarSign",
+    summary: "Band treasury accounting, gig fee revenues, expense reconciliation, charitable giving reporting, and musician payouts.",
+    description: "The Financial Ledger is the band treasurer's central command center. It reconciles revenue tracking from contracted gigs, merch, tips, and sponsorships against operating costs, member expense reimbursements, and logged charitable gifts to present a 100% accurate net treasury balance.",
+    keyFeatures: [
+      "Reconciled 5-card Treasury Metrics Grid: Current Net, Total Inflows, Operating & Payouts, Charitable Giving Outflow, and Opening Baseline.",
+      "Dedicated Charitable Giving reporting view: tracks all-time disbursements, fiscal year totals, and cause category breakdowns.",
+      "Gig payout reconciliation: calculate per-musician compensation based on confirmed attendance roll calls.",
+      "Member reimbursement workflow: review receipts, approve claims, and disburse payments directly into the ledger.",
+      "Direct integration with Charitable Giving Studio (/admin/giving) ensuring every community grant is reflected in liquid treasury balances."
+    ],
+    howToUse: [
+      "Open the Financial Ledger to inspect the real-time Current Treasury net balance.",
+      "Use the 'Ledger & Settlements' tab to close out completed gigs and record operating expenses.",
+      "Review and disburse pending claims in the 'Member Reimbursements' tab.",
+      "Switch to the 'Charitable Giving' tab to monitor all-time community contributions, fiscal year metrics, and category distributions.",
+      "Log new community donations in the Giving Studio (/admin/giving); they immediately update the treasury net."
+    ],
+    proTips: [
+      "Reconcile payouts within 48 hours of gig completion to maintain strong ensemble morale and trust.",
+      "Check the Charitable Giving tab before year-end financial meetings to report total community impact and tax-exempt giving totals.",
+      "Always retain a 15-20% band fund deduction from paid gigs for equipment repairs, insurance, and community grants."
+    ],
+    relatedRoutes: [
+      { title: "Expense Reimbursements", path: "/portal/reimbursements" },
+      { title: "Charitable Giving", path: "/admin/giving" },
+      { title: "Gig Management", path: "/admin/gigs" }
+    ]
+  },
+  {
+    id: "portal-reimbursements",
+    title: "Expense Reimbursements & Musician Claims",
+    path: "/portal/reimbursements",
+    category: "Finance",
+    roles: ["member", "guest"],
+    badge: "Musician Financials",
+    iconName: "Receipt",
+    summary: "Submit expense reimbursement claims, attach receipts, track approval statuses, and review personal payout history.",
+    description: "The Expense Reimbursements workspace allows musicians to submit out-of-pocket expenses incurred on behalf of the ensemble (e.g. equipment repair, trailer hitch parts, sheet music printing, gig water/snacks). Treasurers review receipts and disburse funds via Venmo, check, or direct transfer.",
+    keyFeatures: [
+      "1-click expense claim submission with category classification (Gear Repair, Travel/Gas, Rehearsal Supplies, Sheet Music).",
+      "Digital receipt attachment URL and expense note tracking.",
+      "Live claim lifecycle tracker: Submitted -> Approved -> Reimbursed / Settled.",
+      "Historical personal compensation and reimbursement summary record."
+    ],
+    howToUse: [
+      "Click '+ Submit Expense Claim' after purchasing supplies for band gigs or rehearsals.",
+      "Enter expense title, category, purchase date, exact dollar amount, and attach your receipt.",
+      "Track approval status as the treasurer reviews the claim.",
+      "Receive payment via your configured preferred payout method in your profile."
+    ],
+    proTips: [
+      "Always take a photo of itemized receipts immediately upon purchase to avoid losing records.",
+      "Obtain treasurer or gig manager pre-approval before making large purchases over $100."
+    ],
+    relatedRoutes: [
+      { title: "Financial Ledger", path: "/admin/finance" },
+      { title: "My Profile & Payout Info", path: "/portal/profile" }
+    ]
+  },
+  {
+    id: "admin-giving-mgmt",
+    title: "Charitable Giving & Donations Tracker",
+    path: "/admin/giving",
+    category: "Finance",
+    roles: ["admin", "treasurer"],
+    badge: "Philanthropy & Community",
+    iconName: "HeartHandshake",
+    summary: "Record band donations to worthy causes, manage beneficiary partners, and sync public community impact.",
+    description: "The Charitable Giving Studio allows band management to track philanthropic contributions made by the Eagleburger Band to community organizations, youth music programs, and neighborhood relief funds. It maintains strict privacy by syncing organizations to the public /giving page while keeping confidential dollar amounts internal.",
+    keyFeatures: [
+      "Donation logging: Organization, category, donation amount, date, payment method, tax receipt URL.",
+      "Cumulative philanthropy metrics: Total Donated, Number of Causes Supported, Average Contribution.",
+      "Public visibility toggle per donation: syncs beneficiary organization and website to public site while withholding dollar amount.",
+      "Direct integration with the fan-facing Community Giving showcase (/giving)."
+    ],
+    howToUse: [
+      "Click '+ Record Donation' whenever the band makes a charitable contribution.",
+      "Enter beneficiary name, donation amount, cause category, and optional organizer website.",
+      "Upload receipt or acknowledgment letter for treasurer archives.",
+      "Toggle 'Showcase on Public Giving Page' so fans and supporters can learn about the organizations the band champions."
+    ],
+    proTips: [
+      "Categorize donations (e.g. Youth Music, Food Security, Arts Education) to highlight community impact in annual reviews.",
+      "Check the public /giving page to ensure links to beneficiary websites are valid and active."
+    ],
+    relatedRoutes: [
+      { title: "Public Giving Page", path: "/giving" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
+
+  // --- Business & Admin ---
+  {
+    id: "admin-contacts",
+    title: "Client CRM & Venue Rolodex",
+    path: "/admin/contacts",
+    category: "Business & Admin",
+    roles: ["admin", "gig_manager"],
+    badge: "CRM & Venues",
+    iconName: "Contact",
+    summary: "Rolodex of festival directors, parade marshals, brewery coordinators, and past corporate clients.",
+    description: "The Client CRM maintains relationships with the band's gig partners across Western Pennsylvania. Gig coordinators store venue logistics contacts, stage managers, noise ordinances, and historical gig relationships.",
+    keyFeatures: [
+      "Contact directory categorized by client type: Festival, Parade, Wedding, Brewery, Civic/Municipal.",
+      "Venue logistical profiles: Power availability, acoustic footprint, parking permits, load-in contacts.",
+      "Historical gig connection linking each client to past gigs and fees.",
+      "Searchable notes for annual recurring bookings (e.g. 'Contact in March for Octoberfest')."
+    ],
+    howToUse: [
+      "Add organizers to the CRM whenever a new gig contract is initiated.",
+      "Store phone numbers and direct day-of-show contacts for parade marshals and festival stage hands.",
+      "Review past contacts in the spring to proactively pitch the band for recurring summer festivals."
+    ],
+    proTips: [
+      "Note specific venue quirks: which breweries provide meal vouchers, which parades have long staging delays, etc.",
+      "Keep contact emails up to date—municipal committee chairs often change annually after local elections."
+    ],
+    relatedRoutes: [
+      { title: "Booking Inquiries", path: "/admin/inquiries" },
+      { title: "Gig Management", path: "/admin/gigs" }
+    ]
+  },
+  {
+    id: "admin-comments-mgmt",
+    title: "Public Comment & Community Moderation",
+    path: "/admin/comments",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Content Moderation",
+    iconName: "MessageSquare",
+    summary: "Review, approve, and moderate public comments and guestbook messages submitted by fans.",
+    description: "Comment Moderation ensures that user-generated content, fan feedback, and guestbook entries on the public website maintain a family-friendly, positive environment. Administrators can review pending comments, approve or reject them, and flag abusive spam.",
+    keyFeatures: [
+      "Moderation queue with Pending, Approved, and Flagged status tabs.",
+      "1-click Approve or Reject actions with automated content sanitization.",
+      "Spam detection filtering against malicious links or inappropriate language.",
+      "Audit log tracking which administrator approved each public post."
+    ],
+    howToUse: [
+      "Check the moderation queue weekly for pending community comments.",
+      "Review the comment text and author details.",
+      "Click 'Approve' to display the comment publicly, or 'Delete' to purge inappropriate content."
+    ],
+    proTips: [
+      "Never approve comments containing unsolicited external commercial links or private personal contact details.",
+      "Highlight heartwarming fan stories from parades and share them with the band at rehearsals."
+    ],
+    relatedRoutes: [
+      { title: "CMS Page Studio", path: "/admin/pages" },
+      { title: "Public Website", path: "/" }
+    ]
+  },
+  {
+    id: "admin-audit-log",
+    title: "Admin Action Audit Log & Governance",
+    path: "/admin/audit-log",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Security & Governance",
+    iconName: "ShieldCheck",
+    summary: "Immutable audit trail of all administrative actions, role modifications, and system configuration changes.",
+    description: "The Admin Action Audit Log records operational changes across the platform. Whenever an administrator promotes a member, changes financial distributions, modifies CMS pages, or deactivates accounts, a timestamped audit entry is logged with actor details and IP context.",
+    keyFeatures: [
+      "Structured event logging capturing actor identity, action type, target resource, and description.",
+      "Searchable by administrator email, action keyword, or date range.",
+      "Security tracking for role elevations, super admin logins, and roster terminations.",
+      "Filter by event category: Personnel, Gigs, Repertoire, Finance, CMS/Theme, and System."
+    ],
+    howToUse: [
+      "Inspect the audit trail when investigating unexpected schedule, role, or website changes.",
+      "Filter by 'Finance' to verify that all payout adjustments were authorized by the treasurer.",
+      "Export or review logs quarterly for executive governance meetings."
+    ],
+    proTips: [
+      "Audit logs are immutable and cannot be edited or erased by any user.",
+      "Review role grant events periodically to ensure only active leadership maintains administrative access."
+    ],
+    relatedRoutes: [
+      { title: "User & Role Studio", path: "/admin/users" },
+      { title: "Financial Ledger", path: "/admin/finance" }
+    ]
+  },
+  {
+    id: "admin-analytics-usage",
+    title: "Portal Usage Metrics & Telemetry",
+    path: "/admin/analytics/usage",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Platform Telemetry",
+    iconName: "Activity",
+    summary: "Non-blocking portal navigation telemetry, member engagement heatmaps, and route activity analytics.",
+    description: "Portal Usage Metrics provides administrators with insight into musician engagement across the platform. Non-blocking telemetry monitors route navigation trends (filtering out administrative operations) to show which sections and tools musicians use most frequently, peak check-in times, and PWA adoption.",
+    keyFeatures: [
+      "24-Hour and 30-Day route view activity charts.",
+      "Hourly engagement heatmaps illustrating peak member portal usage.",
+      "Top routes ranking (Gig Central, Music Vault, Attendance Check-In).",
+      "Automatic exclusion of operational admin surfaces to ensure accurate member usage analytics."
+    ],
+    howToUse: [
+      "Navigate to Portal Usage Metrics (/admin/analytics/usage) under Business & Admin.",
+      "Review overall page views and unique musician session trends.",
+      "Inspect the weekly activity heatmap to identify optimal times for sending announcements."
+    ],
+    proTips: [
+      "Check route analytics on gig days to confirm that musicians are successfully opening mobile call sheets and check-in pages.",
+      "Low engagement on the Song Catalog ahead of rehearsals may indicate members need a reminder to rehearse upcoming tunes."
+    ],
+    relatedRoutes: [
+      { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Email & Broadcast Suite", path: "/admin/notifications" },
+      { title: "Sidebar Navigation Studio", path: "/admin/navigation" },
+      { title: "Stage Changelog", path: "/portal/changelog" }
+    ]
+  },
+  {
+    id: "admin-navigation",
+    title: "Sidebar Navigation Studio",
+    path: "/admin/navigation",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "Navigation Customizer",
+    iconName: "SlidersHorizontal",
+    summary: "Manage section display hierarchy, tool order, and visibility toggles across the musician portal sidebar.",
+    description: "The Sidebar Navigation Studio enables administrators to customize the structural arrangement of navigation sections and their constituent workspace tools. Reorder categories and links via up/down controls, toggle visibility for entire categories or individual tools, and verify the resulting layout with real-time role-based sidebar simulations.",
+    keyFeatures: [
+      "Intuitive reordering of top-level navigation sections with immediate upward/downward priority shifting.",
+      "Fine-grained tool ordering within each section to place high-frequency features first.",
+      "Visibility toggling for entire sections or individual tool links.",
+      "Draft editing mode with unsaved change detection, discard, and system defaults reset.",
+      "Interactive Live Sidebar Simulation previewing views as Admin, Member, Guest, or Section Leader."
+    ],
+    howToUse: [
+      "Open Sidebar Navigation Studio (/admin/navigation) under Business & Admin.",
+      "Use the up and down arrow buttons next to any section or tool to adjust its position.",
+      "Click the Visibility switch to hide or reveal sections or tools across the member portal.",
+      "Switch to the Live Sidebar Preview tab to inspect how the navigation renders across different user roles.",
+      "Click Save Navigation to persist the updated configuration live to all band members."
+    ],
+    proTips: [
+      "Hiding a section automatically hides all tools grouped within it from regular member sidebars.",
+      "If a new tool is added to the codebase, the system automatically appends it to its assigned section without disrupting custom ordering.",
+      "You can safely click Reset Defaults at any time to restore the standard band navigation layout."
+    ],
+    relatedRoutes: [
+      { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Environment & Integrations", path: "/admin/integrations" },
+      { title: "Portal Usage Metrics", path: "/admin/analytics/usage" }
+    ]
+  },
+  {
+    id: "admin-integrations",
+    title: "Environment & Integrations Studio",
+    path: "/admin/integrations",
+    category: "Business & Admin",
+    roles: ["admin"],
+    badge: "API Keys & Production Readiness",
+    iconName: "KeyRound",
+    summary: "Audit third-party service tokens, inspect runtime environment variables, test transactional deliverability, and guide production migration.",
+    description: "The Environment & Integrations Studio gives administrators complete visibility into all third-party integrations required by the Eagleburger Band platform. Inspect Firebase Client/Admin SDK status, Resend deliverability modes, Cloudinary presets, and Slack/Discord webhooks, compare Dev/Beta/Prod environment files, trigger live test dispatches, and track production migration readiness.",
+    keyFeatures: [
+      "Real-time Service Health Matrix covering Firebase Client, Firebase Admin SDK, Resend, Cloudinary, Webhooks, and Calendar feeds.",
+      "Interactive Live .env Inspector with secret masking/revealing, Dev/Beta/Prod presets, and one-click copy/download.",
+      "Live Diagnostic Test Triggers to send test emails, verify Admin SDK service account credentials, and ping incident webhooks.",
+      "Interactive Production Migration Checklist tracked in Firestore with completion timestamps and progress metrics."
+    ],
+    howToUse: [
+      "Open Environment & Integrations Studio (/admin/integrations) under Business & Admin.",
+      "Review the Service Health Matrix to verify active credentials and connection modes.",
+      "Click Test Send or Verify Service Credentials to confirm end-to-end deliverability.",
+      "Switch to the Live .env Inspector tab to export environment configurations for Vercel or local development.",
+      "Check off items in the Production Migration Checklist as production infrastructure is provisioned."
+    ],
+    proTips: [
+      "In offline development, Resend automatically runs in simulated mode to log transmissions without consuming email quota.",
+      "Verify that the project ID in FIREBASE_SERVICE_ACCOUNT_KEY matches NEXT_PUBLIC_FIREBASE_PROJECT_ID before deploying to Vercel.",
+      "Use the one-click Copy .env Block button when setting up production variables in Vercel Project Settings."
+    ],
+    relatedRoutes: [
+      { title: "Admin Action Audit Log", path: "/admin/audit-log" },
+      { title: "Brand & Palette", path: "/admin/theme" },
+      { title: "Sidebar Navigation Studio", path: "/admin/navigation" }
+    ]
+  },
+  {
+    id: "portal-changelog",
+    title: "Stage Changelog & Release Milestones",
+    path: "/portal/changelog",
+    category: "Musician Essentials",
+    roles: ["member", "guest", "admin"],
+    badge: "Release History",
+    iconName: "History",
+    summary: "Chronological implementation history, stage accomplishments, and architectural milestones across all completed stages.",
+    description: "The Stage Changelog documents the complete architectural and operational evolution of the Eagleburger Band web application. Musicians and leadership can review concise bullet points for every completed project stage (Stages 1 through 53+), search by keywords, filter by category, and toggle release orders.",
+    keyFeatures: [
+      "Complete historical archive of all platform stages with concise bullet points.",
+      "Real-time search across stage numbers, titles, categories, and accomplishment keywords.",
+      "Sort toggle: Newest First (Stage 53 -> 1) vs Oldest First (Stage 1 -> 53).",
+      "Category filters (Personnel, Gigs, Music, Website, Finance, Business, etc.).",
+      "Expand All and Collapse All stage cards for easy skimming."
+    ],
+    howToUse: [
+      "Open Stage Changelog (/portal/changelog) under Help, Guides & Docs.",
+      "Search for any feature keyword (e.g. 'shirt size', 'ical', 'resend', 'breadcrumb') to see when and how it was implemented.",
+      "Use the category filter or expand/collapse buttons to explore the platform roadmap."
+    ],
+    proTips: [
+      "Check the changelog after each major release announcement to discover newly added capabilities and shortcuts.",
+      "The changelog is updated after each stage completion to provide transparent engineering records."
+    ],
+    relatedRoutes: [
+      { title: "Help & Guides", path: "/portal/help" },
+      { title: "Status Matrix & Lifecycle Guide", path: "/portal/status-matrix" }
+    ]
+  }
+];
+
+export interface RoleDocItem {
+  role: Role;
+  title: string;
+  badge: string;
+  target: string;
+  summary: string;
+  responsibilities: string[];
+  authorities: string[];
+  routes: { title: string; path: string }[];
+  accentBorder: string;
+}
+
+export const ROLE_DESCRIPTIONS: RoleDocItem[] = [
+  {
+    role: "admin",
+    title: "Executive Band Director & Administrator",
+    badge: "Executive Clearance",
+    target: "Band Directors, General Managers & Executive Board",
+    summary: "Unrestricted operational and executive authority across the entire Eagleburger Band web platform. Responsible for orchestrating ensemble logistics, financial oversight, role security clearances, system administration, and high-level band policies.",
+    responsibilities: [
+      "Govern security policies, user role assignments, and member account permissions.",
+      "Oversee band-wide financial health, gig revenue distribution, and charitable outreach.",
+      "Supervise public website publication, theme palettes, and public press inquiries.",
+      "Administer member onboarding, section leadership designations, and operational dispute resolution."
+    ],
+    authorities: [
+      "Unrestricted access to all 24 portal and administrative workspaces.",
+      "Assign and revoke any administrative, musical, or operational role.",
+      "Reconcile band ledgers, record gig cashflows, and authorize musician payout distributions.",
+      "Publish and modify public website CMS pages, theme palettes, and SEO metadata."
+    ],
+    routes: [
+      { title: "Gig Operations", path: "/admin/gigs" },
+      { title: "Financial Ledger", path: "/admin/finance" },
+      { title: "Roster Administration", path: "/admin/roster" },
+      { title: "CMS Page Studio", path: "/admin/pages" },
+      { title: "Brand & Theme", path: "/admin/theme" },
+      { title: "Charitable Giving", path: "/admin/giving" },
+    ],
+    accentBorder: "rgba(234, 179, 8, 0.5)",
+  },
+  {
+    role: "gig_manager",
+    title: "Gig Operations Manager",
+    badge: "Gig Operations",
+    target: "Gig Coordinators, Event Leads & Stage Managers",
+    summary: "Operational commander for all live gigs, street parades, festival appearances, and private bookings. Coordinates staging logistics, call times, uniform requirements, downbeat roll calls, and mass communications.",
+    responsibilities: [
+      "Create, schedule, and maintain upcoming gigs, rehearsals, and street parade dates.",
+      "Establish precise logistical timelines: call time, staging location, warm-up, downbeat, and conclusion.",
+      "Define gig compensation, dress code attire, and client staging requirements.",
+      "Issue emergency gig updates via Call Sheet Dispatch and oversee Downbeat Check-In on show day."
+    ],
+    authorities: [
+      "Create and edit gigs in the Gig Management workspace (/admin/gigs).",
+      "Publish and broadcast Call Sheet Dispatch emails and SMS alerts (/admin/dispatch).",
+      "Triage inbound gig inquiries and convert leads into confirmed gigs (/admin/inquiries).",
+      "Verify real-time attendance during day-of-show roll call (/portal/checkin/[gigId] or /portal/checkin)."
+    ],
+    routes: [
+      { title: "Gig Management", path: "/admin/gigs" },
+      { title: "Setlist Designer", path: "/admin/setlists" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
+      { title: "Call Sheet Dispatch", path: "/admin/dispatch" },
+      { title: "Gig Inquiries", path: "/admin/inquiries" },
+      { title: "Broadcast Studio", path: "/admin/notifications" },
+    ],
+    accentBorder: "rgba(56, 189, 248, 0.5)",
+  },
+  {
+    role: "catalog_manager",
+    title: "Music Librarian & Catalog Manager",
+    badge: "Repertoire & Arrangements",
+    target: "Music Librarians, Arrangers & Band Music Directors",
+    summary: "Custodian of the ensemble's musical library and repertoire. Manages sheet music part distributions, arranges charts for brass and percussion voicings, uploads rehearsal reference recordings, and programs gig setlists.",
+    responsibilities: [
+      "Curate the Master Music Catalog with chart metadata, key signatures, tempos, and arrangers.",
+      "Upload sheet music PDFs for each brass and percussion part to secure cloud storage.",
+      "Link high-fidelity reference audio tracks and rehearsal recordings for member study.",
+      "Design chronological setlists for upcoming gigs, balancing tempos, genres, and stamina.",
+      "Review member song suggestions and shepherd promising chart ideas into active arranging."
+    ],
+    authorities: [
+      "Add, update, and archive songs in the Song Catalog (/portal/library).",
+      "Manage sheet music part files and reference audio attachments.",
+      "Assemble, reorder, and publish gig setlists (/admin/setlists).",
+      "Review, upvote, and triage member song suggestions (/admin/suggestions).",
+      "Analyze catalog analytics, play counts, and chart gig frequencies (/admin/analytics/catalog)."
+    ],
+    routes: [
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Setlist Designer", path: "/admin/setlists" },
+      { title: "Repertoire Analytics", path: "/admin/analytics/catalog" },
+      { title: "Song Suggestions", path: "/admin/suggestions" },
+    ],
+    accentBorder: "rgba(16, 185, 129, 0.5)",
+  },
+  {
+    role: "section_leader",
+    title: "Section Leader & Voicing Principal",
+    badge: "Section Leadership",
+    target: "Instrument Voicing Leads (Trumpet, Trombone, Sax, Sousaphone, Percussion, Auxiliary)",
+    summary: "Musical and operational leaders for individual instrument sections. Responsible for monitoring section attendance, ensuring adequate part coverage (e.g. 1st vs 2nd parts, lead sousaphone), welcoming new section recruits, and executing roll call on gig day.",
+    responsibilities: [
+      "Review gig RSVP headcounts to ensure balanced instrumentation before every gig.",
+      "Coordinate instrument subbing and part reassignments if a key player is unavailable.",
+      "Run Downbeat Check-In on show day to verify on-time arrival and proper attire.",
+      "Guide new section members through charts, street choreography, and band traditions."
+    ],
+    authorities: [
+      "Access the Section Command workspace (/admin/sections) to review section rosters and balance.",
+      "Execute day-of roll call verification for their section (/portal/checkin/[gigId]).",
+      "Inspect acoustic quorum and section readiness in the Gig Management Studio (/admin/gigs)."
+    ],
+    routes: [
+      { title: "Section Command", path: "/admin/sections" },
+      { title: "Day-of Roll Call", path: "/portal/checkin/[gigId]" },
+      { title: "Section Readiness", path: "/admin/gigs" },
+      { title: "Musician Roster", path: "/portal/roster" },
+    ],
+    accentBorder: "rgba(129, 140, 248, 0.5)",
+  },
+  {
+    role: "treasurer",
+    title: "Band Treasurer & Financial Controller",
+    badge: "Financial Management",
+    target: "Band Treasurer, Bookkeeper & Business Officers",
+    summary: "Financial steward of the ensemble. Manages the official ledger, tracks gig income, calculates per-player stipend distributions, reconciles operating expenses, and oversees charitable giving allocations.",
+    responsibilities: [
+      "Maintain accurate entries in the Financial Ledger for all gig deposits, stipends, and operating expenses.",
+      "Calculate and record per-player earnings following paid gigs.",
+      "Track charitable contributions and community donations in the Giving Manager.",
+      "Generate financial balance sheets, cashflow reports, and annual budget projections."
+    ],
+    authorities: [
+      "Create, edit, and reconcile ledger records in the Financial Ledger (/admin/finance).",
+      "Manage beneficiary profiles and record donations in the Giving Manager (/admin/giving).",
+      "Record member payout disbursements and track payment methods (Venmo, Check, Cash)."
+    ],
+    routes: [
+      { title: "Financial Ledger", path: "/admin/finance" },
+      { title: "Charitable Giving", path: "/admin/giving" },
+      { title: "Home Base", path: "/portal" },
+    ],
+    accentBorder: "rgba(52, 211, 153, 0.5)",
+  },
+  {
+    role: "web_manager",
+    title: "Web & Digital Content Manager",
+    badge: "Public Marketing & CMS",
+    target: "Webmasters, Digital Marketers & Creative Directors",
+    summary: "Oversees the public-facing brand, content marketing, and visual design systems. Designs and publishes dynamic web pages using the Headless CMS Studio, manages search engine optimization (SEO), and customizes theme palettes and branding.",
+    responsibilities: [
+      "Author and publish dynamic public pages (Story, Media, Book Us) using the CMS Section Builder.",
+      "Format public copy using the secure WYSIWYG rich text editor with sanitized HTML.",
+      "Configure meta titles, OpenGraph share cards, and JSON-LD structured data in the SEO Studio.",
+      "Maintain visual brand harmony by customizing public and musician portal color themes."
+    ],
+    authorities: [
+      "Full create/read/update/delete control over CMS pages in the CMS Page Studio (/admin/pages).",
+      "Modify global brand logos, typography, and color themes in the Theme Studio (/admin/theme).",
+      "Moderate public community comments and contact inquiries (/admin/comments)."
+    ],
+    routes: [
+      { title: "CMS Page Studio", path: "/admin/pages" },
+      { title: "Brand & Theme Studio", path: "/admin/theme" },
+      { title: "Comment Moderation", path: "/admin/comments" },
+    ],
+    accentBorder: "rgba(45, 212, 191, 0.5)",
+  },
+  {
+    role: "membership_manager",
+    title: "Personnel & Membership Coordinator",
+    badge: "Personnel & Recruitment",
+    target: "Band Secretary, Musician Recruitment & Onboarding Leads",
+    summary: "Manages the human side of the ensemble. Coordinates musician recruitment, issues secure registration invite codes, updates member profiles, and ensures accurate instrument section assignments.",
+    responsibilities: [
+      "Generate and distribute secure cryptographic invitation tokens for prospective musicians.",
+      "Review onboarding profiles, emergency contacts, instrument proficiencies, and T-shirt sizes.",
+      "Assign newly rostered players to their proper instrument sections and notify Section Leaders.",
+      "Maintain member active/inactive/alumni status records."
+    ],
+    authorities: [
+      "Generate single-use or multi-use membership invitations in Roster Admin (/admin/roster).",
+      "Edit member profile information, section groupings, and account status.",
+      "Access the Section Command workspace (/admin/sections) to balance section rosters."
+    ],
+    routes: [
+      { title: "Roster Administration", path: "/admin/roster" },
+      { title: "Section Command", path: "/admin/sections" },
+      { title: "Member Directory", path: "/portal/roster" },
+    ],
+    accentBorder: "rgba(244, 114, 182, 0.5)",
+  },
+  {
+    role: "asset_manager",
+    title: "Equipment & Uniform Quartermaster",
+    badge: "Gear & Uniform Custody",
+    target: "Quartermasters, Gear Custodians & Drum Technicians",
+    summary: "Custodian of physical band assets, marching instruments, marching drum carriers, harnesses, banners, sound gear, and band uniform jackets.",
+    responsibilities: [
+      "Maintain the band's equipment inventory: marching drums, sousaphone stands, banners, and megaphones.",
+      "Track checkout custody of band-owned instruments, marching harnesses, and uniform pieces.",
+      "Coordinate routine maintenance, drumhead replacements, slide lubrication, and instrument repairs.",
+      "Conduct seasonal equipment audits to prevent gear loss."
+    ],
+    authorities: [
+      "Manage inventory records, serial numbers, condition ratings, and checkout logs (/admin/inventory).",
+      "Issue gear assignments to members and log returns.",
+      "Submit gear replacement and repair budget requests to the Treasurer."
+    ],
+    routes: [
+      { title: "Gear & Uniform Inventory", path: "/admin/inventory" },
+      { title: "Home Base", path: "/portal" },
+    ],
+    accentBorder: "rgba(251, 146, 60, 0.5)",
+  },
+  {
+    role: "community_manager",
+    title: "Community & Public Relations Manager",
+    badge: "Community & Outreach",
+    target: "PR Leads, Social Media Coordinators & Community Liaisons",
+    summary: "Builds bridges between the Eagleburger Band, our fan community, local civic organizations, festival directors, and charitable partners.",
+    responsibilities: [
+      "Respond to public inquiries, fan messages, and event collaboration suggestions.",
+      "Coordinate philanthropic appearances, non-profit benefit parades, and school brass clinics.",
+      "Collaborate with Web Managers to publish news, parade photos, and community donation highlights.",
+      "Moderate public fan comments and guestbook messages."
+    ],
+    authorities: [
+      "Review and triage public inquiries in Gig Inquiries (/admin/inquiries).",
+      "Manage outreach beneficiary relationships in Charitable Giving (/admin/giving).",
+      "Review and approve public fan comments in Comment Moderation (/admin/comments).",
+      "Draft and publish announcements in the Broadcast Studio (/admin/notifications)."
+    ],
+    routes: [
+      { title: "Gig Inquiries", path: "/admin/inquiries" },
+      { title: "Charitable Giving", path: "/admin/giving" },
+      { title: "External Contacts", path: "/admin/contacts" },
+      { title: "Broadcast Studio", path: "/admin/notifications" },
+      { title: "Comment Moderation", path: "/admin/comments" },
+    ],
+    accentBorder: "rgba(250, 204, 21, 0.5)",
+  },
+  {
+    role: "member",
+    title: "Active Musician & Performing Member",
+    badge: "Active Performer",
+    target: "All Rostered Brass, Woodwind, Percussion & Visual Artists",
+    summary: "The core heartbeat of the Eagleburger Band. Active musicians rehearse, perform at parades and gigs, maintain personal attendance commitments, rehearse repertoire charts, and bring street brass energy to Pittsburgh.",
+    responsibilities: [
+      "Promptly RSVP (Attending, Tentative, Declined) to all scheduled gigs and rehearsals in Gig Central.",
+      "Arrive on time for designated call times, in specified band uniform, ready for warmup and downbeat.",
+      "Rehearse charts and download updated sheet music parts from the Music Vault.",
+      "Subscribe personal smartphone calendars to the band's auto-updating iCal feed.",
+      "Participate in ensemble voting on repertoire suggestions and community initiatives."
+    ],
+    authorities: [
+      "Access the Musician Portal dashboard (/portal) and personal earnings tally.",
+      "Submit RSVPs and view detailed logistical call sheets (/portal/gigs).",
+      "Download sheet music part PDFs and listen to rehearsal tracks (/portal/library).",
+      "Browse the band-wide Musician Directory (/portal/roster).",
+      "Browse, search, and submit band charts and sheet music in the Song Catalog (/portal/library).",
+      "Submit song pitches and upvote charts in Song Suggestions (/admin/suggestions)."
+    ],
+    routes: [
+      { title: "Home Base", path: "/portal" },
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Musician Directory", path: "/portal/roster" },
+      { title: "Song Suggestions", path: "/admin/suggestions" },
+      { title: "Help Center", path: "/portal/help" },
+    ],
+    accentBorder: "rgba(74, 222, 128, 0.5)",
+  },
+  {
+    role: "guest",
+    title: "Guest Musician & Substitute Performer",
+    badge: "Guest / Substitute",
+    target: "Guest Solos, Substitute Brass Players & Contracted Performers",
+    summary: "External musicians and guest performers who join the Eagleburger Band for specific gigs, festival appearances, or temporary subbing assignments.",
+    responsibilities: [
+      "Review logistical call sheets for assigned gigs.",
+      "Rehearse assigned chart parts and attend designated staging rehearsals.",
+      "Confirm attendance for contracted gig dates."
+    ],
+    authorities: [
+      "View specific gig call sheets and logistical details for assigned gigs.",
+      "Download assigned sheet music parts from the Song Catalog (/portal/library).",
+      "Browse repertoire charts and submit new arrangements in the Song Catalog (/portal/library).",
+      "Pitch tune ideas and vote on charts in Song Suggestions (/admin/suggestions)."
+    ],
+    routes: [
+      { title: "Gig Central", path: "/portal/gigs" },
+      { title: "Song Catalog", path: "/portal/library" },
+      { title: "Song Suggestions", path: "/admin/suggestions" },
+    ],
+    accentBorder: "rgba(148, 163, 184, 0.5)",
+  }
+];
+
+export const RBAC_ROLES = [
+  {
+    role: "admin",
+    title: "Full Administrator",
+    target: "Band Directors & Technical Leads",
+    scope: "Unrestricted access to all workspaces, security settings, role assignments, financial ledgers, and database backups.",
+    routes: "All 24 portal & admin routes"
+  },
+  {
+    role: "web_manager",
+    title: "Web & Content Manager",
+    target: "Communications & Marketing Leads",
+    scope: "Full management of public marketing pages, CMS Page Studio, WYSIWYG section builder, SEO settings, brand theme, and palette customizer.",
+    routes: "/admin/pages, /admin/theme, /admin/comments, /portal/*"
+  },
+  {
+    role: "gig_manager",
+    title: "Gig & Operations Manager",
+    target: "Gig Coordinators & Event Managers",
+    scope: "Scheduling gigs, configuring logistics (call time, downbeat, pay, attire), publishing call sheets, emergency dispatch, and booking inquiries triage.",
+    routes: "/admin/gigs, /admin/setlists, /admin/dispatch, /admin/inquiries, /admin/contacts, /admin/notifications, /portal/checkin/[gigId]"
+  },
+  {
+    role: "catalog_manager",
+    title: "Catalog & Music Librarian",
+    target: "Librarians, Arrangers & Music Directors",
+    scope: "Master music catalog, uploading sheet music part PDFs to storage, reference audio links, setlist curation, and song suggestion triage.",
+    routes: "/admin/catalog, /admin/analytics/catalog, /admin/setlists, /admin/suggestions, /portal/library"
+  },
+  {
+    role: "community_manager",
+    title: "Community & Public Relations Manager",
+    target: "PR Leads, Social Media Coordinators & Community Liaisons",
+    scope: "Reviewing public inquiries, coordinating benefit events, managing giving beneficiaries, and moderating public fan comments.",
+    routes: "/admin/inquiries, /admin/giving, /admin/comments, /admin/contacts, /admin/notifications"
+  },
+  {
+    role: "membership_manager",
+    title: "Membership & Personnel Manager",
+    target: "Band Secretary & Personnel Coordinator",
+    scope: "Musician roster management, issuing new member invite codes, updating player profiles, and assigning section groupings.",
+    routes: "/admin/roster, /admin/sections, /portal/*"
+  },
+  {
+    role: "treasurer",
+    title: "Treasurer & Finance Officer",
+    target: "Band Treasurer & Business Manager",
+    scope: "Financial ledger management, recording gig payouts, distribution tracking to musicians, charitable donations tracker, and expense accounting.",
+    routes: "/admin/finance, /admin/giving, /portal/*"
+  },
+  {
+    role: "section_leader",
+    title: "Section Leader",
+    target: "Instrument Voicing Leads (Trumpet, Trombone, Sax, Sousaphone, Drums)",
+    scope: "Day-of-show roll call via Downbeat Check-In, reviewing section attendance metrics, section rosters, and rehearsal music charts.",
+    routes: "/admin/sections, /admin/gigs, /portal/checkin/[gigId], /portal/*"
+  },
+  {
+    role: "asset_manager",
+    title: "Asset & Equipment Custodian",
+    target: "Quartermaster & Gear Coordinator",
+    scope: "Tracking band property, marching drum maintenance, harness custody, sousaphone stand storage, and banner inventory.",
+    routes: "/admin/inventory, /portal/*"
+  },
+  {
+    role: "member",
+    title: "Active Band Musician",
+    target: "All Rostered Brass & Percussion Players",
+    scope: "Access to personal dashboard, upcoming gigs calendar, RSVP submissions, sheet music downloads, reference audio, song catalog browsing and submissions, song pitches, roster directory, and calendar sync.",
+    routes: "/portal, /portal/gigs, /portal/library, /admin/suggestions, /portal/roster, /portal/help"
+  },
+  {
+    role: "guest",
+    title: "Guest Musician / Sub",
+    target: "Occasional Subs & Contracted Players",
+    scope: "Access to assigned gig call sheets, sheet music parts in the song catalog, chart browsing and submissions, and tune suggestions.",
+    routes: "/portal/gigs, /portal/library, /admin/suggestions"
+  }
+];
+
+export interface FaqItem { q: string; a: string; }
+export const FAQS: FaqItem[] = [
+  {
+    q: "How do I sync the band's gig calendar to my phone (Apple Calendar or Google Calendar)?",
+    a: "Go to Home Base (/portal) and click 'Subscribe to Calendar'. Copy your personal iCal webcal subscription feed URL. In Apple Calendar on iOS, tap 'Calendars' -> 'Add Calendar' -> 'Add Subscription Calendar' and paste the URL. In Google Calendar, go to 'Other calendars' -> '+' -> 'From URL'. All gig schedule additions and time changes will now sync automatically to your device!"
+  },
+  {
+    q: "What should I do if my availability changes after I already RSVP'd 'Attending'?",
+    a: "Open Gig Central (/portal/gigs), locate the gig, and update your RSVP button to 'Declined' or 'Tentative' immediately. If the gig is within 48 hours, also contact your Section Leader directly via the Roster Directory (/portal/roster) so they can arrange a replacement for your instrument part."
+  },
+  {
+    q: "Where do I find my instrument's sheet music or rehearsal recordings?",
+    a: "Navigate to the Music Vault (/portal/library). You can search by song title or filter by genre tag. Click on your instrument section (e.g. Trumpet 1, Trombone 2, Snare) to download your part PDF, or press play on the audio player to hear the reference track."
+  },
+  {
+    q: "How do musician payouts work for paid gigs?",
+    a: "When the band receives payment for a contracted gig, the Treasurer reconciles attendance records in the Financial Ledger (/admin/finance) and calculates per-player distributions. Once distributed, your earnings are marked in the system and reflect directly on your personal Home Base dashboard."
+  },
+  {
+    q: "How do I pitch a new song for the band to learn and arrange?",
+    a: "Submit your idea in the Song Suggestion Triage (/admin/suggestions). Include a YouTube or streaming reference link and note what makes it great for street brass (e.g. great bass line, energetic drum groove). Other musicians can upvote your idea, and catalog managers review high-scoring pitches for arranging."
+  },
+  {
+    q: "How do I request additional permissions (e.g. Gig Manager, Section Leader)?",
+    a: "Role permissions are governed in Roster Administration (/admin/roster). Contact a Band Administrator or Membership Manager to have the appropriate role assigned to your musician profile."
+  },
+  {
+    q: "What is the difference between 'Only My Gigs' and 'All Band Gigs' in the live calendar feed?",
+    a: "When subscribing to the live iCal feed in Gig Central (/portal/gigs), you can choose between 'Only My Gigs' (syncs only the gigs you have RSVP'd 'Attending' or 'Tentative' to) and 'All Band Gigs' (syncs the band's entire scheduled calendar). Any venue address or call time changes update in your native phone calendar automatically!"
+  },
+  {
+    q: "How do I choose or update my shirt size for band merchandise and uniforms?",
+    a: "Navigate to My Profile & SMS Settings (/portal/profile). Under 'Band Apparel & Shirt Size Preference', select your size pill (XS, S, M, L, XL, or XXL) and click 'Save Changes'. The Community Manager uses these records in the Shirt Sizes studio (/admin/shirt-sizes) when placing merchandise and uniform orders."
+  },
+  {
+    q: "Can I use a stage or display name while keeping my legal name on file?",
+    a: "Yes! In My Profile (/portal/profile), you can enter both a Display Name (which appears across all member-facing portal screens and public setlists) and a Real Legal Name (kept secure for internal roster records and treasurer payouts)."
+  },
+  {
+    q: "How do section instrument catalogs work if I play different instruments for different gigs?",
+    a: "Section Leaders manage instrument catalogs in the Band Sections studio (/admin/sections). In your profile (/portal/profile), you can select your active gig instrument from your section's catalog (e.g. switching between Tenor Sax and Bari Sax, or Cornet and Flugelhorn) whenever your gig assignment changes."
+  },
+  {
+    q: "What happens if I need to take a break or go on hiatus from the band?",
+    a: "If you need temporary leave, contact a Membership Manager to set your status to 'Hiatus' in Roster Admin (/admin/roster). While on hiatus, automated gig invitations and availability dispatch emails are suppressed to respect your time, while your account, settings, and attendance history remain preserved."
+  },
+  {
+    q: "Where can I view the system changelog and latest platform updates?",
+    a: "Visit the Stage Changelog (/portal/changelog) under Help, Guides & Docs to review chronological implementation records, search features by keyword, and see what capabilities were added in each stage."
+  }
+];
+

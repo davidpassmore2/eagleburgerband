@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
       budget,
       message,
       phone,
-      directorAlertEmail,
     } = parsed.data;
 
     const origin = req.headers.get("origin") || req.nextUrl?.origin;
     const config = getDeliverabilityConfig(origin);
-    const directorTarget = directorAlertEmail || "manager@eagleburgerband.org";
+    // Hardcoded administrative recipient to prevent open relay abuse
+    const directorTarget = process.env.BOOKING_ALERT_EMAIL || "manager@eagleburgerband.org";
 
     // 1. Dispatch Client Receipt
     const clientEmailData = renderBookingClientReceipt({

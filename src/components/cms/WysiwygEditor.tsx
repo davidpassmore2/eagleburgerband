@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Bold,
   Italic,
@@ -22,9 +22,7 @@ import {
 } from "lucide-react";
 
 export function sanitizeHtml(dirty: string): string {
-  if (typeof window === "undefined") {
-    return dirty.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-  }
+  if (!dirty) return "";
   return DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS: [
       "h2",

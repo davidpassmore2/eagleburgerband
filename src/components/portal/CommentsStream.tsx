@@ -15,7 +15,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageContent, isAdmin } from "@/lib/auth/permissions";
 import { Comment, CommentSchema, CommentTargetTypeEnum } from "@/lib/schema/comment";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import { toast } from "@/lib/context/ToastContext";
 import { dispatchPortalInteraction } from "@/lib/metrics/usageTracker";
 import {

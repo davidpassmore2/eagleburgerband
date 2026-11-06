@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { doc, onSnapshot, setDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import { logAdminAction } from "@/lib/logging/adminLogger";
 import {
   AuthProvidersConfig,
   AuthProvidersConfigSchema,
@@ -61,14 +62,16 @@ export function useAuthProvidersConfig() {
         const configDocRef = doc(db, "system_config", "auth_providers");
         await setDoc(configDocRef, validated, { merge: true });
 
-        // Log admin audit entry
+        // Log admin audit entry via standardized admin_logs
         try {
-          await addDoc(collection(db, "admin_audit_log"), {
+          await logAdminAction({
             action: "system_config",
             category: "system",
-            actorUid: actor?.uid || "",
-            actorName: actor?.displayName || "Administrator",
-            actorEmail: actor?.email || "",
+            actor: {
+              uid: actor?.uid || "",
+              displayName: actor?.displayName || "Administrator",
+              email: actor?.email || "",
+            },
             targetId: "auth_providers",
             targetName: "Authentication Providers",
             description: "Updated authentication provider visibility toggles",
@@ -80,7 +83,6 @@ export function useAuthProvidersConfig() {
               magicLink: validated.magicLink,
               password: validated.password,
             },
-            timestamp: new Date().toISOString(),
           });
         } catch (auditErr) {
           console.warn("[AuthProvidersConfig] Audit log write note:", auditErr);

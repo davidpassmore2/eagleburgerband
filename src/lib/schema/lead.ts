@@ -25,6 +25,7 @@ export const LeadSchema = z.object({
   message: z.string().default(""),
   status: LeadStatusEnum.default("new"),
   notes: z.string().default(""),
+  convertedGigId: z.string().default(""),
   schemaVersion: z.number().default(1),
   createdAt: z.string().default(() => new Date().toISOString()),
   updatedAt: z.string().default(() => new Date().toISOString()),

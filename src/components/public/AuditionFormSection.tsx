@@ -8,7 +8,7 @@ import {
   AuditionInputSchema,
   AuditionSchema,
 } from "@/lib/schema/audition";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Music,
   User,

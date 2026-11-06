@@ -23,10 +23,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Determine required roles for the current admin path
-  const currentTool = WORKSPACE_TOOLS.find(
-    (t) => pathname === t.href || pathname.startsWith(t.href + "/")
-  );
+  // Mapping of legacy redirect aliases to destination targets
+  const ADMIN_REDIRECT_TARGETS: Record<string, string> = {
+    "/admin/assets": "/admin/inventory",
+    "/admin/attendance": "/admin/gigs",
+    "/admin/call-sheets": "/admin/dispatch",
+    "/admin/catalog": "/portal/library",
+    "/admin/checkin": "/portal/checkin",
+    "/admin/crm": "/admin/contacts",
+    "/admin/finance": "/portal/finance?tab=ledger",
+    "/admin/giving": "/portal/finance?tab=giving",
+    "/admin/ledger": "/portal/finance?tab=ledger",
+    "/admin/moderation": "/admin/comments",
+    "/admin/tunes": "/portal/library",
+    "/admin/vault": "/portal/vault",
+  };
+
+  const effectivePath = ADMIN_REDIRECT_TARGETS[pathname] || pathname;
+
+  // Determine required roles for the current admin path (or redirect target)
+  const currentTool = WORKSPACE_TOOLS.find((t) => {
+    const tBase = t.href.split("?")[0];
+    return (
+      pathname === t.href ||
+      pathname === tBase ||
+      pathname.startsWith(tBase + "/") ||
+      effectivePath === t.href ||
+      effectivePath === tBase
+    );
+  });
 
   const requiredRoles: Role[] = currentTool?.requiredRoles || ["admin"];
   const isAuthorized = hasAnyRole(profile, requiredRoles);

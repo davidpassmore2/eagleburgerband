@@ -17,6 +17,7 @@ import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canManageGigs, canManageSections, isAdmin } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
+import { GigLedger, GigLedgerSchema } from "@/lib/schema/ledger";
 import { CheckInSchema, CheckInRecord, CheckInStatus } from "@/lib/schema/attendance";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -64,14 +65,7 @@ interface GigItem {
   };
 }
 
-interface LedgerRecord {
-  gigId: string;
-  distributions?: {
-    uid: string;
-    amount: number;
-    paidStatus?: "paid" | "unpaid";
-  }[];
-}
+// Replaced with GigLedger from schema/ledger
 
 export default function MemberSelfCheckInPage() {
   const { profile, firebaseUser, loading: authLoading } = useAuth();
@@ -86,7 +80,7 @@ export default function MemberSelfCheckInPage() {
   const [rehearsalRsvps, setRehearsalRsvps] = useState<Record<string, RehearsalRsvp>>({});
   const [userCheckIns, setUserCheckIns] = useState<Record<string, CheckInRecord>>({});
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
-  const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
+  const [ledgers, setLedgers] = useState<GigLedger[]>([]);
   const [tuneCount, setTuneCount] = useState<number | null>(null);
   const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
   const [personalReimbursements, setPersonalReimbursements] = useState<{ pending: number; paid: number }>({
@@ -183,9 +177,10 @@ export default function MemberSelfCheckInPage() {
     const unsubLedgers = onSnapshot(
       collection(db, "gig_ledgers"),
       (snapshot) => {
-        const list: LedgerRecord[] = [];
+        const list: GigLedger[] = [];
         snapshot.forEach((docSnap) => {
-          list.push(docSnap.data() as LedgerRecord);
+          const parsed = GigLedgerSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+          if (parsed.success) list.push(parsed.data);
         });
         setLedgers(list);
       },

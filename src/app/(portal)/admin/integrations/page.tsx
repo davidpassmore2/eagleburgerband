@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
+import { toast } from "@/lib/context/ToastContext";
 import { canManageIntegrations } from "@/lib/auth/permissions";
 import AccessDenied from "@/components/portal/AccessDenied";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -197,6 +198,7 @@ export default function IntegrationsStudioPage() {
       await setDoc(doc(db, "system_config", "integrations"), payload, { merge: true });
     } catch (err) {
       console.error("Failed to update checklist in Firestore:", err);
+      toast.error("Failed to update checklist: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

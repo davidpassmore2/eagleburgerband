@@ -28,6 +28,7 @@ import { AttendanceStatus } from "@/components/portal/PortalDayEventsModal";
 import { toast } from "@/lib/context/ToastContext";
 import { NotificationSchema, AppNotification } from "@/lib/schema/notification";
 import { GigRsvpSchema } from "@/lib/schema/rsvp";
+import { GigLedger, GigLedgerSchema } from "@/lib/schema/ledger";
 import { useUserBlackouts } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
 import OnHiatusChip from "@/components/portal/OnHiatusChip";
@@ -89,14 +90,7 @@ type Gig = {
   };
 };
 
-interface LedgerRecord {
-  gigId: string;
-  distributions?: {
-    uid: string;
-    amount: number;
-    paidStatus: "unpaid" | "cash" | "venmo" | "check";
-  }[];
-}
+// Replaced with GigLedger from schema/ledger
 
 export default function MusicianPortalOverviewPage() {
   const { profile, loading: authLoading } = useAuth();
@@ -105,7 +99,7 @@ export default function MusicianPortalOverviewPage() {
   const { isDateInBlackout } = useUserBlackouts();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [userRsvps, setUserRsvps] = useState<Record<string, AttendanceStatus>>({});
-  const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
+  const [ledgers, setLedgers] = useState<GigLedger[]>([]);
   const [tuneCount, setTuneCount] = useState<number | null>(null);
   const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
   const [loadingGigs, setLoadingGigs] = useState(true);
@@ -134,9 +128,10 @@ export default function MusicianPortalOverviewPage() {
     const unsubLedgers = onSnapshot(
       collection(db, "gig_ledgers"),
       (snapshot) => {
-        const list: LedgerRecord[] = [];
+        const list: GigLedger[] = [];
         snapshot.forEach((docSnap) => {
-          list.push(docSnap.data() as LedgerRecord);
+          const parsed = GigLedgerSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+          if (parsed.success) list.push(parsed.data);
         });
         setLedgers(list);
       },

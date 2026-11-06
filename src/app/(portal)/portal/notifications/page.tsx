@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/context/AuthContext";
+import { toast } from "@/lib/context/ToastContext";
 import { canDispatchBroadcasts, isAdmin } from "@/lib/auth/permissions";
 import { User } from "@/lib/schema/user";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
@@ -146,6 +147,7 @@ export default function MemberNotificationsPage() {
       });
     } catch (err) {
       console.error("Failed to update hiatus:", err);
+      toast.error("Failed to update hiatus status: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setTogglingHiatus(false);
     }
@@ -235,6 +237,7 @@ export default function MemberNotificationsPage() {
       }
     } catch (err) {
       console.error("Error updating notification status:", err);
+      toast.error("Failed to update notification: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -250,6 +253,7 @@ export default function MemberNotificationsPage() {
       await Promise.all(updates);
     } catch (err) {
       console.error("Error marking all read:", err);
+      toast.error("Failed to mark all as read: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -266,6 +270,7 @@ export default function MemberNotificationsPage() {
       await deleteDoc(doc(db, "notifications", notifId));
     } catch (err) {
       console.error("Error deleting notification:", err);
+      toast.error("Failed to delete notification: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -292,6 +297,7 @@ export default function MemberNotificationsPage() {
       setTimeout(() => setPrefSaveSuccess(false), 4000);
     } catch (err) {
       console.error("Failed to save notification preferences:", err);
+      toast.error("Failed to save preferences: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSavingPreferences(false);
     }
@@ -338,6 +344,7 @@ export default function MemberNotificationsPage() {
       }, 1500);
     } catch (err) {
       console.error("Failed to dispatch broadcast:", err);
+      toast.error("Failed to send broadcast: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSendingBroadcast(false);
     }

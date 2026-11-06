@@ -39,6 +39,7 @@ import { User, UserSchema } from "@/lib/schema/user";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
 import DatePicker from "@/components/ui/DatePicker";
+import EditBandGiftModal from "@/components/portal/finance/EditBandGiftModal";
 import CommentsStream from "@/components/portal/CommentsStream";
 import {
   DollarSign,
@@ -57,6 +58,7 @@ import {
   Filter,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   Building,
   UserCheck,
   Calendar,
@@ -352,24 +354,6 @@ function FinanceHubContent() {
 
   // Manager: Edit Band Gift Modal State
   const [editingGift, setEditingGift] = useState<Donation | null>(null);
-  const [editOrgName, setEditOrgName] = useState("");
-  const [editCategory, setEditCategory] = useState<DonationCategory>("community_aid");
-  const [editDesc, setEditDesc] = useState("");
-  const [editWebsite, setEditWebsite] = useState("");
-  const [editOrgMission, setEditOrgMission] = useState("");
-  const [editStatus, setEditStatus] = useState<DonationStatus>("completed");
-  const [editAmount, setEditAmount] = useState("0");
-  const [editTargetAmount, setEditTargetAmount] = useState("0");
-  const [editDate, setEditDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [editDateSubmitted, setEditDateSubmitted] = useState(() => new Date().toISOString().split("T")[0]);
-  const [editFiscalYear, setEditFiscalYear] = useState(() => String(new Date().getFullYear()));
-  const [editGiftsGivenCount, setEditGiftsGivenCount] = useState<number>(0);
-  const [editAttributedMemberUid, setEditAttributedMemberUid] = useState("");
-  const [editPublicImpactNote, setEditPublicImpactNote] = useState("");
-  const [editInternalNotes, setEditInternalNotes] = useState("");
-  const [editIsPublic, setEditIsPublic] = useState(true);
-  const [editShowAmountPublicly, setEditShowAmountPublicly] = useState(false);
-  const [isSavingEditGift, setIsSavingEditGift] = useState(false);
 
   // Giving Sub-Tabs: "suggestions" vs "gifts"
   const [givingSubTab, setGivingSubTab] = useState<"suggestions" | "gifts">("suggestions");
@@ -796,94 +780,6 @@ function FinanceHubContent() {
   // Manager: Open Modal to Edit Any Band Gift
   const handleOpenEditGift = (gift: Donation) => {
     setEditingGift(gift);
-    setEditOrgName(gift.organizationName);
-    setEditCategory(gift.category || "community_aid");
-    setEditDesc(gift.causeDescription || gift.rationale || "");
-    setEditWebsite(gift.websiteUrl || "");
-    setEditOrgMission(gift.organizationMission || "");
-    setEditStatus(gift.status);
-    setEditAmount(String(gift.amount ?? 0));
-    setEditTargetAmount(String(gift.targetAmount ?? 0));
-    setEditDate(gift.dateDonated || new Date().toISOString().split("T")[0]);
-    setEditDateSubmitted(gift.dateSubmitted || (gift.createdAt ? gift.createdAt.split("T")[0] : gift.dateDonated) || new Date().toISOString().split("T")[0]);
-    setEditFiscalYear(gift.fiscalYear || String(new Date().getFullYear()));
-    setEditGiftsGivenCount(gift.giftsGivenCount ?? (gift.status === "completed" ? 1 : 0));
-    setEditAttributedMemberUid(gift.suggestedByUid || "");
-    setEditPublicImpactNote(gift.publicImpactNote || "");
-    setEditInternalNotes(gift.notes || "");
-    setEditIsPublic(gift.isPublic ?? true);
-    setEditShowAmountPublicly(gift.showAmountPublicly ?? false);
-  };
-
-  // Manager: Save Edited Band Gift
-  const handleSaveEditGift = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingGift) return;
-    if (!editOrgName.trim()) {
-      toast.error("Please enter an organization name.");
-      return;
-    }
-
-    const numAmount = parseFloat(editAmount);
-    const numTarget = parseFloat(editTargetAmount);
-    if (isNaN(numAmount) || numAmount < 0) {
-      toast.error("Please enter a valid gift amount.");
-      return;
-    }
-
-    setIsSavingEditGift(true);
-    try {
-      let suggestedByName = editingGift.suggestedByName;
-      let suggestedByUid = editingGift.suggestedByUid;
-      let submittedOnBehalf = editingGift.submittedOnBehalf ?? false;
-
-      if (editAttributedMemberUid && editAttributedMemberUid !== editingGift.suggestedByUid) {
-        const member = rosterMembers.find((u) => u.uid === editAttributedMemberUid);
-        if (member) {
-          suggestedByName = member.displayName || member.realName || "Musician";
-          suggestedByUid = member.uid;
-          submittedOnBehalf = true;
-        }
-      }
-
-      const updatePayload: Record<string, unknown> = {
-        organizationName: editOrgName.trim(),
-        category: editCategory,
-        causeDescription: editDesc.trim(),
-        rationale: editDesc.trim(),
-        websiteUrl: editWebsite.trim(),
-        organizationMission: editOrgMission.trim(),
-        status: editStatus,
-        amount: Number(numAmount.toFixed(2)),
-        targetAmount: isNaN(numTarget) ? 0 : Number(numTarget.toFixed(2)),
-        dateDonated: editDate,
-        dateSubmitted: editDateSubmitted,
-        fiscalYear: editFiscalYear,
-        giftsGivenCount: Math.max(0, editGiftsGivenCount),
-        publicImpactNote: editPublicImpactNote.trim(),
-        notes: editInternalNotes.trim(),
-        isPublic: editIsPublic,
-        showAmountPublicly: editShowAmountPublicly,
-        suggestedByUid,
-        suggestedByName,
-        submittedOnBehalf,
-        updatedAt: new Date().toISOString(),
-      };
-
-      if (editStatus === "completed" && editingGift.status !== "completed") {
-        updatePayload.reviewedByUid = profile?.uid || null;
-        updatePayload.reviewedByName = profile?.displayName || "Giving Manager";
-        updatePayload.reviewedAt = new Date().toISOString();
-      }
-
-      await updateDoc(doc(db, "donations", editingGift.id), updatePayload);
-      toast.success(`Updated Band Gift for "${editOrgName.trim()}".`);
-      setEditingGift(null);
-    } catch (err) {
-      toast.error("Failed to update Band Gift: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsSavingEditGift(false);
-    }
   };
 
   // Community Manager / Admin: Delete / Dismiss Suggestion
@@ -2705,6 +2601,12 @@ function FinanceHubContent() {
       {/* TAB 4: FINANCIAL LEDGER                                      */}
       {/* ------------------------------------------------------------- */}
       {activeTab === "ledger" && (
+        !isManager ? (
+          <div className="p-8 text-rose-400 text-xs font-semibold flex items-center gap-2 bg-slate-900/60 rounded-2xl border border-rose-500/20">
+            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>Treasurer or Administrator privileges required to access the General Financial Ledger.</span>
+          </div>
+        ) : (
         <div className="space-y-6">
           {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2915,6 +2817,7 @@ function FinanceHubContent() {
             )}
           </div>
         </div>
+        )
       )}
 
       {/* ------------------------------------------------------------- */}
@@ -3897,330 +3800,12 @@ function FinanceHubContent() {
       {/* {/* ------------------------------------------------------------- */}
       {/* MODAL: EDIT BAND GIFT (SUGGESTED OR AWARDED)                  */}
       {/* ------------------------------------------------------------- */}
-      {editingGift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Gift className="w-5 h-5 text-yellow-400" />
-                <h3 className="text-base font-black text-white uppercase tracking-tight">
-                  Edit Band Gift
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingGift(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEditGift} className="space-y-4">
-              {/* Status Switcher */}
-              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-2">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Status &amp; Lifecycle *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditStatus("suggested")}
-                    className={`p-2.5 rounded-xl border text-left transition ${
-                      editStatus === "suggested"
-                        ? "bg-yellow-400/15 border-yellow-400 text-yellow-300 font-bold"
-                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <div className="text-xs">Gift Suggestion</div>
-                    <div className="text-[10px] text-slate-500 font-normal">Voting queue</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditStatus("completed")}
-                    className={`p-2.5 rounded-xl border text-left transition ${
-                      editStatus === "completed"
-                        ? "bg-emerald-500/15 border-emerald-400 text-emerald-300 font-bold"
-                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <div className="text-xs">Awarded Band Gift</div>
-                    <div className="text-[10px] text-slate-500 font-normal">Completed grant</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Organization Name */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Organization / Grassroots Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editOrgName}
-                  onChange={(e) => setEditOrgName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-bold"
-                />
-              </div>
-
-              {/* Category & Amounts */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Category *
-                  </label>
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value as DonationCategory)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  >
-                    {DonationCategoryEnum.options.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {DONATION_CATEGORY_LABELS[cat]?.label || cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Awarded Amount ($ USD)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* Target Amount */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Proposed Target ($ USD)
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={editTargetAmount}
-                  onChange={(e) => setEditTargetAmount(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
-                />
-              </div>
-
-              {/* Date Gift Given & Date Submitted */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <DatePicker
-                    label="Date Gift Given *"
-                    value={editDate}
-                    onChange={(d) => setEditDate(d)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
-                  <p className="text-[10px] text-slate-500">When gift was awarded/given.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <DatePicker
-                    label="Date Submitted *"
-                    value={editDateSubmitted}
-                    onChange={(d) => setEditDateSubmitted(d)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                  />
-                  <p className="text-[10px] text-slate-500">When record was logged.</p>
-                </div>
-              </div>
-
-              {/* Fiscal Year & Cumulative Gifts */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Fiscal Year
-                  </label>
-                  <input
-                    type="text"
-                    value={editFiscalYear}
-                    onChange={(e) => setEditFiscalYear(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Cumulative Gifts Given
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={editGiftsGivenCount <= 0}
-                      onClick={() => setEditGiftsGivenCount((c) => Math.max(0, c - 1))}
-                      className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-40 transition cursor-pointer"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={editGiftsGivenCount}
-                      onChange={(e) => setEditGiftsGivenCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl py-1.5 px-2 text-center text-xs font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setEditGiftsGivenCount((c) => c + 1)}
-                      className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Website & Organization Mission */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Website / Social Link
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={editWebsite}
-                  onChange={(e) => setEditWebsite(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Organization Mission
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Describe the recipient organization's core mission..."
-                  value={editOrgMission}
-                  onChange={(e) => setEditOrgMission(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Grouped with the website on the public site so visitors are encouraged to join in support.
-                </p>
-              </div>
-
-              {/* Attributed Member */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Attributed Member (Optional)
-                </label>
-                <select
-                  value={editAttributedMemberUid}
-                  onChange={(e) => setEditAttributedMemberUid(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                >
-                  <option value="">-- No specific member attributed --</option>
-                  {rosterMembers.map((m) => (
-                    <option key={m.uid} value={m.uid}>
-                      {m.displayName || m.realName || "Musician"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Rationale / Description */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Cause Description / Community Rationale
-                </label>
-                <textarea
-                  rows={2}
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
-                />
-              </div>
-
-              {/* Public Impact Note */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Internal Impact Note (Visible Only Internally)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sponsored instruments for after-school youth band..."
-                  value={editPublicImpactNote}
-                  onChange={(e) => setEditPublicImpactNote(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                />
-                <p className="text-[10px] text-slate-500">Visible only to band members in the portal. Kept private from public site.</p>
-              </div>
-
-              {/* Internal Check Reference / Audit Notes */}
-              <div className="space-y-1">
-                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Internal Check Reference / Audit Notes
-                </label>
-                <input
-                  type="text"
-                  placeholder="Check #1042, Venmo confirmation, treasurer notes..."
-                  value={editInternalNotes}
-                  onChange={(e) => setEditInternalNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-
-              {/* Public Website Listing & Privacy */}
-              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Public Website Listing &amp; Privacy
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
-                    <input
-                      type="checkbox"
-                      checked={editIsPublic}
-                      onChange={(e) => setEditIsPublic(e.target.checked)}
-                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
-                    />
-                    <span className="text-xs text-slate-300">List on Public Giving Page</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-900 border border-slate-800/80">
-                    <input
-                      type="checkbox"
-                      checked={editShowAmountPublicly}
-                      onChange={(e) => setEditShowAmountPublicly(e.target.checked)}
-                      className="rounded border-slate-700 text-yellow-400 focus:ring-yellow-400"
-                    />
-                    <span className="text-xs text-slate-300">Show Gift Dollar Amount ($)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingGift(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingEditGift}
-                  className="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 text-xs font-black uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-lg shadow-yellow-400/10"
-                >
-                  {isSavingEditGift ? "Saving..." : "Save Band Gift Changes"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditBandGiftModal
+        gift={editingGift}
+        onClose={() => setEditingGift(null)}
+        rosterMembers={rosterMembers}
+        canManageGiving={isGivingManager}
+      />
 
       {/* ------------------------------------------------------------- */}
       {/* MODAL: MANAGER PAY OUT REIMBURSEMENT                          */}

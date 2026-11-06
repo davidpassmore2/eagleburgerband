@@ -208,7 +208,8 @@ service cloud.firestore {
       }
 
       match /checkins/{userId} {
-        allow read, write: if isMember();
+        allow read: if isMember();
+        allow write: if isSelf(userId) || canManageGigs() || isAdmin();
       }
 
       match /dispatches/{dispatchId} {
@@ -224,14 +225,12 @@ service cloud.firestore {
 
     match /rehearsal_locations/{locationId} {
       allow read: if isMember();
-      allow create, update: if isMember();
-      allow delete: if canManageGigs() || isAdmin();
+      allow create, update, delete: if canManageGigs() || isAdmin();
     }
 
     match /rehearsals/{rehearsalId} {
       allow read: if isMember();
-      allow create, update: if isMember();
-      allow delete: if canManageGigs() || isAdmin();
+      allow create, update, delete: if canManageGigs() || isAdmin();
 
       match /rsvps/{userId} {
         allow read: if isMember();
@@ -331,7 +330,8 @@ service cloud.firestore {
     match /testimonials/{testimonialId} {
       allow create: if request.resource.data.authorName is string &&
                     request.resource.data.email is string &&
-                    request.resource.data.quote is string;
+                    request.resource.data.quote is string &&
+                    (request.resource.data.status == 'pending' || hasAnyRole(['web_manager', 'community_manager']));
       allow read: if isMember();
       allow update, delete: if hasAnyRole(['web_manager', 'community_manager']);
     }

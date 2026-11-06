@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { BookingInputSchema, LeadSchema, Lead } from "@/lib/schema/lead";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import { 
   MapPin, 
   DollarSign, 
@@ -177,10 +177,7 @@ export default function BookingFormSection({
       });
 
       // 7. Write to Inquiries and Booking Leads Collections
-      await Promise.all([
-        addDoc(collection(db, "inquiries"), leadPayload),
-        addDoc(collection(db, "booking_leads"), leadPayload),
-      ]);
+      await addDoc(collection(db, "inquiries"), leadPayload);
 
       // 8. Trigger Automated Client Confirmation Receipt & Director Alert
       try {

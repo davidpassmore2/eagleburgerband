@@ -90,8 +90,9 @@ function PortalNavigationShell({ children }: { children: React.ReactNode }) {
   const currentTool = useMemo(() => {
     if (!pathname) return null;
     return WORKSPACE_TOOLS.find((tool) => {
-      if (tool.href === pathname) return true;
-      if (pathname.startsWith(`${tool.href}/`)) return true;
+      const toolBase = tool.href.split("?")[0];
+      if (tool.href === pathname || toolBase === pathname) return true;
+      if (pathname.startsWith(`${toolBase}/`)) return true;
       return false;
     });
   }, [pathname]);
