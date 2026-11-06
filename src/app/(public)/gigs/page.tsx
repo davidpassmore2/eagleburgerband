@@ -101,6 +101,11 @@ export default function PublicGigsPage() {
 
   const displayGigs = showPast ? pastGigs : upcomingGigs;
 
+  const sectionsToRender =
+    pageData?.sections && pageData.sections.length > 0
+      ? [...pageData.sections].sort((a, b) => a.order - b.order)
+      : DEFAULT_SYSTEM_PAGES.gigs.sections;
+
   const seo = pageData?.seo;
   const seoTitle = seo?.metaTitle?.trim() || `${pageData?.title || "Live Performances"} | Eagleburger Band`;
   const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Parades, street rallies, outdoor festivals, and community celebrations across Western PA.";
@@ -308,9 +313,9 @@ export default function PublicGigsPage() {
       </div>
 
       {/* Dynamic CMS Sections from CMS Studio */}
-      {pageData?.sections && pageData.sections.length > 0 && (
+      {sectionsToRender && sectionsToRender.length > 0 && (
         <div className="space-y-12 mt-16">
-          {pageData.sections.map((section) => (
+          {sectionsToRender.map((section) => (
             <PublicSectionRenderer key={section.id} section={section} />
           ))}
         </div>

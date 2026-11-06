@@ -31,6 +31,11 @@ export default function BookingPage() {
   const seoTitle = seo?.metaTitle?.trim() || `${pageData?.title || "Book the Band"} | Eagleburger Band`;
   const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Request the Eagleburger Band for parades, street festivals, weddings, and private events. Check musician availability and rates.";
 
+  const sectionsToRender =
+    pageData?.sections && pageData.sections.length > 0
+      ? [...pageData.sections].sort((a, b) => a.order - b.order)
+      : DEFAULT_SYSTEM_PAGES.book.sections;
+
   return (
     <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
@@ -45,8 +50,8 @@ export default function BookingPage() {
       />
 
       {/* Dynamic CMS Sections from CMS Studio */}
-      <div>
-        {pageData?.sections?.map((section) => (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 pt-8">
+        {sectionsToRender?.map((section) => (
           <PublicSectionRenderer key={section.id} section={section} />
         ))}
       </div>

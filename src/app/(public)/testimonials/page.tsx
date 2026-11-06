@@ -229,6 +229,11 @@ export default function TestimonialsPublicPage() {
     return ["all", ...dynamicTags];
   }, [testimonials]);
 
+  const sectionsToRender =
+    pageData?.sections && pageData.sections.length > 0
+      ? [...pageData.sections].sort((a, b) => a.order - b.order)
+      : DEFAULT_SYSTEM_PAGES.testimonials.sections;
+
   return (
     <div className="pb-16" suppressHydrationWarning>
       {/* Dynamic SEO Meta */}
@@ -402,9 +407,9 @@ export default function TestimonialsPublicPage() {
       )}
 
       {/* Dynamic CMS Sections from CMS Studio */}
-      {pageData?.sections && pageData.sections.length > 0 && (
+      {sectionsToRender && sectionsToRender.length > 0 && (
         <div className="space-y-12">
-          {pageData.sections.map((section) => (
+          {sectionsToRender.map((section) => (
             <PublicSectionRenderer key={section.id} section={section} />
           ))}
         </div>

@@ -32,6 +32,11 @@ export default function ContactPage() {
   const seoTitle = seo?.metaTitle?.trim() || `${pageData?.title || "Contact Us"} | Eagleburger Band`;
   const seoDesc = seo?.metaDescription?.trim() || pageData?.description || "Contact the Eagleburger Band management for appearances, press, questions, or bookings.";
 
+  const sectionsToRender =
+    pageData?.sections && pageData.sections.length > 0
+      ? [...pageData.sections].sort((a, b) => a.order - b.order)
+      : DEFAULT_SYSTEM_PAGES.contact.sections;
+
   return (
     <div className="pb-16" suppressHydrationWarning>
       <title>{seoTitle}</title>
@@ -45,7 +50,7 @@ export default function ContactPage() {
         fallbackSubtitle={pageData?.description}
       />
 
-      <div className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "pt-8"}`}>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "pt-8"}`}>
         {/* Header (rendered if no header image banner is active) */}
         {!isBannerActive && (
           <div className="text-center space-y-4 max-w-3xl mx-auto">
@@ -64,9 +69,9 @@ export default function ContactPage() {
         )}
 
         {/* Render Dynamic CMS Sections from CMS Studio */}
-        {pageData?.sections && pageData.sections.length > 0 && (
+        {sectionsToRender && sectionsToRender.length > 0 && (
           <div className="space-y-12">
-            {pageData.sections.map((section) => (
+            {sectionsToRender.map((section) => (
               <PublicSectionRenderer key={section.id} section={section} />
             ))}
           </div>

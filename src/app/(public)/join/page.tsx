@@ -28,6 +28,11 @@ export default function JoinBandPage() {
     return () => unsub();
   }, []);
 
+  const sectionsToRender =
+    pageData?.sections && pageData.sections.length > 0
+      ? [...pageData.sections].sort((a, b) => a.order - b.order)
+      : DEFAULT_SYSTEM_PAGES.join.sections;
+
   return (
     <div className="pb-16" suppressHydrationWarning>
       {/* Dynamic SEO Meta */}
@@ -50,7 +55,7 @@ export default function JoinBandPage() {
         />
       )}
 
-      <div className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "py-12"}`}>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 ${isBannerActive ? "pt-8 sm:pt-12" : "py-12"}`}>
         {!isBannerActive && (
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-xs font-semibold uppercase tracking-wider">
@@ -68,9 +73,9 @@ export default function JoinBandPage() {
         )}
 
         {/* Render Dynamic CMS Sections */}
-        {pageData?.sections && pageData.sections.length > 0 && (
+        {sectionsToRender && sectionsToRender.length > 0 && (
           <div className="space-y-12">
-            {pageData.sections.map((section) => (
+            {sectionsToRender.map((section) => (
               <PublicSectionRenderer key={section.id} section={section} />
             ))}
           </div>
