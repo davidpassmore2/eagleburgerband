@@ -359,11 +359,11 @@ export default function PublicSectionRenderer({
       {section.type === "cta_banner" && section.ctaBanner && (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className={`rounded-3xl p-8 sm:p-14 text-center space-y-6 shadow-2xl relative overflow-hidden ${
+            className={`rounded-3xl p-8 sm:p-14 text-center space-y-6 shadow-2xl relative overflow-hidden portal-exempt ${
               section.ctaBanner.variant === "primary"
-                ? "bg-yellow-400 text-slate-950"
+                ? "bg-yellow-400 text-slate-950 shadow-yellow-400/10 border border-yellow-300/40"
                 : section.ctaBanner.variant === "gradient"
-                ? "bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-400 text-slate-950"
+                ? "bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-400 text-slate-950 shadow-yellow-400/10 border border-yellow-300/40"
                 : section.ctaBanner.variant === "forest"
                 ? "bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950 border border-emerald-800/40 text-white"
                 : "bg-slate-900 border border-slate-800 text-white"
@@ -371,13 +371,13 @@ export default function PublicSectionRenderer({
           >
             {section.ctaBanner.badgeText && (
               <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${
                   section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
                     ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
-                    : "bg-black/10 text-slate-950 border border-black/15"
+                    : "bg-slate-950 text-yellow-400 border border-slate-950 shadow-md"
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                 <span>{section.ctaBanner.badgeText}</span>
               </div>
             )}
@@ -388,10 +388,10 @@ export default function PublicSectionRenderer({
 
             {section.ctaBanner.subheadline && (
               <p
-                className={`text-sm sm:text-base max-w-2xl mx-auto leading-relaxed ${
+                className={`text-base sm:text-lg max-w-2xl mx-auto leading-relaxed ${
                   section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
                     ? "text-slate-300"
-                    : "text-slate-900 font-medium"
+                    : "text-slate-950 font-semibold"
                 }`}
               >
                 {section.ctaBanner.subheadline}
@@ -402,34 +402,45 @@ export default function PublicSectionRenderer({
               <Link
                 href={section.ctaBanner.buttonHref || "/book"}
                 suppressHydrationWarning
-                className={`px-8 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 btn-cta ${
+                className={`px-8 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5 btn-cta ${
                   section.ctaBanner.buttonStyle === "white"
-                    ? "bg-white text-slate-950 hover:bg-slate-100 shadow-xl"
+                    ? "bg-white !text-slate-950 hover:bg-slate-100 shadow-xl"
                     : section.ctaBanner.buttonStyle === "outline"
-                    ? "bg-transparent border-2 border-current hover:bg-black/10"
+                    ? "bg-transparent border-2 border-slate-950 text-slate-950 hover:bg-slate-950 hover:!text-white"
                     : section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
-                    ? "bg-yellow-400 text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
-                    : "bg-slate-950 text-white hover:bg-slate-900 shadow-black/30"
+                    ? "bg-yellow-400 !text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
+                    : "bg-slate-950 !text-white hover:bg-slate-900 shadow-xl shadow-black/40 hover:shadow-black/60"
                 }`}
               >
-                <Send className="w-4 h-4" />
-                <span>{section.ctaBanner.buttonText}</span>
+                <Send className={`w-4 h-4 shrink-0 ${
+                  section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
+                    ? "!text-slate-950"
+                    : "!text-yellow-400"
+                }`} />
+                <span className={`tracking-wider font-bold ${
+                  section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
+                    ? "!text-slate-950"
+                    : "!text-white"
+                }`}>
+                  {section.ctaBanner.buttonText}
+                </span>
               </Link>
               {section.ctaBanner.secondaryButtonText && (
                 <Link
                   href={section.ctaBanner.secondaryButtonHref || "/gigs"}
                   suppressHydrationWarning
-                  className={`px-6 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition ${
+                  className={`px-6 py-4 rounded-xl text-xs sm:text-sm font-arvo font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
                     section.ctaBanner.secondaryButtonStyle === "white"
-                      ? "bg-white text-slate-950 hover:bg-slate-100 shadow-lg"
+                      ? "bg-white !text-slate-950 hover:bg-slate-100 shadow-lg"
                       : section.ctaBanner.secondaryButtonStyle === "solid-yellow"
-                      ? "bg-yellow-400 text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
+                      ? "bg-yellow-400 !text-slate-950 hover:bg-yellow-300 shadow-yellow-400/20"
                       : section.ctaBanner.variant === "dark" || section.ctaBanner.variant === "forest"
-                      ? "text-slate-300 hover:text-white border border-slate-700"
-                      : "text-slate-900 hover:text-black border border-slate-950/20"
+                      ? "text-slate-300 hover:!text-white border border-slate-700 hover:border-slate-500 hover:bg-slate-800/50"
+                      : "bg-slate-950/5 hover:bg-slate-950 text-slate-950 hover:!text-white border-2 border-slate-950 shadow-sm"
                   }`}
                 >
-                  {section.ctaBanner.secondaryButtonText}
+                  <Calendar className="w-4 h-4 shrink-0" />
+                  <span>{section.ctaBanner.secondaryButtonText}</span>
                 </Link>
               )}
             </div>

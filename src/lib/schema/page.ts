@@ -678,6 +678,8 @@ export const DEFAULT_SYSTEM_PAGES: Record<SystemPageId, ContentPage> = {
           buttonText: "Check Band Availability",
           buttonHref: "/book",
           buttonStyle: "solid-yellow",
+          secondaryButtonText: "View Schedule",
+          secondaryButtonHref: "/gigs",
           variant: "primary",
         },
       },

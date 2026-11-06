@@ -298,9 +298,18 @@ textarea:disabled,
   color: var(--ebb-primary-text, #020617) !important;
 }
 
-:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400:not(.portal-exempt) *,
-:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500:not(.portal-exempt) * {
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-400:not(.portal-exempt) *:not([class*="bg-slate"]):not([class*="bg-black"]):not([class*="bg-zinc"]):not([class*="text-white"]):not(.keep-white):not([class*="bg-slate"] *):not([class*="bg-black"] *):not([class*="text-white"] *),
+:is([data-ebb-mode], [data-ebb-public], .public-site) .bg-yellow-500:not(.portal-exempt) *:not([class*="bg-slate"]):not([class*="bg-black"]):not([class*="bg-zinc"]):not([class*="text-white"]):not(.keep-white):not([class*="bg-slate"] *):not([class*="bg-black"] *):not([class*="text-white"] *) {
   color: var(--ebb-primary-text, #020617) !important;
+}
+
+:is([data-ebb-mode], [data-ebb-public], .public-site) [class*="bg-slate-950"] .text-white,
+:is([data-ebb-mode], [data-ebb-public], .public-site) [class*="bg-slate-950"] .btn-cta,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .btn-cta[class*="bg-slate-950"],
+:is([data-ebb-mode], [data-ebb-public], .public-site) .btn-cta[class*="bg-slate-950"] span,
+:is([data-ebb-mode], [data-ebb-public], .public-site) .btn-cta[class*="bg-slate-900"],
+:is([data-ebb-mode], [data-ebb-public], .public-site) .btn-cta[class*="bg-slate-900"] span {
+  color: #ffffff !important;
 }
 
 :is([data-ebb-mode], [data-ebb-public], .public-site) .hover\:bg-yellow-300:hover,
