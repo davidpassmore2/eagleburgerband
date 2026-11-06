@@ -23,6 +23,7 @@ export type DonationStatus = z.infer<typeof DonationStatusEnum>;
 export const DonationSchema = z.object({
   id: z.string().default(() => crypto.randomUUID()),
   organizationName: z.string().min(1, "Organization name is required"),
+  organizationMission: z.string().default(""), // Description of recipient organization's core mission
   causeDescription: z.string().default(""),
   websiteUrl: z.string().default(""),
   category: DonationCategoryEnum.default("community_aid"),

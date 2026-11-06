@@ -931,26 +931,49 @@ function PublicGiftsSectionComponent({
                   </div>
                 </div>
 
-                {/* Organization Title & Website Link */}
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                {/* Organization Title */}
+                <div>
                   <h3 className="text-lg sm:text-xl font-extrabold text-white group-hover:text-yellow-400 transition-colors tracking-tight">
                     {b.organizationName}
                   </h3>
-
-                  {b.websiteUrl && (
-                    <a
-                      href={b.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors font-mono shrink-0"
-                    >
-                      <span>Visit Website</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
                 </div>
 
-                {/* Full Notes / Description (Not Truncated) */}
+                {/* Recipient Mission & Community Support (Grouped with website to encourage public viewers to support) */}
+                {(b.organizationMission || b.websiteUrl) && (
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-yellow-400">
+                        <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                        <span>Organization Mission</span>
+                      </div>
+                      {b.organizationMission ? (
+                        <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                          {b.organizationMission}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">
+                          Discover more about {b.organizationName} and support their community work.
+                        </p>
+                      )}
+                    </div>
+
+                    {b.websiteUrl && (
+                      <div className="shrink-0 flex items-center">
+                        <a
+                          href={b.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-md shadow-yellow-400/10"
+                        >
+                          <span>Support &amp; Visit {b.organizationName}</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Full Notes / Band Gift Rationale (Not Truncated) */}
                 {b.causeDescription && (
                   <div className="pt-1">
                     <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">

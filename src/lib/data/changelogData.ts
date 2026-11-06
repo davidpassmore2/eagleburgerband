@@ -34,6 +34,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Incorporated formatted Date Given (dateDonated) directly into public Band Gift cards with calendar iconography and fiscal year attribution.",
       "Introduced explicit distinction between Date Given (when the grant was disbursed) and Date Submitted (when the gift was logged/entered) in DonationSchema and across all creation, edit, and activation modals to cleanly support entry of historical prior gifts.",
       "Preserved the Impact Note field as strictly internal-only, preventing public exposure while retaining internal context across portal directory cards and leadership workflows.",
+      "Added 'Organization Mission' (organizationMission) to DonationSchema and across all suggestion, creation, and editing workflows, enabling band members and leadership to describe the gift recipient's core community mission.",
+      "Grouped Organization Mission directly with recipient website links on public Band Gift cards (PublicSectionRenderer) with dedicated 'Support & Visit' actions, encouraging public audiences to join the band in supporting regional grassroots non-profits.",
     ],
   },
   {

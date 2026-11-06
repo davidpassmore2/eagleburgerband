@@ -323,6 +323,7 @@ function FinanceHubContent() {
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
   const [suggestOrgName, setSuggestOrgName] = useState("");
   const [suggestWebsite, setSuggestWebsite] = useState("");
+  const [suggestOrgMission, setSuggestOrgMission] = useState("");
   const [suggestCategory, setSuggestCategory] = useState<DonationCategory>("community_aid");
   const [suggestTargetAmount, setSuggestTargetAmount] = useState("");
   const [suggestRationale, setSuggestRationale] = useState("");
@@ -333,6 +334,7 @@ function FinanceHubContent() {
   const [newGiftOrgName, setNewGiftOrgName] = useState("");
   const [newGiftDesc, setNewGiftDesc] = useState("");
   const [newGiftWebsite, setNewGiftWebsite] = useState("");
+  const [newGiftOrgMission, setNewGiftOrgMission] = useState("");
   const [newGiftCategory, setNewGiftCategory] = useState<DonationCategory>("community_aid");
   const [newGiftTargetAmount, setNewGiftTargetAmount] = useState("250");
   const [newGiftStatus, setNewGiftStatus] = useState<DonationStatus>("completed");
@@ -354,6 +356,7 @@ function FinanceHubContent() {
   const [editCategory, setEditCategory] = useState<DonationCategory>("community_aid");
   const [editDesc, setEditDesc] = useState("");
   const [editWebsite, setEditWebsite] = useState("");
+  const [editOrgMission, setEditOrgMission] = useState("");
   const [editStatus, setEditStatus] = useState<DonationStatus>("completed");
   const [editAmount, setEditAmount] = useState("0");
   const [editTargetAmount, setEditTargetAmount] = useState("0");
@@ -606,6 +609,7 @@ function FinanceHubContent() {
         organizationName: suggestOrgName.trim(),
         causeDescription: suggestRationale.trim(),
         websiteUrl: suggestWebsite.trim(),
+        organizationMission: suggestOrgMission.trim(),
         category: suggestCategory,
         amount: 0,
         targetAmount: targetNum,
@@ -641,6 +645,7 @@ function FinanceHubContent() {
       setIsSuggestModalOpen(false);
       setSuggestOrgName("");
       setSuggestWebsite("");
+      setSuggestOrgMission("");
       setSuggestTargetAmount("");
       setSuggestRationale("");
     } catch (err) {
@@ -685,6 +690,7 @@ function FinanceHubContent() {
     setNewGiftOrgName("");
     setNewGiftDesc("");
     setNewGiftWebsite("");
+    setNewGiftOrgMission("");
     setNewGiftCategory("community_aid");
     setNewGiftTargetAmount("250");
     setNewGiftStatus("completed");
@@ -739,6 +745,7 @@ function FinanceHubContent() {
         organizationName: newGiftOrgName.trim(),
         causeDescription: newGiftDesc.trim(),
         websiteUrl: newGiftWebsite.trim(),
+        organizationMission: newGiftOrgMission.trim(),
         category: newGiftCategory,
         amount: newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 0,
         targetAmount: targetAmt > 0 ? Number(targetAmt.toFixed(2)) : (newGiftStatus === "completed" ? Number(directAmt.toFixed(2)) : 250),
@@ -791,6 +798,7 @@ function FinanceHubContent() {
     setEditCategory(gift.category || "community_aid");
     setEditDesc(gift.causeDescription || gift.rationale || "");
     setEditWebsite(gift.websiteUrl || "");
+    setEditOrgMission(gift.organizationMission || "");
     setEditStatus(gift.status);
     setEditAmount(String(gift.amount ?? 0));
     setEditTargetAmount(String(gift.targetAmount ?? 0));
@@ -842,6 +850,7 @@ function FinanceHubContent() {
         causeDescription: editDesc.trim(),
         rationale: editDesc.trim(),
         websiteUrl: editWebsite.trim(),
+        organizationMission: editOrgMission.trim(),
         status: editStatus,
         amount: Number(numAmount.toFixed(2)),
         targetAmount: isNaN(numTarget) ? 0 : Number(numTarget.toFixed(2)),
@@ -2208,8 +2217,15 @@ function FinanceHubContent() {
                         </div>
                       </div>
 
-                      {/* Middle: Rationale & Attribution */}
+                      {/* Middle: Rationale, Organization Mission & Attribution */}
                       <div className="space-y-2">
+                        {sug.organizationMission && (
+                          <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 text-xs text-slate-300 space-y-1">
+                            <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                            <p className="leading-relaxed text-slate-200">{sug.organizationMission}</p>
+                          </div>
+                        )}
+
                         <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic bg-slate-900/40 p-3 rounded-xl border border-slate-800/40">
                           &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
                         </p>
@@ -2494,22 +2510,34 @@ function FinanceHubContent() {
 
                           {/* Body: Org Name, Descriptions, Notes */}
                           <div className="space-y-2">
-                            <div className="flex items-start justify-between gap-3">
-                              <h4 className="text-lg font-bold text-white tracking-tight">
-                                {ben.organizationName}
-                              </h4>
-                              {ben.websiteUrl && (
-                                <a
-                                  href={ben.websiteUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1 font-mono shrink-0"
-                                >
-                                  <span>Website</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
+                            <h4 className="text-lg font-bold text-white tracking-tight">
+                              {ben.organizationName}
+                            </h4>
+
+                            {/* Recipient Mission & Website Callout (Grouped to encourage community support) */}
+                            {(ben.organizationMission || ben.websiteUrl) && (
+                              <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3.5 text-xs space-y-2">
+                                {ben.organizationMission && (
+                                  <div>
+                                    <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                                    <p className="text-slate-200 leading-relaxed mt-0.5">{ben.organizationMission}</p>
+                                  </div>
+                                )}
+                                {ben.websiteUrl && (
+                                  <div className="pt-0.5">
+                                    <a
+                                      href={ben.websiteUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-yellow-400 hover:text-yellow-300 hover:underline inline-flex items-center gap-1.5 font-mono font-bold"
+                                    >
+                                      <span>Support &amp; Visit {ben.organizationName}</span>
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {ben.causeDescription && (
                               <p className="text-xs text-slate-300 leading-relaxed">
@@ -3116,6 +3144,22 @@ function FinanceHubContent() {
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Organization Mission
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe what the recipient organization does and their core community mission..."
+                  value={suggestOrgMission}
+                  onChange={(e) => setSuggestOrgMission(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Grouped with the website link on the public site so visitors are encouraged to support them.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Why Should the Band Support This Cause? *
                 </label>
                 <textarea
@@ -3305,6 +3349,22 @@ function FinanceHubContent() {
                   onChange={(e) => setNewGiftWebsite(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Organization Mission
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe the recipient organization's mission and core purpose..."
+                  value={newGiftOrgMission}
+                  onChange={(e) => setNewGiftOrgMission(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Grouped with the website on the public site so visitors are encouraged to support them.
+                </p>
               </div>
 
               <div className="space-y-1">
@@ -3929,7 +3989,7 @@ function FinanceHubContent() {
                 </div>
               </div>
 
-              {/* Website */}
+              {/* Website & Organization Mission */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
                   Website / Social Link
@@ -3941,6 +4001,22 @@ function FinanceHubContent() {
                   onChange={(e) => setEditWebsite(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Organization Mission
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe the recipient organization's core mission..."
+                  value={editOrgMission}
+                  onChange={(e) => setEditOrgMission(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Grouped with the website on the public site so visitors are encouraged to join in support.
+                </p>
               </div>
 
               {/* Attributed Member */}
