@@ -399,6 +399,8 @@ function FinanceHubContent() {
   const [confirmAmount, setConfirmAmount] = useState<string>("100");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
   const [confirmDateSubmitted, setConfirmDateSubmitted] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [confirmOrgMission, setConfirmOrgMission] = useState<string>("");
+  const [confirmWebsite, setConfirmWebsite] = useState<string>("");
   const [confirmFiscalYear, setConfirmFiscalYear] = useState<string>(() => String(new Date().getFullYear()));
   const [confirmGiftsCount, setConfirmGiftsCount] = useState<number>(1);
   const [confirmImpactNote, setConfirmImpactNote] = useState<string>("");
@@ -990,6 +992,8 @@ function FinanceHubContent() {
     setConfirmDate(new Date().toISOString().split("T")[0]);
     setConfirmDateSubmitted(cause.dateSubmitted || (cause.createdAt ? cause.createdAt.split("T")[0] : new Date().toISOString().split("T")[0]));
     setConfirmFiscalYear(String(new Date().getFullYear()));
+    setConfirmOrgMission(cause.organizationMission || "");
+    setConfirmWebsite(cause.websiteUrl || "");
     setConfirmGiftsCount(Math.max(1, (cause.giftsGivenCount || 0) + 1));
     setConfirmImpactNote(cause.publicImpactNote || "");
     setConfirmNotes(cause.notes || "");
@@ -1018,6 +1022,8 @@ function FinanceHubContent() {
         dateDonated: confirmDate,
         dateSubmitted: confirmDateSubmitted,
         fiscalYear: confirmFiscalYear,
+        organizationMission: confirmOrgMission.trim(),
+        websiteUrl: confirmWebsite.trim(),
         giftsGivenCount: updatedGifts,
         isPublic: confirmIsPublic,
         showAmountPublicly: confirmShowAmountPublicly,
@@ -2219,12 +2225,34 @@ function FinanceHubContent() {
 
                       {/* Middle: Rationale, Organization Mission & Attribution */}
                       <div className="space-y-2">
-                        {sug.organizationMission && (
+                        {sug.organizationMission ? (
                           <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 text-xs text-slate-300 space-y-1">
-                            <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                              {isGivingManager && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditGift(sug)}
+                                  className="text-[10px] font-mono text-slate-400 hover:text-yellow-400 underline cursor-pointer"
+                                >
+                                  Edit Mission
+                                </button>
+                              )}
+                            </div>
                             <p className="leading-relaxed text-slate-200">{sug.organizationMission}</p>
                           </div>
-                        )}
+                        ) : isGivingManager ? (
+                          <div className="bg-slate-900/30 border border-dashed border-slate-800 rounded-xl p-2.5 text-xs flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-500">No Organization Mission entered by proposer.</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditGift(sug)}
+                              className="text-[11px] font-mono text-yellow-400 hover:text-yellow-300 underline font-bold cursor-pointer"
+                            >
+                              + Add Mission
+                            </button>
+                          </div>
+                        ) : null}
 
                         <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic bg-slate-900/40 p-3 rounded-xl border border-slate-800/40">
                           &ldquo;{sug.rationale || sug.causeDescription}&rdquo;
@@ -2515,14 +2543,37 @@ function FinanceHubContent() {
                             </h4>
 
                             {/* Recipient Mission & Website Callout (Grouped to encourage community support) */}
-                            {(ben.organizationMission || ben.websiteUrl) && (
+                            {(ben.organizationMission || ben.websiteUrl) ? (
                               <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3.5 text-xs space-y-2">
-                                {ben.organizationMission && (
+                                {ben.organizationMission ? (
                                   <div>
-                                    <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-mono uppercase font-bold text-yellow-400">Organization Mission:</span>
+                                      {isGivingManager && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditGift(ben)}
+                                          className="text-[10px] font-mono text-slate-400 hover:text-yellow-400 underline cursor-pointer"
+                                        >
+                                          Edit Mission
+                                        </button>
+                                      )}
+                                    </div>
                                     <p className="text-slate-200 leading-relaxed mt-0.5">{ben.organizationMission}</p>
                                   </div>
-                                )}
+                                ) : isGivingManager ? (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-mono text-amber-400/90 italic">No Organization Mission set yet.</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditGift(ben)}
+                                      className="text-[11px] font-mono text-yellow-400 hover:text-yellow-300 underline font-bold cursor-pointer"
+                                    >
+                                      + Add Mission
+                                    </button>
+                                  </div>
+                                ) : null}
+
                                 {ben.websiteUrl && (
                                   <div className="pt-0.5">
                                     <a
@@ -2537,7 +2588,18 @@ function FinanceHubContent() {
                                   </div>
                                 )}
                               </div>
-                            )}
+                            ) : isGivingManager ? (
+                              <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-xl p-2.5 text-xs flex items-center justify-between">
+                                <span className="text-[11px] font-mono text-slate-500">No Organization Mission or Website link added yet.</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditGift(ben)}
+                                  className="text-[11px] font-mono text-yellow-400 hover:text-yellow-300 underline font-bold cursor-pointer"
+                                >
+                                  + Manage Mission &amp; Link
+                                </button>
+                              </div>
+                            ) : null}
 
                             {ben.causeDescription && (
                               <p className="text-xs text-slate-300 leading-relaxed">
@@ -3636,6 +3698,36 @@ function FinanceHubContent() {
                 </div>
                 <p className="text-[10px] text-slate-500">
                   Automatically increments to account for this newly activated gift.
+                </p>
+              </div>
+
+              {/* Recipient Website & Organization Mission */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Recipient Website / Social Link
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={confirmWebsite}
+                  onChange={(e) => setConfirmWebsite(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  Organization Mission (Public &amp; Community Facing)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe the recipient's mission to encourage public support on the public site..."
+                  value={confirmOrgMission}
+                  onChange={(e) => setConfirmOrgMission(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-yellow-400 leading-relaxed"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Grouped with the website on the public site so visitors are encouraged to join the band in support.
                 </p>
               </div>
 

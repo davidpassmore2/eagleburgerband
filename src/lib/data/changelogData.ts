@@ -36,6 +36,7 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Preserved the Impact Note field as strictly internal-only, preventing public exposure while retaining internal context across portal directory cards and leadership workflows.",
       "Added 'Organization Mission' (organizationMission) to DonationSchema and across all suggestion, creation, and editing workflows, enabling band members and leadership to describe the gift recipient's core community mission.",
       "Grouped Organization Mission directly with recipient website links on public Band Gift cards (PublicSectionRenderer) with dedicated 'Support & Visit' actions, encouraging public audiences to join the band in supporting regional grassroots non-profits.",
+      "Empowered admins and giving managers to directly manage and refine Organization Mission fields across the portal (/portal/finance?tab=giving), including during the 'Approve & Activate' workflow, within the 'Edit Band Gift' modal, and through direct '+ Add Mission' and 'Edit Mission' controls on portal cards.",
     ],
   },
   {
