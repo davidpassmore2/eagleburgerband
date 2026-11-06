@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
+import { getPublicPageMetadata } from "@/lib/public/publicMetadata";
 
-export const metadata: Metadata = {
-  title: "Contact & Inquiries | Eagleburger Band Pittsburgh",
-  description: "Get in touch with the Eagleburger Band leadership for booking questions, press inquiries, community collaborations, and festival planning.",
-  openGraph: {
-    title: "Contact & Inquiries | Eagleburger Band",
-    description: "Get in touch with the Eagleburger Band leadership for booking questions, press inquiries, community collaborations, and festival planning.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPublicPageMetadata("contact");
+}
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
   return children;

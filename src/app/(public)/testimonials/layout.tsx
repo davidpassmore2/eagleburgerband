@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
+import { getPublicPageMetadata } from "@/lib/public/publicMetadata";
 
-export const metadata: Metadata = {
-  title: "Testimonials & Reviews | Eagleburger Band",
-  description: "Read reviews from festival directors, event coordinators, and parade hosts who brought the Eagleburger Band to their celebrations.",
-  openGraph: {
-    title: "Testimonials & Reviews | Eagleburger Band",
-    description: "Read reviews from festival directors, event coordinators, and parade hosts who brought the Eagleburger Band to their celebrations.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPublicPageMetadata("testimonials");
+}
 
 export default function TestimonialsLayout({ children }: { children: React.ReactNode }) {
   return children;

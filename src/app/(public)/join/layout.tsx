@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
+import { getPublicPageMetadata } from "@/lib/public/publicMetadata";
 
-export const metadata: Metadata = {
-  title: "Join the Band & Auditions | Eagleburger Band",
-  description: "March and play with Pittsburgh's powerhouse street brass ensemble. Open to trumpets, trombones, saxophones, sousaphones, and marching percussion.",
-  openGraph: {
-    title: "Join the Band & Auditions | Eagleburger Band",
-    description: "March and play with Pittsburgh's powerhouse street brass ensemble. Open to trumpets, trombones, saxophones, sousaphones, and marching percussion.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPublicPageMetadata("join");
+}
 
 export default function JoinLayout({ children }: { children: React.ReactNode }) {
   return children;
