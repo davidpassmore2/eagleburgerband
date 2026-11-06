@@ -10,3 +10,4 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function BookLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
+
