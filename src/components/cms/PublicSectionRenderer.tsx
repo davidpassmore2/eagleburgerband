@@ -27,6 +27,7 @@ import {
   Flame,
   Volume2,
   Heart,
+  HeartHandshake,
   Clock,
   Music2,
   Gift,
@@ -938,10 +939,10 @@ function PublicGiftsSectionComponent({
                   </h3>
                 </div>
 
-                {/* Recipient Mission & Community Support (Grouped with website to encourage public viewers to support) */}
+                {/* Recipient Mission & Community Support (Mission followed after line break by right-aligned CTA with icon) */}
                 {(b.organizationMission || b.websiteUrl) && (
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1.5 flex-1">
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+                    <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-yellow-400">
                         <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                         <span>Organization Mission</span>
@@ -958,15 +959,16 @@ function PublicGiftsSectionComponent({
                     </div>
 
                     {b.websiteUrl && (
-                      <div className="shrink-0 flex items-center">
+                      <div className="pt-2 border-t border-slate-800/60 flex justify-end">
                         <a
                           href={b.websiteUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-md shadow-yellow-400/10"
                         >
+                          <HeartHandshake className="w-4 h-4 text-slate-950 shrink-0" />
                           <span>Support &amp; Visit {b.organizationName}</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ExternalLink className="w-3.5 h-3.5 text-slate-950/70 shrink-0" />
                         </a>
                       </div>
                     )}

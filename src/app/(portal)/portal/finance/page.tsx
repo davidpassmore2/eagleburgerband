@@ -2575,15 +2575,16 @@ function FinanceHubContent() {
                                 ) : null}
 
                                 {ben.websiteUrl && (
-                                  <div className="pt-0.5">
+                                  <div className="pt-2 border-t border-slate-800/60 flex justify-end">
                                     <a
                                       href={ben.websiteUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-xs text-yellow-400 hover:text-yellow-300 hover:underline inline-flex items-center gap-1.5 font-mono font-bold"
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-400/15 hover:bg-yellow-400/25 text-yellow-300 border border-yellow-400/30 text-xs font-mono font-bold transition"
                                     >
+                                      <HeartHandshake className="w-3.5 h-3.5" />
                                       <span>Support &amp; Visit {ben.organizationName}</span>
-                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      <ExternalLink className="w-3 h-3" />
                                     </a>
                                   </div>
                                 )}
