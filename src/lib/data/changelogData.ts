@@ -50,6 +50,8 @@ export const STAGE_CHANGELOG: StageChangelogItem[] = [
       "Added role guards to the General Financial Ledger tab (/portal/finance) restricting ledger visibility to authorized managers.",
       "Resolved admin navigation deadlocks in AdminLayout with ADMIN_REDIRECT_TARGETS, allowing specialized leadership roles (e.g. Gig Managers) to seamlessly access legacy redirect aliases (/admin/call-sheets).",
       "Modularized monolithic pages: externalized static route, role, and FAQ dictionaries from /portal/help into src/lib/data/helpDocsData.ts, extracted EditBandGiftModal from /portal/finance, and standardized error-handling toasts across portal and admin mutations.",
+      "Empowered Admins and Gig Managers to edit rehearsal locations on individual practice dates (/portal/rehearsals) via the new EditRehearsalEventLocationModal, supporting one-click selection from saved rehearsal venues, custom one-off locations with coordinates and parking notes, and instant reset to the standard recurring default.",
+      "Enhanced the Rehearsals Hub schedule list with interactive date selection, allowing band members and leadership to click any upcoming practice date to inspect attendance, comments, and event-specific logistics.",
     ],
   },
   {

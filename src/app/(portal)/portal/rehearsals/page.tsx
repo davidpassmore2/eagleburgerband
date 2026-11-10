@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useEffect, useMemo, useTransition, useCallback } from "react";
 import Link from "next/link";
 import {
   collection,
@@ -47,7 +47,8 @@ import RehearsalBlackoutCalendar from "@/components/portal/RehearsalBlackoutCale
 import { isDateInUserBlackout } from "@/lib/portal/useUserBlackouts";
 import InMyBlackoutChip from "@/components/portal/InMyBlackoutChip";
 import OnHiatusChip from "@/components/portal/OnHiatusChip";
-import { isAdmin } from "@/lib/auth/permissions";
+import { isAdmin, canManageGigs } from "@/lib/auth/permissions";
+import EditRehearsalEventLocationModal from "@/components/portal/EditRehearsalEventLocationModal";
 import {
   Music2,
   Calendar,
@@ -78,6 +79,7 @@ import {
   Tag,
   UserCheck,
   UserX,
+  Pencil,
 } from "lucide-react";
 
 const PITTSBURGH_DEFAULT_LOCATIONS: RehearsalLocation[] = [
@@ -175,6 +177,10 @@ export default function RehearsalsPage() {
   // Cancellation Modal State
   const [cancelModalSession, setCancelModalSession] = useState<RehearsalSession | null>(null);
   const [cancelReasonText, setCancelReasonText] = useState("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [locationModalSession, setLocationModalSession] = useState<RehearsalSession | null>(null);
+
+  const isManager = Boolean(profile && (isAdmin(profile) || canManageGigs(profile)));
   const [isProcessingCancel, setIsProcessingCancel] = useState(false);
 
   // Schedule Settings Form State
@@ -270,38 +276,46 @@ export default function RehearsalsPage() {
     return getUpcomingRehearsalDates(config, 8);
   }, [config]);
 
-  // Primary active rehearsal session (next upcoming)
+  // Helper to retrieve existing session or build default virtual session for any date
+  const getSessionForDate = useCallback(
+    (dateStr: string): RehearsalSession => {
+      const existing = sessions.find((s) => s.date === dateStr);
+      if (existing) return existing;
+
+      const defaultLoc =
+        locations.find((l) => l.id === config.defaultLocationId || l.isDefault) || locations[0];
+
+      return {
+        id: `rehearsal_${dateStr}`,
+        date: dateStr,
+        startTime: config.startTime,
+        endTime: config.endTime,
+        title: `${config.dayName} Band Rehearsal`,
+        locationId: defaultLoc?.id || "",
+        locationName: defaultLoc?.name || config.defaultLocationName,
+        locationAddress: defaultLoc?.address || config.defaultLocationAddress,
+        lat: defaultLoc?.lat || config.defaultLat,
+        lng: defaultLoc?.lng || config.defaultLng,
+        locationNotes: defaultLoc?.parkingNotes || "",
+        isCancelled: false,
+        cancellationReason: "",
+        cancelledBy: "",
+        cancelledAt: "",
+        agenda: config.agendaNotes,
+        comments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    },
+    [sessions, locations, config]
+  );
+
+  // Primary active rehearsal session (selected date or next upcoming)
   const activeRehearsal = useMemo<RehearsalSession>(() => {
     const nextDate = upcomingScheduleDates[0]?.dateStr || new Date().toISOString().split("T")[0];
-    const existing = sessions.find((s) => s.date === nextDate);
-    if (existing) return existing;
-
-    // Default virtual session based on config
-    const defaultLoc =
-      locations.find((l) => l.id === config.defaultLocationId || l.isDefault) || locations[0];
-
-    return {
-      id: `rehearsal_${nextDate}`,
-      date: nextDate,
-      startTime: config.startTime,
-      endTime: config.endTime,
-      title: `${config.dayName} Band Rehearsal`,
-      locationId: defaultLoc?.id || "",
-      locationName: defaultLoc?.name || config.defaultLocationName,
-      locationAddress: defaultLoc?.address || config.defaultLocationAddress,
-      lat: defaultLoc?.lat || config.defaultLat,
-      lng: defaultLoc?.lng || config.defaultLng,
-      locationNotes: defaultLoc?.parkingNotes || "",
-      isCancelled: false,
-      cancellationReason: "",
-      cancelledBy: "",
-      cancelledAt: "",
-      agenda: config.agendaNotes,
-      comments: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  }, [upcomingScheduleDates, sessions, locations, config]);
+    const targetDate = selectedDate || nextDate;
+    return getSessionForDate(targetDate);
+  }, [selectedDate, upcomingScheduleDates, getSessionForDate]);
 
   // Listen to RSVPs for the active rehearsal
   useEffect(() => {
@@ -885,9 +899,24 @@ export default function RehearsalsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800/80 pb-4">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
-                    Next Band Downbeat
-                  </span>
+                  {selectedDate && selectedDate !== upcomingScheduleDates[0]?.dateStr ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                        Selected Rehearsal Date
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate(null)}
+                        className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer"
+                      >
+                        Reset to Next Downbeat
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                      Next Band Downbeat
+                    </span>
+                  )}
                   {activeRehearsal.isCancelled ? (
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500 text-white flex items-center gap-1 shadow-xs">
                       <XCircle className="w-3 h-3" /> Rehearsal Cancelled
@@ -908,22 +937,35 @@ export default function RehearsalsPage() {
                 </h2>
               </div>
 
-              {/* Cancel Rehearsal Button */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleToggleCancelRehearsal(activeRehearsal)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition border flex items-center gap-1.5 ${
-                    activeRehearsal.isCancelled
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                      : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20"
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>
-                    {activeRehearsal.isCancelled ? "Reactivate Rehearsal" : "Cancel Rehearsal"}
-                  </span>
-                </button>
+              {/* Admin / Manager Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {isManager && (
+                  <button
+                    type="button"
+                    onClick={() => setLocationModalSession(activeRehearsal)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold transition border border-yellow-400/40 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-300 hover:text-white flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Change rehearsal location for this specific date"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-yellow-400" />
+                    <span>Change Location</span>
+                  </button>
+                )}
+                {isManager && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCancelRehearsal(activeRehearsal)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition border flex items-center gap-1.5 cursor-pointer ${
+                      activeRehearsal.isCancelled
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                        : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20"
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>
+                      {activeRehearsal.isCancelled ? "Reactivate Rehearsal" : "Cancel Rehearsal"}
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -968,11 +1010,24 @@ export default function RehearsalsPage() {
               </div>
 
               <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Rehearsal Location &amp; Map Pin
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Rehearsal Location &amp; Map Pin
+                  </span>
+                  {isManager && (
+                    <button
+                      type="button"
+                      onClick={() => setLocationModalSession(activeRehearsal)}
+                      className="text-[11px] font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1 transition px-2 py-0.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 border border-yellow-400/30 cursor-pointer"
+                      title="Edit rehearsal location for this event"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      <span>Edit Location</span>
+                    </button>
+                  )}
+                </div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-yellow-400" />
+                  <MapPin className="w-4 h-4 text-yellow-400 shrink-0" />
                   <span>{activeRehearsal.locationName}</span>
                 </div>
                 {activeRehearsal.locationAddress && (
@@ -1687,21 +1742,25 @@ export default function RehearsalsPage() {
                 const isCancelled = sessionRecord?.isCancelled;
                 const isFirst = idx === 0;
                 const isItemBlackedOut = isDateInUserBlackout(item.dateStr, myBlackouts);
+                const isSelected = activeRehearsal.date === item.dateStr;
 
                 return (
                   <div
                     key={item.dateStr}
-                    className={`border rounded-xl p-3.5 flex items-center justify-between transition ${
-                      isCancelled
-                        ? "bg-red-950/20 border-red-500/30 opacity-70"
+                    onClick={() => setSelectedDate(item.dateStr)}
+                    className={`border rounded-xl p-3.5 flex items-center justify-between transition cursor-pointer group ${
+                      isSelected
+                        ? "bg-slate-950 border-yellow-400 ring-2 ring-yellow-400/40 shadow-md"
+                        : isCancelled
+                        ? "bg-red-950/20 border-red-500/30 opacity-70 hover:opacity-100"
                         : isFirst
-                        ? "bg-slate-950 border-yellow-400/30 shadow-xs"
+                        ? "bg-slate-950 border-yellow-400/30 hover:border-yellow-400/60 shadow-xs"
                         : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
                     }`}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-white">
+                        <span className="text-xs font-bold text-white group-hover:text-yellow-400 transition">
                           {item.formattedDate}
                         </span>
                         {isOnHiatus && <OnHiatusChip size="sm" />}
@@ -1711,7 +1770,12 @@ export default function RehearsalsPage() {
                             Cancelled
                           </span>
                         )}
-                        {isFirst && !isCancelled && (
+                        {isSelected && !isCancelled && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-yellow-400 text-slate-950 font-mono font-bold">
+                            Viewing
+                          </span>
+                        )}
+                        {isFirst && !isSelected && !isCancelled && (
                           <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-yellow-400/20 text-yellow-300 font-mono">
                             Next
                           </span>
@@ -1729,7 +1793,20 @@ export default function RehearsalsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 font-mono">
+                      {isManager && (
+                        <button
+                          type="button"
+                          title="Edit rehearsal location for this event"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocationModalSession(getSessionForDate(item.dateStr));
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-yellow-400 text-slate-400 hover:text-slate-950 border border-slate-700 hover:border-yellow-400 transition cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <span className="text-xs text-slate-500 font-mono hidden sm:inline">
                         {item.dateStr}
                       </span>
                     </div>
@@ -1878,6 +1955,14 @@ export default function RehearsalsPage() {
           </form>
         </div>
       )}
+
+      {/* MODAL: EDIT REHEARSAL LOCATION ON INDIVIDUAL EVENT */}
+      <EditRehearsalEventLocationModal
+        session={locationModalSession}
+        onClose={() => setLocationModalSession(null)}
+        locations={locations}
+        config={config}
+      />
 
       {/* Cancellation Reason Modal */}
       {cancelModalSession && (
