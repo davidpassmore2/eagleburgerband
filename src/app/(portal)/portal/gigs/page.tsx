@@ -487,7 +487,7 @@ export default function PortalGigsListPage() {
                 <button
                   type="button"
                   onClick={() => setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))}
-                  title={`Sorting by date ${sortDirection === "asc" ? "Ascending (Soonest/Oldest first)" : "Descending (Latest/Newest first)"}. Click to toggle.`}
+                  title={`Sorting by date ${sortDirection === "asc" ? "Ascending" : "Descending"}. Click to toggle.`}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/70 hover:bg-slate-700 border border-slate-700/80 transition cursor-pointer"
                 >
                   {sortDirection === "asc" ? (
@@ -495,7 +495,7 @@ export default function PortalGigsListPage() {
                   ) : (
                     <ArrowDown className="w-3.5 h-3.5 text-yellow-400" />
                   )}
-                  <span>Date {sortDirection === "asc" ? "Asc (Soonest)" : "Desc (Newest)"}</span>
+                  <span>Date {sortDirection === "asc" ? "Asc" : "Desc"}</span>
                 </button>
               </div>
             </div>
@@ -581,9 +581,21 @@ export default function PortalGigsListPage() {
                           <span className="font-bold text-white text-base sm:text-lg truncate">
                             {title}
                           </span>
-                          <span className="text-[10px] font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-yellow-400">
-                            {g.status}
-                          </span>
+                          {isPast && g.status !== "cancelled" ? (
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                              complete
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800 ${
+                              g.status === "confirmed"
+                                ? "text-emerald-400 border-emerald-500/30"
+                                : g.status === "cancelled"
+                                ? "text-red-400 border-red-500/30"
+                                : "text-yellow-400"
+                            }`}>
+                              {g.status === "completed" ? "complete" : g.status}
+                            </span>
+                          )}
                           {isOnHiatus && <OnHiatusChip />}
                           {isBlackedOut && <InMyBlackoutChip />}
                           {(() => {

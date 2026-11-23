@@ -16,6 +16,7 @@ import { User } from "@/lib/schema/user";
 import { SetlistTuneItem, isReusableSetlistTemplate } from "@/lib/schema/setlist";
 import { toast } from "@/lib/context/ToastContext";
 import PortalBreadcrumb from "@/components/portal/PortalBreadcrumb";
+import { isGigInPast } from "@/lib/utils/dateTimeFormat";
 import { 
   Calendar, 
   MapPin, 
@@ -147,8 +148,8 @@ export default function GigsAdminStudioPage() {
 
   // Search, Status Filter & Sorting
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
-  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
+  const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("upcoming");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -250,7 +251,7 @@ export default function GigsAdminStudioPage() {
       (snap) => {
         const list: GigItem[] = [];
         snap.forEach((d) => list.push({ id: d.id, ...d.data() } as GigItem));
-        list.sort((a, b) => b.date.localeCompare(a.date));
+        list.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
         setGigs(list);
         setLoading(false);
       },
@@ -304,7 +305,6 @@ export default function GigsAdminStudioPage() {
 
   // Derived filtered & sorted gigs
   const { filteredGigs, counts } = useMemo(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
     const q = searchQuery.trim().toLowerCase();
 
     // Calculate base counts across all gigs
@@ -312,7 +312,7 @@ export default function GigsAdminStudioPage() {
     let completedCount = 0;
 
     for (const g of gigs) {
-      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      const isCompleted = isGigInPast(g);
       if (isCompleted) {
         completedCount++;
       } else {
@@ -322,7 +322,7 @@ export default function GigsAdminStudioPage() {
 
     const filtered = gigs.filter((g) => {
       // 1. Status Filter
-      const isCompleted = g.status === "completed" || (Boolean(g.date) && g.date < todayStr);
+      const isCompleted = isGigInPast(g);
       if (statusFilter === "upcoming" && isCompleted) return false;
       if (statusFilter === "completed" && !isCompleted) return false;
 
@@ -2358,16 +2358,16 @@ export default function GigsAdminStudioPage() {
           <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
           <h3 className="text-base font-bold text-white">No performances found</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            {searchQuery || statusFilter !== "all"
+            {searchQuery || statusFilter !== "upcoming"
               ? "No gigs match your current search or status filter. Try clearing filters or altering search keywords."
               : "No performances exist yet. Create a new gig call sheet to get started."}
           </p>
-          {(searchQuery || statusFilter !== "all") && (
+          {(searchQuery || statusFilter !== "upcoming") && (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery("");
-                setStatusFilter("all");
+                setStatusFilter("upcoming");
               }}
               className="bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold px-3.5 py-1.5 rounded-xl transition border border-slate-700 cursor-pointer"
             >
@@ -2377,7 +2377,9 @@ export default function GigsAdminStudioPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredGigs.map((g) => (
+          {filteredGigs.map((g) => {
+            const isCompleted = isGigInPast(g);
+            return (
           <div
             key={g.id}
             className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 space-y-4 shadow transition flex flex-col justify-between"
@@ -2385,15 +2387,23 @@ export default function GigsAdminStudioPage() {
             <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                    g.status === "confirmed"
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                      : g.status === "completed"
-                      ? "bg-slate-800 text-slate-400 border-slate-700"
-                      : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
-                  }`}>
-                    {g.status}
-                  </span>
+                  {isCompleted && g.status !== "cancelled" ? (
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-slate-800 text-slate-300 border-slate-700">
+                      complete
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      g.status === "confirmed"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        : g.status === "completed"
+                        ? "bg-slate-800 text-slate-300 border-slate-700"
+                        : g.status === "cancelled"
+                        ? "bg-red-500/10 text-red-400 border-red-500/30"
+                        : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"
+                    }`}>
+                      {g.status === "completed" ? "complete" : g.status}
+                    </span>
+                  )}
                   {g.disableBroadcasts && (
                     <span
                       title="Member broadcast alerts and email dispatches are disabled for this gig"
@@ -2754,7 +2764,8 @@ export default function GigsAdminStudioPage() {
               </div>
             </div>
           </div>
-        ))}
+            );
+          })}
         </div>
       )}
 

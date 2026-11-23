@@ -673,7 +673,7 @@ Questions or late changes? Contact Band Management.`;
                 type="button"
                 onClick={() => setSortAsc((prev) => !prev)}
                 className="text-[11px] flex items-center gap-1 text-slate-400 hover:text-yellow-400 px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 transition"
-                title={`Sort by Date (${sortAsc ? "Oldest First" : "Newest First"})`}
+                title={`Sort by Date (${sortAsc ? "Ascending" : "Descending"})`}
               >
                 <ArrowUpDown className="w-3 h-3" />
                 <span className="font-mono text-[10px]">{sortAsc ? "Asc" : "Desc"}</span>

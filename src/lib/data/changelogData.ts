@@ -7,6 +7,18 @@ export interface StageChangelogItem {
 
 export const STAGE_CHANGELOG: StageChangelogItem[] = [
   {
+    stage: 67,
+    title: "Gig Studio Tab Defaults, Chronological Sorting & Completed Event Governance",
+    category: "Gig Administration, Scheduling UX & Event Lifecycle",
+    accomplishments: [
+      "Configured the Gig Studio (/admin/gigs) to default immediately to the 'Upcoming' filter tab upon opening, presenting coordinators with active forward-looking events without manual tab switching.",
+      "Standardized default chronological sorting across the Gig Studio and Musician Performance Schedule to Date Asc (soonest upcoming performances first).",
+      "Refined sort control terminology across the portal to strictly use directional 'Date Asc' and 'Date Desc' indicators, removing subjective 'oldest' and 'newest' labels.",
+      "Introduced automated 'complete' status pills across both Gig Studio and Musician Performance cards for all performances that have concluded (evaluated via isGigInPast), ensuring historical events are clearly distinguished from active upcoming dates.",
+      "Aligned empty states, counts, and search reset handlers with the Upcoming view default for seamless schedule navigation.",
+    ],
+  },
+  {
     stage: 66,
     title: "Member Orientation Guide, Financial Record Deletions & Breakpoint Ergonomics",
     category: "Member UX, Orientation, Financial Governance & Responsive Architecture",
