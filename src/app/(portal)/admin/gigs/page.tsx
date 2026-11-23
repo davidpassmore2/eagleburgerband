@@ -2334,16 +2334,16 @@ export default function GigsAdminStudioPage() {
           <div className="flex items-center gap-1.5 border-l border-slate-800 pl-2">
             <button
               type="button"
-              onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
-              title={`Sorting by date ${sortDirection === "desc" ? "Descending (Newest first)" : "Ascending (Oldest first)"}. Click to toggle.`}
+              onClick={() => setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))}
+              title={`Sorting by date ${sortDirection === "asc" ? "Ascending" : "Descending"}. Click to toggle.`}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/70 hover:bg-slate-700 border border-slate-700/80 transition cursor-pointer"
             >
-              {sortDirection === "desc" ? (
-                <ArrowDown className="w-3.5 h-3.5 text-yellow-400" />
-              ) : (
+              {sortDirection === "asc" ? (
                 <ArrowUp className="w-3.5 h-3.5 text-yellow-400" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 text-yellow-400" />
               )}
-              <span>Date {sortDirection === "desc" ? "Desc (Newest)" : "Asc (Oldest)"}</span>
+              <span>Date {sortDirection === "asc" ? "Asc" : "Desc"}</span>
             </button>
           </div>
         </div>
